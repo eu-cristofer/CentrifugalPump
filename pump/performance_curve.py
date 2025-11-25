@@ -626,9 +626,9 @@ class PerformanceChecker:
         float
             The tolerance value for the shutoff head.
         """
-        if self.design_point.head.m <= 75:
+        if self.design_point.differential_head.m <= 75:
             return 0.1
-        elif self.design_point.head.m <= 300:
+        elif self.design_point.differential_head.m <= 300:
             return 0.08
         else:
             return 0.05
@@ -637,8 +637,8 @@ class PerformanceChecker:
         """
         Computes the acceptable limits for head, shutoff head, and breaking power.
         """
-        self.minimum_head = round(self.design_point.head - self.head_tolerance * self.design_point.head, 2)
-        self.maximum_head = round(self.design_point.head + self.head_tolerance * self.design_point.head, 2)
+        self.minimum_head = round(self.design_point.differential_head - self.head_tolerance * self.design_point.differential_head, 2)
+        self.maximum_head = round(self.design_point.differential_head + self.head_tolerance * self.design_point.differential_head, 2)
 
         if hasattr(self.design_point, "head_shutoff"):
             self.maximum_head_shutoff = round(self.design_point.head_shutoff + self.shutoff_tolerance * self.design_point.head_shutoff, 2)

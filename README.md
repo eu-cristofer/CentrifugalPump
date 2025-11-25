@@ -24,7 +24,7 @@ If you plan to modify or contribute to the project, install it in editable mode 
 ```
 git clone https://github.com/eu-cristofer/centrifugal-pump.git
 cd centrifugal-pump
-pip install .[dev]
+pip install -e .[dev]
 ```
 This installs the package in editable mode (`-e`) along with all development tools.
 
