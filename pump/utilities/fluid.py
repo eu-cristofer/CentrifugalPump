@@ -105,3 +105,11 @@ class Fluid:
     def __str__(self) -> str:
         """Returns a detailed string representation of the fluid's properties."""
         return f"Fluid({self._get_properties()})"
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Fluid):
+            return NotImplemented
+        return self.__dict__ == other.__dict__
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.density.magnitude, str(self.density.units)))

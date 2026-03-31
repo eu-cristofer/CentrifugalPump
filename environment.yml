@@ -1,0 +1,40 @@
+name: pump
+# To create the environment, run:
+#   mamba env create -f environment.yml
+# To update the environment, run:
+#   mamba env update -f environment.yml
+#
+# 🚫 DO NOT PUT CHANNELS HERE
+# Channels depend on where the environment is being built
+# (company network vs public internet). That belongs in .condarc.
+
+dependencies:
+  # Core language
+  - python=3.12
+
+  # Base scientific stack
+  - numpy
+  - pint
+
+  # Plotting & visualization
+  - matplotlib
+  - plotly
+
+  # Jupyter ecosystem
+  - ipykernel
+  - ipython
+  - jupyter
+  - nbconvert
+  - nb_conda_kernels
+
+  # Excel I/O
+  - xlrd
+
+  # Pip for PyPI installs
+  - pip
+
+  # Install the project in editable mode with dev dependencies
+  - pip:
+      - -e .[dev]
+
+

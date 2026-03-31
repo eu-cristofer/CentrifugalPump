@@ -28,23 +28,17 @@ class PerformanceFitter:
     Handles polynomial regression for performance metrics (head, efficiency, power),
     with lazy computation of polynomial coefficients.
 
-    Attributes
+    Parameters
     ----------
     points : list of TestPoint
         A list of TestPoint instances used for polynomial regression.
-
-    Methods
-    -------
-    fit_head()
-        Lazily fits a 4th-order polynomial for head vs. capacity.
-    fit_efficiency()
-        Lazily fits a 4th-order polynomial for efficiency vs. capacity.
-    fit_power()
-        Lazily fits a 4th-order polynomial for power vs. capacity.
+    polynomial_degree : int, optional
+        The degree of the polynomial fit (default is 4).
     """
 
-    def __init__(self, points) -> None:
+    def __init__(self, points, polynomial_degree: int = 4) -> None:
         self.points = points
+        self.polynomial_degree = polynomial_degree
         self._capacities = None
         self._heads = None
         self._efficiencies = None
@@ -70,12 +64,12 @@ class PerformanceFitter:
     @property
     def heads(self) -> np.ndarray:
         """
-        Lazily computes and returns the capacity values as a NumPy array.
+        Lazily computes and returns the head values as a NumPy array.
 
         Returns
         -------
         np.ndarray
-            Array of capacity values.
+            Array of head values.
         """
         if self._heads is None:
             self._heads = np.array([p.head.magnitude for p in self.points])
@@ -84,12 +78,12 @@ class PerformanceFitter:
     @property
     def efficiencies(self) -> np.ndarray:
         """
-        Lazily computes and returns the capacity values as a NumPy array.
+        Lazily computes and returns the efficiency values as a NumPy array.
 
         Returns
         -------
         np.ndarray
-            Array of capacity values.
+            Array of efficiency values.
         """
         if self._efficiencies is None:
             self._efficiencies = np.array([p.efficiency.magnitude for p in self.points])
@@ -98,12 +92,12 @@ class PerformanceFitter:
     @property
     def powers(self) -> np.ndarray:
         """
-        Lazily computes and returns the capacity values as a NumPy array.
+        Lazily computes and returns the power values as a NumPy array.
 
         Returns
         -------
         np.ndarray
-            Array of capacity values.
+            Array of power values.
         """
         
         if self._powers is None:
@@ -113,7 +107,7 @@ class PerformanceFitter:
     @property
     def head_coeffs(self) -> np.ndarray:
         """
-        Lazily computes the 4th-order polynomial regression coefficients for head vs. capacity.
+        Lazily computes the polynomial regression coefficients for head vs. capacity.
 
         Returns
         -------
@@ -123,13 +117,13 @@ class PerformanceFitter:
         if self._head_coeffs is None:
             capacities = self.capacities
             heads = np.array([p.head.magnitude for p in self.points])
-            self._head_coeffs = np.polyfit(capacities, heads, 4)
+            self._head_coeffs = np.polyfit(capacities, heads, self.polynomial_degree)
         return self._head_coeffs
 
     @property
     def efficiency_coeffs(self) -> np.ndarray:
         """
-        Lazily computes the 4th-order polynomial regression coefficients for efficiency vs. capacity.
+        Lazily computes the polynomial regression coefficients for efficiency vs. capacity.
 
         Returns
         -------
@@ -139,13 +133,13 @@ class PerformanceFitter:
         if self._efficiency_coeffs is None:
             capacities = self.capacities
             efficiencies = np.array([p.efficiency.magnitude for p in self.points])
-            self._efficiency_coeffs = np.polyfit(capacities, efficiencies, 4)
+            self._efficiency_coeffs = np.polyfit(capacities, efficiencies, self.polynomial_degree)
         return self._efficiency_coeffs
 
     @property
     def power_coeffs(self) -> np.ndarray:
         """
-        Lazily computes the 4th-order polynomial regression coefficients for power vs. capacity.
+        Lazily computes the polynomial regression coefficients for power vs. capacity.
 
         Returns
         -------
@@ -155,7 +149,7 @@ class PerformanceFitter:
         if self._power_coeffs is None:
             capacities = self.capacities
             powers = np.array([p.breaking_power.magnitude for p in self.points])
-            self._power_coeffs = np.polyfit(capacities, powers, 4)
+            self._power_coeffs = np.polyfit(capacities, powers, self.polynomial_degree)
         return self._power_coeffs
     
     
@@ -178,6 +172,8 @@ class PerformanceCurve:
         The fluid object shared by all TestPoints in this collection.
     points : list of TestPoint
         A list of TestPoint instances that share the same fluid.
+    polynomial_degree : int, optional
+        The degree of the polynomial fit used by the internal fitter (default is 4).
 
     Attributes
     ----------
@@ -185,6 +181,8 @@ class PerformanceCurve:
         The fluid used by all points in this collection.
     points : list of TestPoint
         The list of performance points stored in this collection.
+    polynomial_degree : int
+        The polynomial degree used for curve fitting.
 
     Examples
     --------
@@ -199,13 +197,14 @@ class PerformanceCurve:
     >>> oil_curve = curve.to_fluid(oil)
     """
 
-    def __init__(self, fluid: Fluid, points: List[TestPoint]) -> None:
+    def __init__(self, fluid: Fluid, points: List[TestPoint], polynomial_degree: int = 4) -> None:
         self.fluid = fluid
+        self.polynomial_degree = polynomial_degree
         for pt in points:
             if pt.fluid != fluid:
                 raise ValueError("All TestPoints must have the same fluid.")
         self.points = sorted(points) # Sort by capacity
-        self.fitter = PerformanceFitter(points)
+        self.fitter = PerformanceFitter(points, polynomial_degree=polynomial_degree)
 
     def predict_metric(self, capacity, coeffs, unit) -> Q_:
         capacity_value = capacity.to("m**3/h").magnitude
@@ -274,12 +273,28 @@ class PerformanceCurve:
             "Head Shuttoff": shutoff_head
         }
 
-    def plot_performance_curve(self, chart_title=None, capacity:Q_=None, return_io=False):
+    def plot_performance_curve(self, chart_title=None, capacity:Q_=None, return_io=False,
+                               head_ylim=None, power_ylim=None, efficiency_ylim=None):
         """
         Plots the pump performance curve with three subplots:
         - Head vs. Capacity (takes up more height)
         - Power vs. Capacity
         - Efficiency vs. Capacity
+
+        Parameters
+        ----------
+        chart_title : str, optional
+            Custom title for the chart.
+        capacity : Q_, optional
+            A capacity value to highlight on the curve with crosshairs.
+        return_io : bool, optional
+            If True, returns a BytesIO PNG stream instead of displaying.
+        head_ylim : tuple of (float, float), optional
+            Y-axis limits for the Head subplot, e.g. (80, 130).
+        power_ylim : tuple of (float, float), optional
+            Y-axis limits for the Power subplot, e.g. (150, 550).
+        efficiency_ylim : tuple of (float, float), optional
+            Y-axis limits for the Efficiency subplot, e.g. (0, 100).
         """
         capacities = self.fitter.capacities
         heads = self.fitter.heads
@@ -396,7 +411,15 @@ class PerformanceCurve:
                 ax3.text(capacity_value, ax3.get_ylim()[0], f"{capacity_value:.1f}", verticalalignment='bottom', horizontalalignment='center', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
                 ax3.text(ax3.get_xlim()[0], fitted_efficiency, f"{fitted_efficiency:.1f}", verticalalignment='center', horizontalalignment='left', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
 
-    
+        if head_ylim is not None:
+            ax1.set_ylim(head_ylim)
+
+        if has_power and has_efficiency:
+            if power_ylim is not None:
+                ax2.set_ylim(power_ylim)
+            if efficiency_ylim is not None:
+                ax3.set_ylim(efficiency_ylim)
+
         plt.tight_layout()
         
         if return_io:
@@ -478,7 +501,7 @@ class PerformanceCurve:
             )
             new_points.append(new_point)
 
-        return PerformanceCurve(self.fluid, new_points)
+        return PerformanceCurve(self.fluid, new_points, polynomial_degree=self.polynomial_degree)
 
     def to_fluid(self, new_fluid: Fluid) -> Self:
         """
@@ -518,7 +541,7 @@ class PerformanceCurve:
             )
             new_points.append(new_point)
 
-        return PerformanceCurve(new_fluid, new_points)
+        return PerformanceCurve(new_fluid, new_points, polynomial_degree=self.polynomial_degree)
     
     @property
     def test_summary(self) -> str:
