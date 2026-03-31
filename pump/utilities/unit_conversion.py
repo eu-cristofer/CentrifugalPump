@@ -76,7 +76,8 @@ STANDARD_UNITS: Dict[str, Dict[str, str]] = {
     "length": {"default": "meter"},
     "mass": {"default": "kilogram"},
     "power": {"default": "kW"},
-    "pressure": {"default": "bar", "atm": "pascal", "delta": "bar"},
+    "pressure": {"default": "kgf/cm**2", "atm": "pascal", "delta": "bar"},
+    "specific_energy": {"default": "J/kg"},
     "speed_of_rotation": {"default": "rpm"},
     "velocity": {"default": "m/s"},
     "temperature": {"default": "kelvin", "delta": "kelvin"},
@@ -179,7 +180,8 @@ class ImprovedQuantity(UnitConverterInterface):
 
 def quantity_factory(quantity: Q_, context: str = "default") -> Q_:
     """
-    Converts a given quantity to its standard unit.
+    Converts a given quantity to its standard unit. It is the entry point of
+    enginneering units consistency check.
     
     Parameters
     ----------
@@ -193,6 +195,8 @@ def quantity_factory(quantity: Q_, context: str = "default") -> Q_:
     Q_
         The converted quantity in the standard unit.
     """
+    if not isinstance(quantity, Quantity):
+            raise ValueError("A valid pint.Quantity is required.")
     return ImprovedQuantity.convert(quantity, context)
 
 if __name__ == "__main__":
