@@ -3,6 +3,7 @@
 > Source notebook: [examples/pump_api610_performance 1.ipynb](examples/pump_api610_performance%201.ipynb)
 > Library entry points: [pump/point.py](pump/point.py), [pump/performance_curve.py](pump/performance_curve.py), [pump/utilities/unit_conversion.py](pump/utilities/unit_conversion.py), [pump/utilities/report.py](pump/utilities/report.py)
 > Date: 2026-05-21
+> Targets (committed): **iOS (iPad + iPhone, App Store)**, **Android (tablets + phones, Play Store)**, **desktop `.exe`** (Win/macOS/Linux), **shared web app**. The product is a **FAT records system** with the single-test calculator as its starting page.
 
 ---
 
@@ -93,15 +94,15 @@ Justification:
 | Affinity scaling | `PerformanceCurve.to_speed` / `.to_fluid` return new instances. | Per-point inline. |
 | Reporting | `ReportGenerator` already produces `.docx` from `.po`-localized templates. | Builds HTML and saves it as `.doc`. |
 | Future viscosity correction | Single place to add it (TODO already on the README). | Would need to be added in both engines. |
-| Packaging size | numpy + pint add ~30 MB to PyInstaller bundles. Acceptable for a desktop FAT tool. | Smallest possible. |
+| Mobile / WASM future | Pure-Python (numpy is the only C ext) → Pyodide-loadable on iOS if we ever want offline math in a WebView. | Trivially Pyodide-loadable. |
 
 What's missing from the library and must be added:
 
-1. **`CubicSplineFitter`** — a natural cubic spline (notebook's `NaturalCubicSpline`) sitting next to `PerformanceFitter` so the UI can show poly + spline side by side. Use `scipy.interpolate.CubicSpline(..., bc_type="natural")` to avoid hand-rolling.
+1. **`CubicSplineFitter`** — natural cubic spline (notebook's `NaturalCubicSpline`) sitting next to `PerformanceFitter`. Wrap `scipy.interpolate.CubicSpline(..., bc_type="natural")` to avoid hand-rolling.
 2. **`PerformanceChecker` multi-standard support** — extend `_norm_criteria` from the notebook (`API610` / `ASME B73` / `ISO 5199`) into `PerformanceChecker`. Today it only encodes API 610.
 3. **Parallel-operation criterion** — `H_shutoff ≥ 1.10 × H_rated` switch.
-4. **Pressure-derived head helper** — `TestPoint.from_pressures(p_suc, p_dis, unit, temp_c)` using the notebook's water-density polynomial; today this lives only in the notebook.
-5. **Viscosity correction factors** (already a README TODO) — `viscosity_correction_factors(nu_cst)` returning `(f_head, f_power, f_eff)`.
+4. **Pressure-derived head helper** — `TestPoint.from_pressures(p_suc, p_dis, unit, temp_c)` using the notebook's water-density polynomial.
+5. **Viscosity correction factors** (README TODO) — `viscosity_correction_factors(nu_cst)` returning `(f_head, f_power, f_eff)`.
 6. **Fix [`Point.outlet_pressure`](pump/point.py)** — currently a broken stub calling `quantity_factory()` with no args. Either delete `Point` or wire it correctly.
 
 These are pure-library changes, no UI involved, and they unblock everything below.
@@ -110,96 +111,176 @@ These are pure-library changes, no UI involved, and they unblock everything belo
 
 ## 3 · Recommended stack
 
-The user's requirement is a **single Python codebase** that ships as:
-- a **single-file executable** for offline desktop use during FAT,
-- a **web app** for shared/internal access.
+Requirement set (confirmed): single-file desktop executable, shared web app, **iOS app on iPad/iPhone as priority**, Android app on tablets/phones, and persistent records system (history of FATs per pump TAG/plant/operator).
 
 ### 3.1 Stack options compared
 
-| Stack | Web | Desktop exe | Effort | Native feel | Notes |
-|---|---|---|---|---|---|
-| **A. NiceGUI** (recommended) | ✅ FastAPI under the hood | ✅ `ui.run(native=True)` wraps PyWebView; PyInstaller-supported | Low | Good (system webview) | One codebase, Python-only. Built-in `ui.plot` (matplotlib), `ui.table`, `ui.upload`, dialogs. |
-| **B. FastAPI + React/Vue + PyWebView** | ✅ | ✅ PyWebView loads bundled JS | Med-High | Best | Most flexible UI, but two languages, two build steps, larger bundle. |
-| **C. Streamlit** | ✅ | ⚠️ Possible via stlite/Electron, but not first-class | Lowest | Web-only | Trivial to prototype, hard to ship as native exe. |
-| **D. Dash / Plotly** | ✅ | ⚠️ via PyWebView, but Dash needs its server running | Low-Med | Good | Excellent for engineering plots; less ergonomic for forms. |
-| **E. PySide6 (Qt) + FastAPI** | ✅ (separate service) | ✅ (PyInstaller) | High | Native | Two UIs to maintain — exactly what we're trying to avoid. |
-| **F. Reflex (formerly Pynecone)** | ✅ | ⚠️ exp. desktop | Low | Good | Python-only React; younger ecosystem; desktop story still maturing. |
+| Stack | Web | Desktop exe | iOS / Android | Records / admin | Effort | Notes |
+|---|---|---|---|---|---|---|
+| **A. NiceGUI** | ✅ FastAPI under the hood | ✅ `ui.run(native=True)` + PyInstaller | ⚠️ PWA only; weak on iOS | ❌ build from scratch | Low | One-file Python UI; great for desktop+web prototyping. Mobile is post-hoc. |
+| **B. FastAPI + React/Vue + PyWebView** | ✅ | ✅ PyWebView loads bundled JS | ✅ same JS → Capacitor / React Native | ⚠️ DIY | High | Native-feel SPA; two languages, two build pipelines. |
+| **C. Streamlit** | ✅ | ⚠️ stlite/Electron | ❌ | ❌ | Lowest | Prototype-only. |
+| **D. Dash / Plotly** | ✅ | ⚠️ PyWebView | ⚠️ web-responsive | ❌ | Low-Med | Great plots, weak forms, no records story. |
+| **E. PySide6 (Qt) + FastAPI** | ✅ (sep. service) | ✅ | ⚠️ Qt for Mobile is rough | ❌ | High | Three UIs to maintain. |
+| **F. Reflex** | ✅ | ⚠️ experimental | ⚠️ web-responsive | ❌ | Low | Younger ecosystem. |
+| **G. BeeWare / Toga** | ⚠️ via web backend | ✅ Briefcase | ✅ true native `.ipa` / `.apk` via Briefcase | ❌ | High | Only Python-first path to true native mobile binaries. Limited widgets; no rich plot widget; small ecosystem; documenting tables/forms is painful. |
+| **H. Django + HTMX + Alpine.js** (**recommended**) | ✅ best-in-class | ✅ PyWebView + PyInstaller wrap a bundled `localhost` Django server | ✅ Capacitor wrapping the same HTML → signed `.ipa` and `.apk`, App Store & Play Store distributable | ✅ **free Django admin + ORM** | Low-Med | Server-rendered HTML — the friendliest payload for tablets/phones, the easiest thing to Capacitor-wrap, the cheapest path to App Store builds, and the ORM + admin solve the records-system requirement on day one. |
 
-### 3.2 Recommendation: **A — NiceGUI + matplotlib + PyInstaller**
+### 3.2 Recommendation: **H — Django + HTMX + Alpine.js, wrapped with Capacitor (iOS/Android) and PyWebView (desktop)**
 
-Why:
-- **Single code path for both targets.** `nicegui.ui.run(...)` serves the same app as a browser-facing FastAPI server (default) or a native window (`native=True` → PyWebView). No conditional UI code.
-- **Library compatibility.** `pump` already produces matplotlib figures (`PerformanceCurve.plot_performance_curve`); NiceGUI embeds them directly via `ui.matplotlib()` / `ui.pyplot()`.
-- **PyInstaller-friendly.** NiceGUI documents a single-file build, and the `pump` library is pure-Python plus numpy/pint/python-docx (all PyInstaller-compatible).
-- **Reuses existing reporting.** `ReportGenerator` (python-docx + gettext) is already wired up — the UI just calls it and offers a download.
-- **Localization fit.** The notebook UI is Portuguese; the library has `en`/`pt` `.po` catalogs — NiceGUI strings can pull from the same gettext instance.
+Justified against the four committed requirements:
+
+1. **iOS priority for iPad/iPhone.** The cheapest, most reliable Python-backed path to a signed `.ipa` distributed via App Store / TestFlight is to wrap a server-rendered web bundle with Capacitor — and server-rendered HTML is exactly what Django produces. NiceGUI's Vue+Quasar payload is mobile-acceptable but heavier and gives nothing for app-store packaging beyond what we'd add ourselves. BeeWare/Toga is the only Python-first alternative that produces real `.ipa`, but its widget set has no rich plot widget and rebuilding the UX there is months of work.
+2. **Records system.** Django ORM + admin give the records use case (`Pump` / `FATRun` / `TestPoint` / `Operator` / `Plant` models, with full CRUD, search, audit log, user auth) **for free**. NiceGUI/Reflex/Streamlit ship none of this; building it from scratch is weeks of work duplicating Django's solved problem.
+3. **Desktop `.exe`.** Bundle a thin launcher: PyInstaller packages Python + Django + SQLite, the launcher boots Django on `127.0.0.1:<random>` in a background thread, then opens a PyWebView window pointed at it. Standard pattern (used by Mailpile, Calibre's content server UI, several pyqtdeploy/Django demos). More moving parts than NiceGUI's `ui.run(native=True)` but well-trodden.
+4. **Shared web app.** Native fit — Django is what it was built for.
+
+Why **HTMX + Alpine** (and not a SPA):
+- The notebook's interactivity is small: live head-from-pressure, add/remove rows, swap in the plot panel when "Calcular" is clicked. HTMX (`hx-post`, `hx-swap`) covers the panel swaps; Alpine.js (`x-data`, `x-model`, computed bindings) covers the per-row recalculation. **No JS build step, no node_modules in the repo.**
+- Tiny payload (HTMX ~14 kB, Alpine ~7 kB gzipped) → loads instantly on tablets over flaky Wi-Fi.
+- Capacitor-wrapping a thin HTML payload is dramatically simpler than wrapping a Vue/React bundle.
 
 Trade-offs accepted:
-- NiceGUI does not yet have a polished `Treeview`-style spreadsheet; the test-points editor will use `ui.table` in editable mode plus an "add row" button (close to the notebook's experience).
-- The native window uses the system's webview (Edge WebView2 on Windows, WebKit on macOS, WebKitGTK on Linux). For Windows offline FAT machines, the installer must ensure WebView2 is present (Windows 11 ships it; Windows 10 may need the redistributable).
+- Desktop `.exe` boot is ~1–2 s slower than NiceGUI's `native=True` (because Django + Gunicorn/uvicorn cold-start beats `ui.run`). Acceptable for a FAT tool used in long sessions.
+- Matplotlib doesn't embed as a widget — we serve it as a PNG endpoint (`GET /api/v1/runs/{id}/chart.png?dpi=...`) **or** move plotting to Plotly via `plotly.js` (better on touch devices — pinch-zoom works). We'll do **both**: PNG for embedded reports, Plotly for the interactive view.
+- The on-device offline story for iOS/Android Capacitor builds needs a decision (see §9.4): hosted backend vs. embedded SQLite + on-device math via Pyodide vs. plain-JS math port.
 
 ### 3.3 Final concrete stack
 
 | Layer | Choice |
 |---|---|
-| Core math + units | `pump` package (Pint + numpy), extended per §2 |
-| HTTP/API layer | `FastAPI` (re-used through NiceGUI), so the same endpoints serve both UI and any future scripting client |
-| UI framework | `NiceGUI` (web + native via PyWebView) |
-| Plots | `matplotlib` via `ui.pyplot()` (zoom toolbar) — alternative `plotly` via `ui.plotly()` for interactivity |
-| Reports | `python-docx` (`pump.utilities.report.ReportGenerator`) |
-| JSON I/O | `pydantic` v2 models for validation + round-tripping |
-| Localization | Existing `pump/utilities/locales/{en,pt}` `.po` files |
-| Packaging — desktop | `PyInstaller` one-file build; ship platform-specific binaries from CI (`windows-latest`, `macos-latest`, `ubuntu-latest`) |
-| Packaging — web | `Dockerfile` running `python -m pump.app` on `uvicorn`, behind a reverse proxy |
-| Tests | `pytest` for engine, `playwright` for UI smoke tests against the same NiceGUI app in headless mode |
+| Core math + units | `pump` package (Pint + numpy + scipy), extended per §2 |
+| Persistence | SQLite (desktop bundle + dev), Postgres (server) — both via Django ORM |
+| HTTP API (canonical contract) | **Django REST Framework** at `/api/v1/...`, OpenAPI-documented via `drf-spectacular`. Versioned so iOS/Android/desktop clients pin a schema. |
+| Server-side UI | Django views + templates, `django-htmx` middleware, Alpine.js sprinkles. **Same templates** serve the web app and (via Capacitor) the iOS/Android apps. |
+| Interactive plots | **Plotly.js** in the browser (touch-friendly), fed JSON from `/api/v1/runs/{id}/curves` |
+| Static plots | matplotlib → PNG endpoint, embedded in `.docx` reports and exportable |
+| Reports | `python-docx` via existing `pump.utilities.report.ReportGenerator`, kept unchanged |
+| JSON I/O | `pydantic` v2 models for the **library boundary** (`pump.io`); DRF serializers for the **HTTP boundary**, both validating against the same canonical schema. |
+| Admin / records | **Django admin** (CRUD, search, audit), `django-simple-history` for change-log per FAT run, `django-allauth` for SSO if/when needed. |
+| Auth | Django sessions (web/desktop) + DRF token / OAuth2 (mobile). |
+| Localization | Django i18n machinery, reusing the existing `pump/utilities/locales/{en,pt}` `.po` files. |
+| Background work (Word export, big batch reports) | `django-q2` or `huey` with SQLite broker on desktop, Redis on server. |
+| Packaging — desktop | `PyInstaller` one-file build: Django + uvicorn + PyWebView launcher → `.exe` / `.dmg` / `.AppImage`. CI matrix: `windows-latest`, `macos-latest`, `ubuntu-latest`. |
+| Packaging — web | `Dockerfile` running `gunicorn pump.fat.wsgi` behind nginx, Postgres + Redis sidecars. |
+| Packaging — iOS | `mobile/` Capacitor project, `npx cap add ios`, Xcode signing, TestFlight → App Store. Universal app (iPad + iPhone). |
+| Packaging — Android | `mobile/` same project, `npx cap add android`, Android Studio signing, Play Console internal track → production. |
+| Tests | `pytest-django` for engine + views, `playwright` against the running server for end-to-end, `XCUITest` / `Espresso` smoke on the wrapped mobile builds via Capacitor's e2e tooling. |
+
+### 3.4 Why not the cheaper paths
+
+- **NiceGUI** stays a great option for a *standalone calculator* but not for what the user actually asked for. iOS distribution via PWA is hostile (no proper offline, no file system access, limited push), and the records system would be a from-scratch build.
+- **BeeWare/Toga** is the only other Python-first path to genuine native `.ipa`/`.apk`. It loses on widget richness (no good chart widget, hand-built tables), tooling maturity, and on the records system (no admin). For this product, server-rendered HTML wrapped in Capacitor is both easier and more flexible.
+- **Pure React/Vue SPA + FastAPI** is a viable upgrade target if the UX ever outgrows HTMX (e.g. real-time multi-user dashboards). The Django REST API (§3.3) is the boundary that makes that migration possible without rewriting the engine.
 
 ---
 
 ## 4 · Target package layout
 
 ```
-pump/
-├── __init__.py
-├── point.py                  (existing — fix Point.outlet_pressure)
-├── performance_curve.py      (existing — add CubicSplineFitter, multi-standard checker)
-├── corrections.py            (NEW — affinity laws, viscosity factors, water density)
-├── io/
+.
+├── pump/                         # the calculation library (existing, extended)
 │   ├── __init__.py
-│   ├── schemas.py            (NEW — pydantic models for input/result JSON)
-│   ├── json_io.py            (NEW — load_input / dump_input / load_result / dump_result)
-│   └── legacy.py             (NEW — translates the notebook's "dens_rated" / decimal-comma JSON)
-├── app/                      (NEW — UI lives here)
-│   ├── __init__.py
-│   ├── __main__.py           (entry point: `python -m pump.app`)
-│   ├── server.py             (NiceGUI app factory, mode flag)
-│   ├── pages/
-│   │   ├── classic.py        (one-window notebook-faithful layout)
-│   │   ├── wizard.py         (modernized stepper: Setup → Points → Curves → Report)
-│   │   └── shared.py         (widgets reused by both)
-│   └── components/
-│       ├── rated_form.py
-│       ├── points_table.py
-│       ├── curves_panel.py
-│       └── results_panel.py
-├── templates/                (existing .docx)
-└── utilities/                (existing)
-tests/
-├── test_corrections.py
-├── test_json_io.py
-├── test_performance_curve.py
-└── ui_smoke/test_classic_flow.py
-build/
-├── pump-desktop.spec         (PyInstaller spec)
-└── Dockerfile                (web image)
+│   ├── point.py                  (fix Point.outlet_pressure)
+│   ├── performance_curve.py      (+ CubicSplineFitter, multi-standard checker)
+│   ├── corrections.py            (NEW — affinity, viscosity, water density)
+│   ├── io/                       (NEW — canonical JSON schemas)
+│   │   ├── schemas.py            (pydantic models for input/result JSON)
+│   │   ├── json_io.py            (load_input / dump_input / load_result / dump_result)
+│   │   └── legacy.py             (notebook-JSON compatibility shim)
+│   ├── templates/                (existing .docx)
+│   └── utilities/                (existing report.py, unit_conversion.py, locales/)
+│
+├── pumpfat/                      # NEW — Django project ("pump FAT")
+│   ├── manage.py
+│   ├── pumpfat/                  # project package
+│   │   ├── settings/{base,dev,prod,desktop}.py
+│   │   ├── urls.py
+│   │   ├── wsgi.py / asgi.py
+│   │   └── launcher.py           # PyWebView entrypoint for desktop bundle
+│   ├── apps/
+│   │   ├── catalog/              # Pump / Plant / Operator / Fluid models + admin
+│   │   ├── runs/                 # FATRun, RatedPoint, TestPoint, Result models
+│   │   ├── compute/              # thin Django-side bridge to pump.* engine
+│   │   ├── api/                  # DRF viewsets + serializers + OpenAPI
+│   │   └── ui/                   # views, templates, htmx fragments, Alpine
+│   ├── templates/
+│   │   ├── base.html             # navbar, locale switch, mode toggle
+│   │   ├── runs/
+│   │   │   ├── classic.html      # one-page notebook-faithful layout
+│   │   │   ├── wizard.html       # 4-step stepper
+│   │   │   ├── _points_table.html   # HTMX fragment
+│   │   │   ├── _curves_panel.html
+│   │   │   └── _results_panel.html
+│   │   └── catalog/              # admin-adjacent dashboards
+│   ├── static/
+│   │   ├── js/
+│   │   │   ├── htmx.min.js
+│   │   │   ├── alpine.min.js
+│   │   │   └── plotly.min.js
+│   │   └── css/pumpfat.css
+│   ├── locale/{en,pt}/LC_MESSAGES/ # symlinks to pump/utilities/locales/*
+│   └── fixtures/                 # sample DB seeded from examples/*.json
+│
+├── mobile/                       # NEW — Capacitor project (iOS + Android shell)
+│   ├── package.json
+│   ├── capacitor.config.ts       # webDir, plugins (Filesystem, Share, Network)
+│   ├── ios/                      # native shell (Xcode workspace)
+│   ├── android/                  # native shell (Gradle)
+│   └── www/                      # built static + service worker (or live URL)
+│
+├── build/
+│   ├── desktop.spec              # PyInstaller spec for the launcher
+│   ├── Dockerfile                # web image
+│   └── ios-fastlane/             # CI signing + TestFlight upload
+│
+├── tests/
+│   ├── unit/                     # pump.* engine
+│   ├── api/                      # DRF endpoints
+│   ├── ui/                       # playwright against running server
+│   └── mobile/                   # Capacitor e2e
+│
+└── examples/                     # unchanged — used as test fixtures
 ```
 
 ---
 
-## 5 · JSON export / import — concrete plan
+## 5 · Data model and JSON I/O
 
-Two schemas, two endpoints, three files on disk are involved.
+### 5.1 Django models (`pumpfat/apps/runs/models.py`)
 
-### 5.1 Schemas (`pump/io/schemas.py`)
+```python
+class Plant(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+
+class Pump(models.Model):
+    tag        = models.CharField(max_length=60, unique=True)
+    plant      = models.ForeignKey(Plant, on_delete=PROTECT, null=True)
+    standard   = models.CharField(max_length=80, choices=STANDARDS)
+    parallel_operation = models.BooleanField(default=False)
+
+class RatedPoint(models.Model):
+    pump        = models.OneToOneField(Pump, on_delete=CASCADE)
+    q_m3h, head_m, n_rpm, power_kw = (models.DecimalField(...) for _ in range(4))
+    dens_rel, visc_nom_cst, head_shutoff_m = ...
+
+class FATRun(models.Model):
+    pump        = models.ForeignKey(Pump, on_delete=PROTECT, related_name="runs")
+    operator    = models.ForeignKey(User, on_delete=PROTECT)
+    performed_at = models.DateTimeField(default=timezone.now)
+    pressure_unit = models.CharField(choices=PRESSURE_UNITS)
+    snapshot     = models.JSONField()   # canonical pydantic doc (audit-stable)
+    result       = models.JSONField(null=True)  # populated after Calcular
+
+class TestPointRecord(models.Model):
+    run = models.ForeignKey(FATRun, related_name="points", on_delete=CASCADE)
+    order = models.PositiveSmallIntegerField()
+    q, p_suc, p_dis, temp_c, head, power, n_rpm = (models.DecimalField(...) ...)
+```
+
+`snapshot` is the load-bearing JSON — the same shape as the notebook on-disk format (§1.4). The relational rows mirror it for querying but the snapshot is the source of truth. `django-simple-history` tracks edits.
+
+### 5.2 pydantic schemas (`pump/io/schemas.py`) — library boundary
 
 ```python
 class RatedInput(BaseModel):
@@ -217,7 +298,7 @@ class TestPointInput(BaseModel):
     p_suc: Decimal
     p_dis: Decimal
     temp_c: Decimal
-    head: Decimal | None = None  # auto-computed from p_suc/p_dis if absent
+    head: Decimal | None = None     # auto-computed from p_suc/p_dis if absent
     power: Decimal
     n_rpm: Decimal
 
@@ -237,7 +318,7 @@ class ResultRow(BaseModel):
     parametro: str
     nominal: Decimal | None
     predito: Decimal | None
-    desvio: Decimal | None
+    desvio:  Decimal | None
     tolerancia: Decimal | None
     parecer: Literal["✅ APROVADO", "❌ REPROVADO", "N/A"]
 
@@ -256,10 +337,14 @@ class PumpResultDocument(BaseModel):
 ```
 
 Notes:
-- `Decimal` (not `float`) preserves the notebook's decimal-comma input ("0,567"); a custom validator splits on `,` → `.` before parsing.
+- `Decimal` (not `float`) preserves the notebook's decimal-comma input (`"0,567"`); a pre-validator splits on `,` → `.` before parsing.
 - `schema_version` enables non-breaking evolution.
 
-### 5.2 Functions (`pump/io/json_io.py`)
+### 5.3 DRF serializers — HTTP boundary
+
+DRF serializers wrap the pydantic models so the REST API validates payloads identically to the library, but uses Django's renderer/parser pipeline. A 30-line adapter (`pump/io/drf.py`) converts pydantic `ValidationError` → DRF `ValidationError`.
+
+### 5.4 Library boundary functions (`pump/io/json_io.py`)
 
 ```python
 def load_input(path_or_str_or_dict) -> PumpInputDocument: ...
@@ -271,128 +356,253 @@ def input_to_models(doc: PumpInputDocument) -> tuple[Fluid, DesignPoint, list[Te
     """Convert the JSON document into typed library objects (with Pint Q_)."""
 ```
 
-### 5.3 Legacy compatibility (`pump/io/legacy.py`)
+### 5.5 Legacy compatibility (`pump/io/legacy.py`)
 
-The notebook's `_apply_form_data` already handles a legacy key (`dens_rated` instead of `dens_rel`, divides by 1000). Mirror that here so the on-disk JSONs in `examples/` keep loading after the refactor. Implement as a pre-validation hook.
+The notebook's `_apply_form_data` already handles a legacy key (`dens_rated` → `dens_rel`, divided by 1000). Mirror that here so the on-disk JSONs in `examples/` keep loading after the refactor. Implement as a pydantic pre-validation hook.
 
-### 5.4 UI hooks
+### 5.6 REST endpoints (`pumpfat/apps/api/urls.py`)
 
-Both UI modes wire to the same two functions:
+| Verb | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/pumps/` | List/filter pumps (by TAG, plant, standard) |
+| `POST` | `/api/v1/pumps/` | Create pump + rated point |
+| `GET` | `/api/v1/pumps/{tag}/runs/` | History of FATs for this pump |
+| `POST` | `/api/v1/runs/` | Submit a `PumpInputDocument` → returns 201 with `id` |
+| `POST` | `/api/v1/runs/{id}/calculate/` | Trigger compute → returns `PumpResultDocument` |
+| `GET` | `/api/v1/runs/{id}/chart.png` | Static matplotlib chart |
+| `GET` | `/api/v1/runs/{id}/chart.json` | Plotly data for the touch-zoom chart |
+| `GET` | `/api/v1/runs/{id}/report.docx` | Word report via `ReportGenerator` |
+| `POST` | `/api/v1/runs/import/` | Upload a notebook-style JSON (also supports the legacy shape) |
+| `GET` | `/api/v1/runs/{id}/export.json` | Download canonical JSON |
 
-- **Importar dados** (`<input>` upload → POST `/api/input/parse`) → renders the form pre-populated.
-- **Exportar dados** (form snapshot → POST `/api/input/dump`) → triggers a browser download / native file save.
-- **Salvar dados** on the results panel → `dump_result()` to the user-chosen path.
-- **Exportar Word** → calls `ReportGenerator.generate(result_doc, language=ui_locale)`.
+### 5.7 UI hooks
+
+- **Importar dados** → `<input type="file">` → `POST /api/v1/runs/import/` → server returns 303 to the populated form.
+- **Exportar dados** → link to `/api/v1/runs/{id}/export.json` (browser/Capacitor handle the save).
+- **Salvar dados** (results) → button posts current state then redirects to `export.json`.
+- **Exportar Word** → link to `/api/v1/runs/{id}/report.docx?locale=pt` (or `en`).
+
+On Capacitor (iOS/Android) the `<a href>` downloads are intercepted by the `@capacitor/filesystem` plugin to write to the platform's Files / Documents app.
 
 ---
 
 ## 6 · UI modes — both supported
 
-Per the user's choice: ship the classic notebook-faithful layout AND a modernized wizard, behind a toggle.
+Per the earlier choice: ship the classic notebook-faithful layout AND a modernized wizard, behind a toggle. With Django, both modes are templates over the same `FATRun` and the same form state in `session["draft"]`.
 
 ### 6.1 Mode A — `classic`
 
-A single page, top-to-bottom regions identical to §1.1, rendered with NiceGUI primitives:
+Single page at `/runs/new/?mode=classic`, structure mirrors §1.1:
 
-```
-ui.radio(['bar', 'kgf/cm²'])                       # pressure unit
-ui.select(STANDARDS)                                # applicable standard
-ui.checkbox('Bomba operando em paralelo')           # parallel
-with ui.expansion('Ponto Nominal (Folha de Dados)', value=True):
-    ui.grid(columns=4)                              # 8 fields, 2-column
-with ui.expansion('Pontos de Ensaio', value=True):
-    ui.aggrid({...})                                # editable, head auto-calc
-ui.button('Importar dados', on_click=...)
-ui.button('Exportar dados', on_click=...)
-ui.button('Calcular e gerar gráficos', on_click=...)
+```html
+<form hx-post="{% url 'runs:save_draft' %}" hx-trigger="change delay:300ms"
+      x-data="ratedForm(initial)">
+
+  {# Pressure unit / Standard / Parallel #}
+  <fieldset>…radios, select, checkbox…</fieldset>
+
+  {# Rated point — 8 fields, 2-col grid #}
+  <fieldset>…inputs bound with x-model, validation via Alpine…</fieldset>
+
+  {# Test points table — Alpine handles add/remove + live head calc #}
+  <table>
+    <template x-for="(p, idx) in points" :key="idx">
+      <tr>
+        <td><input x-model.number="p.q"></td>
+        <td><input x-model.number="p.p_suc"></td>
+        <td><input x-model.number="p.p_dis"></td>
+        <td><input x-model.number="p.temp_c"></td>
+        <td x-text="formatHead(p)"></td>   {# live head #}
+        <td><input x-model.number="p.power"></td>
+        <td><input x-model.number="p.n_rpm"></td>
+      </tr>
+    </template>
+  </table>
+
+  <button hx-post="{% url 'runs:calculate' draft.id %}"
+          hx-target="#results" hx-swap="innerHTML">Calcular</button>
+</form>
+
+<section id="results"></section>   {# HTMX swaps in _curves_panel + _results_panel #}
 ```
 
-When `Calcular` is clicked → opens a `ui.dialog` (full-screen) with a `ui.splitter`: left = matplotlib figure, right = results table (mirrors §1.2 / §1.3).
+`Calcular` returns an HTML fragment containing the Plotly `<div>` (touch-friendly, mobile-first), the 6-column results table, and a download bar (`Salvar dados`, `Exportar Word`).
 
 ### 6.2 Mode B — `wizard`
 
-A 4-step stepper, same data backing:
+`/runs/new/?mode=wizard` renders the same form data through a 4-step stepper template, each step posting to the same `save_draft` endpoint:
 
 1. **Setup** — pressure unit · standard · parallel operation.
-2. **Rated point** — 8 fields with inline validation (e.g. `0 < dens_rel < 2`).
-3. **Test points** — editable AG-grid table; sticky toolbar to add/remove rows and auto-fill head.
-4. **Curves & report** — combined plots + acceptance table + download buttons.
+2. **Rated point** — 8 fields with inline validation (`x-data` rules: `0 < dens_rel < 2`, etc.).
+3. **Test points** — Alpine table; sticky toolbar to add/remove rows; auto-fill head.
+4. **Curves & report** — Plotly chart + acceptance table + download buttons.
 
-Switching modes preserves form state (it's the same pydantic document under the hood).
+Both modes share `ratedForm()` Alpine component and the same `_curves_panel.html` / `_results_panel.html` partials.
 
-### 6.3 Where the toggle lives
+### 6.3 Mode toggle
 
-A simple `ui.toggle(['classic', 'wizard'])` in the header, persisted to `localStorage` (web) or `~/.pump-ui.json` (native).
+Header dropdown stored on the user profile (`User.preferences["ui_mode"]`) on the web, in `localStorage` on Capacitor builds. Switching modes preserves the draft (it's the same `FATRun` row).
+
+### 6.4 Touch-friendly considerations baked in from the start
+
+- Inputs sized ≥ 44 × 44 px (iOS HIG minimum touch target).
+- `inputmode="decimal"` and `pattern="[0-9.,]*"` so iOS shows a number keypad with the comma key.
+- Plotly with `responsive: true`, `displayModeBar: 'hover'` on desktop, `false` on touch (replaced by a custom segmented control: Q×H | Q×P | Q×η).
+- Steppers and HTMX partial swaps keep scroll position via `hx-preserve` on long forms.
 
 ---
 
 ## 7 · Implementation roadmap
 
-Phases are deliberately decoupled so each ends in shippable, demonstrable state.
+Phases are decoupled so each ends in a shippable artefact.
 
 ### Phase 0 — Library prerequisites (no UI, ~3 days)
 
-- [ ] Add `pump/corrections.py` with `affinity_correct(point, rated)`, `viscosity_correction_factors`, `water_density_kgm3`, `pressure_to_head` (extracted from notebook).
+- [ ] Add `pump/corrections.py` with `affinity_correct`, `viscosity_correction_factors`, `water_density_kgm3`, `pressure_to_head`.
 - [ ] Add `CubicSplineFitter` to `pump/performance_curve.py` (wrap `scipy.interpolate.CubicSpline(..., bc_type='natural')`).
-- [ ] Extend `PerformanceChecker` with `standard: Literal["API610", "ASME B73", "ISO 5199"]` and parallel-operation criterion.
-- [ ] Fix or delete `Point.outlet_pressure` ([pump/point.py](pump/point.py)).
-- [ ] Unit tests against the notebook's existing fixtures in [examples/](examples/) (Teste B-432201C, B-432301D, 52-P-11AB).
+- [ ] Extend `PerformanceChecker` with `standard` enum (API610 / ASME B73 / ISO 5199) + parallel-operation criterion.
+- [ ] Fix or delete `Point.outlet_pressure`.
+- [ ] Unit tests against the notebook fixtures in [examples/](examples/) (Teste B-432201C, B-432301D, 52-P-11AB).
 
 Exit criterion: a 30-line `pump.cli` script reproduces the notebook's printed table byte-for-byte from `Teste B-432201C 28abr26 (1).json`.
 
 ### Phase 1 — JSON I/O layer (~1 day)
 
-- [ ] `pump/io/schemas.py` + `pump/io/json_io.py` + `pump/io/legacy.py`.
+- [ ] `pump/io/{schemas,json_io,legacy}.py`.
 - [ ] Round-trip property test: `dump_input(load_input(x)) == x` for every JSON in `examples/`.
-- [ ] Snapshot test: result JSON of fixture matches the existing `examples/c:\Users\U3BN\pump_api611_resultado.json`.
+- [ ] Snapshot test: result JSON matches the existing `examples/c:\Users\U3BN\pump_api611_resultado.json` byte-for-byte.
 
-### Phase 2 — UI skeleton (NiceGUI scaffold) (~2 days)
+### Phase 2 — Django scaffold + records data model (~3 days)
 
-- [ ] `pump/app/server.py` factory + `python -m pump.app --host/--port/--native`.
-- [ ] Header with mode toggle, locale switch (`en`/`pt`).
-- [ ] `pages/classic.py` static layout (no logic yet), `pages/wizard.py` empty shell.
+- [ ] `pumpfat/` project bootstrapped, settings split (`base`/`dev`/`prod`/`desktop`).
+- [ ] Apps `catalog`, `runs`, `compute`, `api`, `ui` with initial migrations.
+- [ ] Django admin registered for `Pump` / `Plant` / `FATRun` (CRUD + search + filter).
+- [ ] `django-simple-history` enabled on `FATRun` and `RatedPoint`.
+- [ ] Fixture loader: import every JSON under `examples/` as a seeded FATRun for dev.
 
-### Phase 3 — Classic mode features (~4 days)
+### Phase 3 — REST API (`/api/v1`) + Plotly chart endpoint (~2 days)
 
-- [ ] Rated form + test-points editable table (live head-from-pressure).
-- [ ] `Calcular` button → calls library → renders plots dialog + results panel.
-- [ ] `Importar` / `Exportar` (input JSON) wired to `json_io`.
-- [ ] `Salvar dados` (result JSON) + `Exportar Word` (via `ReportGenerator`).
+- [ ] DRF viewsets + serializers + OpenAPI via `drf-spectacular`.
+- [ ] `runs/{id}/calculate/`, `chart.png`, `chart.json`, `report.docx`, `export.json`, `import/`.
+- [ ] `pytest-django` covers each endpoint with at least one happy-path and one validation failure.
 
-### Phase 4 — Wizard mode (~2 days)
+### Phase 4 — Classic web UI (~4 days)
 
-- [ ] 4-step stepper sharing the same state object.
-- [ ] Per-step validation messages.
+- [ ] Templates + Alpine `ratedForm()` + HTMX partials.
+- [ ] Live head-from-pressure recalculation.
+- [ ] Calcular → swap in Plotly chart + results panel.
+- [ ] Importar / Exportar / Salvar dados / Exportar Word wired to API endpoints.
 
-### Phase 5 — Packaging (~2 days)
+### Phase 5 — Wizard UI (~2 days)
 
-- [ ] `build/pump-desktop.spec` PyInstaller config (collect `pump.templates`, `pump.utilities.locales`, matplotlib backends).
-- [ ] GitHub Actions matrix (`windows-latest` / `macos-latest` / `ubuntu-latest`) producing artefacts on tag.
-- [ ] `build/Dockerfile` for the web deployment.
-- [ ] Smoke test: run the produced `.exe` on a clean Windows VM, import `Teste B-432201C 28abr26 (1).json`, calculate, export Word — verify file opens.
+- [ ] 4-step stepper template, per-step validation messages.
+- [ ] Mode toggle in header, persisted per user / per device.
 
-### Phase 6 — Polish (ongoing)
+### Phase 6 — Desktop packaging (~3 days)
 
-- [ ] Playwright smoke tests against the running NiceGUI server.
-- [ ] Translate any remaining strings into `pump/utilities/locales/en/LC_MESSAGES/messages.po` and compile.
-- [ ] Replace the broken `pyproject.toml` duplicate in [tests/pyproject.toml](tests/pyproject.toml) (unrelated cleanup flagged in [CLAUDE.md](CLAUDE.md)).
+- [ ] `pumpfat/launcher.py` — boots Django on `127.0.0.1:<random>` via `uvicorn` thread, opens `PyWebView` window pointed at it.
+- [ ] `build/desktop.spec` — PyInstaller spec collecting Django, templates, static, `pump.templates`, locale `.mo`, matplotlib backends, scipy.
+- [ ] First-run migration onto a SQLite DB at `%APPDATA%/pumpfat/db.sqlite3` (or `~/Library/Application Support/pumpfat/` on macOS, `~/.local/share/pumpfat/` on Linux).
+- [ ] GitHub Actions matrix (`windows-latest`, `macos-latest`, `ubuntu-latest`) producing artefacts on tag.
+- [ ] Smoke test on a clean Windows VM: import `Teste B-432201C 28abr26 (1).json`, calculate, export Word.
+
+### Phase 7 — Web deployment (~1 day)
+
+- [ ] `build/Dockerfile` — gunicorn + Django + collected statics, Postgres + Redis sidecars in `docker-compose.yml`.
+- [ ] Production settings: `ALLOWED_HOSTS`, `SECURE_*`, `CSRF_TRUSTED_ORIGINS`, S3 (or local) media backend.
+
+### Phase 8 — iOS Capacitor build (~5 days) — **the priority mobile target**
+
+- [ ] `mobile/` Capacitor project, `npx cap add ios`, points `server.url` at the hosted Django (or to a local bundled copy via `webDir`, see §9.4).
+- [ ] Configure `@capacitor/filesystem` for JSON / Word downloads to Files app.
+- [ ] iOS-specific tweaks: `viewport-fit=cover`, safe-area CSS, `inputmode="decimal"` everywhere, iPad split-view layout breakpoints.
+- [ ] Native push (optional): `@capacitor/push-notifications` if test approvals need notifications.
+- [ ] Sign with Apple Developer cert via `fastlane`, ship to TestFlight, internal testers in QA, then App Store review submission.
+
+Exit criterion: app installs on an iPad and an iPhone via TestFlight, lets a test engineer log in, fill the rated form, add test points, calculate, and email the Word report — all on cellular.
+
+### Phase 9 — Android Capacitor build (~2 days)
+
+- [ ] `npx cap add android`, mirror the iOS configuration.
+- [ ] Sign + upload to Google Play Console internal track → closed beta → production.
+
+### Phase 10 — Polish (ongoing)
+
+- [ ] Playwright smoke tests against the live Django server.
+- [ ] Compile `pump/utilities/locales/en/LC_MESSAGES/messages.po`.
+- [ ] Remove the broken `tests/pyproject.toml` duplicate flagged in [CLAUDE.md](CLAUDE.md).
+- [ ] Add `django-allauth` SSO when the lab needs single-sign-on.
+- [ ] Multi-tenancy / per-plant isolation if/when several plants share the deployment.
 
 ---
 
 ## 8 · Open questions to resolve before phase 1
 
-1. **Decimal-comma policy.** Keep accepting `"0,567"` on input (Brazilian locale) but always **emit** dotted decimals on export? Or honour the active UI locale on emit too?
+1. **Decimal-comma policy.** Keep accepting `"0,567"` on input but always **emit** dotted decimals? Or honour the active locale on emit too?
 2. **`Point` class fate.** Delete (and update [CLAUDE.md](CLAUDE.md)) or fix? It's currently dead code.
-3. **Acceptance checklist content.** The notebook hardcodes noise/seal-leak and API 610 vibration criteria in Portuguese — move these to the `.po` files or to a separate YAML config so users can extend them?
-4. **`H_shutoff` source.** Today the user enters it on the rated form. Should the UI also read it from the curve fit (the smallest-Q point or `poly(0)`) and compare both? The notebook does both — make it explicit.
-5. **Multi-tag reporting.** `ReportGenerator` already supports a dict of tags → tests (multi-pump report). Should the UI expose batch-mode (run several pumps, produce one PDF) or stay single-pump per session?
+3. **Acceptance checklist content.** The notebook hardcodes noise/seal-leak + API 610 vibration criteria in Portuguese — move to `.po` files or to YAML config so users can extend them?
+4. **`H_shutoff` source.** User enters it on the rated form; should the UI also derive it from the curve (`poly(0)`) and compare both? The notebook does both — make explicit.
+5. **Multi-pump batch reports.** `ReportGenerator` already supports a dict of tags → tests. Expose batch-mode (one PDF for several pumps) or stay single-pump per session?
+6. **Mobile offline scope.** See §9.4.
 
 ---
 
-## 9 · TL;DR
+## 9 · Mobile packaging in depth
+
+Capacitor is the load-bearing piece. The plan stays viable on iOS *and* Android because Capacitor wraps the **same** Django-rendered web bundle in a native shell that the App Store and Play Store accept.
+
+### 9.1 Capacitor in one paragraph
+
+Capacitor (by Ionic) takes a web app — HTML/CSS/JS — and produces a native iOS Xcode project and a native Android Gradle project, each containing a `WKWebView` (iOS) / `WebView` (Android) that loads either (a) a remote URL (`server.url` in `capacitor.config.ts`), or (b) a bundled `webDir/` of static files. The native shell can expose plugins (Filesystem, Camera, Share, Push, Network, Geolocation) callable from JS via a small bridge. The result is a normal `.ipa` and `.apk`, signed and shipped through the usual channels.
+
+### 9.2 What this means concretely
+
+| Concern | Plan |
+|---|---|
+| **App Store eligibility** | A Capacitor app is just a native app from the store's perspective — same review process as any Swift/Kotlin app. Apple Review item 4.7 explicitly permits webview-based apps that provide app-like functionality. |
+| **Universal iOS app** | One target, two storyboards — iPhone (compact) and iPad (regular/regular). Both ship in one `.ipa`. |
+| **Tablet layouts** | CSS media queries (`@media (min-width: 768px)`) split the wizard into side-by-side panes on iPad / Android tablets. |
+| **Live HTML reload during dev** | `npx cap run ios --livereload` points the device's webview at the dev Django server on the LAN. |
+| **Filesystem & sharing** | `@capacitor/filesystem` for saving the JSON / Word files into Files / Documents. `@capacitor/share` to AirDrop / e-mail them. |
+| **Network state** | `@capacitor/network` shows an offline banner; failing API calls queue in `localStorage` and retry on reconnect. |
+| **Authentication** | DRF token endpoint; Capacitor stores the token in `@capacitor/preferences` (Keychain on iOS, EncryptedSharedPreferences on Android). |
+
+### 9.3 Build pipeline (CI)
+
+GitHub Actions on tag push:
+
+- Web bundle: `python manage.py collectstatic --noinput` → uploaded to S3 + served at `https://pumpfat.example.com`.
+- iOS: `macos-latest` runner, Xcode 16+, `fastlane match` for certs, `npx cap sync ios && fastlane beta` → TestFlight.
+- Android: `ubuntu-latest` runner, signed AAB, `fastlane supply` → Play Console internal track.
+- Desktop: matrix as in Phase 6.
+
+### 9.4 The offline question (the one real design decision)
+
+For iPad/iPhone use during a FAT in a noisy plant, network reliability is the risk. Three options, picked per-build:
+
+| Option | Capacitor `server.url` | On-device math | Bundle size | Offline? | Effort |
+|---|---|---|---|---|---|
+| **(i) Hosted, online-only** | `https://pumpfat.example.com` | None — Django does the math server-side | ~5 MB | ❌ requires connectivity | Lowest |
+| **(ii) Hybrid — read-only offline** | Hosted | Cache last N runs in `localStorage` / `IndexedDB`; view-only when offline; "Calcular" disabled offline | ~10 MB | ⚠️ view yes, compute no | Low |
+| **(iii) Full offline — Pyodide in webview** | `webDir/` (bundled HTML) | `pump` engine ported to **Pyodide** (Python in WASM, ships in the bundle) | ~40 MB extra | ✅ everything works offline; results sync to server on reconnect | High |
+
+Recommendation: ship **(ii) Hybrid** in Phase 8 — fastest to market and matches how FAT engineers work today (test in shop, sync results back at end of day). Reserve **(iii) Pyodide** for a later phase if shop-floor connectivity proves too poor. The library being Pint+numpy+scipy *is* Pyodide-loadable today — numpy and scipy have first-class Pyodide builds, Pint is pure Python — so the door is left open without committing to it now.
+
+### 9.5 Risks specific to mobile
+
+- **Apple Review.** "Web wrapper" rejections (Guideline 4.2) are typical when the app is just a browser bookmark. We avoid this by (a) using native plugins (Filesystem, Share, Network, Preferences) so the app does things Safari can't, and (b) having a launch screen, splash, app icon, and offline behaviour. Plenty of Capacitor apps pass — this is not novel territory.
+- **WebView differences.** iOS WKWebView and Android WebView are evergreen but subtly different. We need a Capacitor smoke test on both.
+- **Plotly bundle size.** ~3 MB minified. Acceptable. If it bites, swap Plotly for `chart.js` or an SVG render at the small cost of less interactivity.
+- **Font rendering of `²`, `³`, `η`, `≤`, `≥`.** Notebook UI uses these heavily. Ensure the bundled web font (or system stack) renders them on iOS and Android; otherwise fall back to `m^3/h`, `eta`, `<=`, `>=`.
+
+---
+
+## 10 · TL;DR
 
 - Promote the notebook's spline + multi-standard tolerance logic into the `pump` library so the math lives in one place, with units.
-- Add `pump/io/` (pydantic schemas, round-trippable JSON, legacy-compat shim).
-- Build the UI with **NiceGUI** — one Python codebase served as a web app and packaged with PyInstaller as a desktop executable that opens in a system webview.
+- Add `pump/io/` (pydantic schemas, round-trippable JSON, legacy shim) as the **canonical library boundary**.
+- Build a **Django** project (`pumpfat/`) with DRF as the **canonical HTTP boundary**, server-rendered templates with HTMX + Alpine.js for the UI, and Django admin / ORM for the FAT records system.
 - Ship both a **classic** (notebook-faithful) layout and a **wizard** (4-step) layout behind a single toggle.
-- Reuse the existing `ReportGenerator` (python-docx + gettext) for Word output; existing matplotlib charts embed directly into NiceGUI via `ui.pyplot()`.
+- Reuse the existing `ReportGenerator` (python-docx + gettext) for Word output; expose Plotly for interactive in-browser charts and matplotlib for embedded PNGs.
+- Package for **iOS (iPad + iPhone)** and **Android (tablets + phones)** by wrapping the same Django bundle with **Capacitor**, distributed via App Store / Play Store. Desktop ships as a **PyInstaller** binary launching Django on `localhost` inside **PyWebView**. Web deploys via Docker.
+- Mobile offline strategy starts as "hosted + cache" and leaves the door open for full-offline via Pyodide if shop-floor connectivity demands it.
