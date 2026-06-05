@@ -17,8 +17,7 @@ dependencies = [
     "numpy",
     "pint",
     "python-docx",
-    "tabulate",
-    "python-docx"
+    "tabulate"
 ]
 [project.optional-dependencies]
 dev = [
@@ -28,3 +27,6 @@ dev = [
 ]
 [project.urls]
 Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
+
+[tool.setuptools.packages.find]
+include = ["pump*", "pumpflow*"]
