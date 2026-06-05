@@ -25,6 +25,13 @@ dev = [
     "build",
     "pytest"
 ]
+docs = [
+    "sphinx>=7",
+    "furo",
+    "myst-parser",
+    "sphinx-autodoc-typehints",
+    "sphinxcontrib-mermaid",
+]
 [project.urls]
 Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
 

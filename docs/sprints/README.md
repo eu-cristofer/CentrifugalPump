@@ -20,7 +20,7 @@ UC-09) comes first.
 | [S2](sprint-02-pin-mvp-physics.md) | Pin the MVP physics | UC-02, UC-06 | ✅ done |
 | [S3](sprint-03-gui-openable-case.md) | GUI-openable case + persistence guard | UC-02, UC-09 | ✅ done |
 | [S4](sprint-04-docstrings-doctests.md) | Docstrings & doctests | — | ✅ done |
-| [S5](sprint-05-read-the-docs.md) | Read the Docs (Sphinx + autodoc) | — | ⬜ todo |
+| [S5](sprint-05-read-the-docs.md) | Read the Docs (Sphinx + autodoc) | — | ✅ done |
 | [S6](sprint-06-readme-wrap.md) | Repo README + wrap | UC-09 (note) | ⬜ todo |
 
 **Total: 7 sprints × 8 h ≈ 56 h.**
