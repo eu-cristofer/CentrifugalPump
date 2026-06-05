@@ -16,7 +16,7 @@ UC-09) comes first.
 | Sprint | Title | Linked UC | Status |
 |--------|-------|-----------|--------|
 | [S0](sprint-00-product-context.md) | Product context & sprint scaffold | — | ✅ done |
-| [S1](sprint-01-test-foundation.md) | Test foundation + units spec | UC-02 (foundation) | ⬜ todo |
+| [S1](sprint-01-test-foundation.md) | Test foundation + units spec | UC-02 (foundation) | ✅ done |
 | [S2](sprint-02-pin-mvp-physics.md) | Pin the MVP physics | UC-02, UC-06 | ⬜ todo |
 | [S3](sprint-03-gui-openable-case.md) | GUI-openable case + persistence guard | UC-02, UC-09 | ⬜ todo |
 | [S4](sprint-04-docstrings-doctests.md) | Docstrings & doctests | — | ⬜ todo |

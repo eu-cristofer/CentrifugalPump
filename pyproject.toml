@@ -30,3 +30,10 @@ Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
 
 [tool.setuptools.packages.find]
 include = ["pump*", "pumpflow*"]
+
+[tool.pytest.ini_options]
+# Only collect the curated suite. This keeps pytest from crawling into
+# pumpflow/nodes/test_points.py (a Qt widget module, not a test) and needing
+# PySide6 just to run the headless library tests.
+testpaths = ["tests"]
+addopts = "-ra -q"

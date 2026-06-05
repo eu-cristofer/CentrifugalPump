@@ -16,63 +16,19 @@ as the library grows (see the "next tests to add" list at the bottom).
 
 import math
 
-import matplotlib
-matplotlib.use("Agg")  # headless: never open a window during tests
-
 import pytest
 
 from pump import (
     Q_,
     Fluid,
-    DesignPoint,
     TestPoint,
     PerformanceCurve,
     PerformanceChecker,
     quantity_factory,
 )
 
-
-# --------------------------------------------------------------------------- #
-# Fixtures
-# --------------------------------------------------------------------------- #
-@pytest.fixture
-def water():
-    return Fluid("Water", density=Q_(997, "kg/m**3"))
-
-
-@pytest.fixture
-def curve(water):
-    """A small, monotonic Q×H/Q×P performance curve at 1750 rpm."""
-    rows = [
-        # (capacity m³/h, head m, breaking power kW)
-        (0, 117, 180),
-        (300, 110, 210),
-        (600, 95, 240),
-        (833, 73, 252),
-        (1000, 55, 260),
-    ]
-    points = [
-        TestPoint(
-            fluid=water,
-            capacity=Q_(q, "m**3/h"),
-            speed_of_rotation=Q_(1750, "rpm"),
-            _head=Q_(h, "m"),
-            breaking_power=Q_(p, "kW"),
-        )
-        for q, h, p in rows
-    ]
-    return PerformanceCurve(water, points, polynomial_degree=3)
-
-
-@pytest.fixture
-def design_point(water):
-    return DesignPoint(
-        fluid=water,
-        capacity=Q_(833, "m**3/h"),
-        differential_head=Q_(73, "m"),
-        breaking_power=Q_(252, "kW"),
-        head_shutoff=Q_(117, "m"),
-    )
+# The water / curve / design_point fixtures live in tests/conftest.py so every
+# test module can share them.
 
 
 # --------------------------------------------------------------------------- #

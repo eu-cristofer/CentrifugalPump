@@ -314,6 +314,10 @@ class TestPoint(BasePoint):
     such as pressure head, velocity head, elevation head, and hydraulic power.
     """
 
+    # Domain class, not a pytest test class — keep collectors from grabbing it
+    # when it is imported into the test suite (name starts with "Test").
+    __test__ = False
+
     g = Q_(9.81, "m/s**2")
 
     @property

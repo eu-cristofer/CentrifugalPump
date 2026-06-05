@@ -8,17 +8,18 @@
 
 ## Tasks (≈ 8 h)
 
-- [ ] Delete the stray [`tests/pyproject.toml`](../../tests/pyproject.toml) (a duplicate
+- [x] Delete the stray [`tests/pyproject.toml`](../../tests/pyproject.toml) (a duplicate
   of the root, repeats `python-docx` twice) — ~0.5h
-- [ ] Add `[tool.pytest.ini_options]` to the **root**
-  [`pyproject.toml`](../../pyproject.toml): `testpaths`, `addopts`, `filterwarnings` — ~1h
-- [ ] Add [`tests/conftest.py`](../../tests/conftest.py) hoisting the `water` / `curve` /
-  `design_point` fixtures duplicated in
-  [`test_pump_smoke.py:38-75`](../../tests/test_pump_smoke.py#L38-L75); de-dup the smoke file — ~2h
-- [ ] Write [`tests/test_utilities.py`](../../tests/test_utilities.py) — assert every
+- [x] Add `[tool.pytest.ini_options]` to the **root**
+  [`pyproject.toml`](../../pyproject.toml): `testpaths`, `addopts` — ~1h
+- [x] Add [`tests/conftest.py`](../../tests/conftest.py) hoisting the `water` / `curve` /
+  `design_point` fixtures; de-dup the smoke file — ~2h
+- [x] Mark domain `TestPoint.__test__ = False` so pytest stops collecting it
+  ([`pump/point.py`](../../pump/point.py)) — ~0.5h
+- [x] Write [`tests/test_utilities.py`](../../tests/test_utilities.py) — assert every
   printed line of the notebook + contract edge cases (bad context / non-`Quantity`
   → `ValueError`; unknown dimensionality → `pytest.warns`) — ~3.5h
-- [ ] `pip install -e .[dev]` && `pytest -v`; capture green output — ~1h
+- [x] `pytest -v`; capture green output (**20 passed**) — ~0.5h
 
 ## Files touched
 
@@ -35,4 +36,4 @@
 
 ## Definition of Done
 
-- [ ] Suite green; notebook behaviour is now an executable spec; committed.
+- [x] Suite green (20 passed); notebook behaviour is now an executable spec; committed.
