@@ -13,11 +13,14 @@ dependencies:
   - python=3.12
 
   # Base scientific stack
-  - numpy
+  - numpy>=1.24
   - pint
 
+  # UI
+  - PySide6>=6.6
+
   # Plotting & visualization
-  - matplotlib
+  - matplotlib>=3.7
   - plotly
 
   # Jupyter ecosystem
