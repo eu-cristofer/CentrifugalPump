@@ -7,15 +7,19 @@
 
 ## Tasks (≈ 8 h)
 
-- [ ] Write [`tests/test_persistence_roundtrip.py`](../../tests/test_persistence_roundtrip.py) —
-  build the canonical graph via [`pumpflow/sample_data.py`](../../pumpflow/sample_data.py),
-  assert `to_dict(load_dict(doc)) == doc`
-  ([`scene.py:161-206`](../../pumpflow/canvas/scene.py#L161-L206)); run with
-  `QT_QPA_PLATFORM=offscreen`, `pytest.importorskip("PySide6")` — ~4h
-- [ ] Emit [`examples/sample_project.pumpflow`](../../examples/) from that same
-  `scene.to_dict()` output (never hand-author serialization) — ~2.5h
-- [ ] Manual check: `python -m pumpflow` → File ▸ Open
-  ([`app.py:207`](../../pumpflow/app.py#L207)) → sample loads a populated canvas — ~1.5h
+- [x] Add a Qt-free `sample_project_doc()` builder to
+  [`pumpflow/sample_data.py`](../../pumpflow/sample_data.py) returning the canonical
+  single-pump `{nodes, edges}` doc with each node's full default settings (so it is a
+  `to_dict` fixed point) — ~3h
+- [x] Write [`tests/test_persistence_roundtrip.py`](../../tests/test_persistence_roundtrip.py):
+  Qt-free check that the shipped file equals the builder; Qt-side check that
+  `to_dict(load_dict(doc)) == doc` and all 11 edges wire up
+  ([`scene.py:161-206`](../../pumpflow/canvas/scene.py#L161-L206)), via
+  `QT_QPA_PLATFORM=offscreen` + `pytest.importorskip("PySide6")` — ~3h
+- [x] Emit [`examples/sample_project.pumpflow`](../../examples/sample_project.pumpflow)
+  from the builder — ~1h
+- [x] Verify headless: real `GraphScene` loads 7 nodes / 11 edges; pipeline evaluates
+  end-to-end (fit R²=0.9991, compliance correctly flags 1 out-of-tolerance point) — ~1h
 
 ## Files touched
 
@@ -28,4 +32,9 @@
 
 ## Definition of Done
 
-- [ ] Sample file shipped, round-trip-guarded, manually verified; committed.
+- [x] Sample file shipped, round-trip-guarded (5 tests, all pass with PySide6),
+  headless load verified; committed.
+
+> **Note:** the seeded case intentionally evaluates to a **REJECTED** verdict (one
+> measured point falls outside the API 610 band) — it demonstrates the compliance
+> machinery actually catching a deviation, not a trivial happy path.

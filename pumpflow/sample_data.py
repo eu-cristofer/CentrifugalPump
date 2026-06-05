@@ -15,6 +15,10 @@ Engineering sketch (light-hydrocarbon service, SG ≈ 0.736):
 
 from __future__ import annotations
 
+from typing import Dict, List
+
+from .persistence import testset_from_json
+
 # UI_SPEC §6.2 shape — note the mixed comma/dot decimals on purpose.
 SINGLE_PUMP_JSON = {
     "unit": "bar",
@@ -56,3 +60,111 @@ SECOND_PUMP_POINTS = {
         {"q": "1100",   "p_suc": "1,80", "p_dis": "6,20",  "temp_c": "34", "power": "315",    "n_rpm": "1801"},
     ],
 }
+
+
+# ---------------------------------------------------------------------------
+# Sample .pumpflow project (UI_SPEC §6.1)
+# ---------------------------------------------------------------------------
+#
+# A complete single-pump FAT pipeline expressed in the project-file shape that
+# ``canvas/scene.py`` ``to_dict`` / ``load_dict`` round-trips:
+#
+#     {"nodes": [{id, kind, x, y, settings}], "edges": [{src_node, src_port,
+#                                                        dst_node, dst_port}]}
+#
+# The node settings below are the *full* default settings of each node kind
+# (see the corresponding ``default_settings`` in ``pumpflow/nodes/*.py``), so
+# the document is a fixed point of ``to_dict(load_dict(doc))`` — loading then
+# re-serializing yields the same dict.  Keep this builder Qt-free: it is the
+# single source for ``examples/sample_project.pumpflow`` and for the headless
+# regeneration in the round-trip test.
+
+
+def _test_rows() -> List[dict]:
+    """The §6.2 measured rows, normalized to the test-points node settings shape."""
+    tps = testset_from_json(SINGLE_PUMP_JSON)
+    return [
+        {
+            "q": r.q_m3h, "p_suc": r.p_suction, "p_dis": r.p_discharge,
+            "temp_c": r.temp_c, "n": r.speed_rpm, "power": r.power_kw,
+            "head": r.head_m, "eff": r.efficiency_pct,
+        }
+        for r in tps.rows
+    ]
+
+
+def sample_project_doc() -> Dict:
+    """Return the canonical single-pump ``.pumpflow`` document (Qt-free).
+
+    Pipeline (left → right): Rated Point + Test Points → Speed Correction →
+    Curve Fit → {Performance Plot, Compliance Check} → Report Export.
+    """
+    tps = testset_from_json(SINGLE_PUMP_JSON)
+    nodes = [
+        {
+            "id": "rated", "kind": "rated_point", "x": -560.0, "y": -40.0,
+            "settings": {
+                "tag": "B-2351105",
+                "standard": "API610 (12a ed.) / ISO 13709 + N-553",
+                "q": 833.0, "head": 73.0, "n": 1750.0, "power": 252.0,
+                "eff": 61.0, "head_shutoff": 117.0,
+                "dens_rel": 0.736, "visc": 0.567,
+                "unit": "bar", "parallel": False, "fluid_name": "Rated fluid",
+            },
+        },
+        {
+            "id": "test_a", "kind": "test_points", "x": -560.0, "y": 220.0,
+            "settings": {
+                "pump_tag": tps.pump_tag,
+                "unit": tps.pressure_unit,
+                "rows": _test_rows(),
+            },
+        },
+        {
+            "id": "corr_a", "kind": "correction", "x": -240.0, "y": 90.0,
+            "settings": {
+                "lock_to_rated": True, "target_speed": 1750.0,
+                "apply_speed": True, "apply_density": True,
+                "apply_viscosity": False, "degree": 3,
+            },
+        },
+        {
+            "id": "fit_a", "kind": "curve_fit", "x": 40.0, "y": 90.0,
+            "settings": {"degree": 3, "spline": True, "resolution": 160},
+        },
+        {
+            "id": "plot_a", "kind": "performance_plot", "x": 320.0, "y": -60.0,
+            "settings": {
+                "show_poly": True, "show_spline": True, "show_points": True,
+                "head_ylim": None, "power_ylim": None, "eff_ylim": None,
+            },
+        },
+        {
+            "id": "check_a", "kind": "compliance", "x": 320.0, "y": 200.0,
+            "settings": {"tolerances": {}},
+        },
+        {
+            "id": "report", "kind": "report_export", "x": 620.0, "y": 90.0,
+            "settings": {
+                "language": "en", "template_path": "", "out_dir": "", "filename": "",
+                "equipment": {
+                    k: "" for k in
+                    ["Manufacturer", "Model", "Serial No.", "Type", "Driver", "Test bench"]
+                },
+            },
+        },
+    ]
+    edges = [
+        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "corr_a",  "dst_port": "RatedPoint"},
+        {"src_node": "test_a",  "src_port": "TestPointSet",      "dst_node": "corr_a",  "dst_port": "TestPointSet"},
+        {"src_node": "corr_a",  "src_port": "CorrectedCurve",    "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
+        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "plot_a",  "dst_port": "FittedModel"},
+        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "plot_a",  "dst_port": "RatedPoint"},
+        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "check_a", "dst_port": "FittedModel"},
+        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "check_a", "dst_port": "RatedPoint"},
+        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "report",  "dst_port": "RatedPoint"},
+        {"src_node": "corr_a",  "src_port": "CorrectedCurve",    "dst_node": "report",  "dst_port": "branch"},
+        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "report",  "dst_port": "branch"},
+        {"src_node": "check_a", "src_port": "ComplianceResult",  "dst_node": "report",  "dst_port": "branch"},
+    ]
+    return {"nodes": nodes, "edges": edges}
