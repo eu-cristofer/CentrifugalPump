@@ -31,6 +31,7 @@
 
 ## Definition of Done
 
-- [x] Clean local Sphinx build (exit 0; only 2 warnings, both intersphinx inventory
-  fetches that fail offline and resolve on RTD); API pages for `pump` + `pumpflow`
-  generated from docstrings; RTD-ready config committed.
+- [x] Clean local Sphinx build (exit 0; the only warnings are 2 intersphinx inventory
+  fetches that fail offline and resolve on RTD, plus 1 benign docutils block-quote nit
+  in an autodoc'd docstring); API pages for `pump` + `pumpflow` generated from
+  docstrings; RTD-ready config committed.

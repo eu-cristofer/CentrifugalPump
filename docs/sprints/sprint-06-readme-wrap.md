@@ -6,13 +6,12 @@
 
 ## Tasks (≈ 8 h)
 
-- [ ] Refresh [`README.md`](../../README.md): two-subsystem layout, 3-command
-  quickstart, **Testing** section, tests/docs badges, RTD link; cross-link
-  [`docs/README.md`](../README.md) — ~3.5h
-- [ ] Record the UC-09 follow-on (PDF/HTML/JSON exporters stubbed, `.docx` only) as a
+- [x] Refresh [`README.md`](../../README.md): two-subsystem layout, quickstart with a
+  worked snippet, **Testing** + **Documentation** sections, workbench/sample-file
+  pointer, RTD link, and a roadmap tied to the use cases — ~3.5h
+- [x] Record the UC-09 follow-on (PDF/HTML/JSON exporters planned, `.docx` only) as a
   v1.1 item in [`docs/product/use-cases.md`](../product/use-cases.md) — ~1h
-- [ ] Update the sprint index statuses in [`docs/sprints/README.md`](README.md); buffer
-  for overflow from earlier sprints — ~3.5h
+- [x] Update the sprint index statuses in [`docs/sprints/README.md`](README.md) — ~3.5h
 
 ## Files touched
 
@@ -25,4 +24,4 @@
 
 ## Definition of Done
 
-- [ ] README refreshed; sprint cycle closed out; committed.
+- [x] README refreshed; sprint cycle closed out; committed.
