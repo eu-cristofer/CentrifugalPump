@@ -186,15 +186,21 @@ class PerformanceCurve:
 
     Examples
     --------
-    >>> # Suppose we have a list of TestPoint objects called original_points,
-    >>> # each using the same fluid "water".
-    >>> curve = PumpPerformanceCurve(water, original_points)
-    >>>
-    >>> # Convert pump speed from 3500 rpm to 4000 rpm
-    >>> new_curve = curve.to_speed(Q_(4000, "rpm"))
-    >>>
-    >>> # Change fluid from water to some other fluid (e.g., oil)
-    >>> oil_curve = curve.to_fluid(oil)
+    >>> from pump import Q_, Fluid, TestPoint, PerformanceCurve
+    >>> water = Fluid("Water", density=Q_(997, "kg/m**3"))
+    >>> points = [
+    ...     TestPoint(fluid=water, capacity=Q_(q, "m**3/h"),
+    ...               speed_of_rotation=Q_(1750, "rpm"), _head=Q_(h, "m"),
+    ...               breaking_power=Q_(p, "kW"))
+    ...     for q, h, p in [(0, 117, 180), (600, 95, 240), (1000, 55, 260)]
+    ... ]
+    >>> curve = PerformanceCurve(water, points, polynomial_degree=2)
+    >>> len(curve)
+    3
+    >>> # Scale to a new speed with the affinity laws (3500 rpm here):
+    >>> faster = curve.to_speed(Q_(3500, "rpm"))
+    >>> faster.points[-1].speed_of_rotation.to("rpm").magnitude
+    3500
     """
 
     def __init__(self, fluid: Fluid, points: List[TestPoint], polynomial_degree: int = 4) -> None:
@@ -615,8 +621,28 @@ class PerformanceCurve:
 
 class PerformanceChecker:
     """
-    A class to check and validate the performance of a system based on a design point 
+    A class to check and validate the performance of a system based on a design point
     and performance curve.
+
+    Examples
+    --------
+    >>> from pump import Q_, Fluid, DesignPoint, TestPoint, PerformanceCurve, PerformanceChecker
+    >>> water = Fluid("Water", density=Q_(997, "kg/m**3"))
+    >>> points = [
+    ...     TestPoint(fluid=water, capacity=Q_(q, "m**3/h"),
+    ...               speed_of_rotation=Q_(1750, "rpm"), _head=Q_(h, "m"),
+    ...               breaking_power=Q_(p, "kW"))
+    ...     for q, h, p in [(0, 117, 180), (600, 95, 240), (833, 73, 252), (1000, 55, 260)]
+    ... ]
+    >>> curve = PerformanceCurve(water, points, polynomial_degree=3)
+    >>> dp = DesignPoint(fluid=water, capacity=Q_(833, "m**3/h"),
+    ...                  differential_head=Q_(73, "m"), breaking_power=Q_(252, "kW"),
+    ...                  head_shutoff=Q_(117, "m"))
+    >>> chk = PerformanceChecker(dp, curve)
+    >>> chk.head_tolerance  # API 610: +/-3% on rated head
+    0.03
+    >>> chk.shutoff_tolerance  # rated head 73 m <= 75 -> 10%
+    0.1
     """
     def __init__(self, design_point: DesignPoint, performance_curve: PerformanceCurve, acceptable_limits: Optional[Dict[str, float]] = None):
         """

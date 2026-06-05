@@ -29,15 +29,15 @@ Examples
 --------
 Basic fluid representation and conversion:
 
->>> from utilities import Fluid, Q_
+>>> from pump.utilities import Fluid, Q_
 >>> water = Fluid(name="Water", density=Q_(1000, "kg/m**3"))
 >>> print(water)
-Fluid(name=Water, density=1.0 kilogram / meter ** 3)
+Fluid(name=Water, density=1000 kilogram / meter ** 3)
 
->>> from utilities import quantity_factory, Q_
+>>> from pump.utilities import quantity_factory, Q_
 >>> flow_rate = quantity_factory(Q_(10, "liter/minute"))
->>> print(flow_rate)
-0.00016666666666666666 meter ** 3 / second
+>>> round(flow_rate.magnitude, 4), str(flow_rate.units)
+(0.6, 'meter ** 3 / hour')
 """
 from . import unit_conversion, fluid, report
 from .unit_conversion import *

@@ -32,8 +32,9 @@ Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
 include = ["pump*", "pumpflow*"]
 
 [tool.pytest.ini_options]
-# Only collect the curated suite. This keeps pytest from crawling into
-# pumpflow/nodes/test_points.py (a Qt widget module, not a test) and needing
-# PySide6 just to run the headless library tests.
-testpaths = ["tests"]
-addopts = "-ra -q"
+# Collect the curated suite (tests/) plus the library's own docstrings (pump/)
+# as doctests. This keeps pytest from crawling into pumpflow/nodes/test_points.py
+# (a Qt widget module, not a test) and needing PySide6 just to run the headless
+# library tests, while ensuring every docstring example stays runnable.
+testpaths = ["tests", "pump"]
+addopts = "-ra -q --doctest-modules"

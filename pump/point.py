@@ -50,11 +50,14 @@ class BasePoint:
 
     Examples
     --------
-    >>> from pump.utilities.unit_conversion import Fluid, Q_
-    >>> water = Fluid(name="Water", density=Q_(1000, "kg/m**3"))
-    >>> point = Point(fluid=water, capacity=Q_(0.1, "m**3/s"), inlet_pressure=Q_(1, "atm"))
-    >>> print(point)
-    Point(fluid=Water, capacity=0.1 meter ** 3 / second, inlet_pressure=101325.0 pascal)
+    >>> from pump import Q_, Fluid, BasePoint
+    >>> water = Fluid(name="Water", density=Q_(997, "kg/m**3"))
+    >>> # capacity is canonicalized to m**3/h regardless of the input unit:
+    >>> point = BasePoint(fluid=water, capacity=Q_(0.1, "m**3/s"))
+    >>> point.capacity.magnitude, str(point.capacity.units)
+    (360.0, 'meter ** 3 / hour')
+    >>> point.fluid.name
+    'Water'
     """
 
     def __init__(self, fluid: Fluid, capacity: Q_, **kwargs: dict[str, Q_]) -> None:
@@ -82,6 +85,15 @@ class BasePoint:
 class DesignPoint(BasePoint):
     """
     Specialized version of the BasePoint class, representing a design condition.
+
+    Examples
+    --------
+    >>> from pump import Q_, Fluid, DesignPoint
+    >>> water = Fluid("Water", density=Q_(997, "kg/m**3"))
+    >>> dp = DesignPoint(fluid=water, capacity=Q_(833, "m**3/h"),
+    ...                  differential_head=Q_(73, "m"))
+    >>> dp.differential_head.to("m").magnitude
+    73
     """
     # Gravity constant
     g = Q_(9.81, "m/s**2")
@@ -312,6 +324,18 @@ class TestPoint(BasePoint):
 
     This class provides additional properties for calculating hydraulic parameters
     such as pressure head, velocity head, elevation head, and hydraulic power.
+
+    Examples
+    --------
+    >>> from pump import Q_, Fluid, TestPoint
+    >>> water = Fluid("Water", density=Q_(997, "kg/m**3"))
+    >>> tp = TestPoint(fluid=water, capacity=Q_(833, "m**3/h"),
+    ...                speed_of_rotation=Q_(1750, "rpm"), _head=Q_(73, "m"),
+    ...                breaking_power=Q_(252, "kW"))
+    >>> tp.head.to("m").magnitude
+    73
+    >>> tp.speed_of_rotation.to("rpm").magnitude
+    1750
     """
 
     # Domain class, not a pytest test class — keep collectors from grabbing it

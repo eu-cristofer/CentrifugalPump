@@ -30,7 +30,7 @@ Examples
 --------
 Basic unit conversion:
 
->>> from unit_conversion import quantity_factory, Q_
+>>> from pump.utilities import quantity_factory, Q_
 >>> mass = quantity_factory(Q_(500, "gram"))
 >>> print(mass)
 0.5 kilogram
@@ -40,8 +40,8 @@ Basic unit conversion:
 101325.0 pascal
 
 >>> delta_pressure = quantity_factory(Q_(1, "atm"), context="delta")
->>> print(delta_pressure)
-1.01325 bar
+>>> round(delta_pressure.magnitude, 5), str(delta_pressure.units)
+(1.01325, 'bar')
 """
 
 from logging import getLogger, DEBUG
