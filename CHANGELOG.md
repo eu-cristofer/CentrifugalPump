@@ -11,6 +11,37 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`pumpflow/nodes/rated_point.py` — alternative units + Service field**
+  - Per-field unit selectors for **Capacity Q** (m³/h · l/s · l/min · US GPM),
+    **Differential head H** (m · ft), **Power P** (kW · hp · CV), and
+    **Nominal viscosity** (cSt · cP).
+  - Switching units auto-converts the displayed value via `pump.utilities.unit_conversion.quantity_factory`
+    (Q, H, P) or explicit Pint math (viscosity — kinematic ↔ dynamic requires
+    density, which is not in `STANDARD_UNITS`).  The `RatedPoint` signal always
+    carries standard units (m³/h, m, kW, cSt) so all downstream nodes are unaffected.
+  - New **Service** text field (human-readable service description, e.g.
+    "Crude Oil Transfer") above the TAG field in the Identification section.
+    Persisted as `RatedPoint.service` and round-tripped in the data-exchange JSON.
+  - **Fluid name** is now editable directly in the dialog (previously hidden).
+  - Status line shows the user's chosen display unit (e.g. `3665 US GPM · 239.5 ft`).
+
+- **`pumpflow/signals.py`** — `RatedPoint.service: str = ""` field added.
+
+- **`pumpflow/nodes/ui.py`** — `unit_row(label, spinbox, unit_combo)` helper:
+  like `row()` but accepts a `QWidget` (combo box) as the suffix instead of a
+  static string.
+
+- **`pumpflow/nodes/plotting.py`** — performance-curve plot title now includes
+  the service name when set: `"<Service> — <pump_tag> — performance curve"`.
+
+- **`pumpflow/persistence.py`** — `service` key round-tripped in both
+  `rated_from_json` and `json_from_signals`.
+
+- **`pumpflow/sample_data.py`** + **`examples/sample_project.pumpflow`** —
+  updated to include the new default settings keys (`service`, `q_unit`,
+  `head_unit`, `power_unit`, `visc_unit`) so the fixed-point persistence
+  round-trip test continues to pass.
+
 - **`pumpflow/canvas/view.py` — zoom control (fit-to-extents + persist/restore)**
   - `GraphView.fit_to_contents()` — frames every node via
     `fitInView(itemsBoundingRect()+margin, KeepAspectRatio)`, clamped to the

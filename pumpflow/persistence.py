@@ -34,6 +34,7 @@ def rated_from_json(doc: dict) -> RatedPoint:
     r = doc.get("rated", {})
     return RatedPoint(
         tag=str(r.get("tag", "")).strip(),
+        service=str(r.get("service", "")),
         standard=str(r.get("standard", "API610 (12a ed.) / ISO 13709 + N-553")),
         q_m3h=parse_decimal(r.get("q_m3h"), 0.0),
         head_m=parse_decimal(r.get("head_m"), 0.0),
@@ -76,6 +77,7 @@ def json_from_signals(rated: RatedPoint, tps: Optional[TestPointSet] = None) -> 
         "unit": rated.pressure_unit,
         "rated": {
             "tag": rated.tag,
+            "service": rated.service,
             "standard": rated.standard,
             "q_m3h": _num(rated.q_m3h),
             "head_m": _num(rated.head_m),

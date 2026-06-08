@@ -63,6 +63,7 @@ class RatedPoint:
     parallel_operation: bool = False
 
     fluid_name: str = "Rated fluid"
+    service: str = ""              # human-readable service description
 
     @property
     def density_kgm3(self) -> float:

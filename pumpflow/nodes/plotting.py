@@ -102,7 +102,8 @@ def build_figure(
             axes[i].set_ylim(ylims["efficiency"])
 
     axes[-1].set_xlabel("Capacity  Q (m³/h)", fontsize=8, color="#33414f")
-    title = f"{fitted.pump_tag} — performance curve"
+    service_prefix = f"{rated.service} — " if rated is not None and rated.service else ""
+    title = f"{service_prefix}{fitted.pump_tag} — performance curve"
     axes[0].set_title(title, fontsize=9.5, color="#28323d", pad=8)
     fig.tight_layout(pad=1.1)
     return fig

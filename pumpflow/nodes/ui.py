@@ -156,6 +156,20 @@ def combo(options, value, on_change: Optional[Callable] = None) -> QComboBox:
     return cb
 
 
+def unit_row(label: str, spinbox: QWidget, unit_combo: QWidget) -> QWidget:
+    """Like row() but with a QComboBox as the suffix widget for unit selection."""
+    w = QWidget()
+    h = QHBoxLayout(w)
+    h.setContentsMargins(0, 0, 0, 0)
+    h.setSpacing(8)
+    lab = QLabel(label, objectName="FieldLabel")
+    lab.setMinimumWidth(150)
+    h.addWidget(lab)
+    h.addWidget(spinbox, 1)
+    h.addWidget(unit_combo)
+    return w
+
+
 def checkbox(text: str, value: bool, on_change: Optional[Callable] = None) -> QCheckBox:
     cb = QCheckBox(text)
     cb.setChecked(bool(value))
