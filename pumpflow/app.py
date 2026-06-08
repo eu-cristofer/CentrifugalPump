@@ -36,6 +36,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PumpFlow — API 610 Pump Performance Workbench")
         self.resize(1320, 860)
 
+        # Path of the last saved / opened file; None when unsaved.
+        self._current_path: Path | None = None
+        # True when the canvas has changes not yet written to disk.
+        self._dirty: bool = False
+
         self.scene = GraphScene(node_factory=make_node)
         self.scene.dialog_requested.connect(self._open_dialog)
         self.view = GraphView(self.scene)
@@ -46,13 +51,16 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
 
         self.build_default_pipeline()
+        # Connect *after* the initial build so the startup pipeline does not
+        # immediately flag the session as having unsaved changes.
+        self.scene.graph_changed.connect(self._mark_dirty)
 
     # ------------------------------------------------------------------ menu
     def _build_menu(self) -> None:
         bar = self.menuBar()
 
         m_file = bar.addMenu("&File")
-        self._act(m_file, "New pipeline", self.build_default_pipeline, "Ctrl+N")
+        self._act(m_file, "New (empty canvas)", self.new_project, "Ctrl+N")
         self._act(m_file, "Open project (.pumpflow)…", self.open_project, "Ctrl+O")
         self._act(m_file, "Save project (.pumpflow)…", self.save_project, "Ctrl+S")
         m_file.addSeparator()
@@ -77,6 +85,105 @@ class MainWindow(QMainWindow):
             act.setShortcut(shortcut)
         menu.addAction(act)
         return act
+
+    # ----------------------------------------------------------- dirty state
+    def _mark_dirty(self) -> None:
+        """
+        Flag the session as having unsaved changes.
+
+        Appends an asterisk to the window title so the user has a persistent
+        visual cue that the project has not been saved.
+
+        Notes
+        -----
+        Connected to ``GraphScene.graph_changed`` after the initial pipeline
+        build so the startup state is never treated as unsaved work.
+        """
+        self._dirty = True
+        title = self.windowTitle()
+        if not title.endswith(" *"):
+            self.setWindowTitle(title + " *")
+
+    def _mark_clean(self) -> None:
+        """
+        Clear the unsaved-changes flag.
+
+        Removes the asterisk appended by :meth:`_mark_dirty` so the title
+        reflects that the project is in sync with disk.
+        """
+        self._dirty = False
+        self.setWindowTitle(self.windowTitle().removesuffix(" *"))
+
+    def _maybe_save(self) -> bool:
+        """
+        Guard destructive actions with a Save / Discard / Cancel prompt.
+
+        Presents a modal dialog only when there are unsaved changes
+        (``self._dirty is True``).  If the user chooses **Save** but then
+        cancels the file-picker, the method returns ``False`` so the caller
+        does not proceed with the destructive action.
+
+        Returns
+        -------
+        bool
+            ``True`` if the caller may safely continue (no dirty state, or the
+            user chose Discard, or the project was saved successfully).
+            ``False`` if the user clicked **Cancel** or dismissed the dialog.
+        """
+        if not self._dirty:
+            return True
+        reply = QMessageBox.question(
+            self,
+            "Unsaved changes",
+            "The current project has unsaved changes.\n\nSave before continuing?",
+            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+            QMessageBox.Save,
+        )
+        if reply == QMessageBox.Save:
+            self.save_project()
+            # If the user cancelled the file-picker, _dirty is still True.
+            return not self._dirty
+        if reply == QMessageBox.Discard:
+            return True
+        return False  # Cancel
+
+    # ----------------------------------------------------------- new project
+    def new_project(self) -> None:
+        """
+        Create a blank canvas (File > New).
+
+        Prompts to save unsaved changes before clearing the canvas.  On
+        confirmation the scene is replaced with an empty graph, the current
+        path is cleared, and the window title is reset to clean.
+
+        Notes
+        -----
+        Unlike :meth:`build_default_pipeline`, this method produces a truly
+        empty canvas with no pre-wired nodes so the user starts from scratch.
+        """
+        if not self._maybe_save():
+            return
+        self.scene.load_dict({"nodes": [], "edges": []})
+        self._current_path = None
+        self._reset_view()
+        self._mark_clean()
+        self.statusBar().showMessage("New project — canvas is empty", 4000)
+
+    # ---------------------------------------------------------- close guard
+    def closeEvent(self, event) -> None:
+        """
+        Intercept the window close event to guard unsaved work.
+
+        Parameters
+        ----------
+        event : QCloseEvent
+            The close event issued by Qt.  Accepted when the user confirms or
+            there is nothing to save; ignored (window stays open) on Cancel.
+        """
+        if self._maybe_save():
+            event.accept()
+        else:
+            event.ignore()
 
     # --------------------------------------------------------------- toolbox
     def _build_toolbox(self) -> None:
@@ -104,6 +211,7 @@ class MainWindow(QMainWindow):
 
     def _on_dialog_change(self) -> None:
         self.scene.evaluate()
+        self._mark_dirty()
         self._update_status()
 
     # ----------------------------------------------------------- node adding
@@ -197,20 +305,40 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------- project IO
     def save_project(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Save project", "pipeline.pumpflow",
+        """
+        Serialise the canvas to a ``.pumpflow`` file (File > Save).
+
+        Opens a file-picker pre-filled with the last saved path when available.
+        On success the dirty flag is cleared and ``_current_path`` is updated.
+        """
+        default = str(self._current_path) if self._current_path else "pipeline.pumpflow"
+        path, _ = QFileDialog.getSaveFileName(self, "Save project", default,
                                               "PumpFlow (*.pumpflow)")
         if not path:
             return
         write_json(path, self.scene.to_dict())
+        self._current_path = Path(path)
+        self._mark_clean()
         self.statusBar().showMessage(f"Saved {path}", 4000)
 
     def open_project(self) -> None:
+        """
+        Load a ``.pumpflow`` project file into the canvas (File > Open).
+
+        Guards unsaved changes with :meth:`_maybe_save` before replacing the
+        current canvas.  On success ``_current_path`` is updated and the dirty
+        flag is cleared.
+        """
+        if not self._maybe_save():
+            return
         path, _ = QFileDialog.getOpenFileName(self, "Open project", "",
                                               "PumpFlow (*.pumpflow);;JSON (*.json)")
         if not path:
             return
         self.scene.load_dict(read_json(path))
+        self._current_path = Path(path)
         self._reset_view()
+        self._mark_clean()
         self.statusBar().showMessage(f"Opened {path}", 4000)
         self._update_status()
 

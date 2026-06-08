@@ -52,6 +52,7 @@ class GraphScene(QGraphicsScene):
         item.setPos(pos)
         self.addItem(item)
         self.nodes.append(item)
+        self.graph_changed.emit()
         return item
 
     def remove_node(self, item: NodeItem) -> None:
@@ -79,6 +80,7 @@ class GraphScene(QGraphicsScene):
         self.addItem(edge)
         edge.attach()
         self.edges.append(edge)
+        self.graph_changed.emit()
         return edge
 
     def remove_edge(self, edge: EdgeItem) -> None:
