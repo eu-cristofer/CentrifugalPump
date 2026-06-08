@@ -240,7 +240,12 @@ class MainWindow(QMainWindow):
         """
         self.scene.load_dict(doc)
         self._current_path = path
-        self._reset_view()
+        # User projects restore their saved zoom + center; bundled examples
+        # (path is None) always open framed to fit (zoom extents).
+        if path is not None and doc.get("view"):
+            self.view.apply_view_state(doc["view"])
+        else:
+            self.view.fit_to_contents()
         self._mark_clean()
         if path is not None:
             save_recent(path)
@@ -286,9 +291,8 @@ class MainWindow(QMainWindow):
         return item
 
     def _reset_view(self) -> None:
-        self.view.resetTransform()
-        self.view._zoom = 1.0
-        self.view.centerOn(0, 0)
+        """Frame the whole pipeline (zoom extents)."""
+        self.view.fit_to_contents()
 
     # ---------------------------------------------------- default pipeline
     def build_default_pipeline(self) -> None:
@@ -381,7 +385,9 @@ class MainWindow(QMainWindow):
                                               "PumpFlow (*.pumpflow)")
         if not path:
             return
-        write_json(path, self.scene.to_dict())
+        doc = self.scene.to_dict()
+        doc["view"] = self.view.view_state()
+        write_json(path, doc)
         self._current_path = Path(path)
         self._mark_clean()
         save_recent(self._current_path)

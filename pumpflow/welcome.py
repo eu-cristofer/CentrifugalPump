@@ -43,6 +43,11 @@ _BUNDLED: list[tuple[str, str, str]] = [
         "Water · SG 1.0 · 400 m³/h · 100 m",
         "water_pump_curve_report.pumpflow",
     ),
+    (
+        "Performance Explorer — interactive",
+        "Live Q×H/Q×P/Q×η · measured + fit + ad-hoc points",
+        "explore_performance.pumpflow",
+    ),
 ]
 
 _MAX_RECENT: int = 5

@@ -25,6 +25,10 @@ dev = [
     "build",
     "pytest"
 ]
+gui = [
+    "PySide6",
+    "pyqtgraph",
+]
 docs = [
     "sphinx>=7",
     "furo",

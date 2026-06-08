@@ -62,6 +62,14 @@ SECOND_PUMP_POINTS = {
 }
 
 
+# Ad-hoc points for the Performance Explorer demo — a datasheet/guarantee point
+# and a what-if alternate duty, overlaid as markers on the live chart.
+EXPLORE_POINTS: List[Dict] = [
+    {"label": "Guarantee", "q": 833.0, "head": 73.0, "power": 252.0, "eff": 61.0},
+    {"label": "Alt duty", "q": 950.0, "head": 62.0, "power": 0.0, "eff": 0.0},
+]
+
+
 # ---------------------------------------------------------------------------
 # Sample .pumpflow project (UI_SPEC §6.1)
 # ---------------------------------------------------------------------------
@@ -166,5 +174,71 @@ def sample_project_doc() -> Dict:
         {"src_node": "corr_a",  "src_port": "CorrectedCurve",    "dst_node": "report",  "dst_port": "branch"},
         {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "report",  "dst_port": "branch"},
         {"src_node": "check_a", "src_port": "ComplianceResult",  "dst_node": "report",  "dst_port": "branch"},
+    ]
+    return {"nodes": nodes, "edges": edges}
+
+
+def explore_project_doc() -> Dict:
+    """Return the interactive-exploration ``.pumpflow`` document (Qt-free).
+
+    Pipeline: Rated Point + Test Points → Speed Correction → Curve Fit, with the
+    measured set, the fitted model, the rated point and two ad-hoc Point markers
+    all feeding the **Performance Explorer** (the interactive pyqtgraph chart).
+    """
+    tps = testset_from_json(SINGLE_PUMP_JSON)
+    nodes = [
+        {
+            "id": "rated", "kind": "rated_point", "x": -560.0, "y": -120.0,
+            "settings": {
+                "tag": "B-2351105",
+                "standard": "API610 (12a ed.) / ISO 13709 + N-553",
+                "q": 833.0, "head": 73.0, "n": 1750.0, "power": 252.0,
+                "eff": 61.0, "head_shutoff": 117.0,
+                "dens_rel": 0.736, "visc": 0.567,
+                "unit": "bar", "parallel": False, "fluid_name": "Rated fluid",
+            },
+        },
+        {
+            "id": "test_a", "kind": "test_points", "x": -560.0, "y": 140.0,
+            "settings": {
+                "pump_tag": tps.pump_tag,
+                "unit": tps.pressure_unit,
+                "rows": _test_rows(),
+            },
+        },
+        {
+            "id": "corr_a", "kind": "correction", "x": -260.0, "y": 140.0,
+            "settings": {
+                "lock_to_rated": True, "target_speed": 1750.0,
+                "apply_speed": True, "apply_density": True,
+                "apply_viscosity": False, "degree": 3,
+            },
+        },
+        {
+            "id": "fit_a", "kind": "curve_fit", "x": 0.0, "y": 140.0,
+            "settings": {"degree": 3, "spline": True, "resolution": 160},
+        },
+        {
+            "id": "pt_guar", "kind": "point", "x": -560.0, "y": 360.0,
+            "settings": EXPLORE_POINTS[0],
+        },
+        {
+            "id": "pt_alt", "kind": "point", "x": -360.0, "y": 360.0,
+            "settings": EXPLORE_POINTS[1],
+        },
+        {
+            "id": "explore", "kind": "explore_plot", "x": 300.0, "y": 60.0,
+            "settings": {},
+        },
+    ]
+    edges = [
+        {"src_node": "rated",   "src_port": "RatedPoint",     "dst_node": "corr_a",  "dst_port": "RatedPoint"},
+        {"src_node": "test_a",  "src_port": "TestPointSet",   "dst_node": "corr_a",  "dst_port": "TestPointSet"},
+        {"src_node": "corr_a",  "src_port": "CorrectedCurve", "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
+        {"src_node": "fit_a",   "src_port": "FittedModel",    "dst_node": "explore", "dst_port": "FittedModel"},
+        {"src_node": "test_a",  "src_port": "TestPointSet",   "dst_node": "explore", "dst_port": "TestPointSet"},
+        {"src_node": "rated",   "src_port": "RatedPoint",     "dst_node": "explore", "dst_port": "RatedPoint"},
+        {"src_node": "pt_guar", "src_port": "Point",          "dst_node": "explore", "dst_port": "Points"},
+        {"src_node": "pt_alt",  "src_port": "Point",          "dst_node": "explore", "dst_port": "Points"},
     ]
     return {"nodes": nodes, "edges": edges}

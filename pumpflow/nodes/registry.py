@@ -14,7 +14,9 @@ from .base import BaseNode
 from .compliance import ComplianceCheckNode
 from .correction import SpeedCorrectionNode
 from .curve_fit import CurveFitNode
+from .explore_plot import ExploreChartNode
 from .performance_plot import PerformancePlotNode
+from .point import PointNode
 from .rated_point import RatedPointInputNode
 from .report_export import ReportExportNode
 from .test_points import TestPointsTableNode
@@ -22,9 +24,11 @@ from .test_points import TestPointsTableNode
 _CLASSES: List[Type[BaseNode]] = [
     RatedPointInputNode,
     TestPointsTableNode,
+    PointNode,
     SpeedCorrectionNode,
     CurveFitNode,
     PerformancePlotNode,
+    ExploreChartNode,
     ComplianceCheckNode,
     ReportExportNode,
 ]
@@ -32,9 +36,7 @@ _CLASSES: List[Type[BaseNode]] = [
 _BY_KIND: Dict[str, Type[BaseNode]] = {c.kind: c for c in _CLASSES}
 
 # (kind, title, glyph) — order shown in the toolbox
-NODE_KINDS: List[Tuple[str, str, str]] = [
-    (c.kind, c.title, c.glyph) for c in _CLASSES
-]
+NODE_KINDS: List[Tuple[str, str, str]] = [(c.kind, c.title, c.glyph) for c in _CLASSES]
 
 
 def make_node(kind: str) -> BaseNode:

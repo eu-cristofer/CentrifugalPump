@@ -22,6 +22,7 @@ dependencies:
   # Plotting & visualization
   - matplotlib>=3.7
   - plotly
+  - pyqtgraph>=0.13   # interactive Performance Explorer (pumpflow)
 
   # Jupyter ecosystem
   - ipykernel

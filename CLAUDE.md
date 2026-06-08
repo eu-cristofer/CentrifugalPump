@@ -32,7 +32,7 @@ python -m build                      # sdist + wheel -> dist/
 sphinx-build -b html docs docs/_build/html   # docs site
 
 # Visual workbench
-pip install PySide6 matplotlib numpy
+pip install PySide6 matplotlib numpy pyqtgraph   # or: pip install -e ".[gui]"
 python -m pumpflow                   # opens with a pre-wired default pipeline
 ```
 

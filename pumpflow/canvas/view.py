@@ -16,13 +16,17 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QPainter, QTransform
 from PySide6.QtWidgets import QGraphicsView
 
 from . import theme
 from .edge_item import EdgeItem
 from .port_item import PortItem
+
+# Zoom band shared by the wheel handler and the fit/restore helpers.
+ZOOM_MIN = 0.3
+ZOOM_MAX = 2.8
 
 
 class GraphView(QGraphicsView):
@@ -45,9 +49,46 @@ class GraphView(QGraphicsView):
     def wheelEvent(self, event):
         factor = 1.0015 ** event.angleDelta().y()
         new_zoom = self._zoom * factor
-        if 0.3 < new_zoom < 2.8:
+        if ZOOM_MIN < new_zoom < ZOOM_MAX:
             self._zoom = new_zoom
             self.scale(factor, factor)
+
+    # -- view state (fit-to-extents + persist/restore last zoom) -----------
+    def fit_to_contents(self) -> None:
+        """Frame every node in the view (zoom extents), clamped to the zoom band.
+
+        Used when a fresh canvas or a bundled example is loaded so the whole
+        pipeline is visible without manual panning.  Falls back to 100 % at the
+        origin when the scene is empty.
+        """
+        rect = self.scene().itemsBoundingRect() if self.scene() else QRectF()
+        if rect.isNull() or rect.isEmpty():
+            self.resetTransform()
+            self._zoom = 1.0
+            self.centerOn(0, 0)
+            return
+        self.fitInView(rect.adjusted(-80, -80, 80, 80), Qt.KeepAspectRatio)
+        scale = self.transform().m11()
+        if scale < ZOOM_MIN or scale > ZOOM_MAX:
+            scale = min(max(scale, ZOOM_MIN), ZOOM_MAX)
+            self.setTransform(QTransform().scale(scale, scale))
+            self.centerOn(rect.center())
+        self._zoom = self.transform().m11()
+
+    def view_state(self) -> dict:
+        """Capture the current zoom + scene-space center for ``.pumpflow`` files."""
+        center = self.mapToScene(self.viewport().rect().center())
+        return {"zoom": self.transform().m11(), "cx": center.x(), "cy": center.y()}
+
+    def apply_view_state(self, state: dict) -> None:
+        """Restore a zoom + center previously captured by :meth:`view_state`."""
+        if not state:
+            self.fit_to_contents()
+            return
+        zoom = min(max(float(state.get("zoom", 1.0)), ZOOM_MIN), ZOOM_MAX)
+        self.setTransform(QTransform().scale(zoom, zoom))
+        self.centerOn(float(state.get("cx", 0.0)), float(state.get("cy", 0.0)))
+        self._zoom = zoom
 
     # -- port hit testing --------------------------------------------------
     def _port_under(self, view_pos) -> Optional[PortItem]:

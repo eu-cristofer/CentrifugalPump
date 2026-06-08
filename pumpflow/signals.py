@@ -127,6 +127,29 @@ class TestPointSet:
 
 
 # ---------------------------------------------------------------------------
+# 2b. PointSample — produced by the Point node (ad-hoc exploratory overlay)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PointSample:
+    """A single ad-hoc Q/H/P/η point to overlay on the Performance Explorer.
+
+    Unlike :class:`TestRow` (a raw measured row whose head/η are *derived* from
+    suction/discharge pressures), a ``PointSample`` already carries the plotted
+    quantities — it is a marker the user drops on the chart (a guarantee point,
+    a re-test point, a datasheet value) rather than a measurement to correct.
+    """
+
+    label: str                              # marker label
+    q_m3h: float                            # capacity                  [m³/h]
+    head_m: Optional[float] = None          # head                      [m]
+    power_kw: Optional[float] = None        # breaking power            [kW]
+    efficiency_pct: Optional[float] = None  # efficiency                [%]
+    pump_tag: str = ""                      # optional grouping / colour key
+
+
+# ---------------------------------------------------------------------------
 # 3. CorrectedCurve — produced by Speed/Affinity Correction (UI_SPEC §5.3)
 # ---------------------------------------------------------------------------
 

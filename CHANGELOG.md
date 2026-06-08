@@ -11,6 +11,45 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`pumpflow/canvas/view.py` — zoom control (fit-to-extents + persist/restore)**
+  - `GraphView.fit_to_contents()` — frames every node via
+    `fitInView(itemsBoundingRect()+margin, KeepAspectRatio)`, clamped to the
+    existing `0.3–2.8` wheel-zoom band; falls back to 100 % at the origin when
+    the scene is empty.
+  - `GraphView.view_state()` / `apply_view_state()` — capture and restore the
+    zoom level + scene-space center using `QTransform().scale(...)` + `centerOn`
+    (reads the live transform, so it is independent of the `_zoom` accumulator).
+  - **`pumpflow/app.py`** — `save_project` now stores `doc["view"]`; new
+    canvases and bundled examples open framed to fit, while opened user projects
+    restore their saved zoom + center. `scene.to_dict` stays nodes/edges-only,
+    so the persistence round-trip remains a fixed point.
+
+- **`pumpflow/nodes/point.py` — Point node** (`PointNode`)
+  - A lightweight source node: a single ad-hoc Q/H/P/η marker (label + values)
+    to overlay on the Performance Explorer (guarantee point, re-test point,
+    datasheet value). Emits the new `signals.PointSample` payload.
+  - Registered in `nodes/registry.py`, so it appears in the toolbox and the
+    **Add node** menu automatically.
+
+- **`pumpflow/nodes/explore_plot.py` — Performance Explorer** (`ExploreChartNode`)
+  - An interactive **pyqtgraph** chart: three X-linked panes (Q×H / Q×P / Q×η)
+    with native pan/zoom, a cursor crosshair readout, legend, rated-capacity
+    marker, fitted polynomial + spline overlays, measured scatter and ad-hoc
+    `Point` markers, plus **Export PNG**.
+  - Fan-in inputs `Points` / `TestPointSet` / `FittedModel` (multi) + optional
+    `RatedPoint`. Re-implements no physics — head/η via existing `binding`
+    helpers, curves merely sampled. pyqtgraph is lazy-imported inside the dialog
+    so the registry and headless tests import without it.
+
+- **`pumpflow/sample_data.py` + examples — exploratory dataset**
+  - `EXPLORE_POINTS` and the Qt-free `explore_project_doc()` builder.
+  - `pumpflow/examples/explore_performance.pumpflow` — bundled project wiring
+    Test Points + Curve Fit + two Point markers into the Performance Explorer;
+    added to the start-screen examples in `welcome.py`.
+  - `examples/exploratory_performance.ipynb` — builds the **same** dataset via
+    the `pump` library and renders a polished matplotlib Q×H/Q×P/Q×η chart with
+    measured points, the degree-3 fit, the BEP and the ad-hoc markers.
+
 - **`pumpflow/welcome.py` — start-screen dialog** (`WelcomeDialog`)
   - Modal dialog shown over the main window on every launch via
     `QTimer.singleShot(0, _show_welcome)`.
@@ -89,6 +128,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **`pyproject.toml`** — added `[tool.setuptools.package-data]` so
   `pumpflow/examples/*.pumpflow` files are included in source distributions
   and wheels.
+- **`pyproject.toml`** — new optional `gui` extra (`PySide6`, `pyqtgraph`);
+  the workbench install line in `CLAUDE.md` now includes `pyqtgraph`
+  (`pip install PySide6 matplotlib numpy pyqtgraph`, or `pip install -e ".[gui]"`).
+- **`pumpflow/app.py` — `_reset_view`** now frames the whole pipeline via
+  `GraphView.fit_to_contents()` instead of resetting to 100 % at the origin.
 
 ---
 
