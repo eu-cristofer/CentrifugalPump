@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, QTimer, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QDockWidget, QFileDialog, QMainWindow, QMessageBox, QPushButton, QVBoxLayout,
@@ -28,6 +28,7 @@ from .persistence import (
 )
 from .sample_data import SECOND_PUMP_POINTS, SINGLE_PUMP_JSON
 from .style import APP_QSS
+from .welcome import WelcomeDialog, save_recent
 
 
 class MainWindow(QMainWindow):
@@ -50,10 +51,13 @@ class MainWindow(QMainWindow):
         self._build_toolbox()
         self.statusBar().showMessage("Ready")
 
-        self.build_default_pipeline()
-        # Connect *after* the initial build so the startup pipeline does not
-        # immediately flag the session as having unsaved changes.
+        # Connect dirty-tracking before the first pipeline is built so that any
+        # canvas loaded via the welcome dialog (or build_default_pipeline) is
+        # covered.  The welcome dialog itself calls _mark_clean after loading.
         self.scene.graph_changed.connect(self._mark_dirty)
+        # Fire after the event loop starts so the main window is fully painted
+        # before the modal dialog appears on top of it.
+        QTimer.singleShot(0, self._show_welcome)
 
     # ------------------------------------------------------------------ menu
     def _build_menu(self) -> None:
@@ -185,6 +189,66 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
+    # ---------------------------------------------------------- welcome flow
+    def _show_welcome(self) -> None:
+        """
+        Display the start-screen dialog and act on the user's choice.
+
+        Called once via ``QTimer.singleShot(0, …)`` so the main window is
+        fully painted before the modal appears.  Falls back to
+        :meth:`build_default_pipeline` when the user dismisses without
+        choosing, preserving the pre-existing startup behaviour.
+
+        Notes
+        -----
+        The ``"open"`` branch covers both user-chosen files (``result_path``
+        is set) and bundled examples (``result_path`` is ``None``).
+        ``_load_project`` handles the distinction internally.
+        """
+        dlg = WelcomeDialog(self)
+        dlg.exec()
+
+        if dlg.result_action == "new":
+            self.scene.load_dict({"nodes": [], "edges": []})
+            self._current_path = None
+            self._reset_view()
+            self._mark_clean()
+            self.statusBar().showMessage("New project — canvas is empty", 4000)
+
+        elif dlg.result_action == "open" and dlg.result_doc is not None:
+            self._load_project(dlg.result_doc, dlg.result_path)
+
+        else:  # "skip" or dialog closed with ×
+            self.build_default_pipeline()
+            self._mark_clean()
+
+    def _load_project(self, doc: dict, path: Path | None = None) -> None:
+        """
+        Replace the canvas with *doc* and update session state.
+
+        Parameters
+        ----------
+        doc : dict
+            Deserialised ``.pumpflow`` project document
+            (``{"nodes": [...], "edges": [...]}``) ready for
+            :meth:`GraphScene.load_dict`.
+        path : Path or None
+            Source file path.  When not ``None``, the path is stored in
+            ``_current_path``, added to the recent-files list, and shown in
+            the status bar.  Pass ``None`` for bundled examples so they do
+            not pollute the recent-files history.
+        """
+        self.scene.load_dict(doc)
+        self._current_path = path
+        self._reset_view()
+        self._mark_clean()
+        if path is not None:
+            save_recent(path)
+            self.statusBar().showMessage(f"Opened {path}", 4000)
+        else:
+            self.statusBar().showMessage("Example loaded — canvas ready", 4000)
+        self._update_status()
+
     # --------------------------------------------------------------- toolbox
     def _build_toolbox(self) -> None:
         dock = QDockWidget("Widgets", self)
@@ -309,7 +373,8 @@ class MainWindow(QMainWindow):
         Serialise the canvas to a ``.pumpflow`` file (File > Save).
 
         Opens a file-picker pre-filled with the last saved path when available.
-        On success the dirty flag is cleared and ``_current_path`` is updated.
+        On success the dirty flag is cleared, ``_current_path`` is updated,
+        and the path is prepended to the recent-files list.
         """
         default = str(self._current_path) if self._current_path else "pipeline.pumpflow"
         path, _ = QFileDialog.getSaveFileName(self, "Save project", default,
@@ -319,6 +384,7 @@ class MainWindow(QMainWindow):
         write_json(path, self.scene.to_dict())
         self._current_path = Path(path)
         self._mark_clean()
+        save_recent(self._current_path)
         self.statusBar().showMessage(f"Saved {path}", 4000)
 
     def open_project(self) -> None:
@@ -326,8 +392,8 @@ class MainWindow(QMainWindow):
         Load a ``.pumpflow`` project file into the canvas (File > Open).
 
         Guards unsaved changes with :meth:`_maybe_save` before replacing the
-        current canvas.  On success ``_current_path`` is updated and the dirty
-        flag is cleared.
+        canvas.  Delegates to :meth:`_load_project` which handles path
+        tracking and recent-files registration.
         """
         if not self._maybe_save():
             return
@@ -335,12 +401,7 @@ class MainWindow(QMainWindow):
                                               "PumpFlow (*.pumpflow);;JSON (*.json)")
         if not path:
             return
-        self.scene.load_dict(read_json(path))
-        self._current_path = Path(path)
-        self._reset_view()
-        self._mark_clean()
-        self.statusBar().showMessage(f"Opened {path}", 4000)
-        self._update_status()
+        self._load_project(read_json(path), Path(path))
 
     # ------------------------------------------------------- data-file IO
     def import_data_file(self) -> None:

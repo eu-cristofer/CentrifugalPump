@@ -38,6 +38,9 @@ Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
 [tool.setuptools.packages.find]
 include = ["pump*", "pumpflow*"]
 
+[tool.setuptools.package-data]
+pumpflow = ["examples/*.pumpflow"]
+
 [tool.pytest.ini_options]
 # Collect the curated suite (tests/) plus the library's own docstrings (pump/)
 # as doctests. This keeps pytest from crawling into pumpflow/nodes/test_points.py

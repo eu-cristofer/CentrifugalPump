@@ -86,4 +86,25 @@ QScrollBar::handle:vertical:hover { background: #aab6c2; }
 QScrollBar::add-line, QScrollBar::sub-line { height: 0; }
 QScrollBar:horizontal { background: transparent; height: 11px; margin: 2px; }
 QScrollBar::handle:horizontal { background: #c4cdd7; border-radius: 5px; min-width: 28px; }
+
+/* ---- welcome / splash dialog ---- */
+#WelcomeDialog { background: #ffffff; border: 1px solid #c3ccd6; border-radius: 10px; }
+#WelcomeHeader { background: #2b3a4a; border-radius: 9px 9px 0 0; }
+#WelcomeTitle { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: 0.3px; }
+#WelcomeSubtitle { color: #c4d0db; font-size: 12px; }
+#WelcomeContent { background: #f4f6f9; }
+#WelcomePanel { background: #f4f6f9; }
+#WelcomeSectionLabel { color: #5b7185; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
+#WelcomePlaceholder { color: #a0aab4; font-size: 12px; font-style: italic; padding: 4px 0; }
+#WelcomeDivider { color: #d3dae2; background: #d3dae2; max-width: 1px; border: none; }
+#WelcomeFooter { background: #ffffff; border-top: 1px solid #d3dae2; border-radius: 0 0 9px 9px; }
+#ExampleDesc { color: #8a96a3; font-size: 11px; padding: 0 4px 2px 4px; }
+
+/* Recent-file and example row buttons */
+#RecentItem { text-align: left; padding: 7px 10px; border: 1px solid #d3dae2;
+    border-radius: 7px; background: #ffffff; color: #28323d; }
+#RecentItem:hover { border-color: #2f6fb0; background: #f0f6ff; color: #1f4f7a; }
+#ExampleItem { text-align: left; padding: 7px 10px; border: 1px solid #d3dae2;
+    border-radius: 7px; background: #ffffff; color: #28323d; font-weight: 600; }
+#ExampleItem:hover { border-color: #2f6fb0; background: #f0f6ff; color: #1f4f7a; }
 """
