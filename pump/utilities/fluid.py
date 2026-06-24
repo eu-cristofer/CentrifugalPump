@@ -40,7 +40,7 @@ print(water.thermal_conductivity)  # Output: 0.6 W/(m*K)
 from typing import Dict
 from .unit_conversion import extract_context, Q_, quantity_factory
 
-__all__ = ["Fluid"]
+__all__ = ["Fluid", "Water"]
 
 class Fluid:
     """
@@ -52,8 +52,6 @@ class Fluid:
         The name of the fluid.
     density : Q_
         The density of the fluid in standard units (e.g., `Q_(1000, "kg/m**3")`).
-    additional_properties : dict
-        Additional physical properties with units, dynamically added as attributes.
 
     Notes
     -----
@@ -71,7 +69,7 @@ class Fluid:
             The name of the fluid.
         density : Q_
             The density of the fluid with units (e.g., `Q_(1000, "kg/m**3")`).
-        kwargs : dict
+        kwargs : Dict[str, Q_]
             Additional physical properties with units. These properties will be dynamically
             added as attributes to the Fluid object.
 
@@ -113,3 +111,51 @@ class Fluid:
 
     def __hash__(self) -> int:
         return hash((self.name, self.density.magnitude, str(self.density.units)))
+
+
+class Water(Fluid):
+    """
+    Liquid water at a given temperature.
+
+    Density is computed from a 4th-order polynomial fit (Kell-style coefficients,
+    valid approximately 0–100 °C at 1 atm). At 4 °C the result peaks near
+    999.97 kg/m³; at 34 °C it is approximately 994.4 kg/m³.
+
+    Parameters
+    ----------
+    temperature : Q_
+        Water temperature as a Pint quantity in any compatible unit
+        (e.g. ``Q_(20, "degC")``, ``Q_(293.15, "K")``).
+
+    Attributes
+    ----------
+    temperature : Q_
+        Water temperature normalised to kelvin (standard unit for temperature).
+
+    Examples
+    --------
+    >>> w = Water(Q_(20.0, "degC"))
+    >>> w.name
+    'Water'
+    >>> round(w.density.magnitude, 2)
+    998.2
+    >>> w2 = Water(Q_(293.15, "K"))
+    >>> round(w2.density.magnitude, 2)
+    998.2
+    """
+
+    _RHO_COEFFS = (
+        999.85308,    # T^0
+        6.32693e-2,   # T^1
+        -8.523829e-3, # T^2
+        6.943248e-5,  # T^3
+        -3.821216e-7, # T^4
+    )
+
+    def __init__(self, temperature: Q_) -> None:
+        if not isinstance(temperature, Q_):
+            raise ValueError("A valid pint.Quantity is required for temperature.")
+        t_c = float(temperature.to("degC").magnitude)
+        rho = sum(c * t_c ** i for i, c in enumerate(self._RHO_COEFFS))
+        super().__init__(name="Water", density=Q_(rho, "kg/m**3"))
+        self.temperature = quantity_factory(temperature, context="default")

@@ -34,9 +34,9 @@ from typing import Optional
 import numpy as np
 
 # --- pump library imports (the library is the source of truth) --------------
-from pump import Q_, Fluid, DesignPoint, TestPoint, PerformanceCurve, PerformanceChecker
+from pump import Q_, Fluid, Water, DesignPoint, TestPoint, PerformanceCurve, PerformanceChecker
 
-from .mathx import NaturalCubicSpline, r_squared, water_density_kgm3
+from .mathx import NaturalCubicSpline, r_squared
 from .numfmt import parse_decimal
 from .signals import (
     RatedPoint,
@@ -113,7 +113,7 @@ def row_head_m(row, pressure_unit: str) -> float:
     """
     if row.head_m is not None:
         return float(row.head_m)
-    rho = water_density_kgm3(row.temp_c)
+    rho = Water(Q_(row.temp_c, "degC")).density.magnitude
     dp_pa = pressure_to_pa(row.p_discharge, pressure_unit) - pressure_to_pa(
         row.p_suction, pressure_unit
     )
@@ -126,7 +126,7 @@ def row_efficiency_pct(row, head_m: float) -> Optional[float]:
         return float(row.efficiency_pct)
     if not row.power_kw:
         return None
-    rho = water_density_kgm3(row.temp_c)
+    rho = Water(Q_(row.temp_c, "degC")).density.magnitude
     q_m3s = row.q_m3h / 3600.0
     hydraulic_w = rho * q_m3s * G * head_m
     breaking_w = row.power_kw * 1000.0
@@ -162,10 +162,7 @@ def correct_curve(
     # Per-row head/efficiency are computed with each row's own water density and
     # pinned onto the points, so the shared density is only a label here.
     mean_temp = fmean(r.temp_c for r in tps.rows)
-    test_fluid = Fluid(
-        name="Test water",
-        density=Q_(water_density_kgm3(mean_temp), "kg/m**3"),
-    )
+    test_fluid = Water(Q_(mean_temp, "degC"))
 
     points = []
     before_after = []

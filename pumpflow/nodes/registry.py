@@ -15,6 +15,7 @@ from .compliance import ComplianceCheckNode
 from .correction import SpeedCorrectionNode
 from .curve_fit import CurveFitNode
 from .explore_plot import ExploreChartNode
+from .markdown_note import MarkdownNoteNode
 from .performance_plot import PerformancePlotNode
 from .point import PointNode
 from .rated_point import RatedPointInputNode
@@ -31,6 +32,7 @@ _CLASSES: List[Type[BaseNode]] = [
     ExploreChartNode,
     ComplianceCheckNode,
     ReportExportNode,
+    MarkdownNoteNode,
 ]
 
 _BY_KIND: Dict[str, Type[BaseNode]] = {c.kind: c for c in _CLASSES}

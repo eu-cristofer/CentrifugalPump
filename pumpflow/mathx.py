@@ -9,44 +9,16 @@ library yet (UI_SPEC §4 note):
 - :class:`NaturalCubicSpline` — the notebook's cell-8 secondary fit, a natural
   cubic spline the user can toggle on the Performance Plot (polynomial deg-3 is
   the API-610 primary curve; this is the secondary).
-- :func:`water_density_kgm3` — water density as a function of temperature, used
-  by the Test Points Table to compute the read-only ``Head`` column from the
-  measured suction/discharge pressures.
 
 .. note::
-   These are faithful, standard implementations.  If the notebook ships exact
-   coefficients for ``water_density_kgm3`` or a specific spline variant, drop
-   them in here (or, preferred, contribute them to ``pump``) — the rest of the
-   app only depends on the public methods below.
+   Water density is now provided by :class:`pump.utilities.fluid.Water`, which
+   was graduated from this module into the ``pump`` library.  Import it from
+   there rather than duplicating the polynomial coefficients here.
 """
 
 from __future__ import annotations
 
 import numpy as np
-
-
-# ---------------------------------------------------------------------------
-# Water density polynomial (kg/m³ vs °C)
-# ---------------------------------------------------------------------------
-
-# Standard 4th-order fit, valid ~0–100 °C at 1 atm (Kell-style).  At 4 °C this
-# peaks near 999.97 kg/m³; at 34 °C ≈ 994.4 kg/m³.
-_WATER_RHO_COEFFS = (
-    999.85308,        # T^0
-    6.32693e-2,       # T^1
-    -8.523829e-3,     # T^2
-    6.943248e-5,      # T^3
-    -3.821216e-7,     # T^4
-)
-
-
-def water_density_kgm3(temp_c: float) -> float:
-    """Density of liquid water [kg/m³] at temperature ``temp_c`` [°C]."""
-    t = float(temp_c)
-    rho = 0.0
-    for i, c in enumerate(_WATER_RHO_COEFFS):
-        rho += c * t**i
-    return rho
 
 
 # ---------------------------------------------------------------------------

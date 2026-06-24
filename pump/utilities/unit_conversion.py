@@ -181,19 +181,35 @@ class ImprovedQuantity(UnitConverterInterface):
 def quantity_factory(quantity: Q_, context: str = "default") -> Q_:
     """
     Converts a given quantity to its standard unit. It is the entry point of
-    enginneering units consistency check.
-    
+    engineering units consistency check.
+
     Parameters
     ----------
     quantity : Q_
         The quantity to be converted.
     context : str, optional
-        The conversion context (default is "default").
+        Selects which standard unit to target when a dimensionality has more
+        than one engineering convention.  Some physical quantities are
+        routinely expressed in different units depending on *what they
+        represent*, not just their magnitude.  Pressure is the canonical
+        example: a gauge reading is reported in ``kgf/cm**2`` (``"default"``),
+        an atmospheric reference level in ``pascal`` (``"atm"``), and a
+        differential across a restriction in ``bar`` (``"delta"``).  The
+        context token is the mechanism that makes that distinction explicit
+        without encoding it in the quantity's unit string.
+
+        In practice you rarely pass ``context`` by hand.  ``extract_context``
+        infers it automatically from attribute names: the leading token of a
+        name such as ``delta_pressure`` or ``atm_pressure`` is matched against
+        the known context set and forwarded here.  Choose attribute prefixes
+        that are *not* context names (e.g. ``inlet_pressure``,
+        ``outlet_pressure``) when you want the default unit regardless of
+        position.
 
     Returns
     -------
     Q_
-        The converted quantity in the standard unit.
+        The converted quantity in the standard unit for the given context.
     """
     if not isinstance(quantity, Quantity):
             raise ValueError("A valid pint.Quantity is required.")

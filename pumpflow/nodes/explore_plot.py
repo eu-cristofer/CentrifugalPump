@@ -12,10 +12,11 @@ existing :mod:`pumpflow.binding` helpers, and fitted curves are merely *sampled*
 (``np.polyval`` / spline ``sample``) for drawing.
 
 Inputs (all optional, all fan-in):
-  - ``Points``       — :class:`PointSample` overlays (Point nodes)
-  - ``TestPointSet`` — measured scatter
-  - ``FittedModel``  — fitted polynomial (+ spline) curve overlays
-  - ``RatedPoint``   — rated-capacity crosshair marker
+  - ``Points``         — :class:`PointSample` overlays (Point nodes)
+  - ``TestPointSet``   — measured scatter
+  - ``CorrectedCurve`` — speed/affinity-corrected points (triangle scatter)
+  - ``FittedModel``    — fitted polynomial (+ spline) curve overlays
+  - ``RatedPoint``     — rated-capacity crosshair marker
 """
 
 from __future__ import annotations
@@ -40,6 +41,7 @@ class ExploreChartNode(BaseNode):
     inputs = [
         PortSpec("Points", "PointSample", multi=True),
         PortSpec("TestPointSet", "TestPointSet", multi=True),
+        PortSpec("CorrectedCurve", "CorrectedCurve", multi=True),
         PortSpec("FittedModel", "FittedModel", multi=True),
         PortSpec("RatedPoint", "RatedPoint"),
     ]
@@ -48,16 +50,18 @@ class ExploreChartNode(BaseNode):
     def compute(self, inputs) -> Dict[str, object]:
         self._points = self.all_of(inputs, "Points")
         self._testsets = self.all_of(inputs, "TestPointSet")
+        self._corrected = self.all_of(inputs, "CorrectedCurve")
         self._models = self.all_of(inputs, "FittedModel")
         self._rated = self.first(inputs, "RatedPoint")
         n_pts = len(self._points)
         n_scatter = sum(len(t.rows) for t in self._testsets)
+        n_corr = sum(len(c.before_after) for c in self._corrected)
         n_curves = len(self._models)
-        if not (n_pts or n_scatter or n_curves):
+        if not (n_pts or n_scatter or n_corr or n_curves):
             return self.emit_nothing(
-                "Wire points, a test set, or a fitted model", "idle"
+                "Wire points, a test set, a corrected curve, or a fitted model", "idle"
             )
-        self.status = f"{n_pts} pts · {n_scatter} measured · {n_curves} curves"
+        self.status = f"{n_pts} pts · {n_scatter} measured · {n_corr} corrected · {n_curves} curves"
         self.state = "ok"
         return {}
 
@@ -65,6 +69,7 @@ class ExploreChartNode(BaseNode):
         return {
             "Points": "Points",
             "TestPointSet": "Tests",
+            "CorrectedCurve": "Corrected",
             "FittedModel": "Models",
             "RatedPoint": "Rated",
         }.get(name, name)
@@ -115,6 +120,7 @@ class ExploreChartNode(BaseNode):
 
         self._plot_all(pg, p_h, p_p, p_e)
         self._add_crosshair(pg, glw, (p_h, p_p, p_e))
+        self._align_y_axes(p_h, p_p, p_e)
 
         # -- export -------------------------------------------------------
         from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget, QFileDialog
@@ -141,9 +147,142 @@ class ExploreChartNode(BaseNode):
 
         dlg.add(toolbar)
         dlg.add(glw)
+        dlg.add(self._build_readout(pg, dlg, (p_h, p_p, p_e)))
         dlg.add(banner)
-        dlg.resize(760, 720)
+        dlg.resize(760, 820)
         return dlg
+
+    # -- y-axis alignment --------------------------------------------------
+    def _align_y_axes(self, *plots) -> None:
+        """Pin every left axis to the widest one so the plot frames (and the
+        shared capacity axis) line up in a single vertical column."""
+        axes = [p.getAxis("left") for p in plots]
+        w = max((a.width() for a in axes), default=0)
+        for a in axes:
+            a.setWidth(w)
+
+    # -- flow readout (regression values at a chosen Q) --------------------
+    def _build_readout(self, pg, dlg, panes):
+        """A capacity spin-box + a table of the values each fitted polynomial
+        regression predicts at that Q (one row per wired Curve Fit), with a
+        dashed Q-marker on all three panes."""
+        from PySide6.QtWidgets import (
+            QDoubleSpinBox,
+            QHeaderView,
+            QLabel,
+            QTableWidget,
+            QTableWidgetItem,
+            QVBoxLayout,
+            QWidget,
+            QHBoxLayout,
+        )
+        from PySide6.QtGui import QColor
+        from ..numfmt import fmt
+
+        models = list(getattr(self, "_models", []))
+
+        # capacity span across all fitted curves → spin default + range
+        spans = []
+        for m in models:
+            c = np.asarray(m.curve.fitter.capacities, dtype=float)
+            if c.size:
+                spans.append((float(c.min()), float(c.max())))
+        cmin = min((s[0] for s in spans), default=0.0)
+        cmax = max((s[1] for s in spans), default=100.0)
+        rated = getattr(self, "_rated", None)
+        default_q = rated.q_m3h if rated is not None else (cmin + cmax) / 2.0
+
+        # dashed Q-marker on every pane (moves with the spin)
+        qlines = []
+        for p in panes:
+            ln = pg.InfiniteLine(
+                pos=default_q,
+                angle=90,
+                pen=pg.mkPen("#b4413c", style=Qt.DashLine, width=1),
+            )
+            p.addItem(ln, ignoreBounds=True)
+            qlines.append(ln)
+
+        container = QWidget()
+        lay = QVBoxLayout(container)
+        lay.setContentsMargins(0, 6, 0, 0)
+
+        ctrl = QWidget()
+        cl = QHBoxLayout(ctrl)
+        cl.setContentsMargins(0, 0, 0, 0)
+        cl.addWidget(QLabel("Readout flow Q"))
+        spin = QDoubleSpinBox()
+        spin.setRange(0.0, 1.0e5)
+        spin.setDecimals(1)
+        spin.setSingleStep(1.0)
+        spin.setValue(float(default_q))
+        spin.setSuffix("  m³/h")
+        cl.addWidget(spin)
+        cl.addStretch(1)
+        lay.addWidget(ctrl)
+
+        table = QTableWidget(0, 5)
+        table.setHorizontalHeaderLabels(
+            ["Curve", "Q [m³/h]", "Head [m]", "Power [kW]", "η [%]"]
+        )
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        table.setObjectName("ReadGrid")
+        table.setMaximumHeight(180)
+        lay.addWidget(table)
+
+        def model_label(m) -> str:
+            try:
+                rpm = float(m.curve.points[0].speed_of_rotation.to("rpm").magnitude)
+                return f"{m.pump_tag} @ {rpm:g} rpm"
+            except Exception:
+                return m.pump_tag
+
+        def recompute(q: float) -> None:
+            for ln in qlines:
+                ln.setPos(q)
+            table.setRowCount(0)
+            if not models:
+                table.insertRow(0)
+                item = QTableWidgetItem("Wire a Curve Fit to read regression values")
+                item.setForeground(QColor("#8a96a3"))
+                table.setItem(0, 0, item)
+                table.setSpan(0, 0, 1, 5)
+                return
+            for i, m in enumerate(models):
+                color = _PALETTE[i % len(_PALETTE)]
+                head = (
+                    float(np.polyval(m.head_coeffs, q))
+                    if m.head_coeffs is not None and len(m.head_coeffs)
+                    else None
+                )
+                power = (
+                    float(np.polyval(m.power_coeffs, q))
+                    if m.power_coeffs is not None and len(m.power_coeffs)
+                    else None
+                )
+                eff = (
+                    float(np.polyval(m.efficiency_coeffs, q))
+                    if m.efficiency_coeffs is not None and len(m.efficiency_coeffs)
+                    else None
+                )
+                r = table.rowCount()
+                table.insertRow(r)
+                cells = [
+                    model_label(m),
+                    fmt(q),
+                    fmt(head) if head is not None else "—",
+                    fmt(power) if power is not None else "—",
+                    fmt(eff, 1) if eff is not None else "—",
+                ]
+                for c, v in enumerate(cells):
+                    cell = QTableWidgetItem(str(v))
+                    if c == 0:
+                        cell.setForeground(QColor(color))
+                    table.setItem(r, c, cell)
+
+        spin.valueChanged.connect(recompute)
+        recompute(float(default_q))
+        return container
 
     # -- drawing helpers ---------------------------------------------------
     def _plot_all(self, pg, p_h, p_p, p_e) -> None:
@@ -184,6 +323,24 @@ class ExploreChartNode(BaseNode):
             self._scatter(pg, p_h, q, h, color, "o", f"{tps.pump_tag} data")
             self._scatter(pg, p_p, q, p, color, "o", None)
             self._scatter(pg, p_e, q, e, color, "o", None)
+
+        # corrected points (triangles) — read straight off the before/after rows
+        # so the Explorer touches no pump objects (physics stays in binding).
+        # Drawn as discrete markers ONLY (``_scatter`` uses ``pen=None``): the
+        # corrected input is never joined by a line — any line you see through
+        # them is the coincident fitted curve from a wired Curve Fit.
+        base = len(getattr(self, "_testsets", []))
+        for i, cc in enumerate(getattr(self, "_corrected", [])):
+            color = _PALETTE[(base + i) % len(_PALETTE)]
+            rows = [d["corrected"] for d in cc.before_after]
+            q = [r["q"] for r in rows]
+            h = [r["head"] for r in rows]
+            p = [r["power"] if r["power"] is not None else np.nan for r in rows]
+            e = [r["eff"] if r["eff"] is not None else np.nan for r in rows]
+            name = f"{cc.pump_tag} @ {cc.target_speed_rpm:g} rpm"
+            self._scatter(pg, p_h, q, h, color, "t", name)
+            self._scatter(pg, p_p, q, p, color, "t", None)
+            self._scatter(pg, p_e, q, e, color, "t", None)
 
         # ad-hoc Point markers (drawn large + labelled)
         for pt in getattr(self, "_points", []):

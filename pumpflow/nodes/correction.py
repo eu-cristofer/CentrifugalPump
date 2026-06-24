@@ -23,7 +23,13 @@ class SpeedCorrectionNode(BaseNode):
     kind = "correction"
     title = "Speed / Affinity Correction"
     glyph = "↻"
-    inputs = [PortSpec("RatedPoint", "RatedPoint"), PortSpec("TestPointSet", "TestPointSet")]
+    # RatedPoint is optional: with no rated point the node runs a *forced* speed
+    # correction — manual target speed, density correction skipped (there is no
+    # rated fluid to correct to).
+    inputs = [
+        PortSpec("RatedPoint", "RatedPoint"),
+        PortSpec("TestPointSet", "TestPointSet"),
+    ]
     outputs = [PortSpec("CorrectedCurve", "CorrectedCurve")]
 
     def default_settings(self) -> Dict:
@@ -43,36 +49,52 @@ class SpeedCorrectionNode(BaseNode):
 
     def compute(self, inputs) -> Dict[str, object]:
         rated, tps = self._resolve(inputs)
-        if rated is None or tps is None:
-            return self.emit_nothing("Waiting for rated point + test points", "idle")
+        if tps is None:
+            return self.emit_nothing("Waiting for test points", "idle")
 
         s = self.settings
-        target = rated.speed_rpm if s["lock_to_rated"] else float(s["target_speed"])
+        self._has_rated = rated is not None
+        if rated is None:
+            # Forced speed correction: no rated point → manual target speed, and
+            # density correction is skipped (no rated fluid to correct to).
+            target = float(s["target_speed"])
+            apply_density = False
+        else:
+            target = rated.speed_rpm if s["lock_to_rated"] else float(s["target_speed"])
+            apply_density = s["apply_density"]
         try:
             corrected = correct_curve(
-                rated, tps,
+                rated,
+                tps,
                 target_speed_rpm=target,
                 apply_speed=s["apply_speed"],
-                apply_density=s["apply_density"],
+                apply_density=apply_density,
                 degree=int(s["degree"]),
             )
         except BindingError as exc:
             return self.emit_nothing(str(exc), "invalid")
 
         self._last = corrected
-        self.status = f"{corrected.pump_tag} · {len(tps.rows)} pts · → {target:g} rpm"
+        mode = "" if rated is not None else " · forced"
+        self.status = (
+            f"{corrected.pump_tag} · {len(tps.rows)} pts · → {target:g} rpm{mode}"
+        )
         self.state = "ok"
         return {"CorrectedCurve": corrected}
 
     def port_label(self, name: str) -> str:
-        return {"RatedPoint": "Rated", "TestPointSet": "Tests",
-                "CorrectedCurve": "Corrected"}.get(name, name)
+        return {
+            "RatedPoint": "Rated",
+            "TestPointSet": "Tests",
+            "CorrectedCurve": "Corrected",
+        }.get(name, name)
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
         s = self.settings
         dlg = ui.PropertyDialog(
-            parent, "Speed / Affinity Correction",
+            parent,
+            "Speed / Affinity Correction",
             "Correct measured points to the rated speed and fluid. "
             "Affinity laws:  Q ∝ N · H ∝ N² · P ∝ N³.",
             width=620,
@@ -83,44 +105,88 @@ class SpeedCorrectionNode(BaseNode):
         target.setEnabled(not s["lock_to_rated"])
         lock = ui.checkbox("Lock target speed to rated N", s["lock_to_rated"], None)
         sp = ui.checkbox("Speed (affinity) correction", s["apply_speed"], None)
-        de = ui.checkbox("Density (ρ_rated / ρ_test) correction", s["apply_density"], None)
-        vi = ui.checkbox("Viscosity correction (nominal factors)", s["apply_viscosity"], None)
+        de = ui.checkbox(
+            "Density (ρ_rated / ρ_test) correction", s["apply_density"], None
+        )
+        vi = ui.checkbox(
+            "Viscosity correction (nominal factors)", s["apply_viscosity"], None
+        )
         vi.setEnabled(False)
-        vi.setToolTip("Viscosity correction is a library TODO — disabled until available.")
+        vi.setToolTip(
+            "Viscosity correction is a library TODO — disabled until available."
+        )
         degree = ui.int_spin(int(s["degree"]), 2, 5, None)
 
         table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(["Q [m³/h]", "Head [m]", "Power [kW]", "η [%]", "stage"])
+        table.setHorizontalHeaderLabels(
+            ["Q [m³/h]", "Head [m]", "Power [kW]", "η [%]", "stage"]
+        )
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setObjectName("ReadGrid")
 
         def refresh():
             on_change()
+            has_rated = getattr(self, "_has_rated", True)
+            # Forced mode (no rated point): manual target is always live; the
+            # rated-only controls (lock, density) are disabled.
+            target.setEnabled(not s["lock_to_rated"] or not has_rated)
+            lock.setEnabled(has_rated)
+            de.setEnabled(has_rated)
             corrected = getattr(self, "_last", None) if self.state == "ok" else None
-            banner.show_message(
-                "" if self.state == "ok" else self.status,
-                "info" if self.state in ("ok", "idle") else "error",
-            )
+            if self.state == "ok" and not has_rated:
+                msg, level = (
+                    "No rated point connected — forced speed correction "
+                    "(manual target speed, density correction skipped).",
+                    "info",
+                )
+            else:
+                msg, level = (
+                    "" if self.state == "ok" else self.status,
+                    "info" if self.state in ("ok", "idle") else "error",
+                )
+            banner.show_message(msg, level)
             table.setRowCount(0)
             if not corrected:
                 return
             for pair in corrected.before_after:
                 m, c = pair["measured"], pair["corrected"]
-                _append(table, [fmt(m["q"]), fmt(m["head"]), fmt(m["power"]),
-                                fmt(m["eff"], 1) if m["eff"] is not None else "—", "measured"], muted=True)
-                _append(table, [fmt(c["q"]), fmt(c["head"]), fmt(c["power"]),
-                                fmt(c["eff"], 1) if c["eff"] is not None else "—", "corrected"])
+                _append(
+                    table,
+                    [
+                        fmt(m["q"]),
+                        fmt(m["head"]),
+                        fmt(m["power"]),
+                        fmt(m["eff"], 1) if m["eff"] is not None else "—",
+                        "measured",
+                    ],
+                    muted=True,
+                )
+                _append(
+                    table,
+                    [
+                        fmt(c["q"]),
+                        fmt(c["head"]),
+                        fmt(c["power"]),
+                        fmt(c["eff"], 1) if c["eff"] is not None else "—",
+                        "corrected",
+                    ],
+                )
 
         def set_lock(v):
             s["lock_to_rated"] = bool(v)
-            target.setEnabled(not bool(v))
-            refresh()
+            refresh()  # refresh() owns the manual-target enabled state
 
         lock.toggled.connect(set_lock)
-        target.valueChanged.connect(lambda v: (s.__setitem__("target_speed", v), refresh()))
+        target.valueChanged.connect(
+            lambda v: (s.__setitem__("target_speed", v), refresh())
+        )
         sp.toggled.connect(lambda v: (s.__setitem__("apply_speed", bool(v)), refresh()))
-        de.toggled.connect(lambda v: (s.__setitem__("apply_density", bool(v)), refresh()))
-        degree.valueChanged.connect(lambda v: (s.__setitem__("degree", int(v)), refresh()))
+        de.toggled.connect(
+            lambda v: (s.__setitem__("apply_density", bool(v)), refresh())
+        )
+        degree.valueChanged.connect(
+            lambda v: (s.__setitem__("degree", int(v)), refresh())
+        )
 
         dlg.add(ui.section("Target & corrections"))
         dlg.add(ui.row("Target speed", target, "rpm"))
@@ -140,6 +206,7 @@ class SpeedCorrectionNode(BaseNode):
 
 def _append(table: QTableWidget, values, muted: bool = False):
     from PySide6.QtGui import QColor
+
     r = table.rowCount()
     table.insertRow(r)
     for c, v in enumerate(values):
