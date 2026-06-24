@@ -22,8 +22,9 @@ UC-09) comes first.
 | [S4](sprint-04-docstrings-doctests.md) | Docstrings & doctests | — | ✅ done |
 | [S5](sprint-05-read-the-docs.md) | Read the Docs (Sphinx + autodoc) | — | ✅ done |
 | [S6](sprint-06-readme-wrap.md) | Repo README + wrap | UC-09 (note) | ✅ done |
+| [S7](sprint-07-quick-point.md) | Quick single-point head check | UC-11 | 📋 planned |
 
-**Total: 7 sprints × 8 h ≈ 56 h.**
+**Total: 8 sprints × 8 h ≈ 64 h.**
 
 ## Sprint template
 
