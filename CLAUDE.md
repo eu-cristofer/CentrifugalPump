@@ -84,7 +84,8 @@ A thin, reactive layer on top of `pump`, built natively on PySide6 `QGraphicsVie
 - **`nodes/`** — the seven workflow widgets (`BaseNode` subclasses) + property dialogs. `BaseNode.compute(inputs) -> {output_port: payload}` is the Qt-agnostic core; `registry.py` maps `kind` → class.
 - **`canvas/`** — `GraphScene` holds `NodeItem`/`EdgeItem`, handles interactive wiring (output ports **fan out**; Report Export input is **multi-connection/merge**), and `evaluate()` recomputes the graph in **topological order** so upstream edits live-update downstream. `to_dict`/`load_dict` (de)serialize the canvas.
 - **`persistence.py`** — `.pumpflow` project files and data-exchange JSON (UI_SPEC §6). On disk it stores **only plain magnitudes + units** so the format stays stable; live `pint`/`pump` objects exist only at runtime.
-- **`app.py`** — `MainWindow`, the default pre-wired pipeline, entry point (`python -m pumpflow`).
+- **`app.py`** — `MainWindow`, the default pre-wired pipeline, entry point (`python -m pumpflow`). Owns project management: `_dirty`/`_current_path` state, a Save/Discard/Cancel `_maybe_save()` guard (run before New/Open/close — `closeEvent` hooks it so unsaved work is never lost), and a ` *` window-title dirty marker. `File > New` (`Ctrl+N`) loads an **empty** canvas; the pre-wired pipeline is only the startup default.
+- **`numfmt.py` / `style.py` / `sample_data.py`** — support modules: locale-tolerant number parse/format (UI_SPEC §5.2/§6.2), the global Qt stylesheet, and a seeded realistic single-pump FAT dataset, respectively.
 
 ### Key engineering constraint (shared-fluid)
 
