@@ -13,18 +13,28 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QTimer, Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import (
-    QDockWidget, QFileDialog, QMainWindow, QMessageBox, QPushButton, QVBoxLayout,
+    QDockWidget,
+    QFileDialog,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
     QWidget,
 )
 
+from . import units
 from .canvas.scene import GraphScene
 from .canvas.view import GraphView
 from .nodes import make_node
 from .nodes.registry import NODE_KINDS
 from .persistence import (
-    json_from_signals, rated_from_json, read_json, testset_from_json, write_json,
+    json_from_signals,
+    rated_from_json,
+    read_json,
+    testset_from_json,
+    write_json,
 )
 from .sample_data import SECOND_PUMP_POINTS, SINGLE_PUMP_JSON
 from .style import APP_QSS
@@ -75,12 +85,49 @@ class MainWindow(QMainWindow):
 
         m_add = bar.addMenu("&Add node")
         for kind, title, glyph in NODE_KINDS:
-            self._act(m_add, f"{glyph}  {title}", lambda _=False, k=kind: self.add_node_centered(k))
+            self._act(
+                m_add,
+                f"{glyph}  {title}",
+                lambda _=False, k=kind: self.add_node_centered(k),
+            )
 
         m_canvas = bar.addMenu("&Canvas")
         self._act(m_canvas, "Recompute graph", self.scene.evaluate, "F5")
         self._act(m_canvas, "Add Pump B branch (A/B demo)", self.add_second_pump_branch)
         self._act(m_canvas, "Reset view", self._reset_view)
+
+        # Project-level unit preset (multi-unit philosophy): chooses the display
+        # units fresh fields open in. Existing fields keep their explicit choice.
+        m_units = bar.addMenu("&Units")
+        self._unit_group = QActionGroup(self)
+        self._unit_group.setExclusive(True)
+        self._unit_actions: dict[str, QAction] = {}
+        for key, label in (
+            ("SI", "SI  (m³/h · m · kW)"),
+            ("US", "US customary  (US GPM · ft · hp)"),
+            ("custom", "Custom  (per-field defaults)"),
+        ):
+            act = QAction(label, self, checkable=True)
+            act.triggered.connect(lambda _=False, k=key: self._set_unit_preset(k))
+            self._unit_group.addAction(act)
+            m_units.addAction(act)
+            self._unit_actions[key] = act
+        self._sync_units_menu()
+
+    def _set_unit_preset(self, key: str) -> None:
+        """Switch the project's display-unit preset (File-level preference)."""
+        units.PREFS.set_preset(key)
+        self._sync_units_menu()
+        self._mark_dirty()
+        self.statusBar().showMessage(
+            f"Project units: {key} — applies to newly added fields", 4000
+        )
+
+    def _sync_units_menu(self) -> None:
+        """Reflect the active ``units.PREFS`` preset in the Units menu check."""
+        act = getattr(self, "_unit_actions", {}).get(units.PREFS.preset)
+        if act is not None:
+            act.setChecked(True)
 
     def _act(self, menu, text, slot, shortcut=None) -> QAction:
         act = QAction(text, self)
@@ -168,6 +215,7 @@ class MainWindow(QMainWindow):
         if not self._maybe_save():
             return
         self.scene.load_dict({"nodes": [], "edges": []})
+        self._sync_units_menu()  # empty doc reset units.PREFS to the SI default
         self._current_path = None
         self._reset_view()
         self._mark_clean()
@@ -239,6 +287,7 @@ class MainWindow(QMainWindow):
             not pollute the recent-files history.
         """
         self.scene.load_dict(doc)
+        self._sync_units_menu()  # load_dict restored units.PREFS from doc["meta"]
         self._current_path = path
         # User projects restore their saved zoom + center; bundled examples
         # (path is None) always open framed to fit (zoom extents).
@@ -329,21 +378,31 @@ class MainWindow(QMainWindow):
         rated = self._find("rated_point")
         report = self._find("report_export")
         if rated is None or report is None:
-            QMessageBox.information(self, "A/B demo",
-                                    "Build the default pipeline first.")
+            QMessageBox.information(
+                self, "A/B demo", "Build the default pipeline first."
+            )
             return
-        testb = s.add_node("test_points", QPointF(-660, 470),
-                           settings={
-                               "pump_tag": SECOND_PUMP_POINTS["pump_tag"],
-                               "unit": "bar",
-                               "rows": [
-                                   {"q": _d(p.get("q")), "p_suc": _d(p.get("p_suc")),
-                                    "p_dis": _d(p.get("p_dis")), "temp_c": _d(p.get("temp_c")),
-                                    "n": _d(p.get("n_rpm")), "power": _d(p.get("power")),
-                                    "head": _d(p.get("head")), "eff": _d(p.get("eff"))}
-                                   for p in SECOND_PUMP_POINTS["points"]
-                               ],
-                           })
+        testb = s.add_node(
+            "test_points",
+            QPointF(-660, 470),
+            settings={
+                "pump_tag": SECOND_PUMP_POINTS["pump_tag"],
+                "unit": "bar",
+                "rows": [
+                    {
+                        "q": _d(p.get("q")),
+                        "p_suc": _d(p.get("p_suc")),
+                        "p_dis": _d(p.get("p_dis")),
+                        "temp_c": _d(p.get("temp_c")),
+                        "n": _d(p.get("n_rpm")),
+                        "power": _d(p.get("power")),
+                        "head": _d(p.get("head")),
+                        "eff": _d(p.get("eff")),
+                    }
+                    for p in SECOND_PUMP_POINTS["points"]
+                ],
+            },
+        )
         corrb = s.add_node("correction", QPointF(-360, 360))
         fitb = s.add_node("curve_fit", QPointF(-90, 360))
         checkb = s.add_node("compliance", QPointF(200, 360))
@@ -381,8 +440,9 @@ class MainWindow(QMainWindow):
         and the path is prepended to the recent-files list.
         """
         default = str(self._current_path) if self._current_path else "pipeline.pumpflow"
-        path, _ = QFileDialog.getSaveFileName(self, "Save project", default,
-                                              "PumpFlow (*.pumpflow)")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save project", default, "PumpFlow (*.pumpflow)"
+        )
         if not path:
             return
         doc = self.scene.to_dict()
@@ -403,15 +463,18 @@ class MainWindow(QMainWindow):
         """
         if not self._maybe_save():
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Open project", "",
-                                              "PumpFlow (*.pumpflow);;JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open project", "", "PumpFlow (*.pumpflow);;JSON (*.json)"
+        )
         if not path:
             return
         self._load_project(read_json(path), Path(path))
 
     # ------------------------------------------------------- data-file IO
     def import_data_file(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Import data file", "", "JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Import data file", "", "JSON (*.json)"
+        )
         if not path:
             return
         doc = read_json(path)
@@ -420,24 +483,48 @@ class MainWindow(QMainWindow):
         rated_node = self._find("rated_point")
         test_node = self._find("test_points")
         if rated_node:
-            rated_node.logic.settings.update({
-                "tag": rated.tag, "standard": rated.standard,
-                "q": rated.q_m3h, "head": rated.head_m, "n": rated.speed_rpm,
-                "power": rated.power_kw, "eff": rated.efficiency_pct or 0,
-                "head_shutoff": rated.head_shutoff_m or 0,
-                "dens_rel": rated.density_rel, "visc": rated.viscosity_cst,
-                "unit": rated.pressure_unit, "parallel": rated.parallel_operation,
-            })
+            rated_node.logic.settings.update(
+                {
+                    "tag": rated.tag,
+                    "standard": rated.standard,
+                    # Imported values are standard magnitudes — label them with the
+                    # canonical display units so the dialog shows them correctly.
+                    "q": rated.q_m3h,
+                    "q_unit": "m³/h",
+                    "head": rated.head_m,
+                    "head_unit": "m",
+                    "n": rated.speed_rpm,
+                    "power": rated.power_kw,
+                    "power_unit": "kW",
+                    "eff": rated.efficiency_pct or 0,
+                    "head_shutoff": rated.head_shutoff_m or 0,
+                    "dens_rel": rated.density_rel,
+                    "visc": rated.viscosity_cst,
+                    "visc_unit": "cSt",
+                    "unit": rated.pressure_unit,
+                    "parallel": rated.parallel_operation,
+                }
+            )
         if test_node:
-            test_node.logic.settings.update({
-                "pump_tag": tps.pump_tag, "unit": tps.pressure_unit,
-                "rows": [
-                    {"q": r.q_m3h, "p_suc": r.p_suction, "p_dis": r.p_discharge,
-                     "temp_c": r.temp_c, "n": r.speed_rpm, "power": r.power_kw,
-                     "head": r.head_m, "eff": r.efficiency_pct}
-                    for r in tps.rows
-                ],
-            })
+            test_node.logic.settings.update(
+                {
+                    "pump_tag": tps.pump_tag,
+                    "unit": tps.pressure_unit,
+                    "rows": [
+                        {
+                            "q": r.q_m3h,
+                            "p_suc": r.p_suction,
+                            "p_dis": r.p_discharge,
+                            "temp_c": r.temp_c,
+                            "n": r.speed_rpm,
+                            "power": r.power_kw,
+                            "head": r.head_m,
+                            "eff": r.efficiency_pct,
+                        }
+                        for r in tps.rows
+                    ],
+                }
+            )
         self.scene.evaluate()
         self.statusBar().showMessage(f"Imported {path}", 4000)
         self._update_status()
@@ -447,8 +534,9 @@ class MainWindow(QMainWindow):
         test_node = self._find("test_points")
         if not rated_node:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Export data file", "pump_data.json",
-                                              "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export data file", "pump_data.json", "JSON (*.json)"
+        )
         if not path:
             return
         rated = rated_node.logic.to_signal()
@@ -465,6 +553,7 @@ class MainWindow(QMainWindow):
 
 def _d(value):
     from .numfmt import parse_decimal
+
     return parse_decimal(value, None)
 
 

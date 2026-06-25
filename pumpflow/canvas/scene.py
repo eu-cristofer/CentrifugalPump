@@ -26,23 +26,30 @@ from . import theme
 from .edge_item import EdgeItem
 from .node_item import NodeItem
 from .port_item import PortItem
+from .. import units
 
 
 class GraphScene(QGraphicsScene):
     graph_changed = Signal()
-    dialog_requested = Signal(object)   # emits a BaseNode
+    dialog_requested = Signal(object)  # emits a BaseNode
+    node_removed = Signal(object)  # emits the removed node's BaseNode logic
 
     def __init__(self, node_factory):
         super().__init__()
         self.setBackgroundBrush(theme.CANVAS_BG)
-        self._node_factory = node_factory   # kind -> BaseNode()
+        self._node_factory = node_factory  # kind -> BaseNode()
         self.nodes: List[NodeItem] = []
         self.edges: List[EdgeItem] = []
         self._uid = 0
 
     # ------------------------------------------------------------------ nodes
-    def add_node(self, kind: str, pos: QPointF, node_id: Optional[str] = None,
-                 settings: Optional[dict] = None) -> NodeItem:
+    def add_node(
+        self,
+        kind: str,
+        pos: QPointF,
+        node_id: Optional[str] = None,
+        settings: Optional[dict] = None,
+    ) -> NodeItem:
         logic = self._node_factory(kind)
         self._uid += 1
         logic.node_id = node_id or f"{kind}-{self._uid}"
@@ -132,7 +139,7 @@ class GraphScene(QGraphicsScene):
                 indeg[m] -= 1
                 if indeg[m] == 0:
                     queue.append(m)
-        for n in self.nodes:               # any leftover (cycles) appended stably
+        for n in self.nodes:  # any leftover (cycles) appended stably
             if n not in seen:
                 order.append(n)
         return order
@@ -155,13 +162,17 @@ class GraphScene(QGraphicsScene):
             inputs = self._gather_inputs(item)
             try:
                 item.logic.run(inputs)
-            except Exception as exc:        # surface as a node error (UI_SPEC §7)
+            except Exception as exc:  # surface as a node error (UI_SPEC §7)
                 item.logic.set_error(str(exc))
             item.refresh()
 
     # ------------------------------------------------------ serialization
     def to_dict(self) -> dict:
         return {
+            # Project-level display preference (the active unit preset). Plain
+            # magnitudes still live on each node; this only chooses how fresh
+            # fields are labelled (units.PREFS — multi-unit philosophy).
+            "meta": units.PREFS.to_dict(),
             "nodes": [
                 {
                     "id": n.logic.node_id,
@@ -185,6 +196,10 @@ class GraphScene(QGraphicsScene):
         }
 
     def load_dict(self, doc: dict) -> None:
+        # Restore the unit preset *before* nodes are built so their
+        # default_settings seed fresh fields in the project's display units.
+        # An empty/new project (no "meta") resets to the SI default.
+        units.PREFS.load(doc.get("meta"))
         for edge in list(self.edges):
             self.remove_edge(edge)
         for node in list(self.nodes):

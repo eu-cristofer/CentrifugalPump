@@ -37,12 +37,55 @@ SINGLE_PUMP_JSON = {
     },
     "pump_tag": "B-2351105A",
     "points": [
-        {"q": "300",     "p_suc": "1,80", "p_dis": "12,53", "temp_c": "34", "power": "248",    "n_rpm": "1799"},
-        {"q": "500",     "p_suc": "1,80", "p_dis": "11,56", "temp_c": "34", "power": "270",    "n_rpm": "1800"},
-        {"q": "700",     "p_suc": "1,80", "p_dis": "10,39", "temp_c": "33", "power": "288",    "n_rpm": "1798"},
-        {"q": "858,29",  "p_suc": "1,81", "p_dis": "9,47",  "temp_c": "34", "head": "78.552", "power": "298,69", "n_rpm": "1799"},
-        {"q": "1000",    "p_suc": "1,80", "p_dis": "7,85",  "temp_c": "35", "power": "308",    "n_rpm": "1801"},
-        {"q": "1100",    "p_suc": "1,80", "p_dis": "6,48",  "temp_c": "34", "power": "312",    "n_rpm": "1800"},
+        {
+            "q": "300",
+            "p_suc": "1,80",
+            "p_dis": "12,53",
+            "temp_c": "34",
+            "power": "248",
+            "n_rpm": "1799",
+        },
+        {
+            "q": "500",
+            "p_suc": "1,80",
+            "p_dis": "11,56",
+            "temp_c": "34",
+            "power": "270",
+            "n_rpm": "1800",
+        },
+        {
+            "q": "700",
+            "p_suc": "1,80",
+            "p_dis": "10,39",
+            "temp_c": "33",
+            "power": "288",
+            "n_rpm": "1798",
+        },
+        {
+            "q": "858,29",
+            "p_suc": "1,81",
+            "p_dis": "9,47",
+            "temp_c": "34",
+            "head": "78.552",
+            "power": "298,69",
+            "n_rpm": "1799",
+        },
+        {
+            "q": "1000",
+            "p_suc": "1,80",
+            "p_dis": "7,85",
+            "temp_c": "35",
+            "power": "308",
+            "n_rpm": "1801",
+        },
+        {
+            "q": "1100",
+            "p_suc": "1,80",
+            "p_dis": "6,48",
+            "temp_c": "34",
+            "power": "312",
+            "n_rpm": "1800",
+        },
     ],
 }
 
@@ -52,12 +95,54 @@ SINGLE_PUMP_JSON = {
 SECOND_PUMP_POINTS = {
     "pump_tag": "B-2351105B",
     "points": [
-        {"q": "300",    "p_suc": "1,80", "p_dis": "12,30", "temp_c": "35", "power": "252",    "n_rpm": "1801"},
-        {"q": "500",    "p_suc": "1,80", "p_dis": "11,38", "temp_c": "35", "power": "274",    "n_rpm": "1800"},
-        {"q": "700",    "p_suc": "1,80", "p_dis": "10,15", "temp_c": "34", "power": "291",    "n_rpm": "1799"},
-        {"q": "860",    "p_suc": "1,80", "p_dis": "9,20",  "temp_c": "34", "power": "301",    "n_rpm": "1800"},
-        {"q": "1000",   "p_suc": "1,80", "p_dis": "7,60",  "temp_c": "35", "power": "310",    "n_rpm": "1802"},
-        {"q": "1100",   "p_suc": "1,80", "p_dis": "6,20",  "temp_c": "34", "power": "315",    "n_rpm": "1801"},
+        {
+            "q": "300",
+            "p_suc": "1,80",
+            "p_dis": "12,30",
+            "temp_c": "35",
+            "power": "252",
+            "n_rpm": "1801",
+        },
+        {
+            "q": "500",
+            "p_suc": "1,80",
+            "p_dis": "11,38",
+            "temp_c": "35",
+            "power": "274",
+            "n_rpm": "1800",
+        },
+        {
+            "q": "700",
+            "p_suc": "1,80",
+            "p_dis": "10,15",
+            "temp_c": "34",
+            "power": "291",
+            "n_rpm": "1799",
+        },
+        {
+            "q": "860",
+            "p_suc": "1,80",
+            "p_dis": "9,20",
+            "temp_c": "34",
+            "power": "301",
+            "n_rpm": "1800",
+        },
+        {
+            "q": "1000",
+            "p_suc": "1,80",
+            "p_dis": "7,60",
+            "temp_c": "35",
+            "power": "310",
+            "n_rpm": "1802",
+        },
+        {
+            "q": "1100",
+            "p_suc": "1,80",
+            "p_dis": "6,20",
+            "temp_c": "34",
+            "power": "315",
+            "n_rpm": "1801",
+        },
     ],
 }
 
@@ -65,8 +150,26 @@ SECOND_PUMP_POINTS = {
 # Ad-hoc points for the Performance Explorer demo — a datasheet/guarantee point
 # and a what-if alternate duty, overlaid as markers on the live chart.
 EXPLORE_POINTS: List[Dict] = [
-    {"label": "Guarantee", "q": 833.0, "head": 73.0, "power": 252.0, "eff": 61.0},
-    {"label": "Alt duty", "q": 950.0, "head": 62.0, "power": 0.0, "eff": 0.0},
+    {
+        "label": "Guarantee",
+        "q": 833.0,
+        "q_unit": "m³/h",
+        "head": 73.0,
+        "head_unit": "m",
+        "power": 252.0,
+        "power_unit": "kW",
+        "eff": 61.0,
+    },
+    {
+        "label": "Alt duty",
+        "q": 950.0,
+        "q_unit": "m³/h",
+        "head": 62.0,
+        "head_unit": "m",
+        "power": 0.0,
+        "power_unit": "kW",
+        "eff": 0.0,
+    },
 ]
 
 
@@ -93,9 +196,14 @@ def _test_rows() -> List[dict]:
     tps = testset_from_json(SINGLE_PUMP_JSON)
     return [
         {
-            "q": r.q_m3h, "p_suc": r.p_suction, "p_dis": r.p_discharge,
-            "temp_c": r.temp_c, "n": r.speed_rpm, "power": r.power_kw,
-            "head": r.head_m, "eff": r.efficiency_pct,
+            "q": r.q_m3h,
+            "p_suc": r.p_suction,
+            "p_dis": r.p_discharge,
+            "temp_c": r.temp_c,
+            "n": r.speed_rpm,
+            "power": r.power_kw,
+            "head": r.head_m,
+            "eff": r.efficiency_pct,
         }
         for r in tps.rows
     ]
@@ -110,23 +218,36 @@ def sample_project_doc() -> Dict:
     tps = testset_from_json(SINGLE_PUMP_JSON)
     nodes = [
         {
-            "id": "rated", "kind": "rated_point", "x": -560.0, "y": -40.0,
+            "id": "rated",
+            "kind": "rated_point",
+            "x": -560.0,
+            "y": -40.0,
             "settings": {
                 "tag": "B-2351105",
                 "service": "",
                 "standard": "API610 (12a ed.) / ISO 13709 + N-553",
-                "q": 833.0,     "q_unit": "m³/h",
-                "head": 73.0,   "head_unit": "m",
+                "q": 833.0,
+                "q_unit": "m³/h",
+                "head": 73.0,
+                "head_unit": "m",
                 "n": 1750.0,
-                "power": 252.0, "power_unit": "kW",
-                "eff": 61.0, "head_shutoff": 117.0,
+                "power": 252.0,
+                "power_unit": "kW",
+                "eff": 61.0,
+                "head_shutoff": 117.0,
                 "dens_rel": 0.736,
-                "visc": 0.567,  "visc_unit": "cSt",
-                "unit": "bar", "parallel": False, "fluid_name": "Rated fluid",
+                "visc": 0.567,
+                "visc_unit": "cSt",
+                "unit": "bar",
+                "parallel": False,
+                "fluid_name": "Rated fluid",
             },
         },
         {
-            "id": "test_a", "kind": "test_points", "x": -560.0, "y": 220.0,
+            "id": "test_a",
+            "kind": "test_points",
+            "x": -560.0,
+            "y": 220.0,
             "settings": {
                 "pump_tag": tps.pump_tag,
                 "unit": tps.pressure_unit,
@@ -134,53 +255,142 @@ def sample_project_doc() -> Dict:
             },
         },
         {
-            "id": "corr_a", "kind": "correction", "x": -240.0, "y": 90.0,
+            "id": "corr_a",
+            "kind": "correction",
+            "x": -240.0,
+            "y": 90.0,
             "settings": {
-                "lock_to_rated": True, "target_speed": 1750.0,
-                "apply_speed": True, "apply_density": True,
-                "apply_viscosity": False, "degree": 3,
+                "lock_to_rated": True,
+                "target_speed": 1750.0,
+                "apply_speed": True,
+                "apply_density": True,
+                "apply_viscosity": False,
+                "degree": 3,
             },
         },
         {
-            "id": "fit_a", "kind": "curve_fit", "x": 40.0, "y": 90.0,
+            "id": "fit_a",
+            "kind": "curve_fit",
+            "x": 40.0,
+            "y": 90.0,
             "settings": {"degree": 3, "spline": True, "resolution": 160},
         },
         {
-            "id": "plot_a", "kind": "performance_plot", "x": 320.0, "y": -60.0,
+            "id": "plot_a",
+            "kind": "performance_plot",
+            "x": 320.0,
+            "y": -60.0,
             "settings": {
-                "show_poly": True, "show_spline": True, "show_points": True,
-                "head_ylim": None, "power_ylim": None, "eff_ylim": None,
+                "show_poly": True,
+                "show_spline": True,
+                "show_points": True,
+                "head_ylim": None,
+                "power_ylim": None,
+                "eff_ylim": None,
             },
         },
         {
-            "id": "check_a", "kind": "compliance", "x": 320.0, "y": 200.0,
+            "id": "check_a",
+            "kind": "compliance",
+            "x": 320.0,
+            "y": 200.0,
             "settings": {"tolerances": {}},
         },
         {
-            "id": "report", "kind": "report_export", "x": 620.0, "y": 90.0,
+            "id": "report",
+            "kind": "report_export",
+            "x": 620.0,
+            "y": 90.0,
             "settings": {
-                "language": "en", "template_path": "", "out_dir": "", "filename": "",
+                "language": "en",
+                "template_path": "",
+                "out_dir": "",
+                "filename": "",
                 "equipment": {
-                    k: "" for k in
-                    ["Manufacturer", "Model", "Serial No.", "Type", "Driver", "Test bench"]
+                    k: ""
+                    for k in [
+                        "Manufacturer",
+                        "Model",
+                        "Serial No.",
+                        "Type",
+                        "Driver",
+                        "Test bench",
+                    ]
                 },
             },
         },
     ]
     edges = [
-        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "corr_a",  "dst_port": "RatedPoint"},
-        {"src_node": "test_a",  "src_port": "TestPointSet",      "dst_node": "corr_a",  "dst_port": "TestPointSet"},
-        {"src_node": "corr_a",  "src_port": "CorrectedCurve",    "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
-        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "plot_a",  "dst_port": "FittedModel"},
-        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "plot_a",  "dst_port": "RatedPoint"},
-        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "check_a", "dst_port": "FittedModel"},
-        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "check_a", "dst_port": "RatedPoint"},
-        {"src_node": "rated",   "src_port": "RatedPoint",        "dst_node": "report",  "dst_port": "RatedPoint"},
-        {"src_node": "corr_a",  "src_port": "CorrectedCurve",    "dst_node": "report",  "dst_port": "branch"},
-        {"src_node": "fit_a",   "src_port": "FittedModel",       "dst_node": "report",  "dst_port": "branch"},
-        {"src_node": "check_a", "src_port": "ComplianceResult",  "dst_node": "report",  "dst_port": "branch"},
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "corr_a",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "test_a",
+            "src_port": "TestPointSet",
+            "dst_node": "corr_a",
+            "dst_port": "TestPointSet",
+        },
+        {
+            "src_node": "corr_a",
+            "src_port": "CorrectedCurve",
+            "dst_node": "fit_a",
+            "dst_port": "CorrectedCurve",
+        },
+        {
+            "src_node": "fit_a",
+            "src_port": "FittedModel",
+            "dst_node": "plot_a",
+            "dst_port": "FittedModel",
+        },
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "plot_a",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "fit_a",
+            "src_port": "FittedModel",
+            "dst_node": "check_a",
+            "dst_port": "FittedModel",
+        },
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "check_a",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "report",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "corr_a",
+            "src_port": "CorrectedCurve",
+            "dst_node": "report",
+            "dst_port": "branch",
+        },
+        {
+            "src_node": "fit_a",
+            "src_port": "FittedModel",
+            "dst_node": "report",
+            "dst_port": "branch",
+        },
+        {
+            "src_node": "check_a",
+            "src_port": "ComplianceResult",
+            "dst_node": "report",
+            "dst_port": "branch",
+        },
     ]
-    return {"nodes": nodes, "edges": edges}
+    # Project-level display preference (units.PREFS). The shipped examples use
+    # the SI default; mirrors GraphScene.to_dict so each file is a fixed point.
+    return {"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges}
 
 
 def explore_project_doc() -> Dict:
@@ -193,23 +403,36 @@ def explore_project_doc() -> Dict:
     tps = testset_from_json(SINGLE_PUMP_JSON)
     nodes = [
         {
-            "id": "rated", "kind": "rated_point", "x": -560.0, "y": -120.0,
+            "id": "rated",
+            "kind": "rated_point",
+            "x": -560.0,
+            "y": -120.0,
             "settings": {
                 "tag": "B-2351105",
                 "service": "",
                 "standard": "API610 (12a ed.) / ISO 13709 + N-553",
-                "q": 833.0,     "q_unit": "m³/h",
-                "head": 73.0,   "head_unit": "m",
+                "q": 833.0,
+                "q_unit": "m³/h",
+                "head": 73.0,
+                "head_unit": "m",
                 "n": 1750.0,
-                "power": 252.0, "power_unit": "kW",
-                "eff": 61.0, "head_shutoff": 117.0,
+                "power": 252.0,
+                "power_unit": "kW",
+                "eff": 61.0,
+                "head_shutoff": 117.0,
                 "dens_rel": 0.736,
-                "visc": 0.567,  "visc_unit": "cSt",
-                "unit": "bar", "parallel": False, "fluid_name": "Rated fluid",
+                "visc": 0.567,
+                "visc_unit": "cSt",
+                "unit": "bar",
+                "parallel": False,
+                "fluid_name": "Rated fluid",
             },
         },
         {
-            "id": "test_a", "kind": "test_points", "x": -560.0, "y": 140.0,
+            "id": "test_a",
+            "kind": "test_points",
+            "x": -560.0,
+            "y": 140.0,
             "settings": {
                 "pump_tag": tps.pump_tag,
                 "unit": tps.pressure_unit,
@@ -217,38 +440,98 @@ def explore_project_doc() -> Dict:
             },
         },
         {
-            "id": "corr_a", "kind": "correction", "x": -260.0, "y": 140.0,
+            "id": "corr_a",
+            "kind": "correction",
+            "x": -260.0,
+            "y": 140.0,
             "settings": {
-                "lock_to_rated": True, "target_speed": 1750.0,
-                "apply_speed": True, "apply_density": True,
-                "apply_viscosity": False, "degree": 3,
+                "lock_to_rated": True,
+                "target_speed": 1750.0,
+                "apply_speed": True,
+                "apply_density": True,
+                "apply_viscosity": False,
+                "degree": 3,
             },
         },
         {
-            "id": "fit_a", "kind": "curve_fit", "x": 0.0, "y": 140.0,
+            "id": "fit_a",
+            "kind": "curve_fit",
+            "x": 0.0,
+            "y": 140.0,
             "settings": {"degree": 3, "spline": True, "resolution": 160},
         },
         {
-            "id": "pt_guar", "kind": "point", "x": -560.0, "y": 360.0,
+            "id": "pt_guar",
+            "kind": "point",
+            "x": -560.0,
+            "y": 360.0,
             "settings": EXPLORE_POINTS[0],
         },
         {
-            "id": "pt_alt", "kind": "point", "x": -360.0, "y": 360.0,
+            "id": "pt_alt",
+            "kind": "point",
+            "x": -360.0,
+            "y": 360.0,
             "settings": EXPLORE_POINTS[1],
         },
         {
-            "id": "explore", "kind": "explore_plot", "x": 300.0, "y": 60.0,
+            "id": "explore",
+            "kind": "explore_plot",
+            "x": 300.0,
+            "y": 60.0,
             "settings": {},
         },
     ]
     edges = [
-        {"src_node": "rated",   "src_port": "RatedPoint",     "dst_node": "corr_a",  "dst_port": "RatedPoint"},
-        {"src_node": "test_a",  "src_port": "TestPointSet",   "dst_node": "corr_a",  "dst_port": "TestPointSet"},
-        {"src_node": "corr_a",  "src_port": "CorrectedCurve", "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
-        {"src_node": "fit_a",   "src_port": "FittedModel",    "dst_node": "explore", "dst_port": "FittedModel"},
-        {"src_node": "test_a",  "src_port": "TestPointSet",   "dst_node": "explore", "dst_port": "TestPointSet"},
-        {"src_node": "rated",   "src_port": "RatedPoint",     "dst_node": "explore", "dst_port": "RatedPoint"},
-        {"src_node": "pt_guar", "src_port": "Point",          "dst_node": "explore", "dst_port": "Points"},
-        {"src_node": "pt_alt",  "src_port": "Point",          "dst_node": "explore", "dst_port": "Points"},
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "corr_a",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "test_a",
+            "src_port": "TestPointSet",
+            "dst_node": "corr_a",
+            "dst_port": "TestPointSet",
+        },
+        {
+            "src_node": "corr_a",
+            "src_port": "CorrectedCurve",
+            "dst_node": "fit_a",
+            "dst_port": "CorrectedCurve",
+        },
+        {
+            "src_node": "fit_a",
+            "src_port": "FittedModel",
+            "dst_node": "explore",
+            "dst_port": "FittedModel",
+        },
+        {
+            "src_node": "test_a",
+            "src_port": "TestPointSet",
+            "dst_node": "explore",
+            "dst_port": "TestPointSet",
+        },
+        {
+            "src_node": "rated",
+            "src_port": "RatedPoint",
+            "dst_node": "explore",
+            "dst_port": "RatedPoint",
+        },
+        {
+            "src_node": "pt_guar",
+            "src_port": "Point",
+            "dst_node": "explore",
+            "dst_port": "Points",
+        },
+        {
+            "src_node": "pt_alt",
+            "src_port": "Point",
+            "dst_node": "explore",
+            "dst_port": "Points",
+        },
     ]
-    return {"nodes": nodes, "edges": edges}
+    # Project-level display preference (units.PREFS). The shipped examples use
+    # the SI default; mirrors GraphScene.to_dict so each file is a fixed point.
+    return {"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges}

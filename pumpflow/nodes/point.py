@@ -9,12 +9,17 @@ Unlike the Test Points Table — which holds the raw measured rows of a FAT and
 derives head/η from suction/discharge pressures — a Point carries the plotted
 quantities directly, so it is a lightweight marker rather than a measurement to
 correct.
+
+Q/H/P accept any display unit via the reusable ``ui.UnitField`` widget; the
+emitted ``PointSample`` is always normalised to m³/h/m/kW, so the marker lands
+in the same physical spot regardless of the units typed.
 """
 
 from __future__ import annotations
 
 from typing import Dict
 
+from .. import units
 from ..signals import PointSample
 from .base import BaseNode, PortSpec
 from . import ui
@@ -29,16 +34,31 @@ class PointNode(BaseNode):
     outputs = [PortSpec("Point", "PointSample")]
 
     def default_settings(self) -> Dict:
-        return {"label": "Point", "q": 800.0, "head": 75.0, "power": 0.0, "eff": 0.0}
+        p = units.PREFS
+        qu = p.default_unit("capacity")
+        hu = p.default_unit("head")
+        pu = p.default_unit("power")
+        return {
+            "label": "Point",
+            "q": units.convert_display(800.0, "capacity", "m³/h", qu),
+            "q_unit": qu,
+            "head": units.convert_display(75.0, "head", "m", hu),
+            "head_unit": hu,
+            "power": 0.0,
+            "power_unit": pu,
+            "eff": 0.0,
+        }
 
     # -- payload -----------------------------------------------------------
     def to_signal(self) -> PointSample:
         s = self.settings
         return PointSample(
             label=str(s.get("label", "Point")).strip() or "Point",
-            q_m3h=float(s.get("q") or 0.0),
-            head_m=_opt(s.get("head")),
-            power_kw=_opt(s.get("power")),
+            q_m3h=units.to_standard(
+                float(s.get("q") or 0.0), "capacity", s.get("q_unit") or "m³/h"
+            ),
+            head_m=_std_opt(s.get("head"), "head", s.get("head_unit") or "m"),
+            power_kw=_std_opt(s.get("power"), "power", s.get("power_unit") or "kW"),
             efficiency_pct=_opt(s.get("eff")),
         )
 
@@ -66,24 +86,56 @@ class PointNode(BaseNode):
             width=420,
         )
 
+        q_field = ui.UnitField(
+            "capacity",
+            s.get("q") or 0,
+            s.get("q_unit"),
+            on_change=lambda: apply(),
+            hi=1e6,
+            step=1,
+            decimals=2,
+        )
+        head_field = ui.UnitField(
+            "head",
+            s.get("head") or 0,
+            s.get("head_unit"),
+            on_change=lambda: apply(),
+            hi=1e5,
+            step=1,
+            decimals=2,
+        )
+        power_field = ui.UnitField(
+            "power",
+            s.get("power") or 0,
+            s.get("power_unit"),
+            on_change=lambda: apply(),
+            hi=1e5,
+            step=1,
+            decimals=2,
+        )
+        eff = ui.spin(s.get("eff") or 0, 0, 100, 0.5, 1, None)
+
+        def apply():
+            s["q"], s["q_unit"] = q_field.magnitude(), q_field.unit_label()
+            s["head"], s["head_unit"] = head_field.magnitude(), head_field.unit_label()
+            s["power"], s["power_unit"] = (
+                power_field.magnitude(),
+                power_field.unit_label(),
+            )
+            s["eff"] = eff.value()
+            on_change()
+
         label = ui.line_edit(s.get("label", "Point"), None, "marker label")
         label.textChanged.connect(lambda v: (s.__setitem__("label", v), on_change()))
-        q = ui.spin(s.get("q") or 0, 0, 1e6, 1, 2, None)
-        q.valueChanged.connect(lambda v: (s.__setitem__("q", v), on_change()))
-        head = ui.spin(s.get("head") or 0, 0, 1e5, 1, 2, None)
-        head.valueChanged.connect(lambda v: (s.__setitem__("head", v), on_change()))
-        power = ui.spin(s.get("power") or 0, 0, 1e5, 1, 2, None)
-        power.valueChanged.connect(lambda v: (s.__setitem__("power", v), on_change()))
-        eff = ui.spin(s.get("eff") or 0, 0, 100, 0.5, 1, None)
-        eff.valueChanged.connect(lambda v: (s.__setitem__("eff", v), on_change()))
+        eff.valueChanged.connect(lambda _=None: apply())
 
         dlg.add(ui.section("Marker"))
         dlg.add(ui.row("Label", label))
         dlg.add(ui.hline())
         dlg.add(ui.section("Values"))
-        dlg.add(ui.row("Capacity  Q", q, "m³/h"))
-        dlg.add(ui.row("Head  H", head, "m"))
-        dlg.add(ui.row("Power  P", power, "kW"))
+        dlg.add(q_field.row("Capacity  Q"))
+        dlg.add(head_field.row("Head  H"))
+        dlg.add(power_field.row("Power  P"))
         dlg.add(ui.row("Efficiency  η", eff, "%"))
         return dlg
 
@@ -95,3 +147,9 @@ def _opt(v):
     except (TypeError, ValueError):
         return None
     return f if f > 0 else None
+
+
+def _std_opt(value, dimension: str, unit: str):
+    """``_opt`` then normalise to the standard unit — ``None`` stays ``None``."""
+    v = _opt(value)
+    return None if v is None else units.to_standard(v, dimension, unit)

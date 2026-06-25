@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "unit_preset": "SI"
+  },
   "nodes": [
     {
       "id": "rated",
