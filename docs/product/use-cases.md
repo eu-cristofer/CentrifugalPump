@@ -12,11 +12,33 @@
 
 | Priority | Use cases | Rationale |
 |---|---|---|
-| **Must ship (MVP)** | UC-02, UC-06 (library), UC-09 | What the codebase already does or nearly does — the primary value to the FAT engineer. |
+| **Must ship (MVP)** | UC-00, UC-02, UC-06 (library), UC-09 | What the codebase already does or nearly does — the primary value to the FAT engineer. UC-00 is the units/fluids foundation the other three stand on. |
 | **Defer to v1.1** | UC-01, UC-03, UC-04, UC-05, UC-07, UC-08 | All depend on new library work (selection catalogue, system curve, NPSH, impeller-trim branch, comparison plotting). |
 | **Out of scope** | UC-10 (educational mode) | Low repo evidence of demand; thin layer over concept docs in v1.2+. |
 
 ## MVP use cases
+
+### UC-00 — Work in the engineer's own measurement units ✅
+- **Foundation.** Use case zero — the units/fluids layer every other use case
+  stands on, scored first because nothing downstream is unit-consistent without it.
+- **Actor:** FAT engineer / test technician (primary). **Trigger:** transcribing
+  gauge, datasheet, or instrument readings that arrive in mixed units
+  (bar, kgf/cm², psi, m³/h, gpm, rpm, °C) and defining the test fluid.
+- **Input:** raw magnitudes tagged with whatever unit the instrument reports,
+  plus a fluid (name + density, or `Water` at a temperature).
+- **Output:** quantities normalized to the project's standard units so every
+  downstream computation (head, power, η, affinity) is unit-consistent, and
+  results convert back to the engineer's display units without loss.
+- **Supported by:** the **units spine** — `quantity_factory` / `STANDARD_UNITS` /
+  `extract_context` ([`pump/utilities/unit_conversion.py`](../../pump/utilities/unit_conversion.py)),
+  `Fluid` and `Water` ([`pump/utilities/fluid.py`](../../pump/utilities/fluid.py));
+  surfaced in the workbench via the units registry + `UnitField` + project preset
+  ([`pumpflow/`](../../pumpflow/)).
+- **Acceptance:** a value entered in any dimensionally-compatible unit normalizes
+  to its standard unit and round-trips back without loss; the `unit_conversion`
+  doctests and `tests/test_utilities.py` pass.
+- **Pinned by:** `tests/test_utilities.py` + the worked utilities-demo notebook
+  (the consolidated `use_cases/UC-00_…` example).
 
 ### UC-02 — Verify pump performance (FAT) ✅
 - **Actor:** FAT engineer (primary). **Trigger:** performance test / report drafting.

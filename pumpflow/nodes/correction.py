@@ -12,11 +12,14 @@ from typing import Dict
 
 from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetItem
 
-from ..binding import BindingError, correct_curve
+from ..binding import BindingError, correct_curve, make_fluid
 from ..numfmt import fmt
 from ..signals import RatedPoint, TestPointSet
 from .base import BaseNode, PortSpec
+from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
+
+_DEFAULT_LABEL = "Rated fluid"
 
 
 class SpeedCorrectionNode(BaseNode):
@@ -26,9 +29,13 @@ class SpeedCorrectionNode(BaseNode):
     # RatedPoint is optional: with no rated point the node runs a *forced* speed
     # correction — manual target speed, density correction skipped (there is no
     # rated fluid to correct to).
+    # An optional FluidSpec (from a Fluid node) overrides the fluid the curve is
+    # corrected *to*; with it connected, density correction can run even with no
+    # rated point.
     inputs = [
         PortSpec("RatedPoint", "RatedPoint"),
         PortSpec("TestPointSet", "TestPointSet"),
+        PortSpec("FluidSpec", "FluidSpec", multi=True),
     ]
     outputs = [PortSpec("CorrectedCurve", "CorrectedCurve")]
 
@@ -40,6 +47,7 @@ class SpeedCorrectionNode(BaseNode):
             "apply_density": True,
             "apply_viscosity": False,
             "degree": 3,
+            "fluid_choice": "",  # ""=first wired (default), "__default__"=rated, or a name
         }
 
     def _resolve(self, inputs):
@@ -52,13 +60,19 @@ class SpeedCorrectionNode(BaseNode):
         if tps is None:
             return self.emit_nothing("Waiting for test points", "idle")
 
+        self._fluids = self.all_of(inputs, "FluidSpec")
+        chosen = resolve_fluid(self._fluids, self.settings.get("fluid_choice"))
+        override_fluid = make_fluid(chosen) if chosen is not None else None
+
         s = self.settings
         self._has_rated = rated is not None
+        self._has_fluid = chosen is not None
         if rated is None:
-            # Forced speed correction: no rated point → manual target speed, and
-            # density correction is skipped (no rated fluid to correct to).
+            # Forced speed correction: no rated point → manual target speed.
+            # Density correction needs a target fluid, so it runs only when a
+            # Fluid node is connected.
             target = float(s["target_speed"])
-            apply_density = False
+            apply_density = s["apply_density"] and override_fluid is not None
         else:
             target = rated.speed_rpm if s["lock_to_rated"] else float(s["target_speed"])
             apply_density = s["apply_density"]
@@ -70,14 +84,16 @@ class SpeedCorrectionNode(BaseNode):
                 apply_speed=s["apply_speed"],
                 apply_density=apply_density,
                 degree=int(s["degree"]),
+                target_fluid=override_fluid,
             )
         except BindingError as exc:
             return self.emit_nothing(str(exc), "invalid")
 
         self._last = corrected
         mode = "" if rated is not None else " · forced"
+        fl = " · fluid✓" if override_fluid is not None else ""
         self.status = (
-            f"{corrected.pump_tag} · {len(tps.rows)} pts · → {target:g} rpm{mode}"
+            f"{corrected.pump_tag} · {len(tps.rows)} pts · → {target:g} rpm{mode}{fl}"
         )
         self.state = "ok"
         return {"CorrectedCurve": corrected}
@@ -86,6 +102,7 @@ class SpeedCorrectionNode(BaseNode):
         return {
             "RatedPoint": "Rated",
             "TestPointSet": "Tests",
+            "FluidSpec": "Fluid",
             "CorrectedCurve": "Corrected",
         }.get(name, name)
 
@@ -117,6 +134,13 @@ class SpeedCorrectionNode(BaseNode):
         )
         degree = ui.int_spin(int(s["degree"]), 2, 5, None)
 
+        fluids = getattr(self, "_fluids", [])
+        fluid_pick = ui.combo(
+            choice_options(fluids, _DEFAULT_LABEL),
+            current_choice(fluids, s.get("fluid_choice")),
+            None,
+        )
+
         table = QTableWidget(0, 5)
         table.setHorizontalHeaderLabels(
             ["Q [m³/h]", "Head [m]", "Power [kW]", "η [%]", "stage"]
@@ -127,16 +151,31 @@ class SpeedCorrectionNode(BaseNode):
         def refresh():
             on_change()
             has_rated = getattr(self, "_has_rated", True)
+            has_fluid = getattr(self, "_has_fluid", False)
             # Forced mode (no rated point): manual target is always live; the
-            # rated-only controls (lock, density) are disabled.
+            # lock control is disabled.  Density correction needs a target fluid,
+            # so it stays available whenever a rated point *or* a Fluid node is
+            # connected.
             target.setEnabled(not s["lock_to_rated"] or not has_rated)
             lock.setEnabled(has_rated)
-            de.setEnabled(has_rated)
+            de.setEnabled(has_rated or has_fluid)
             corrected = getattr(self, "_last", None) if self.state == "ok" else None
-            if self.state == "ok" and not has_rated:
+            if self.state == "ok" and not has_rated and has_fluid:
+                msg, level = (
+                    "No rated point — forced speed correction, density corrected "
+                    "to the connected Fluid node.",
+                    "info",
+                )
+            elif self.state == "ok" and not has_rated:
                 msg, level = (
                     "No rated point connected — forced speed correction "
                     "(manual target speed, density correction skipped).",
+                    "info",
+                )
+            elif self.state == "ok" and has_fluid:
+                msg, level = (
+                    "Correcting to the fluid from the connected Fluid node "
+                    "(overrides the rated fluid).",
                     "info",
                 )
             else:
@@ -187,6 +226,9 @@ class SpeedCorrectionNode(BaseNode):
         degree.valueChanged.connect(
             lambda v: (s.__setitem__("degree", int(v)), refresh())
         )
+        fluid_pick.currentIndexChanged.connect(
+            lambda _: (s.__setitem__("fluid_choice", fluid_pick.currentData()), refresh())
+        )
 
         dlg.add(ui.section("Target & corrections"))
         dlg.add(ui.row("Target speed", target, "rpm"))
@@ -195,6 +237,8 @@ class SpeedCorrectionNode(BaseNode):
         dlg.add(ui.row("", de))
         dlg.add(ui.row("", vi))
         dlg.add(ui.row("Fit degree", degree))
+        if fluids:
+            dlg.add(ui.row("Correct to fluid", fluid_pick))
         dlg.add(ui.hline())
         dlg.add(ui.section("Before / after correction"))
         dlg.add(table)

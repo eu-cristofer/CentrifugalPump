@@ -15,6 +15,7 @@ from .compliance import ComplianceCheckNode
 from .correction import SpeedCorrectionNode
 from .curve_fit import CurveFitNode
 from .explore_plot import ExploreChartNode
+from .fluid import FluidNode
 from .markdown_note import MarkdownNoteNode
 from .performance_plot import PerformancePlotNode
 from .point import PointNode
@@ -24,6 +25,7 @@ from .test_points import TestPointsTableNode
 
 _CLASSES: List[Type[BaseNode]] = [
     RatedPointInputNode,
+    FluidNode,
     TestPointsTableNode,
     PointNode,
     SpeedCorrectionNode,

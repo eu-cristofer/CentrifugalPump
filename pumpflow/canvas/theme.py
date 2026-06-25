@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from PySide6.QtGui import QColor, QFont
 
-
 # --- surfaces ---------------------------------------------------------------
 WINDOW_BG = QColor("#eef1f4")
 CANVAS_BG = QColor("#e7ebf0")
@@ -23,14 +22,14 @@ NODE_BG_ALT = QColor("#f7f9fb")
 NODE_BORDER = QColor("#c3ccd6")
 NODE_BORDER_SEL = QColor("#2f6fb0")
 NODE_SHADOW = QColor(40, 55, 75, 45)
-TITLE_BG = QColor("#2b3a4a")          # steel
-TITLE_BG_SOURCE = QColor("#3b6ea5")   # source nodes get a lighter steel-blue
+TITLE_BG = QColor("#2b3a4a")  # steel
+TITLE_BG_SOURCE = QColor("#3b6ea5")  # source nodes get a lighter steel-blue
 TITLE_TEXT = QColor("#ffffff")
 SUBTLE_TEXT = QColor("#5a6573")
 BODY_TEXT = QColor("#28323d")
 
 # --- accents / state --------------------------------------------------------
-ACCENT = QColor("#2f6fb0")            # industrial blue
+ACCENT = QColor("#2f6fb0")  # industrial blue
 STEEL = QColor("#5b7185")
 OK_GREEN = QColor("#2e7d5b")
 REJECT_RED = QColor("#b4413c")
@@ -39,6 +38,7 @@ AMBER = QColor("#c08a2e")
 # --- ports (by signal type) -------------------------------------------------
 PORT_COLORS = {
     "RatedPoint": QColor("#2f6fb0"),
+    "FluidSpec": QColor("#3aa0c8"),
     "TestPointSet": QColor("#5b7185"),
     "CorrectedCurve": QColor("#3f8f8a"),
     "FittedModel": QColor("#6a6fb0"),

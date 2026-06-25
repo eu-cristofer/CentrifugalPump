@@ -80,11 +80,13 @@ The single module that imports the `pump` library. Raises `BindingError`
 | Function | Purpose |
 |---|---|
 | `make_rated_fluid(rated)` | build the rated `pump.Fluid` |
+| `make_fluid(spec)` | build a `pump.Fluid`/`Water` from a Fluid node's `FluidSpec` (UC-00) |
+| `water_density_kgm3(temp_c)` | water density at T via `pump.Water` (UC-00) |
 | `make_design_point(rated, fluid=None)` | build the shared `pump.DesignPoint` |
 | `pressure_to_pa(value, unit)` | pressure-unit → Pascal |
-| `row_head_m(row, unit)` | `Head = (P_dis−P_suc)/(ρ·g)` (water ρ at row T) |
-| `row_efficiency_pct(row, head)` | hydraulic/breaking η |
-| `correct_curve(rated, tps, …)` | `TestPoint`s → `PerformanceCurve` → `to_speed` → `to_fluid` |
+| `row_head_m(row, unit, density_kgm3=None)` | `Head = (P_dis−P_suc)/(ρ·g)` (water ρ at row T, or override ρ) |
+| `row_efficiency_pct(row, head, density_kgm3=None)` | hydraulic/breaking η (water ρ, or override ρ) |
+| `correct_curve(rated, tps, …, target_fluid=None)` | `TestPoint`s → `PerformanceCurve` → `to_speed` → `to_fluid` (target_fluid overrides the rated fluid) |
 | `fit_model(corrected, degree, with_spline)` | coeffs + splines + R² |
 | `default_tolerances(rated)` | API 610 head-band shut-off tolerance + defaults |
 | `check_compliance(fitted, rated, tolerances=None)` | deviations + verdict via `PerformanceChecker` |
@@ -202,13 +204,18 @@ mode for in-dialog previews.
 ### `registry`
 `NODE_KINDS` (the toolbox catalog) and `make_node(kind)` factory.
 
-### The seven widget nodes
+### The core widget nodes
+
+`FluidSpec` inputs are **optional** overrides emitted by the Fluid node (UC-00);
+a node works with or without one connected.
 
 | Module · class | `kind` | Inputs → Outputs |
 |---|---|---|
-| `rated_point.RatedPointInputNode` | `rated_point` | — → `RatedPoint` |
-| `test_points.TestPointsTableNode` | `test_points` | — → `TestPointSet` |
-| `correction.SpeedCorrectionNode` | `correction` | `RatedPoint`, `TestPointSet` → `CorrectedCurve` |
+| `fluid.FluidNode` | `fluid` | — → `FluidSpec` |
+| `rated_point.RatedPointInputNode` | `rated_point` | `FluidSpec`? → `RatedPoint` |
+| `test_points.TestPointsTableNode` | `test_points` | `FluidSpec`? → `TestPointSet` |
+| `point.PointNode` | `point` | `FluidSpec`? → `PointSample` |
+| `correction.SpeedCorrectionNode` | `correction` | `RatedPoint`, `TestPointSet`, `FluidSpec`? → `CorrectedCurve` |
 | `curve_fit.CurveFitNode` | `curve_fit` | `CorrectedCurve` → `FittedModel` |
 | `performance_plot.PerformancePlotNode` | `performance_plot` | `FittedModel`, `RatedPoint` → `image` |
 | `compliance.ComplianceCheckNode` | `compliance` | `FittedModel`, `RatedPoint` → `ComplianceResult` |

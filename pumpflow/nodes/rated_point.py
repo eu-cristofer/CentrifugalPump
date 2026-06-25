@@ -20,7 +20,10 @@ from typing import Dict
 from .. import units
 from ..signals import RatedPoint
 from .base import BaseNode, PortSpec
+from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
+
+_DEFAULT_LABEL = "Custom (entered below)"
 
 
 class RatedPointInputNode(BaseNode):
@@ -28,7 +31,11 @@ class RatedPointInputNode(BaseNode):
     title = "Rated Point Input"
     glyph = "◆"
     is_source = True
-    inputs = []
+    # Optional Fluid input (multi): wired Fluid nodes can override the rated
+    # fluid (density / viscosity / name), which then propagates to the design
+    # point, Compliance, Report Export and the correction target.  A "Fluid
+    # source" picker chooses Custom or one of the wired fluids.
+    inputs = [PortSpec("FluidSpec", "FluidSpec", multi=True)]
     outputs = [PortSpec("RatedPoint", "RatedPoint")]
 
     def default_settings(self) -> Dict:
@@ -56,12 +63,22 @@ class RatedPointInputNode(BaseNode):
             "unit": "bar",
             "parallel": False,
             "fluid_name": "Rated fluid",
+            "fluid_choice": "",  # ""=first wired (default), "__default__"=Custom, or a name
         }
 
     # -- payload -----------------------------------------------------------
-    def to_signal(self) -> RatedPoint:
+    def to_signal(self, override=None) -> RatedPoint:
         s = self.settings
         dens_rel = float(s["dens_rel"])
+        viscosity_cst = units.to_standard(
+            float(s["visc"]), "viscosity", s.get("visc_unit") or "cSt", dens_rel
+        )
+        fluid_name = str(s.get("fluid_name", "Rated fluid"))
+        # A connected Fluid node overrides the rated fluid (UC-00).
+        if override is not None:
+            dens_rel = override.density_rel
+            viscosity_cst = override.viscosity_cst
+            fluid_name = override.name
         return RatedPoint(
             tag=str(s["tag"]).strip(),
             service=str(s.get("service", "")),
@@ -79,28 +96,34 @@ class RatedPointInputNode(BaseNode):
             efficiency_pct=_opt(s.get("eff")),
             head_shutoff_m=_opt(s.get("head_shutoff")),
             density_rel=dens_rel,
-            viscosity_cst=units.to_standard(
-                float(s["visc"]), "viscosity", s.get("visc_unit") or "cSt", dens_rel
-            ),
+            viscosity_cst=viscosity_cst,
             pressure_unit=str(s["unit"]),
             parallel_operation=bool(s["parallel"]),
-            fluid_name=str(s.get("fluid_name", "Rated fluid")),
+            fluid_name=fluid_name,
         )
 
     def compute(self, inputs) -> Dict[str, object]:
-        rated = self.to_signal()
+        self._fluids = self.all_of(inputs, "FluidSpec")
+        self._fluid_override = resolve_fluid(
+            self._fluids, self.settings.get("fluid_choice")
+        )
+        rated = self.to_signal(self._fluid_override)
         ok, msg = rated.is_valid()
         if not ok:
             return self.emit_nothing(msg, "invalid")
         s = self.settings
         par = " · ∥-op" if rated.parallel_operation else ""
+        fl = " · fluid✓" if self._fluid_override is not None else ""
         self.status = (
             f"{rated.tag} · {float(s['q']):g} {s.get('q_unit', 'm³/h')}"
             f" · {float(s['head']):g} {s.get('head_unit', 'm')}"
-            f" · {rated.speed_rpm:g} rpm{par}"
+            f" · {rated.speed_rpm:g} rpm{par}{fl}"
         )
         self.state = "ok"
         return {"RatedPoint": rated}
+
+    def port_label(self, name: str) -> str:
+        return {"FluidSpec": "Fluid", "RatedPoint": "Rated"}.get(name, name)
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
@@ -164,8 +187,17 @@ class RatedPointInputNode(BaseNode):
 
         def apply():
             sync_fields()
-            ok, msg = self.to_signal().is_valid()
-            banner.show_message("" if ok else msg, "error" if not ok else "info")
+            override = resolve_fluid(
+                getattr(self, "_fluids", []), s.get("fluid_choice")
+            )
+            set_fluid_enabled(override is None)
+            ok, msg = self.to_signal(override).is_valid()
+            if override is not None:
+                banner.show_message(
+                    f"Rated fluid from wired Fluid node: {override.name}.", "info"
+                )
+            else:
+                banner.show_message("" if ok else msg, "error" if not ok else "info")
             on_change()
 
         # ---- IDENTIFICATION ----
@@ -214,6 +246,21 @@ class RatedPointInputNode(BaseNode):
             lambda v: (s.__setitem__("fluid_name", v), apply())
         )
 
+        # ---- Fluid source picker (Custom or a wired Fluid node) ----
+        fluids = getattr(self, "_fluids", [])
+        fluid_pick = ui.combo(
+            choice_options(fluids, _DEFAULT_LABEL),
+            current_choice(fluids, s.get("fluid_choice")),
+            None,
+        )
+        fluid_pick.currentIndexChanged.connect(
+            lambda _: (s.__setitem__("fluid_choice", fluid_pick.currentData()), apply())
+        )
+
+        def set_fluid_enabled(enabled: bool) -> None:
+            for w in (fluid_name, dens_rel, dens_abs, visc_field.spin, visc_field.combo):
+                w.setEnabled(enabled)
+
         unit = ui.combo([("bar", "bar"), ("kgf/cm²", "kgf/cm**2")], s["unit"], None)
         unit.currentIndexChanged.connect(
             lambda _: (s.__setitem__("unit", unit.currentData()), apply())
@@ -238,6 +285,8 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.row("Shut-off head", hso_spin, "m"))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated fluid"))
+        if fluids:
+            dlg.add(ui.row("Fluid source", fluid_pick))
         dlg.add(ui.row("Fluid name", fluid_name))
         dlg.add(ui.row("Relative density", dens_rel, "—"))
         dlg.add(ui.row("Density", dens_abs, "kg/m³"))
@@ -245,6 +294,7 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.row("Pressure unit", unit))
         dlg.add(ui.row("", parallel))
         dlg.add(banner)
+
         apply()
         return dlg
 

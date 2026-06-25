@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "unit_preset": "SI"
+  },
+  "nodes": [
+    {
+      "id": "fluid-1",
+      "kind": "fluid",
+      "x": -409.0,
+      "y": -232.0,
+      "settings": {
+        "source": "water",
+        "name": "Acid Water @ 35°C",
+        "temp": 35.0,
+        "temp_unit": "°C",
+        "dens": 736.0,
+        "dens_unit": "kg/m³",
+        "visc": 0.567,
+        "visc_unit": "cSt"
+      }
+    }
+  ],
+  "edges": [],
+  "view": {
+    "zoom": 1.0,
+    "cx": -1.0,
+    "cy": -1.0
+  }
+}

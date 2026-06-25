@@ -46,4 +46,5 @@ intro (see `UC-06_affinity_speed_change.ipynb` ↔ `example_1.pumpflow`).
 
 | Notebook | Use case | Demonstrates |
 |---|---|---|
+| [`UC-00_utilities_demo.ipynb`](UC-00_utilities_demo.ipynb) | [UC-00](../docs/product/use-cases.md) | The units/fluids foundation: normalising mixed-unit gauge readings through `quantity_factory`, pressure `context`, `Fluid`/`Water`, and a lossless round-trip acceptance |
 | [`UC-06_affinity_speed_change.ipynb`](UC-06_affinity_speed_change.ipynb) | [UC-06](../docs/product/use-cases.md) | Affinity speed correction of measured test points to 2000 & 1750 rpm, degree-3 fit, overlay plot (canvas twin: [`example_1.pumpflow`](example_1.pumpflow)) |

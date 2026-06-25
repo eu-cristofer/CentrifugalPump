@@ -42,28 +42,28 @@ import numpy as np
 class RatedPoint:
     """The rated (design) point + rated fluid, shared by every pump branch."""
 
-    tag: str                       # service / datasheet TAG (shared)
-    standard: str                  # e.g. "API610 (12a ed.) / ISO 13709 + N-553"
+    tag: str  # service / datasheet TAG (shared)
+    standard: str  # e.g. "API610 (12a ed.) / ISO 13709 + N-553"
 
-    q_m3h: float                   # rated capacity            [m³/h]
-    head_m: float                  # rated differential head   [m]
-    speed_rpm: float               # rated speed               [rpm]
-    power_kw: float                # rated breaking power      [kW]
+    q_m3h: float  # rated capacity            [m³/h]
+    head_m: float  # rated differential head   [m]
+    speed_rpm: float  # rated speed               [rpm]
+    power_kw: float  # rated breaking power      [kW]
 
-    efficiency_pct: Optional[float] = None   # rated efficiency        [%]
-    head_shutoff_m: Optional[float] = None   # rated shut-off head     [m]
+    efficiency_pct: Optional[float] = None  # rated efficiency        [%]
+    head_shutoff_m: Optional[float] = None  # rated shut-off head     [m]
 
     # Rated fluid: relative density is the user-facing field; absolute density is
     # kept in sync (rel * 1000 kg/m³).  Nominal viscosity is informational until
     # the viscosity correction lands in the library.
-    density_rel: float = 1.0       # relative density (SG)     [-]
-    viscosity_cst: float = 1.0     # nominal viscosity         [cSt]
+    density_rel: float = 1.0  # relative density (SG)     [-]
+    viscosity_cst: float = 1.0  # nominal viscosity         [cSt]
 
-    pressure_unit: str = "bar"     # "kgf/cm**2" | "bar"  (drives pressure_to_head)
+    pressure_unit: str = "bar"  # "kgf/cm**2" | "bar"  (drives pressure_to_head)
     parallel_operation: bool = False
 
     fluid_name: str = "Rated fluid"
-    service: str = ""              # human-readable service description
+    service: str = ""  # human-readable service description
 
     @property
     def density_kgm3(self) -> float:
@@ -88,6 +88,40 @@ class RatedPoint:
 
 
 # ---------------------------------------------------------------------------
+# 1b. FluidSpec  — produced by the Fluid node  (UC-00 — service fluid object)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FluidSpec:
+    """A service fluid defined on its own canvas node (UC-00).
+
+    When wired into Speed / Affinity Correction it overrides the fluid the curve
+    is corrected *to* (``PerformanceCurve.to_fluid``).  ``source`` is ``"water"``
+    (density derived from ``temp_c`` via ``pump.Water``) or ``"manual"``
+    (``density_kgm3`` entered directly, as relative density × 1000).
+    """
+
+    name: str
+    source: str = "manual"  # "manual" | "water"
+    density_kgm3: float = 1000.0  # resolved absolute density   [kg/m³]
+    viscosity_cst: float = 1.0  # nominal kinematic viscosity [cSt]
+    temp_c: Optional[float] = None  # water temperature, when source == "water" [°C]
+
+    @property
+    def density_rel(self) -> float:
+        """Relative density (SG) — the user-facing density form."""
+        return self.density_kgm3 / 1000.0
+
+    def is_valid(self) -> tuple[bool, str]:
+        if not self.name.strip():
+            return False, "Fluid name is required."
+        if not self.density_kgm3 > 0:
+            return False, "Density must be > 0 kg/m³."
+        return True, ""
+
+
+# ---------------------------------------------------------------------------
 # 2. TestPointSet  — produced by Test Points Table  (UI_SPEC §5.2)
 # ---------------------------------------------------------------------------
 
@@ -96,13 +130,13 @@ class RatedPoint:
 class TestRow:
     """One raw measured row of a FAT performance test."""
 
-    q_m3h: float           # measured capacity            [m³/h]
-    p_suction: float       # suction pressure             [pressure_unit]
-    p_discharge: float     # discharge pressure           [pressure_unit]
-    temp_c: float          # test-water temperature       [°C]
-    speed_rpm: float       # measured speed               [rpm]
-    power_kw: float        # measured breaking power      [kW]
-    head_m: Optional[float] = None        # optional measured/overridden head [m]
+    q_m3h: float  # measured capacity            [m³/h]
+    p_suction: float  # suction pressure             [pressure_unit]
+    p_discharge: float  # discharge pressure           [pressure_unit]
+    temp_c: float  # test-water temperature       [°C]
+    speed_rpm: float  # measured speed               [rpm]
+    power_kw: float  # measured breaking power      [kW]
+    head_m: Optional[float] = None  # optional measured/overridden head [m]
     efficiency_pct: Optional[float] = None  # optional measured efficiency    [%]
 
 
@@ -110,16 +144,24 @@ class TestRow:
 class TestPointSet:
     """A physical pump's raw measured rows (the source for one branch)."""
 
-    pump_tag: str                  # physical unit TAG (unique per branch)
+    pump_tag: str  # physical unit TAG (unique per branch)
     rows: tuple[TestRow, ...] = ()
-    pressure_unit: str = "bar"     # "kgf/cm**2" | "bar"
+    pressure_unit: str = "bar"  # "kgf/cm**2" | "bar"
+    # Test-fluid density override (kg/m³) from a connected Fluid node.  When set,
+    # Head/η are derived with this constant density instead of per-row water at
+    # T_water.  Runtime-only — set by the node from its FluidSpec input, never
+    # persisted (the table stores only its own rows).
+    test_density_kgm3: Optional[float] = None
 
     def is_valid(self) -> tuple[bool, str]:
         """UI_SPEC §5.2: at least 3 points for a degree-3 fit."""
         if not self.pump_tag.strip():
             return False, "A pump TAG is required."
         if len(self.rows) < 3:
-            return False, f"At least 3 points required for a fit (have {len(self.rows)})."
+            return (
+                False,
+                f"At least 3 points required for a fit (have {len(self.rows)}).",
+            )
         return True, ""
 
     def has_shutoff(self) -> bool:
@@ -142,12 +184,12 @@ class PointSample:
     a re-test point, a datasheet value) rather than a measurement to correct.
     """
 
-    label: str                              # marker label
-    q_m3h: float                            # capacity                  [m³/h]
-    head_m: Optional[float] = None          # head                      [m]
-    power_kw: Optional[float] = None        # breaking power            [kW]
+    label: str  # marker label
+    q_m3h: float  # capacity                  [m³/h]
+    head_m: Optional[float] = None  # head                      [m]
+    power_kw: Optional[float] = None  # breaking power            [kW]
     efficiency_pct: Optional[float] = None  # efficiency                [%]
-    pump_tag: str = ""                      # optional grouping / colour key
+    pump_tag: str = ""  # optional grouping / colour key
 
 
 # ---------------------------------------------------------------------------
@@ -160,8 +202,8 @@ class CorrectedCurve:
     """A ``pump.PerformanceCurve`` corrected to rated speed + rated fluid."""
 
     pump_tag: str
-    curve: Any                     # pump.PerformanceCurve
-    fluid: Any                     # pump.Fluid actually used (rated fluid)
+    curve: Any  # pump.PerformanceCurve
+    fluid: Any  # pump.Fluid actually used (rated fluid)
     target_speed_rpm: float
     # before/after rows for the correction table (mirrors the notebook print-out)
     before_after: tuple[dict, ...] = ()
@@ -177,15 +219,15 @@ class FittedModel:
     """Polynomial coeffs (+ optional natural cubic splines) for H, P, η."""
 
     pump_tag: str
-    curve: Any                     # pump.PerformanceCurve (corrected)
+    curve: Any  # pump.PerformanceCurve (corrected)
     degree: int
     head_coeffs: np.ndarray
     power_coeffs: np.ndarray
     efficiency_coeffs: np.ndarray
-    head_spline: Any = None        # mathx.NaturalCubicSpline | None
+    head_spline: Any = None  # mathx.NaturalCubicSpline | None
     power_spline: Any = None
     efficiency_spline: Any = None
-    r2: dict = field(default_factory=dict)   # {"head": .., "power": .., "eff": ..}
+    r2: dict = field(default_factory=dict)  # {"head": .., "power": .., "eff": ..}
 
 
 # ---------------------------------------------------------------------------
@@ -197,13 +239,13 @@ class FittedModel:
 class ParameterCheck:
     """One row of the compliance table."""
 
-    name: str                      # Head | Power | Efficiency | Shutoff Head
-    actual: float                  # rated / nominal value
-    predicted: float               # value predicted from the fitted curve
-    minimum: Optional[float]       # acceptable min (or None)
-    maximum: Optional[float]       # acceptable max (or None)
-    deviation: float               # δ = 1 − nominal/predicted
-    tolerance: float               # fractional tolerance
+    name: str  # Head | Power | Efficiency | Shutoff Head
+    actual: float  # rated / nominal value
+    predicted: float  # value predicted from the fitted curve
+    minimum: Optional[float]  # acceptable min (or None)
+    maximum: Optional[float]  # acceptable max (or None)
+    deviation: float  # δ = 1 − nominal/predicted
+    tolerance: float  # fractional tolerance
     passed: bool
 
 
@@ -214,8 +256,8 @@ class ComplianceResult:
     pump_tag: str
     parameters: tuple[ParameterCheck, ...]
     overall_pass: bool
-    tolerances: dict = field(default_factory=dict)   # editable tolerances used
-    overridden: bool = False        # True if user changed library defaults
+    tolerances: dict = field(default_factory=dict)  # editable tolerances used
+    overridden: bool = False  # True if user changed library defaults
 
     @property
     def verdict_label(self) -> str:
@@ -235,8 +277,8 @@ class BranchBundle:
     corrected: Optional[CorrectedCurve] = None
     fitted: Optional[FittedModel] = None
     compliance: Optional[ComplianceResult] = None
-    plot_png: Any = None           # io.BytesIO PNG | None
-    equipment: dict = field(default_factory=dict)   # per-pump key/value sub-table
+    plot_png: Any = None  # io.BytesIO PNG | None
+    equipment: dict = field(default_factory=dict)  # per-pump key/value sub-table
 
 
 @dataclass(frozen=True)

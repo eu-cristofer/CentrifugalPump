@@ -34,12 +34,21 @@ from typing import Optional
 import numpy as np
 
 # --- pump library imports (the library is the source of truth) --------------
-from pump import Q_, Fluid, Water, DesignPoint, TestPoint, PerformanceCurve, PerformanceChecker
+from pump import (
+    Q_,
+    Fluid,
+    Water,
+    DesignPoint,
+    TestPoint,
+    PerformanceCurve,
+    PerformanceChecker,
+)
 
 from .mathx import NaturalCubicSpline, r_squared
 from .numfmt import parse_decimal
 from .signals import (
     RatedPoint,
+    FluidSpec,
     TestPointSet,
     CorrectedCurve,
     FittedModel,
@@ -80,6 +89,25 @@ def make_rated_fluid(rated: RatedPoint) -> Fluid:
         )
 
 
+def water_density_kgm3(temp_c: float) -> float:
+    """Density of water at ``temp_c`` (°C) via ``pump.Water`` — kg/m³ (UC-00)."""
+    return float(Water(Q_(temp_c, "degC")).density.magnitude)
+
+
+def make_fluid(spec: FluidSpec) -> Fluid:
+    """Construct a ``pump.Fluid`` (or ``Water``) from a Fluid-node spec (UC-00)."""
+    if spec.source == "water" and spec.temp_c is not None:
+        return Water(Q_(spec.temp_c, "degC"))
+    with warnings.catch_warnings():
+        # nominal viscosity in cSt has no STANDARD_UNITS match (see make_rated_fluid)
+        warnings.simplefilter("ignore")
+        return Fluid(
+            name=spec.name or "Service fluid",
+            density=Q_(spec.density_kgm3, "kg/m**3"),
+            viscosity=Q_(spec.viscosity_cst, "cSt"),
+        )
+
+
 def make_design_point(rated: RatedPoint, fluid: Optional[Fluid] = None) -> DesignPoint:
     """Construct the shared ``DesignPoint`` (UI_SPEC §4)."""
     fluid = fluid or make_rated_fluid(rated)
@@ -105,28 +133,40 @@ def pressure_to_pa(value: float, unit: str) -> float:
     return float(value) * _PA_PER.get(unit, 1.0e5)
 
 
-def row_head_m(row, pressure_unit: str) -> float:
+def row_head_m(row, pressure_unit: str, density_kgm3: Optional[float] = None) -> float:
     """
     Read-only ``Head`` column for the Test Points grid (UI_SPEC §5.2):
-    ``Head = (P_dis − P_suc) / (ρ·g)`` using water density at ``T_water``.
+    ``Head = (P_dis − P_suc) / (ρ·g)``.  ``ρ`` is water at ``T_water`` by default,
+    or ``density_kgm3`` when a Fluid node overrides the test fluid (UC-00).
     An explicit measured/overridden head on the row wins.
     """
     if row.head_m is not None:
         return float(row.head_m)
-    rho = Water(Q_(row.temp_c, "degC")).density.magnitude
+    rho = (
+        density_kgm3
+        if density_kgm3 is not None
+        else Water(Q_(row.temp_c, "degC")).density.magnitude
+    )
     dp_pa = pressure_to_pa(row.p_discharge, pressure_unit) - pressure_to_pa(
         row.p_suction, pressure_unit
     )
     return dp_pa / (rho * G)
 
 
-def row_efficiency_pct(row, head_m: float) -> Optional[float]:
-    """η = hydraulic / breaking, using water density at the row temperature."""
+def row_efficiency_pct(
+    row, head_m: float, density_kgm3: Optional[float] = None
+) -> Optional[float]:
+    """η = hydraulic / breaking.  ``ρ`` is water at ``T_water`` by default, or
+    ``density_kgm3`` when a Fluid node overrides the test fluid (UC-00)."""
     if row.efficiency_pct is not None:
         return float(row.efficiency_pct)
     if not row.power_kw:
         return None
-    rho = Water(Q_(row.temp_c, "degC")).density.magnitude
+    rho = (
+        density_kgm3
+        if density_kgm3 is not None
+        else Water(Q_(row.temp_c, "degC")).density.magnitude
+    )
     q_m3s = row.q_m3h / 3600.0
     hydraulic_w = rho * q_m3s * G * head_m
     breaking_w = row.power_kw * 1000.0
@@ -147,28 +187,41 @@ def correct_curve(
     apply_speed: bool = True,
     apply_density: bool = True,
     degree: int = 3,
+    target_fluid: Optional[Fluid] = None,
 ) -> CorrectedCurve:
     """
     Build ``TestPoint``s from the raw rows, wrap them in a ``PerformanceCurve``,
     then correct to rated speed (affinity laws) and rated fluid (density).
+
+    ``target_fluid`` overrides the density-correction target: when a Fluid node
+    is wired in, the curve is corrected ``to_fluid`` *that* fluid instead of the
+    rated fluid derived from ``rated`` (UC-00).  With it set, ``rated`` may be
+    ``None`` (forced speed correction that still applies the density step).
     """
     ok, msg = tps.is_valid()
     if not ok:
         raise BindingError(msg)
 
-    target = float(target_speed_rpm if target_speed_rpm is not None else rated.speed_rpm)
+    target = float(
+        target_speed_rpm if target_speed_rpm is not None else rated.speed_rpm
+    )
 
-    # One shared test-water fluid (the library requires a single fluid per curve).
-    # Per-row head/efficiency are computed with each row's own water density and
-    # pinned onto the points, so the shared density is only a label here.
-    mean_temp = fmean(r.temp_c for r in tps.rows)
-    test_fluid = Water(Q_(mean_temp, "degC"))
+    # One shared test fluid (the library requires a single fluid per curve).
+    # Per-row head/efficiency are computed with the test density and pinned onto
+    # the points, so the shared fluid is only a label here.  A connected Fluid
+    # node overrides the test density (constant); otherwise water at T_water.
+    test_rho = tps.test_density_kgm3
+    if test_rho is not None:
+        test_fluid = Fluid(name="Test fluid", density=Q_(test_rho, "kg/m**3"))
+    else:
+        mean_temp = fmean(r.temp_c for r in tps.rows)
+        test_fluid = Water(Q_(mean_temp, "degC"))
 
     points = []
     before_after = []
     for r in tps.rows:
-        head = row_head_m(r, tps.pressure_unit)
-        eff = row_efficiency_pct(r, head)
+        head = row_head_m(r, tps.pressure_unit, test_rho)
+        eff = row_efficiency_pct(r, head, test_rho)
         kwargs = {
             "_head": Q_(head, "m"),
             "breaking_power": Q_(r.power_kw, "kW"),
@@ -185,8 +238,11 @@ def correct_curve(
         )
         before_after.append(
             {
-                "q": r.q_m3h, "head": head, "power": r.power_kw,
-                "eff": eff, "speed": r.speed_rpm,
+                "q": r.q_m3h,
+                "head": head,
+                "power": r.power_kw,
+                "eff": eff,
+                "speed": r.speed_rpm,
             }
         )
 
@@ -202,10 +258,12 @@ def correct_curve(
         except AttributeError as exc:
             raise BindingError(str(exc)) from exc
 
-    # 2) density / fluid correction to the rated fluid
+    # 2) density / fluid correction to the rated fluid (or an override Fluid node)
     fluid_used = test_fluid
     if apply_density:
-        rated_fluid = make_rated_fluid(rated)
+        rated_fluid = (
+            target_fluid if target_fluid is not None else make_rated_fluid(rated)
+        )
         curve = curve.to_fluid(rated_fluid)
         fluid_used = rated_fluid
 
@@ -214,12 +272,12 @@ def correct_curve(
         {
             "q": float(p.capacity.to("m**3/h").magnitude),
             "head": float(p.head.to("m").magnitude),
-            "power": float(p.breaking_power.to("kW").magnitude)
-            if hasattr(p, "breaking_power")
-            else None,
-            "eff": float(p.efficiency.to("percent").magnitude)
-            if _has_eff(p)
-            else None,
+            "power": (
+                float(p.breaking_power.to("kW").magnitude)
+                if hasattr(p, "breaking_power")
+                else None
+            ),
+            "eff": float(p.efficiency.to("percent").magnitude) if _has_eff(p) else None,
         }
         for p in curve.points
     ]
@@ -252,7 +310,9 @@ def _has_eff(point) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def fit_model(corrected: CorrectedCurve, degree: int = 3, with_spline: bool = True) -> FittedModel:
+def fit_model(
+    corrected: CorrectedCurve, degree: int = 3, with_spline: bool = True
+) -> FittedModel:
     """Polynomial coeffs (primary) + natural cubic splines (secondary)."""
     base = corrected.curve
     curve = PerformanceCurve(base.fluid, list(base.points), polynomial_degree=degree)
@@ -378,7 +438,9 @@ def check_compliance(
 
     # --- Efficiency:  δ ≥ −tol -----------------------------------------------
     if rated.efficiency_pct is not None:
-        pred_eff = float(fitted.curve.predict_efficiency(rated_q).to("percent").magnitude)
+        pred_eff = float(
+            fitted.curve.predict_efficiency(rated_q).to("percent").magnitude
+        )
         dev_eff = _deviation(rated.efficiency_pct, pred_eff)
         params.append(
             ParameterCheck(
@@ -441,7 +503,9 @@ def _mag(q) -> Optional[float]:
 # ---------------------------------------------------------------------------
 
 
-def build_report_png(corrected: CorrectedCurve, rated: RatedPoint, ylims: Optional[dict] = None):
+def build_report_png(
+    corrected: CorrectedCurve, rated: RatedPoint, ylims: Optional[dict] = None
+):
     """Reuse the library's matplotlib plot for the report image (BytesIO PNG)."""
     ylims = ylims or {}
     return corrected.curve.plot_performance_curve(
@@ -464,7 +528,9 @@ def report_summary_for(fitted: FittedModel, rated: RatedPoint) -> dict:
     return PerformanceChecker(design_point, fitted.curve).report_summary
 
 
-def assemble_report_data(rated: RatedPoint, bundles, equipment: Optional[dict] = None) -> dict:
+def assemble_report_data(
+    rated: RatedPoint, bundles, equipment: Optional[dict] = None
+) -> dict:
     """
     Build the ``report_data`` dict exactly as ``ReportGenerator.generate_report``
     expects (UI_SPEC §5.7): one shared design point + one keyed ``test_data``
@@ -498,11 +564,15 @@ def assemble_report_data(rated: RatedPoint, bundles, equipment: Optional[dict] =
     }
 
 
-def generate_docx(report_data: dict, language: str = "en",
-                  template_path: Optional[str] = None, output_file: Optional[str] = None) -> str:
+def generate_docx(
+    report_data: dict,
+    language: str = "en",
+    template_path: Optional[str] = None,
+    output_file: Optional[str] = None,
+) -> str:
     """Call the library's ``ReportGenerator`` to write the ``.docx`` (UI_SPEC §4)."""
     try:
-        from pump import ReportGenerator           # exported at top level if available
+        from pump import ReportGenerator  # exported at top level if available
     except Exception:
         from pump.utilities.report import ReportGenerator
     gen = ReportGenerator(language=language, template_path=template_path)

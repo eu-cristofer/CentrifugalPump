@@ -16,7 +16,12 @@ from typing import Dict, List
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
-    QHBoxLayout, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem, QWidget,
+    QHBoxLayout,
+    QHeaderView,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
 )
 
 from ..binding import row_efficiency_pct, row_head_m
@@ -25,12 +30,14 @@ from ..persistence import testset_from_json
 from ..sample_data import SINGLE_PUMP_JSON
 from ..signals import TestPointSet, TestRow
 from .base import BaseNode, PortSpec
+from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
 
 _COLS = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
 _UNITS = ["m³/h", "", "", "°C", "rpm", "kW", "m", "%"]
 _EDITABLE = {0, 1, 2, 3, 4, 5}
 _KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power"]
+_DEFAULT_LABEL = "Water at T_water"
 
 
 class TestPointsTableNode(BaseNode):
@@ -38,7 +45,10 @@ class TestPointsTableNode(BaseNode):
     title = "Test Points Table"
     glyph = "▦"
     is_source = True
-    inputs = []
+    # Optional Fluid input (multi): wired Fluid nodes set the TEST fluid density,
+    # used to derive Head/η instead of per-row water at T_water (UC-00).  A
+    # "Fluid source" picker chooses water-at-T_water or one of the wired fluids.
+    inputs = [PortSpec("FluidSpec", "FluidSpec", multi=True)]
     outputs = [PortSpec("TestPointSet", "TestPointSet")]
 
     def default_settings(self) -> Dict:
@@ -46,18 +56,24 @@ class TestPointsTableNode(BaseNode):
         return {
             "pump_tag": tps.pump_tag,
             "unit": tps.pressure_unit,
+            "fluid_choice": "",  # ""=first wired (default), "__default__"=water, or a name
             "rows": [
                 {
-                    "q": r.q_m3h, "p_suc": r.p_suction, "p_dis": r.p_discharge,
-                    "temp_c": r.temp_c, "n": r.speed_rpm, "power": r.power_kw,
-                    "head": r.head_m, "eff": r.efficiency_pct,
+                    "q": r.q_m3h,
+                    "p_suc": r.p_suction,
+                    "p_dis": r.p_discharge,
+                    "temp_c": r.temp_c,
+                    "n": r.speed_rpm,
+                    "power": r.power_kw,
+                    "head": r.head_m,
+                    "eff": r.efficiency_pct,
                 }
                 for r in tps.rows
             ],
         }
 
     # -- payload -----------------------------------------------------------
-    def to_signal(self) -> TestPointSet:
+    def to_signal(self, test_density_kgm3=None) -> TestPointSet:
         s = self.settings
         rows = []
         for r in s["rows"]:
@@ -77,26 +93,32 @@ class TestPointsTableNode(BaseNode):
             pump_tag=str(s["pump_tag"]).strip(),
             rows=tuple(rows),
             pressure_unit=str(s["unit"]),
+            test_density_kgm3=test_density_kgm3,
         )
 
     def compute(self, inputs) -> Dict[str, object]:
-        tps = self.to_signal()
+        self._fluids = self.all_of(inputs, "FluidSpec")
+        chosen = resolve_fluid(self._fluids, self.settings.get("fluid_choice"))
+        self._test_density = chosen.density_kgm3 if chosen is not None else None
+        tps = self.to_signal(self._test_density)
         ok, msg = tps.is_valid()
         if not ok:
             return self.emit_nothing(msg, "invalid")
         shutoff = "" if tps.has_shutoff() else " · no shut-off pt"
-        self.status = f"{tps.pump_tag} · {len(tps.rows)} points{shutoff}"
+        fl = f" · {chosen.name} {self._test_density:.0f} kg/m³" if chosen else ""
+        self.status = f"{tps.pump_tag} · {len(tps.rows)} points{shutoff}{fl}"
         self.state = "ok"
         return {"TestPointSet": tps}
 
     def port_label(self, name: str) -> str:
-        return "TestPoints"
+        return "Fluid" if name == "FluidSpec" else "TestPoints"
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
         s = self.settings
         dlg = ui.PropertyDialog(
-            parent, "Test Points Table",
+            parent,
+            "Test Points Table",
             "Raw measured rows for one physical pump. Head and η are computed live.",
             width=720,
         )
@@ -104,6 +126,13 @@ class TestPointsTableNode(BaseNode):
 
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. B-2351105A")
         unit = ui.combo([("bar", "bar"), ("kgf/cm²", "kgf/cm**2")], s["unit"], None)
+
+        fluids = getattr(self, "_fluids", [])
+        fluid_pick = ui.combo(
+            choice_options(fluids, _DEFAULT_LABEL),
+            current_choice(fluids, s.get("fluid_choice")),
+            None,
+        )
 
         table = QTableWidget(len(s["rows"]), len(_COLS))
         table.setHorizontalHeaderLabels(
@@ -115,7 +144,14 @@ class TestPointsTableNode(BaseNode):
 
         def recompute_status():
             ok, msg = self.to_signal().is_valid()
-            if ok and not self.to_signal().has_shutoff():
+            test_rho = getattr(self, "_test_density", None)
+            if ok and test_rho is not None:
+                banner.show_message(
+                    f"Test fluid overridden by connected Fluid node "
+                    f"({test_rho:.0f} kg/m³) — Head/η use it; T_water is informational.",
+                    "info",
+                )
+            elif ok and not self.to_signal().has_shutoff():
                 banner.show_message(
                     "OK — but no shut-off point (Q≈0). Shut-off head check will extrapolate.",
                     "warn",
@@ -136,9 +172,10 @@ class TestPointsTableNode(BaseNode):
                 head_m=r.get("head"),
                 efficiency_pct=r.get("eff"),
             )
+            test_rho = getattr(self, "_test_density", None)
             try:
-                head = row_head_m(tr, s["unit"])
-                eff = row_efficiency_pct(tr, head)
+                head = row_head_m(tr, s["unit"], test_rho)
+                eff = row_efficiency_pct(tr, head, test_rho)
             except Exception:
                 head, eff = 0.0, None
             _set_ro(table, row_idx, 6, fmt(head, 2))
@@ -168,10 +205,25 @@ class TestPointsTableNode(BaseNode):
             recompute_status()
 
         table.itemChanged.connect(on_cell_changed)
-        tag.textChanged.connect(lambda v: (s.__setitem__("pump_tag", v), recompute_status()))
-        unit.currentIndexChanged.connect(
-            lambda _: (s.__setitem__("unit", unit.currentData()), fill(), recompute_status())
+        tag.textChanged.connect(
+            lambda v: (s.__setitem__("pump_tag", v), recompute_status())
         )
+        unit.currentIndexChanged.connect(
+            lambda _: (
+                s.__setitem__("unit", unit.currentData()),
+                fill(),
+                recompute_status(),
+            )
+        )
+
+        def on_pick():
+            s["fluid_choice"] = fluid_pick.currentData()
+            chosen = resolve_fluid(getattr(self, "_fluids", []), s["fluid_choice"])
+            self._test_density = chosen.density_kgm3 if chosen is not None else None
+            fill()  # re-derive Head/η with the new density
+            recompute_status()
+
+        fluid_pick.currentIndexChanged.connect(lambda _=None: on_pick())
 
         # toolbar
         def add_row():
@@ -221,8 +273,10 @@ class TestPointsTableNode(BaseNode):
         bl.setContentsMargins(0, 0, 0, 0)
         bl.setSpacing(6)
         for label, fn in [
-            ("＋ Add row", add_row), ("－ Remove", del_rows),
-            ("↑ Up", lambda: move(-1)), ("↓ Down", lambda: move(1)),
+            ("＋ Add row", add_row),
+            ("－ Remove", del_rows),
+            ("↑ Up", lambda: move(-1)),
+            ("↓ Down", lambda: move(1)),
             ("⎘ Paste", paste),
         ]:
             b = QPushButton(label)
@@ -234,6 +288,8 @@ class TestPointsTableNode(BaseNode):
         dlg.add(ui.section("Pump identity"))
         dlg.add(ui.row("Pump TAG", tag))
         dlg.add(ui.row("Pressure unit", unit))
+        if fluids:
+            dlg.add(ui.row("Fluid source", fluid_pick))
         dlg.add(ui.hline())
         dlg.add(ui.section("Measured points"))
         dlg.add(bar)

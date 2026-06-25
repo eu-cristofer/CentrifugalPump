@@ -313,12 +313,13 @@ class ExploreChartNode(BaseNode):
         for i, tps in enumerate(getattr(self, "_testsets", [])):
             color = _PALETTE[i % len(_PALETTE)]
             q, h, p, e = [], [], [], []
+            test_rho = getattr(tps, "test_density_kgm3", None)
             for r in tps.rows:
-                head = row_head_m(r, tps.pressure_unit)
+                head = row_head_m(r, tps.pressure_unit, test_rho)
                 q.append(r.q_m3h)
                 h.append(head)
                 p.append(r.power_kw)
-                eff = row_efficiency_pct(r, head)
+                eff = row_efficiency_pct(r, head, test_rho)
                 e.append(eff if eff is not None else np.nan)
             self._scatter(pg, p_h, q, h, color, "o", f"{tps.pump_tag} data")
             self._scatter(pg, p_p, q, p, color, "o", None)

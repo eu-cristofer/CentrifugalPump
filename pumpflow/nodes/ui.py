@@ -61,6 +61,7 @@ class PropertyDialog(QDialog):
             s.setWordWrap(True)
             hl.addWidget(s)
         outer.addWidget(header)
+        self._header = header
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -75,6 +76,26 @@ class PropertyDialog(QDialog):
     def add(self, widget: QWidget) -> QWidget:
         self.body_layout.addWidget(widget)
         return widget
+
+    def fit_to_contents(self) -> None:
+        """Resize the window to fit header + body preferred size (opt-in).
+
+        Used by dialogs whose content changes height (e.g. the Fluid node showing
+        a chart only in Water mode) so the window grows/shrinks to fit instead of
+        scrolling or leaving dead space.  Clamped to the available screen.
+        """
+        self.body.adjustSize()
+        body_hint = self.body.sizeHint()
+        header_h = self._header.sizeHint().height()
+        # +2 for frame, +24 vertical / +40 horizontal slack (margins + scrollbar)
+        w = max(self.minimumWidth(), body_hint.width() + 40)
+        h = header_h + body_hint.height() + 24
+        screen = self.screen()
+        if screen is not None:
+            avail = screen.availableGeometry()
+            w = min(w, avail.width())
+            h = min(h, avail.height())
+        self.resize(w, h)
 
 
 class Banner(QLabel):

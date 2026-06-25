@@ -61,6 +61,17 @@ UNIT_OPTIONS: Dict[str, List[Tuple[str, str]]] = {
         ("cSt", "cSt"),
         ("cP", "cP"),
     ],
+    # Temperature normalises to kelvin (absolute); quantity_factory handles the
+    # offset units.  Used by the Fluid node's Water-at-temperature mode.
+    "temperature": [
+        ("°C", "degC"),
+        ("K", "kelvin"),
+        ("°F", "degF"),
+    ],
+    "density": [
+        ("kg/m³", "kg/m**3"),
+        ("g/cm³", "g/cm**3"),
+    ],
 }
 
 # Dimensions whose conversion needs the density-based special case rather than
@@ -80,12 +91,16 @@ PRESETS: Dict[str, Dict[str, str]] = {
         "head": "m",
         "power": "kW",
         "viscosity": "cSt",
+        "temperature": "°C",
+        "density": "kg/m³",
     },
     "US": {
         "capacity": "US GPM",
         "head": "ft",
         "power": "hp",
         "viscosity": "cSt",  # cSt is the industry norm for viscosity in both
+        "temperature": "°F",
+        "density": "kg/m³",
     },
     "custom": {},
 }
