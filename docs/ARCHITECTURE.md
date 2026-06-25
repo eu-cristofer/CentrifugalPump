@@ -9,7 +9,7 @@
 | **Scope** | Entire repository (~6,200 LoC across `pump/` and `pumpflow/`) |
 | **Audience** | Maintainers, reviewers, and contributors evaluating design and risk |
 | **Status** | Descriptive (as-built), not aspirational |
-| **Related docs** | [Run & Test Tutorial](RUN_AND_TEST.md) · [pumpflow UI docs](../pumpflow/docs/index.md) · [`UI_SPEC.md`](../UI_SPEC.md) |
+| **Related docs** | Run & Test Tutorial · pumpflow UI docs · Theming Guide · `UI_SPEC.md` |
 
 ---
 
@@ -244,9 +244,6 @@ Double-clicking a node opens its property dialog with `dlg.show()` (**not**
   `exec()` return value was never used — the switch to `show()` is behavior-safe.
 - Deleting a node (`GraphScene.node_removed`) closes its open dialog so no editor
   is left pointing at a removed node.
-
-For changing how these dialogs *look*, see
-[pumpflow theming](pumpflow-theming.md).
 
 ### Domain E — Adapter & integration (binding)
 - **Functions:** `correct_curve`, `fit_model`, `check_compliance`, `assemble_report_data`, `BindingError`.
