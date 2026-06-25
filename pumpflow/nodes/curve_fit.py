@@ -27,7 +27,7 @@ class CurveFitNode(BaseNode):
     outputs = [PortSpec("FittedModel", "FittedModel")]
 
     def default_settings(self) -> Dict:
-        return {"degree": 3, "spline": True, "resolution": 160}
+        return {"degree": 3, "spline": True, "resolution": 160, "show_preview": True}
 
     def compute(self, inputs) -> Dict[str, object]:
         corrected = self.first(inputs, "CorrectedCurve")
@@ -52,22 +52,24 @@ class CurveFitNode(BaseNode):
             parent, "Curve Fit",
             "Least-squares polynomial (primary) + natural cubic spline (secondary) "
             "for Head, Power and Efficiency vs. Capacity.",
-            width=620,
+            width=980,
         )
         banner = ui.Banner()
-        from PySide6.QtWidgets import QLabel
+        from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout, QHBoxLayout
         coeff_lbl = QLabel(objectName="MonoBlock")
-        coeff_lbl.setTextInteractionFlags(coeff_lbl.textInteractionFlags())
+        coeff_lbl.setWordWrap(True)
         canvas_holder = {"canvas": None}
 
         degree = ui.int_spin(int(s["degree"]), 2, 5, None)
         spline = ui.checkbox("Overlay natural cubic spline", s["spline"], None)
         resolution = ui.int_spin(int(s["resolution"]), 40, 400, None)
+        show_preview = ui.checkbox("Show preview", s["show_preview"], None)
 
-        from PySide6.QtWidgets import QWidget, QVBoxLayout
+        # Right pane: the (optional) live chart.
         preview = QWidget()
         pv = QVBoxLayout(preview)
         pv.setContentsMargins(0, 0, 0, 0)
+        preview.setMinimumWidth(440)
 
         def refresh():
             on_change()
@@ -80,10 +82,13 @@ class CurveFitNode(BaseNode):
                 "  ·  ".join(f"R²({k})={v:.4f}" for k, v in fitted.r2.items()), "ok"
             )
             coeff_lbl.setText(_coeff_text(fitted))
-            # rebuild preview
+            # Only (re)build the heavy chart when the preview pane is shown.
+            if not s["show_preview"]:
+                return
             if canvas_holder["canvas"] is not None:
                 pv.removeWidget(canvas_holder["canvas"])
                 canvas_holder["canvas"].setParent(None)
+                canvas_holder["canvas"] = None
             fig = build_figure(fitted, show_spline=bool(s["spline"]),
                                resolution=int(s["resolution"]), compact=True)
             canvas = FigureCanvas(fig)
@@ -91,22 +96,44 @@ class CurveFitNode(BaseNode):
             pv.addWidget(canvas)
             canvas_holder["canvas"] = canvas
 
+        def toggle_preview(v: bool) -> None:
+            s["show_preview"] = bool(v)
+            preview.setVisible(bool(v))
+            if v:
+                refresh()
+
         degree.valueChanged.connect(lambda v: (s.__setitem__("degree", int(v)), refresh()))
         spline.toggled.connect(lambda v: (s.__setitem__("spline", bool(v)), refresh()))
         resolution.valueChanged.connect(lambda v: (s.__setitem__("resolution", int(v)), refresh()))
+        show_preview.toggled.connect(lambda v: toggle_preview(bool(v)))
 
-        dlg.add(ui.section("Fit settings"))
-        dlg.add(ui.row("Polynomial degree", degree))
-        dlg.add(ui.row("", spline))
-        dlg.add(ui.row("Curve resolution", resolution, "pts"))
-        dlg.add(banner)
-        dlg.add(ui.hline())
-        dlg.add(ui.section("Coefficients (highest order first)"))
-        dlg.add(coeff_lbl)
-        dlg.add(ui.section("Preview"))
-        dlg.add(preview)
+        # Left column: settings + coefficients + the preview toggle.
+        left = QWidget()
+        lv = QVBoxLayout(left)
+        lv.setContentsMargins(0, 0, 0, 0)
+        left.setMinimumWidth(420)
+        lv.addWidget(ui.section("Fit settings"))
+        lv.addWidget(ui.row("Polynomial degree", degree))
+        lv.addWidget(ui.row("", spline))
+        lv.addWidget(ui.row("Curve resolution", resolution, "pts"))
+        lv.addWidget(banner)
+        lv.addWidget(ui.hline())
+        lv.addWidget(ui.section("Coefficients (highest order first)"))
+        lv.addWidget(coeff_lbl)
+        lv.addWidget(show_preview)
+        lv.addStretch(1)
+
+        split = QWidget()
+        sh = QHBoxLayout(split)
+        sh.setContentsMargins(0, 0, 0, 0)
+        sh.setSpacing(16)
+        sh.addWidget(left, 0)
+        sh.addWidget(preview, 1)
+
+        dlg.add(split)
+        preview.setVisible(bool(s["show_preview"]))
         refresh()
-        dlg.resize(660, 720)
+        dlg.resize(1000, 640)
         return dlg
 
 

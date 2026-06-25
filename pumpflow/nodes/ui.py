@@ -37,6 +37,9 @@ class PropertyDialog(QDialog):
 
     def __init__(self, parent, title: str, subtitle: str = "", width: int = 460):
         super().__init__(parent)
+        # An independent (modeless) tool window with its own min/restore/close,
+        # so the canvas and menus stay usable while it is open.
+        self.setWindowFlag(Qt.Window, True)
         self.setWindowTitle(title)
         self.setMinimumWidth(width)
         self.setObjectName("PropertyDialog")

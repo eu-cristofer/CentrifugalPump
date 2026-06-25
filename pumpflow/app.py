@@ -52,8 +52,12 @@ class MainWindow(QMainWindow):
         # True when the canvas has changes not yet written to disk.
         self._dirty: bool = False
 
+        # Open property dialogs, keyed by node logic — one modeless window per node.
+        self._open_dialogs: dict = {}
+
         self.scene = GraphScene(node_factory=make_node)
         self.scene.dialog_requested.connect(self._open_dialog)
+        self.scene.node_removed.connect(self._close_dialog_for)
         self.view = GraphView(self.scene)
         self.setCentralWidget(self.view)
 
@@ -233,6 +237,10 @@ class MainWindow(QMainWindow):
             there is nothing to save; ignored (window stays open) on Cancel.
         """
         if self._maybe_save():
+            # Dispose any independent (parentless) property windows so the app
+            # actually quits instead of lingering on their open windows.
+            for dlg in list(self._open_dialogs.values()):
+                dlg.close()
             event.accept()
         else:
             event.ignore()
@@ -322,10 +330,35 @@ class MainWindow(QMainWindow):
 
     # ----------------------------------------------------------- node dialog
     def _open_dialog(self, logic) -> None:
-        dlg = logic.create_dialog(self, on_change=self._on_dialog_change)
-        if dlg is not None:
-            dlg.exec()
+        # Modeless, one window per node: re-activating a node raises its existing
+        # dialog rather than spawning a duplicate (mirrors Orange's WidgetManager).
+        existing = self._open_dialogs.get(logic)
+        if existing is not None:
+            existing.raise_()
+            existing.activateWindow()
+            return
+        # parent=None makes each dialog a fully independent top-level window
+        # (own taskbar entry, freely arrangeable, can sit behind the canvas) —
+        # the Orange3 multi-window feel. Lifetime is managed via _open_dialogs +
+        # WA_DeleteOnClose, and closeEvent() disposes any still open on exit.
+        dlg = logic.create_dialog(None, on_change=self._on_dialog_change)
+        if dlg is None:
+            return
+        dlg.setAttribute(Qt.WA_DeleteOnClose, True)
+        self._open_dialogs[logic] = dlg
+        dlg.finished.connect(lambda _result, lg=logic: self._on_dialog_closed(lg))
+        dlg.show()
+        dlg.raise_()
+        dlg.activateWindow()
+
+    def _on_dialog_closed(self, logic) -> None:
+        self._open_dialogs.pop(logic, None)
         self.scene.evaluate()
+
+    def _close_dialog_for(self, logic) -> None:
+        dlg = self._open_dialogs.get(logic)
+        if dlg is not None:
+            dlg.close()
 
     def _on_dialog_change(self) -> None:
         self.scene.evaluate()

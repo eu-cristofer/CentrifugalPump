@@ -1,7 +1,9 @@
-# UI Specification — API 610 Pump Performance Workbench
+# UI As-Built Register — pumpflow Workbench
 
-> **Target implementer:** a coding agent building a desktop visual‑workflow
-> application on top of the existing `pump` Python library.
+> This document is the as-built functional register for the `pumpflow` visual
+> workbench. It describes the components, data flow, and behavior of the
+> application as implemented. It originated as the UI specification and is
+> preserved here as a detailed reference.
 > **Paradigm:** an [Orange3](https://orangedatamining.com/)‑style **widget canvas** —
 > the user drags nodes onto a canvas and wires them together; data flows along the
 > links. Each widget wraps one step of the engineering workflow defined in
@@ -9,14 +11,14 @@
 
 ---
 
-## 1. Goal & Scope
+## 1. Goal & Scope (As-Built)
 
-Build a graphical, node‑based application that lets a mechanical/rotating‑equipment
+The application is a graphical, node‑based tool that lets a mechanical/rotating‑equipment
 engineer reproduce the **API 610 (12th ed.) / ISO 13709** Factory Acceptance Test
 (FAT) performance assessment **without writing code**, by assembling a visual
 pipeline of widgets.
 
-The application must:
+The application provides the following capabilities:
 
 1. Capture the **rated (design) point** and the **measured test points** of a
    centrifugal pump.
@@ -29,9 +31,9 @@ The application must:
    REJECTED verdict.
 6. Export a reusable **data file (JSON)** and a formatted **`.docx` report**.
 
-The engineering math **must reuse the existing `pump` library** (see
+The engineering math **reuses the existing `pump` library** (see
 §4 *Library Binding*). The UI is a thin orchestration + visualization layer; it
-must not re‑implement physics that the library already provides.
+does not re‑implement physics that the library already provides.
 
 ### Non‑goals
 - No new physics or correlations beyond what the library/notebook already contain.
@@ -43,7 +45,7 @@ must not re‑implement physics that the library already provides.
 ## 2. Reference Workflow (from the notebook)
 
 The notebook `pump_api610_performance 1.ipynb` is the **canonical workflow** and the
-UI must mirror its seven stages:
+UI mirrors its seven stages:
 
 | # | Notebook stage | UI widget (see §5) |
 |---|----------------|--------------------|
@@ -55,14 +57,17 @@ UI must mirror its seven stages:
 | 6 | API 610 deviation & tolerance evaluation | **API 610 Compliance Check** |
 | 7 | Export report (data file) | **Report Export** |
 
-A pre‑wired **default pipeline** must be shipped so a new user sees the full chain
+A pre‑wired **default pipeline** is provided so a new user sees the full chain
 already connected on first launch:
 
-```
-[Rated Point Input] ─┐
-                     ├─► [Speed/Affinity Correction] ─► [Curve Fit] ─┬─► [Performance Plot]
-[Test Points Table] ─┘                                               ├─► [API 610 Compliance Check]
-                                                                     └─► [Report Export]
+```mermaid
+flowchart LR
+    RPI["Rated Point Input"] -- "RatedPoint" --> SAC
+    TPT["Test Points Table"] -- "TestPointSet" --> SAC
+    SAC["Speed/Affinity Correction"] -- "CorrectedCurve" --> CF["Curve Fit"]
+    CF -- "FittedModel" --> PP["Performance Plot"]
+    CF -- "FittedModel" --> ACC["API 610 Compliance Check"]
+    CF -- "FittedModel" --> RE["Report Export"]
 ```
 
 ### Multiple pumps sharing one rated point & fluid (A/B units)
@@ -75,10 +80,23 @@ pump**, and all branches **merge into a single Report Export** node (whose
 multi‑input port keys each dataset by the pump TAG, exactly as
 `ReportGenerator` already expects — see §5.7):
 
-```
-                          ┌─► [Test Points Table · Pump A] ─► [Correction A] ─► [Curve Fit A] ─► [Check A] ─┐
-[Rated Point Input] ──────┤                                                                                 ├─► [Report Export]
-   (shared rated + fluid) └─► [Test Points Table · Pump B] ─► [Correction B] ─► [Curve Fit B] ─► [Check B] ─┘
+```mermaid
+flowchart LR
+    subgraph Test Branch A
+        TPT_A["Test Points Table · Pump A"] --> SAC_A["Correction A"]
+        SAC_A --> CF_A["Curve Fit A"] --> ACC_A["Check A"]
+    end
+
+    subgraph Test Branch B
+        TPT_B["Test Points Table · Pump B"] --> SAC_B["Correction B"]
+        SAC_B --> CF_B["Curve Fit B"] --> ACC_B["Check B"]
+    end
+
+    RPI["Rated Point Input<br/>(shared)"]
+    RPI -- "RatedPoint" --> SAC_A & SAC_B
+
+    ACC_A -- "ComplianceResult" --> RE["Report Export"]
+    ACC_B -- "ComplianceResult" --> RE
 ```
 
 - The shared **rated point and fluid are entered once** and reused by every

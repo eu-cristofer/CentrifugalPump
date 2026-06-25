@@ -56,9 +56,9 @@ property in the codebase.
 | Desktop UI | PySide6 (`QGraphicsView` scene/view/items) |
 | Packaging | setuptools + `pyproject.toml`; `pip install -e .` |
 
-> ⚠️ **Stack caveat:** `pyproject.toml` declares `requires-python = ">=3.6"`, but
-> the source uses Python 3.12-only syntax. The effective floor is **3.12**. See
-> [§4](#4-coupling-dependencies--risk-spots).
+> ✅ **Stack note:** the effective floor is **3.12** (PEP 701 f-strings,
+> `typing.Self`), and `pyproject.toml` now declares `requires-python = ">=3.12"`
+> to match. See [§4](#4-coupling-dependencies--risk-spots).
 
 ### 1.3 Layer responsibilities
 
@@ -174,11 +174,21 @@ flowchart TB
 
 ### 2.1 Data flow (happy path)
 
-```
-RatedPoint ─┐
-            ├─▶ Correction ─▶ CurveFit ─┬─▶ Plot
-TestPoints ─┘  (to_speed →    (polyfit  ├─▶ Compliance ─▶ APPROVED / REJECTED
-               to_fluid)       + spline) └─▶ ReportExport ─▶ .docx / .json / .png
+```mermaid
+graph TD
+    subgraph Inputs
+        RP[RatedPoint]
+        TP[TestPoints]
+    end
+
+    subgraph Processing
+        C["Correction<br/>(to_speed → to_fluid)"] --> CF["CurveFit<br/>(polyfit + spline)"]
+    end
+
+    RP & TP --> C
+    CF --> P["Plot"]
+    CF --> ACC["Compliance<br/>(APPROVED / REJECTED)"]
+    CF --> RE["ReportExport<br/>(.docx / .json / .png)"]
 ```
 
 The `ReportExport` `branch` input is **multi-connection**: one shared `RatedPoint`
@@ -219,6 +229,25 @@ into one consolidated report (the A/B two-pump case).
 - **Responsibility:** Topologically order nodes (Kahn's algorithm in `_topo_order`), gather upstream `outputs_cache`, run each node, surface per-node state (`idle/ok/invalid/error/reject`).
 - **Patterns:** **Pipes-and-Filters** · **Template Method** (`BaseNode.run → compute`) · **Registry** (`_BY_KIND`) · **Factory** (`make_node`) · **Observer/Reactive** (Qt `Signal` + `evaluate()`) · **Immutable Message** (frozen dataclasses, `replace`-based re-emission).
 
+#### Node property dialogs are modeless
+
+Double-clicking a node opens its property dialog with `dlg.show()` (**not**
+`exec()`), as a separate top-level window — mirroring Orange3's
+`WidgetManager` + `Qt.Window` pattern. Consequences, by design:
+
+- The canvas and menus stay interactive while a dialog is open; you can pan, wire
+  nodes, and open other nodes' dialogs at the same time.
+- `MainWindow._open_dialogs` keeps **one window per node** (keyed by node logic);
+  re-activating a node raises its existing dialog instead of duplicating it.
+- Dialogs are **live-apply** (every control writes `node.settings` and calls
+  `on_change → scene.evaluate()`), so there is no OK/Cancel commit and the
+  `exec()` return value was never used — the switch to `show()` is behavior-safe.
+- Deleting a node (`GraphScene.node_removed`) closes its open dialog so no editor
+  is left pointing at a removed node.
+
+For changing how these dialogs *look*, see
+[pumpflow theming](pumpflow-theming.md).
+
 ### Domain E — Adapter & integration (binding)
 - **Functions:** `correct_curve`, `fit_model`, `check_compliance`, `assemble_report_data`, `BindingError`.
 - **Responsibility:** The Anti-Corruption Layer — convert flat UI signals to `pump` objects and back. No physics is re-implemented here.
@@ -228,26 +257,33 @@ into one consolidated report (the A/B two-pump case).
 
 ## 4. Coupling, dependencies & risk spots
 
-### 🔴 Critical
+### 🔴 Critical — all resolved (2026-06-25)
 
-1. **No automated tests.** `pyproject` lists `pytest`, but `tests/` contains only
-   two Jupyter notebooks — there is no `def test_*` anywhere. For a library that
-   produces safety-relevant FAT acceptance verdicts, this is the single biggest
-   risk; every refactor below is unguarded. (README TODO #2: *"Add testing."*)
-   The [Run & Test tutorial](RUN_AND_TEST.md) provides a ready-to-run starter
-   suite to close this gap.
+The three items originally flagged Critical have been verified against the working
+tree and closed. None remain open; details retained for traceability.
 
-2. **Confirmed bug — `NameError` in the units core.**
-   [`unit_conversion.py`](../pump/utilities/unit_conversion.py) catches
-   `except pint.UndefinedUnitError` / `pint.DimensionalityError`, but the module
-   only does `from pint import UnitRegistry, Quantity` — the name `pint` is never
-   bound. If either path is hit you get a `NameError` masking the real error, in
-   the foundation layer everything depends on.
+1. **~~No automated tests.~~ ✅ Resolved.** A curated `pytest` suite now lives in
+   [`tests/`](../tests): `test_affinity.py`, `test_compliance.py`,
+   `test_pump_smoke.py`, `test_utilities.py`, `test_persistence_roundtrip.py` —
+   **48 passing** (pinning `quantity_factory`, the affinity transforms,
+   `PerformanceChecker` verdicts, the plot stream, and the `.pumpflow`
+   round-trip). The library math that produces FAT acceptance verdicts is now
+   guarded. See the [Run & Test tutorial](RUN_AND_TEST.md).
 
-3. **Python-version contradiction.** Metadata says `>=3.6`; the code uses PEP 701
-   nested-quote f-strings (e.g. in `report.py`, `performance_curve.py`) and
-   `typing.Self`, requiring **3.12+**. The package cannot import on most versions
-   the metadata claims.
+2. **~~Confirmed bug — `NameError` in the units core.~~ ✅ Resolved.**
+   [`unit_conversion.py`](../pump/utilities/unit_conversion.py) caught
+   `except pint.UndefinedUnitError` / `pint.DimensionalityError` while importing
+   only `from pint import UnitRegistry, Quantity` — `pint` was unbound, so either
+   path raised `NameError` masking the real error. Fixed by adding a module-level
+   `import pint`; a regression test
+   (`test_conversion_error_surfaces_as_value_error_not_name_error`) forces the
+   handler and asserts a `ValueError` surfaces.
+
+3. **~~Python-version contradiction.~~ ✅ Resolved.** Code uses PEP 701
+   nested-quote f-strings and `typing.Self` (3.12+), but metadata claimed
+   `>=3.6`. [`pyproject.toml`](../pyproject.toml) now declares
+   `requires-python = ">=3.12"`, and `pump.__version__` was synced to `0.1.0`
+   (closing the version-drift half of smell #10).
 
 ### 🟠 Architectural smells
 
@@ -282,9 +318,11 @@ into one consolidated report (the A/B two-pump case).
    polynomial is a placeholder "Kell-style" fit, not the notebook's exact
    coefficients — a numerical-fidelity risk for the head column.
 
-10. **Version drift / undeclared deps.** `pump.__version__ = "0.0.1"` vs
-    `pyproject = "0.1.0"` vs `pumpflow = "0.1.0"`; PySide6 is not declared as a
-    dependency anywhere; `tests/pyproject.toml` lists `python-docx` twice.
+10. **Undeclared / duplicated deps.** (Version drift resolved — `pump.__version__`
+    is now `0.1.0`, matching `pyproject` and `pumpflow`; see Critical #3.) Still
+    open: `tests/pyproject.toml` lists `python-docx` twice; PySide6 is declared
+    only under the optional `[gui]` extra, so a bare `pip install` of the workbench
+    lacks Qt.
 
 ### Fragile zones — handle with extra care
 
@@ -310,19 +348,20 @@ correct (proper Kahn topological sort), and well-suited to the domain. Signals a
 immutable, the unit system is principled, and documentation is unusually thorough —
 every module docstring maps to a `UI_SPEC` section.
 
-**What holds it back.** No tests on safety-relevant math; a confirmed `NameError`
-in the foundation layer; a Python-version claim the code violates; a ~775-line
-God-class; and substantial copy-paste duplication across the point hierarchy. These
-are correctness-and-maintainability problems, not merely style.
+**What holds it back.** The three correctness blockers are now closed (a 48-test
+suite over the safety-relevant math, the foundation-layer `NameError`, and the
+Python-version metadata — see §4). What remains is maintainability debt: a
+~775-line God-class and substantial copy-paste duplication across the point
+hierarchy.
 
 ### Three recommendations (priority order)
 
-1. **Establish a test harness before any further refactor.** Pin the numeric
-   outputs of `quantity_factory`, `PerformanceCurve.to_speed/to_fluid`,
-   `PerformanceChecker` verdicts, and `binding.check_compliance` against the worked
-   `examples/*.ipynb`. Fix the `import pint` bug and the `>=3.6 → >=3.12` metadata
-   as the first two commits under that net. *(Starter suite supplied in the
-   [tutorial](RUN_AND_TEST.md).)*
+1. **~~Establish a test harness before any further refactor.~~ ✅ Done.** The
+   `tests/` suite pins the numeric outputs of `quantity_factory`,
+   `PerformanceCurve.to_speed/to_fluid`, and `PerformanceChecker` verdicts; the
+   `import pint` bug and the `>=3.6 → >=3.12` metadata are fixed under that net.
+   Next: extend coverage to `binding.check_compliance` against the worked
+   `examples/*.ipynb`.
 
 2. **Collapse the point hierarchy and tame `PerformanceCurve`.** Extract the
    duplicated hydraulics into a `HydraulicPointMixin`; delete the broken

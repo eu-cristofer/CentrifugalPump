@@ -48,6 +48,7 @@ from logging import getLogger, DEBUG
 import warnings
 from abc import ABC, abstractmethod
 from typing import Dict
+import pint
 from pint import UnitRegistry, Quantity
 
 __all__ = [

@@ -11,7 +11,7 @@ Submodules
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __email__ = "cristofercosta@yahoo.com.br"
 __status__ = "Development"
 

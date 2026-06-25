@@ -11,6 +11,52 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **`pumpflow/app.py` — modeless node property dialogs (Orange3-style)**
+  - Double-clicking a node now opens its property dialog with `show()` instead
+    of `exec()`, as a **parentless top-level window**.  The canvas and menus stay
+    fully interactive, and many node windows can be open and arranged at once.
+  - `MainWindow._open_dialogs` tracks **one window per node** (keyed by node
+    logic): re-activating a node raises its existing window instead of spawning a
+    duplicate.  Windows use `WA_DeleteOnClose`; `_on_dialog_closed` cleans up and
+    runs a final `scene.evaluate()`, and `closeEvent` disposes any still open so
+    the app quits cleanly.  Dialogs already use live-apply, so nothing depended
+    on modal blocking.
+  - **`pumpflow/nodes/ui.py`** — `PropertyDialog` now carries the `Qt.Window`
+    flag so each editor is an independent tool window with its own frame.
+  - **`pumpflow/canvas/scene.py`** — new `GraphScene.node_removed` signal
+    (emitted from `remove_node`); `MainWindow` connects it to close a node's open
+    dialog when the node is deleted.
+
+- **`pumpflow/nodes/performance_plot.py` — Refresh button**
+  - A **Refresh** button in the plot toolbar re-pulls the latest upstream model
+    and redraws — useful while the (now modeless) window stays open as upstream
+    nodes are edited.
+
+- **`pumpflow/nodes/curve_fit.py` — optional, side-by-side preview**
+  - Two-column layout: fit settings + coefficients + R² on the left, the chart
+    in a **right-side** pane.
+  - New **Show preview** checkbox (persisted as `settings["show_preview"]`) hides
+    the chart; when hidden, `refresh()` skips building the matplotlib figure, so
+    degree/spline edits update coefficients instantly without rendering.
+
+- **`pumpflow/canvas/view.py` — Figma-style touchpad navigation**
+  - **Two-finger / plain scroll now pans** the canvas (previously the wheel
+    always zoomed). Uses high-resolution `pixelDelta` when the device reports it
+    and falls back to `angleDelta`, so panning also works where a touchpad
+    emulates a classic wheel (e.g. X11/xcb / WSLg).
+  - **Zoom** moves to **Ctrl/Cmd+scroll** and **trackpad pinch** (a
+    `Qt.ZoomNativeGesture` handled via `event()`), still anchored under the cursor
+    and clamped to `ZOOM_MIN..ZOOM_MAX`. The existing **middle / Alt+drag** pan is
+    unchanged. Zoom/pan logic factored into `_zoom_by()` / `_pan_by()` helpers.
+
+- **`docs/pumpflow-theming.md` — color-scheme guide**
+  - Documents the two sources of pumpflow's look — `style.py` (`APP_QSS` widget
+    stylesheet) and `canvas/theme.py` (`QColor` palette + metrics for canvas
+    painting) — with a "what you see → what to edit" table, the shared-accent
+    (`#2f6fb0` lives in both files) gotcha, a worked re-accent example, and
+    how to add a port color.  Linked into `docs/index.rst` and cross-referenced
+    from a new "Node property dialogs are modeless" note in `docs/ARCHITECTURE.md`.
+
 - **`pumpflow/nodes/rated_point.py` — alternative units + Service field**
   - Per-field unit selectors for **Capacity Q** (m³/h · l/s · l/min · US GPM),
     **Differential head H** (m · ft), **Power P** (kW · hp · CV), and

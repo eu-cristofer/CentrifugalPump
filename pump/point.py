@@ -2,21 +2,21 @@
 point
 =====
 
-This module defines the Point class and its subclasses, which represent a system point 
-with converted physical quantities.
+This module defines the `BasePoint` class and its subclasses, which represent a
+system point with converted physical quantities.
 
 Classes
 -------
-- Point: Represents a system point blueprint with capacity and inlet pressure.
-- DesignPoint: A specialized version of Point for design conditions.
-- TestPoint: A specialized version of Point for handling test or operational data.
+- BasePoint: A generic system point with fluid and capacity.
+- DesignPoint: A specialized point for design conditions (rated point).
+- TestPoint: A specialized point for test or operational data (measured points).
 """
 
 import numpy as np
 from .utilities.unit_conversion import extract_context, Q_, quantity_factory
 from .utilities.fluid import Fluid
 
-__all__ = ["BasePoint", "Point", "DesignPoint", "TestPoint"]
+__all__ = ["BasePoint", "DesignPoint", "TestPoint"]
 
 
 class BasePoint:
@@ -123,6 +123,19 @@ class DesignPoint(BasePoint):
 
     @property
     def outlet_pressure(self) -> Q_:
+        """
+        Calculates the outlet pressure based on inlet pressure and various heads.
+
+        Returns
+        -------
+        Q_
+            The calculated outlet pressure.
+
+        Raises
+        ------
+        AttributeError
+            If `inlet_pressure` is not available on the point.
+        """
         if hasattr(self, "inlet_pressure"):
             heads = self.differential_head - self.elevation_head - self.velocity_head
             pressure = heads * self.fluid.density * self.g
@@ -134,12 +147,30 @@ class DesignPoint(BasePoint):
 
     @property
     def elevation_head(self) -> Q_:
+        """
+        Calculates the head difference due to elevation.
+
+        Returns
+        -------
+        Q_
+            The elevation head. Returns 0 m if `inlet_elevation` or
+            `outlet_elevation` are not provided.
+        """
         if hasattr(self, "inlet_elevation") and hasattr(self, "outlet_elevation"):
             return quantity_factory(self.outlet_elevation - self.inlet_elevation)
         return Q_(0, "m")
 
     @property
     def inlet_velocity(self) -> Q_:
+        """
+        Calculates the fluid velocity at the pump inlet.
+
+        Returns
+        -------
+        Q_
+            The inlet velocity. Returns 0 m/s if `inlet_diameter` is not
+            provided.
+        """
         if hasattr(self, "inlet_diameter"):
             return quantity_factory(
                 self.capacity / (np.pi * self.inlet_diameter**2 / 4)
@@ -148,6 +179,15 @@ class DesignPoint(BasePoint):
 
     @property
     def outlet_velocity(self) -> Q_:
+        """
+        Calculates the fluid velocity at the pump outlet.
+
+        Returns
+        -------
+        Q_
+            The outlet velocity. Returns 0 m/s if `outlet_diameter` is not
+            provided.
+        """
         if hasattr(self, "outlet_diameter"):
             return quantity_factory(
                 self.capacity / (np.pi * self.outlet_diameter**2 / 4)
@@ -156,6 +196,15 @@ class DesignPoint(BasePoint):
 
     @property
     def velocity_head(self) -> Q_:
+        """
+        Calculates the head difference due to change in fluid velocity.
+
+        Returns
+        -------
+        Q_
+            The velocity head. Returns 0 m if `inlet_diameter` or
+            `outlet_diameter` are not provided.
+        """
         if hasattr(self, "inlet_diameter") and hasattr(self, "outlet_diameter"):
             return quantity_factory(
                 (self.outlet_velocity**2 - self.inlet_velocity**2) / (2 * self.g)
@@ -237,87 +286,6 @@ class DesignPoint(BasePoint):
         return summary_text
 
 
-class Point(BasePoint):
-    """
-    Specialized version of BasePoint class, representig a generic performance point.
-    """
-
-    g = Q_(9.81, "m/s**2")
-
-    @property
-    def outlet_pressure(
-        self,
-    ):
-        return quantity_factory()
-
-    @property
-    def pressure_head(self) -> Q_:
-        if not hasattr(self.fluid, "density"):
-            raise ValueError("Fluid object does not have a 'density' attribute.")
-
-        if not hasattr(self, "delta_pressure"):
-            if not hasattr(self, "inlet_pressure") or not hasattr(
-                self, "outlet_pressure"
-            ):
-                raise AttributeError(
-                    "Cannot compute head because 'delta_pressure' or pressures are missing."
-                )
-            else:
-                self.delta_pressure = self.outlet_pressure - self.inlet_pressure
-        return quantity_factory(self.delta_pressure / (self.fluid.density * self.g))
-
-    @property
-    def inlet_velocity(self) -> Q_:
-        if hasattr(self, "inlet_diameter"):
-            return quantity_factory(
-                self.capacity / (np.pi * self.inlet_diameter**2 / 4)
-            )
-        return Q_(0, "m/s")
-
-    @property
-    def outlet_velocity(self) -> Q_:
-        if hasattr(self, "outlet_diameter"):
-            return quantity_factory(
-                self.capacity / (np.pi * self.outlet_diameter**2 / 4)
-            )
-        return Q_(0, "m/s")
-
-    @property
-    def velocity_head(self) -> Q_:
-        if hasattr(self, "inlet_diameter") and hasattr(self, "outlet_diameter"):
-            return quantity_factory(
-                (self.outlet_velocity**2 - self.inlet_velocity**2) / (2 * self.g)
-            )
-        return Q_(0, "m")
-
-    @property
-    def elevation_head(self) -> Q_:
-        if hasattr(self, "inlet_elevation") and hasattr(self, "outlet_elevation"):
-            return quantity_factory(self.outlet_elevation - self.inlet_elevation)
-        return Q_(0, "m")
-
-    @property
-    def compute_head(self) -> Q_:
-        TDH = self.pressure_head + self.velocity_head + self.elevation_head
-        self._head = quantity_factory(TDH)
-        return self._head
-
-    @property
-    def head(self) -> Q_:
-        return self._head if hasattr(self, "_head") else self.compute_head
-
-    @head.setter
-    def head(self, value: Q_) -> None:
-        self._head = quantity_factory(value)
-
-    def __repr__(self) -> str:
-        return f"Point(fluid={self.fluid.name}, capacity={self.capacity:.2f~P})"
-
-    def __str__(self) -> str:
-        """Returns a detailed string representation of the fluid's properties."""
-        return f"Point({self._get_properties()})"
-
-
 class TestPoint(BasePoint):
     """
     Specialized version of the BasePoint class for handling test or operational data.
@@ -346,6 +314,22 @@ class TestPoint(BasePoint):
 
     @property
     def pressure_head(self) -> Q_:
+        """
+        Calculates the head generated due to pressure difference.
+
+        Returns
+        -------
+        Q_
+            The pressure head.
+
+        Raises
+        ------
+        ValueError
+            If the fluid object does not have a 'density' attribute.
+        AttributeError
+            If 'delta_pressure' or both 'inlet_pressure' and 'outlet_pressure'
+            are missing.
+        """
         if not hasattr(self.fluid, "density"):
             raise ValueError("Fluid object does not have a 'density' attribute.")
 
@@ -362,6 +346,15 @@ class TestPoint(BasePoint):
 
     @property
     def inlet_velocity(self) -> Q_:
+        """
+        Calculates the fluid velocity at the pump inlet.
+
+        Returns
+        -------
+        Q_
+            The inlet velocity. Returns 0 m/s if `inlet_diameter` is not
+            provided.
+        """
         if hasattr(self, "inlet_diameter"):
             return quantity_factory(
                 self.capacity / (np.pi * self.inlet_diameter**2 / 4)
@@ -370,6 +363,15 @@ class TestPoint(BasePoint):
 
     @property
     def outlet_velocity(self) -> Q_:
+        """
+        Calculates the fluid velocity at the pump outlet.
+
+        Returns
+        -------
+        Q_
+            The outlet velocity. Returns 0 m/s if `outlet_diameter` is not
+            provided.
+        """
         if hasattr(self, "outlet_diameter"):
             return quantity_factory(
                 self.capacity / (np.pi * self.outlet_diameter**2 / 4)
@@ -378,6 +380,15 @@ class TestPoint(BasePoint):
 
     @property
     def velocity_head(self) -> Q_:
+        """
+        Calculates the head difference due to change in fluid velocity.
+
+        Returns
+        -------
+        Q_
+            The velocity head. Returns 0 m if `inlet_diameter` or
+            `outlet_diameter` are not provided.
+        """
         if hasattr(self, "inlet_diameter") and hasattr(self, "outlet_diameter"):
             return quantity_factory(
                 (self.outlet_velocity**2 - self.inlet_velocity**2) / (2 * self.g)
@@ -386,22 +397,72 @@ class TestPoint(BasePoint):
 
     @property
     def elevation_head(self) -> Q_:
+        """
+        Calculates the head difference due to elevation.
+
+        Returns
+        -------
+        Q_
+            The elevation head. Returns 0 m if `inlet_elevation` or
+            `outlet_elevation` are not provided.
+        """
         if hasattr(self, "inlet_elevation") and hasattr(self, "outlet_elevation"):
             return quantity_factory(self.outlet_elevation - self.inlet_elevation)
         return Q_(0, "m")
 
     @property
     def compute_head(self) -> Q_:
+        """
+        Computes the total dynamic head (TDH) from its components.
+
+        The TDH is the sum of pressure head, velocity head, and elevation head.
+        The result is cached in the `_head` attribute.
+
+        Returns
+        -------
+        Q_
+            The computed total dynamic head.
+        """
         TDH = self.pressure_head + self.velocity_head + self.elevation_head
         self._head = quantity_factory(TDH)
         return self._head
 
     @property
     def head(self) -> Q_:
+        """
+        The total dynamic head of the point.
+
+        Returns a cached `_head` value if it exists, otherwise computes it.
+
+        Returns
+        -------
+        Q_
+            The total dynamic head.
+        """
         return self._head if hasattr(self, "_head") else self.compute_head
+
+    @head.setter
+    def head(self, value: Q_) -> None:
+        """
+        Sets the head value for the point.
+
+        Parameters
+        ----------
+        value : Q_
+            The head value to set, as a Pint quantity.
+        """
+        self._head = quantity_factory(value)
 
     @property
     def compute_hydraulic_power(self) -> Q_:
+        """
+        Computes the hydraulic power and caches it in `_hydraulic_power`.
+
+        Returns
+        -------
+        Q_
+            The computed hydraulic power.
+        """
         self._hydraulic_power = quantity_factory(
             self.fluid.density * self.capacity * self.g * self.head
         )
@@ -409,6 +470,17 @@ class TestPoint(BasePoint):
 
     @property
     def hydraulic_power(self) -> Q_:
+        """
+        The hydraulic power of the point.
+
+        Returns a cached `_hydraulic_power` value if it exists, otherwise
+        computes it.
+
+        Returns
+        -------
+        Q_
+            The hydraulic power.
+        """
         return (
             self._hydraulic_power
             if hasattr(self, "_hydraulic_power")
@@ -417,6 +489,19 @@ class TestPoint(BasePoint):
 
     @property
     def compute_efficiency(self) -> Q_:
+        """
+        Computes the pump efficiency and caches it in `_efficiency`.
+
+        Returns
+        -------
+        Q_
+            The computed efficiency, converted to percent.
+
+        Raises
+        ------
+        AttributeError
+            If `breaking_power` is not available on the point.
+        """
         if not hasattr(self, "breaking_power"):
             raise AttributeError(
                 "Cannot compute efficiency: 'breaking_power' is missing."
@@ -428,6 +513,17 @@ class TestPoint(BasePoint):
 
     @property
     def efficiency(self) -> Q_:
+        """
+        The efficiency of the point.
+
+        Returns a cached `_efficiency` value if it exists, otherwise
+        computes it.
+
+        Returns
+        -------
+        Q_
+            The efficiency.
+        """
         return (
             self._efficiency
             if hasattr(self, "_efficiency")
@@ -435,4 +531,14 @@ class TestPoint(BasePoint):
         )
 
     def __lt__(self, other: "TestPoint") -> bool:
+        """
+        Compares two TestPoint objects based on their capacity for sorting.
+        """
         return self.capacity < other.capacity
+
+    def __repr__(self) -> str:
+        return f"TestPoint(fluid={self.fluid.name}, capacity={self.capacity:.2f~P})"
+
+    def __str__(self) -> str:
+        """Returns a detailed string representation of the fluid's properties."""
+        return f"TestPoint({self._get_properties()})"

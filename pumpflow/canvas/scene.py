@@ -69,6 +69,7 @@ class GraphScene(QGraphicsScene):
         if item in self.nodes:
             self.nodes.remove(item)
         self.removeItem(item)
+        self.node_removed.emit(item.logic)
 
     def node_by_id(self, node_id: str) -> Optional[NodeItem]:
         for n in self.nodes:

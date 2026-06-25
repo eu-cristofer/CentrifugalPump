@@ -9,14 +9,15 @@ of the mouse and there is no grabber ambiguity:
 - press on a port  → begin dragging a new link (or re-wire a single input)
 - drag             → rubber-band the link to the cursor
 - release on a port → connect if compatible (fan-out / merge supported)
-- middle / Alt+left drag → pan;  wheel → zoom
+- two-finger / plain scroll → pan;  Ctrl+scroll or pinch → zoom
+- middle / Alt+left drag → pan
 """
 
 from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QEvent, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QTransform
 from PySide6.QtWidgets import QGraphicsView
 
@@ -45,13 +46,53 @@ class GraphView(QGraphicsView):
         self._temp_edge: Optional[EdgeItem] = None
         self._drag_src: Optional[PortItem] = None
 
-    # -- zoom --------------------------------------------------------------
-    def wheelEvent(self, event):
-        factor = 1.0015 ** event.angleDelta().y()
+    # -- zoom / pan (wheel + touchpad) -------------------------------------
+    def _zoom_by(self, factor: float) -> None:
+        """Apply a multiplicative zoom about the cursor, clamped to the band."""
         new_zoom = self._zoom * factor
         if ZOOM_MIN < new_zoom < ZOOM_MAX:
             self._zoom = new_zoom
             self.scale(factor, factor)
+
+    def _pan_by(self, dx: float, dy: float) -> None:
+        """Scroll the viewport by a pixel delta (touchpad / plain wheel pan)."""
+        self.horizontalScrollBar().setValue(
+            self.horizontalScrollBar().value() - int(dx)
+        )
+        self.verticalScrollBar().setValue(
+            self.verticalScrollBar().value() - int(dy)
+        )
+
+    def wheelEvent(self, event):
+        # Figma-style: Ctrl/Cmd + scroll zooms; a bare two-finger / mouse-wheel
+        # scroll pans.  Pinch arrives separately as a native gesture (see event()).
+        if event.modifiers() & (Qt.ControlModifier | Qt.MetaModifier):
+            delta = event.angleDelta().y() or event.pixelDelta().y()
+            self._zoom_by(1.0015 ** delta)
+            event.accept()
+            return
+
+        # High-resolution touchpads report pixelDelta; classic wheels only
+        # angleDelta (vertical steps of 120, plus horizontal on tilt/two-finger).
+        pixel = event.pixelDelta()
+        if not pixel.isNull():
+            self._pan_by(pixel.x(), pixel.y())
+        else:
+            angle = event.angleDelta()
+            self._pan_by(angle.x(), angle.y())
+        event.accept()
+
+    def event(self, event):
+        # Trackpad pinch → zoom about the cursor.
+        if event.type() == QEvent.NativeGesture and self._handle_native_gesture(event):
+            return True
+        return super().event(event)
+
+    def _handle_native_gesture(self, event) -> bool:
+        if event.gestureType() == Qt.ZoomNativeGesture:
+            self._zoom_by(1.0 + event.value())
+            return True
+        return False
 
     # -- view state (fit-to-extents + persist/restore last zoom) -----------
     def fit_to_contents(self) -> None:

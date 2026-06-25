@@ -149,9 +149,13 @@ asks the scene to open the property dialog. Builds/positions `PortItem`s from th
 logic's `inputs`/`outputs`.
 
 ### `GraphView` *(QGraphicsView)*
-Pan (middle / Alt+drag), zoom (wheel), dotted grid, and **all interactive edge
-creation** (press-drag-release on ports, with single-input re-wire). Tolerant
-14 px port hit-testing.
+Figma-style canvas navigation: **two-finger / plain scroll pans**,
+**Ctrl/Cmd+scroll** and **trackpad pinch** zoom (about the cursor, clamped to the
+`ZOOM_MIN..ZOOM_MAX` band), plus the classic **middle / Alt+drag pan**. Touchpad
+panning uses high-resolution `pixelDelta` when available and falls back to
+`angleDelta`, so it also works where the touchpad emulates a wheel (e.g. X11/xcb).
+Also: dotted grid and **all interactive edge creation** (press-drag-release on
+ports, with single-input re-wire) with tolerant 14 px port hit-testing.
 
 ### `GraphScene` *(QGraphicsScene)*
 The orchestration core.

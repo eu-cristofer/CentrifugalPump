@@ -25,7 +25,7 @@ Mechanical Running Test trials. The repository is two stacked subsystems:
 | [User Guide](../pumpflow/docs/user_guide.md) | Canvas controls and every property dialog |
 | [Module Reference](../pumpflow/docs/modules.md) | Per-module / per-class API notes |
 | [Data Formats](../pumpflow/docs/data_formats.md) | `.pumpflow` project + interchange JSON |
-| [`UI_SPEC.md`](../UI_SPEC.md) | The functional specification the UI implements |
+| **UI As-Built Register** | The as-built functional register for the UI |
 
 ---
 

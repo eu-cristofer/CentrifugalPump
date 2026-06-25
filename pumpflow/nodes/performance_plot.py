@@ -117,6 +117,12 @@ class PerformancePlotNode(BaseNode):
         tl.addWidget(spline)
         tl.addWidget(points)
         tl.addStretch(1)
+        refresh = QPushButton("Refresh")
+        refresh.setObjectName("ToolButton")
+        # Re-pull the latest upstream model and redraw — useful while this
+        # modeless window stays open and upstream nodes are edited.
+        refresh.clicked.connect(lambda: redraw())
+        tl.addWidget(refresh)
         export = QPushButton("Export PNG…")
         export.setObjectName("ToolButton")
 

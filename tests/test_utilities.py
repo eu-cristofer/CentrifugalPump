@@ -85,3 +85,21 @@ def test_unknown_dimensionality_warns_and_passes_through():
     with pytest.warns(UserWarning):
         result = quantity_factory(current)
     assert result == current
+
+
+def test_conversion_error_surfaces_as_value_error_not_name_error(monkeypatch):
+    # Regression: unit_conversion.py references ``pint.UndefinedUnitError`` /
+    # ``pint.DimensionalityError`` in its ``except`` clauses, which requires a
+    # module-level ``import pint`` (not just ``from pint import ...``). Without it,
+    # any conversion failure raised a ``NameError`` that masked the real error in
+    # the foundation layer. Force the ``.to()`` call to raise a pint error and
+    # assert the handler surfaces a ``ValueError``, never a ``NameError``.
+    import pint
+    from pint import Quantity
+
+    def boom(self, *args, **kwargs):
+        raise pint.DimensionalityError("gram", "kilogram")
+
+    monkeypatch.setattr(Quantity, "to", boom)
+    with pytest.raises(ValueError):
+        quantity_factory(Q_(500, "gram"))

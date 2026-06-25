@@ -273,7 +273,7 @@ def sample_project_doc() -> Dict:
             "kind": "curve_fit",
             "x": 40.0,
             "y": 90.0,
-            "settings": {"degree": 3, "spline": True, "resolution": 160},
+            "settings": {"degree": 3, "spline": True, "resolution": 160, "show_preview": True},
         },
         {
             "id": "plot_a",
@@ -458,7 +458,7 @@ def explore_project_doc() -> Dict:
             "kind": "curve_fit",
             "x": 0.0,
             "y": 140.0,
-            "settings": {"degree": 3, "spline": True, "resolution": 160},
+            "settings": {"degree": 3, "spline": True, "resolution": 160, "show_preview": True},
         },
         {
             "id": "pt_guar",
