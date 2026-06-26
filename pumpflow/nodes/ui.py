@@ -14,6 +14,8 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+
+from ..style import ui_font
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -49,12 +51,15 @@ class PropertyDialog(QDialog):
         outer.setSpacing(0)
 
         header = QWidget(objectName="DialogHeader")
+        # A plain QWidget ignores its stylesheet `background` unless told to paint
+        # a styled background — without this the dark header never renders and the
+        # white title/subtitle text sits on the light window color (unreadable).
+        header.setAttribute(Qt.WA_StyledBackground, True)
         hl = QVBoxLayout(header)
         hl.setContentsMargins(18, 14, 18, 12)
         hl.setSpacing(2)
         t = QLabel(title, objectName="DialogTitle")
-        f = QFont("Segoe UI", 12, QFont.DemiBold)
-        t.setFont(f)
+        t.setFont(ui_font(12, QFont.DemiBold))
         hl.addWidget(t)
         if subtitle:
             s = QLabel(subtitle, objectName="DialogSubtitle")
@@ -77,18 +82,22 @@ class PropertyDialog(QDialog):
         self.body_layout.addWidget(widget)
         return widget
 
-    def fit_to_contents(self) -> None:
+    def fit_to_contents(self, vertical_only: bool = False) -> None:
         """Resize the window to fit header + body preferred size (opt-in).
 
         Used by dialogs whose content changes height (e.g. the Fluid node showing
         a chart only in Water mode) so the window grows/shrinks to fit instead of
         scrolling or leaving dead space.  Clamped to the available screen.
+
+        With ``vertical_only=True`` the current width is preserved and only the
+        height is adjusted, so a content change never makes the window jump
+        sideways.
         """
         self.body.adjustSize()
         body_hint = self.body.sizeHint()
         header_h = self._header.sizeHint().height()
         # +2 for frame, +24 vertical / +40 horizontal slack (margins + scrollbar)
-        w = max(self.minimumWidth(), body_hint.width() + 40)
+        w = self.width() if vertical_only else max(self.minimumWidth(), body_hint.width() + 40)
         h = header_h + body_hint.height() + 24
         screen = self.screen()
         if screen is not None:

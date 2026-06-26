@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
+from ..style import ui_font
 from .base import BaseNode, PortSpec
 from . import ui
 
@@ -65,7 +66,7 @@ class ComplianceCheckNode(BaseNode):
             width=680,
         )
         verdict = QLabel(objectName="VerdictBanner")
-        verdict.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        verdict.setFont(ui_font(15, QFont.Bold))
         override_chip = ui.Banner()
 
         table = QTableWidget(0, len(_HEADERS))

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from PySide6.QtGui import QColor, QFont
 
+from ..style import mono_font as _mono_font, ui_font
+
 # --- surfaces ---------------------------------------------------------------
 WINDOW_BG = QColor("#eef1f4")
 CANVAS_BG = QColor("#e7ebf0")
@@ -65,18 +67,12 @@ def port_color(signal_type: str) -> QColor:
 
 
 def title_font() -> QFont:
-    f = QFont("Segoe UI", 9, QFont.DemiBold)
-    f.setStyleHint(QFont.SansSerif)
-    return f
+    return ui_font(9, QFont.DemiBold)
 
 
 def body_font(size: int = 8) -> QFont:
-    f = QFont("Segoe UI", size)
-    f.setStyleHint(QFont.SansSerif)
-    return f
+    return ui_font(size)
 
 
 def mono_font(size: int = 8) -> QFont:
-    f = QFont("Consolas", size)
-    f.setStyleHint(QFont.Monospace)
-    return f
+    return _mono_font(size)

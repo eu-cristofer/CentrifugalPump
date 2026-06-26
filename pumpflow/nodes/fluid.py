@@ -146,7 +146,9 @@ class FluidNode(BaseNode):
 
             pg.setConfigOptions(antialias=True, background="w", foreground="#33414f")
             plot = pg.PlotWidget()
-            plot.setMinimumHeight(190)
+            # Span the full body width but keep the height modest so showing the
+            # chart only grows the window by a small amount.
+            plot.setFixedHeight(220)
             plot.showGrid(x=True, y=True, alpha=0.25)
             plot.setLabel("left", "ρ (kg/m³)")
             plot.setLabel("bottom", "Temperature (°C)")
@@ -248,8 +250,10 @@ class FluidNode(BaseNode):
         def on_source_change():
             # Toggling source changes which section is visible — refit the window
             # (deferred so the layout settles and the chart reports its size).
+            # Height-only so showing/hiding the chart never shifts the window
+            # sideways.
             apply()
-            QTimer.singleShot(0, dlg.fit_to_contents)
+            QTimer.singleShot(0, lambda: dlg.fit_to_contents(vertical_only=True))
 
         source.currentIndexChanged.connect(lambda _=None: on_source_change())
         name.textChanged.connect(lambda _=None: apply())

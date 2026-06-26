@@ -110,6 +110,7 @@ class NodeItem(QGraphicsObject):
 
         # title bar (rounded only at the top)
         title = QPainterPath()
+        title.setFillRule(Qt.WindingFill)  # union the two sub-paths instead of XOR-ing them
         title.addRoundedRect(QRectF(0, 0, w, theme.TITLE_H + r), r, r)
         title.addRect(QRectF(0, theme.TITLE_H, w, r))  # square off bottom corners
         painter.setClipPath(body)

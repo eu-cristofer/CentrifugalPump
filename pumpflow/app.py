@@ -37,7 +37,7 @@ from .persistence import (
     write_json,
 )
 from .sample_data import SECOND_PUMP_POINTS, SINGLE_PUMP_JSON
-from .style import APP_QSS
+from .style import app_qss, init_fonts
 from .welcome import WelcomeDialog, save_recent
 
 
@@ -595,7 +595,8 @@ def run() -> int:
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    app.setStyleSheet(APP_QSS)
+    init_fonts(app)  # resolve an installed UI font before any widget is built
+    app.setStyleSheet(app_qss())
     win = MainWindow()
     win.show()
     return app.exec()
