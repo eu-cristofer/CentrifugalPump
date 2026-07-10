@@ -4,5 +4,27 @@
       "Bash(python -m black pumpflow/canvas/view.py pumpflow/app.py pumpflow/signals.py pumpflow/nodes/point.py pumpflow/nodes/explore_plot.py pumpflow/nodes/registry.py pumpflow/sample_data.py)",
       "Bash(pip install *)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/cristofer/.local/bin/graphify hook-guard search"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/cristofer/.local/bin/graphify hook-guard read"
+          }
+        ]
+      }
+    ]
   }
 }

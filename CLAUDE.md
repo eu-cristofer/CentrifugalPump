@@ -106,3 +106,13 @@ A thin, reactive layer on top of `pump`, built natively on PySide6 `QGraphicsVie
 ## Workflow
 
 Development is organized as **8-hour sprints** under [docs/sprints/](docs/sprints/) (each is one focused `.md` landing as a single commit on its branch), driven by demos in `tests/utilities_test.ipynb` that become assertions. The product audience and use-case registry live under [docs/product/](docs/product/); architecture decisions under [docs/adr/](docs/adr/). Priorities follow the FAT engineer use cases (UC-02 performance verification, UC-06 affinity speed change, UC-09 `.docx` report).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
