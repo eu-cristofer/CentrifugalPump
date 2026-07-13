@@ -16,6 +16,7 @@ Mechanical Running Test trials. The repository is two stacked subsystems:
 |---|---|
 | 🏛️ [**Architecture Blueprint**](ARCHITECTURE.md) | Whole-system design: paradigm, topology (Mermaid), domains & patterns, risk spots, and a maturity score with recommendations. |
 | 🚀 [**Run & Test Tutorial**](RUN_AND_TEST.md) | Install, run the library, launch the desktop app, and run the test suite — step by step. |
+| 🔍 [**Next-Gen Code Review (2026-07-13)**](reviews/2026-07-13-next-gen-code-review.md) | Structured review of `pump` + the binding boundary: 18 actionable findings (F-01…F-18) and four next-generation options (A–D) with recommended sequencing. |
 
 ## Deeper references (pumpflow UI)
 
