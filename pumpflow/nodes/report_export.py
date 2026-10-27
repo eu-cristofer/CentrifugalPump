@@ -279,7 +279,7 @@ def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
             "q_m3h": rated.q_m3h, "head_m": rated.head_m, "n_rpm": rated.speed_rpm,
             "power_kw": rated.power_kw, "eff_pct": rated.efficiency_pct,
             "dens_rel": rated.density_rel, "visc_nom_cst": rated.viscosity_cst,
-            "head_shutoff": rated.head_shutoff_m,
+            "head_shutoff": rated.head_shutoff_m, "npsha_m": rated.npsha_m,
         },
         "equipment": {k: v for k, v in (equipment or {}).items() if v},
         "pumps": [],

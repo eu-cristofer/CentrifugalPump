@@ -163,3 +163,23 @@ So the finish line is real and not infinite:
 
 That's the whole journey. Seven sprints behind you, roughly six of hardening
 ahead, then features at your own pace. Open S7. Ignore the rest.
+
+## Latest Work Log
+
+### 2026-10-27
+
+- Expanded the `Fluid` node water mode to show density, dynamic viscosity, and
+  kinematic viscosity at temperature.
+- Documented the water-property equations in the UI and added source references
+  for density and viscosity correlations.
+- Tightened `Rated Point Input` so custom density-entry fields only show when
+  the fluid source is entered locally rather than overridden by a connected
+  `Fluid` node.
+- Removed the rated-point pressure-unit field from the dialog while preserving
+  downstream export/report compatibility.
+- Added optional `NPSHa` to the rated point model, persistence, and design-point
+  binding.
+- Split `Save` and `Save As` in the main window so `Ctrl+S` saves to the
+  current project path and falls back to Save As only for unsaved projects.
+- Updated sample project fixtures and regression tests to cover the new fields
+  and preserve `.pumpflow` fixed-point round-tripping.

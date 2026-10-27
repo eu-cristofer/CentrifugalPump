@@ -3,7 +3,7 @@ nodes.rated_point — Rated Point Input  (UI_SPEC §5.1)
 
 Source node.  Captures the shared rated (design) point + rated fluid and emits a
 ``RatedPoint`` signal.  Density is entered as relative density **and** kg/m³ kept
-in sync; pressure-unit selector drives the head-from-pressure conversion.
+in sync.
 
 Unit selection for Q, H, P, and viscosity is handled by the reusable
 ``ui.UnitField`` widget, backed by the central :mod:`pumpflow.units` registry —
@@ -17,7 +17,10 @@ from __future__ import annotations
 
 from typing import Dict
 
+from PySide6.QtWidgets import QLabel
+
 from .. import units
+from ..binding import water_density_kgm3
 from ..signals import RatedPoint
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
@@ -57,10 +60,11 @@ class RatedPointInputNode(BaseNode):
             "power_unit": pu,
             "eff": 61.0,
             "head_shutoff": 117.0,
+            "npsha": 0.0,
             "dens_rel": 0.736,
+            "dens_unit": p.default_unit("density"),
             "visc": 0.567,
             "visc_unit": vu,
-            "unit": "bar",
             "parallel": False,
             "fluid_name": "Rated fluid",
             "fluid_choice": "",  # ""=first wired (default), "__default__"=Custom, or a name
@@ -95,9 +99,9 @@ class RatedPointInputNode(BaseNode):
             ),
             efficiency_pct=_opt(s.get("eff")),
             head_shutoff_m=_opt(s.get("head_shutoff")),
+            npsha_m=_opt(s.get("npsha")),
             density_rel=dens_rel,
             viscosity_cst=viscosity_cst,
-            pressure_unit=str(s["unit"]),
             parallel_operation=bool(s["parallel"]),
             fluid_name=fluid_name,
         )
@@ -136,7 +140,7 @@ class RatedPointInputNode(BaseNode):
         )
         banner = ui.Banner()
 
-        # Unit-aware fields (Q, H, P, viscosity).  Viscosity reads the live
+        # Unit-aware fields (Q, H, P, density, viscosity). Viscosity reads the live
         # relative density for its kinematic↔dynamic conversion.
         q_field = ui.UnitField(
             "capacity",
@@ -165,6 +169,21 @@ class RatedPointInputNode(BaseNode):
             step=1,
             decimals=3,
         )
+        density_field = ui.UnitField(
+            "density",
+            units.convert_display(
+                float(s["dens_rel"]) * 1000.0,
+                "density",
+                "kg/m³",
+                s.get("dens_unit") or "kg/m³",
+            ),
+            s.get("dens_unit"),
+            on_change=lambda: apply(),
+            lo=0.0,
+            hi=5000.0,
+            step=1.0,
+            decimals=3,
+        )
         visc_field = ui.UnitField(
             "viscosity",
             s["visc"],
@@ -183,22 +202,8 @@ class RatedPointInputNode(BaseNode):
                 power_field.magnitude(),
                 power_field.unit_label(),
             )
+            s["dens_unit"] = density_field.unit_label()
             s["visc"], s["visc_unit"] = visc_field.magnitude(), visc_field.unit_label()
-
-        def apply():
-            sync_fields()
-            override = resolve_fluid(
-                getattr(self, "_fluids", []), s.get("fluid_choice")
-            )
-            set_fluid_enabled(override is None)
-            ok, msg = self.to_signal(override).is_valid()
-            if override is not None:
-                banner.show_message(
-                    f"Rated fluid from wired Fluid node: {override.name}.", "info"
-                )
-            else:
-                banner.show_message("" if ok else msg, "error" if not ok else "info")
-            on_change()
 
         # ---- IDENTIFICATION ----
         service = ui.line_edit(s.get("service", ""), None, "e.g. Crude Oil Transfer")
@@ -212,32 +217,47 @@ class RatedPointInputNode(BaseNode):
         n_spin = ui.spin(s["n"], 0, 1e5, 10, 0, None)
         eff_spin = ui.spin(s.get("eff") or 0, 0, 100, 0.5, 1, None)
         hso_spin = ui.spin(s.get("head_shutoff") or 0, 0, 1e5, 1, 2, None)
+        npsha_spin = ui.spin(s.get("npsha") or 0, 0, 1e5, 0.1, 2, None)
         n_spin.valueChanged.connect(lambda v: (s.__setitem__("n", v), apply()))
         eff_spin.valueChanged.connect(lambda v: (s.__setitem__("eff", v), apply()))
         hso_spin.valueChanged.connect(
             lambda v: (s.__setitem__("head_shutoff", v), apply())
         )
+        npsha_spin.valueChanged.connect(
+            lambda v: (s.__setitem__("npsha", v), apply())
+        )
 
         # ---- RATED FLUID — relative ↔ absolute density kept in sync ----
-        dens_rel = ui.spin(s["dens_rel"], 0.0, 5.0, 0.001, 3, None)
-        dens_abs = ui.spin(s["dens_rel"] * 1000.0, 0.0, 5000.0, 1, 1, None)
+        dens_rel = ui.spin(s["dens_rel"], 0.0, 5.0, 0.001, 6, None)
+        density_rel_display = QLabel("—")
+        density_kgm3_display = QLabel("—")
+        water_equivalent_display = QLabel("—")
 
         def on_rel(v):
             s["dens_rel"] = float(v)
-            dens_abs.blockSignals(True)
-            dens_abs.setValue(float(v) * 1000.0)
-            dens_abs.blockSignals(False)
+            density_field.spin.blockSignals(True)
+            density_field.spin.setValue(
+                units.convert_display(
+                    float(v) * 1000.0,
+                    "density",
+                    "kg/m³",
+                    density_field.unit_label(),
+                )
+            )
+            density_field.spin.blockSignals(False)
             apply()
 
-        def on_abs(v):
-            s["dens_rel"] = float(v) / 1000.0
+        def on_density_change():
+            density_kgm3 = density_field.standard()
+            s["dens_rel"] = density_kgm3 / 1000.0
             dens_rel.blockSignals(True)
-            dens_rel.setValue(float(v) / 1000.0)
+            dens_rel.setValue(s["dens_rel"])
             dens_rel.blockSignals(False)
             apply()
 
         dens_rel.valueChanged.connect(on_rel)
-        dens_abs.valueChanged.connect(on_abs)
+        density_field.spin.valueChanged.connect(lambda _=None: on_density_change())
+        density_field.combo.currentIndexChanged.connect(lambda _=None: on_density_change())
 
         fluid_name = ui.line_edit(
             s.get("fluid_name", "Rated fluid"), None, "e.g. Light Hydrocarbon"
@@ -258,17 +278,49 @@ class RatedPointInputNode(BaseNode):
         )
 
         def set_fluid_enabled(enabled: bool) -> None:
-            for w in (fluid_name, dens_rel, dens_abs, visc_field.spin, visc_field.combo):
+            for w in (
+                fluid_name,
+                dens_rel,
+                density_field.spin,
+                density_field.combo,
+                visc_field.spin,
+                visc_field.combo,
+            ):
                 w.setEnabled(enabled)
-
-        unit = ui.combo([("bar", "bar"), ("kgf/cm²", "kgf/cm**2")], s["unit"], None)
-        unit.currentIndexChanged.connect(
-            lambda _: (s.__setitem__("unit", unit.currentData()), apply())
-        )
         parallel = ui.checkbox("Parallel-operation unit (A/B)", s["parallel"], None)
         parallel.toggled.connect(
             lambda v: (s.__setitem__("parallel", bool(v)), apply())
         )
+
+        def refresh_density_labels(override) -> None:
+            if override is not None:
+                density_rel_display.setText(f"{override.density_rel:.6f}")
+                density_kgm3_display.setText(f"{override.density_kgm3:.3f}")
+                water_equivalent_display.setText("From connected Fluid node")
+                return
+            density_kgm3 = float(s["dens_rel"]) * 1000.0
+            density_rel_display.setText(f"{float(s['dens_rel']):.6f}")
+            density_kgm3_display.setText(f"{density_kgm3:.3f}")
+            water_temp_c = 20.0
+            water_equivalent_display.setText(
+                f"Water @ {water_temp_c:g} °C = {water_density_kgm3(water_temp_c):.3f} kg/m³"
+            )
+
+        def apply():
+            sync_fields()
+            override = resolve_fluid(
+                getattr(self, "_fluids", []), s.get("fluid_choice")
+            )
+            set_fluid_enabled(override is None)
+            refresh_density_labels(override)
+            ok, msg = self.to_signal(override).is_valid()
+            if override is not None:
+                banner.show_message(
+                    f"Rated fluid from wired Fluid node: {override.name}.", "info"
+                )
+            else:
+                banner.show_message("" if ok else msg, "error" if not ok else "info")
+            on_change()
 
         # ---- Layout ----
         dlg.add(ui.section("Identification"))
@@ -283,17 +335,37 @@ class RatedPointInputNode(BaseNode):
         dlg.add(power_field.row("Power  P"))
         dlg.add(ui.row("Efficiency  η", eff_spin, "%"))
         dlg.add(ui.row("Shut-off head", hso_spin, "m"))
+        dlg.add(ui.row("NPSHa", npsha_spin, "m"))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated fluid"))
         if fluids:
             dlg.add(ui.row("Fluid source", fluid_pick))
-        dlg.add(ui.row("Fluid name", fluid_name))
-        dlg.add(ui.row("Relative density", dens_rel, "—"))
-        dlg.add(ui.row("Density", dens_abs, "kg/m³"))
-        dlg.add(visc_field.row("Nominal viscosity"))
-        dlg.add(ui.row("Pressure unit", unit))
+        fluid_name_row = ui.row("Fluid name", fluid_name)
+        dens_rel_input_row = ui.row("Relative density input", dens_rel, "SG")
+        density_input_row = density_field.row("Density input")
+        density_rel_row = ui.row("Relative density", density_rel_display, "SG")
+        density_row = ui.row("Density", density_kgm3_display, "kg/m³")
+        viscosity_row = visc_field.row("Nominal viscosity")
+        water_reference_row = ui.row("Water reference", water_equivalent_display)
+        dlg.add(fluid_name_row)
+        dlg.add(dens_rel_input_row)
+        dlg.add(density_input_row)
+        dlg.add(density_rel_row)
+        dlg.add(density_row)
+        dlg.add(viscosity_row)
+        dlg.add(water_reference_row)
         dlg.add(ui.row("", parallel))
         dlg.add(banner)
+
+        def sync_fluid_rows(enabled: bool) -> None:
+            dens_rel_input_row.setVisible(enabled)
+            density_input_row.setVisible(enabled)
+
+        original_set_fluid_enabled = set_fluid_enabled
+
+        def set_fluid_enabled(enabled: bool) -> None:
+            original_set_fluid_enabled(enabled)
+            sync_fluid_rows(enabled)
 
         apply()
         return dlg

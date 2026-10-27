@@ -94,6 +94,24 @@ def water_density_kgm3(temp_c: float) -> float:
     return float(Water(Q_(temp_c, "degC")).density.magnitude)
 
 
+def water_dynamic_viscosity_cP(temp_c: float) -> float:
+    """Dynamic viscosity of liquid water at ``temp_c`` (°C) — cP.
+
+    Correlation: Andrade-style exponential fit published by Kestin et al. for
+    liquid water over the engineering range used by the GUI.
+    """
+    t_k = temp_c + 273.15
+    mu_pa_s = 2.414e-5 * 10.0 ** (247.8 / (t_k - 140.0))
+    return mu_pa_s * 1000.0
+
+
+def water_kinematic_viscosity_cst(temp_c: float) -> float:
+    """Kinematic viscosity of liquid water at ``temp_c`` (°C) — cSt."""
+    rho_kgm3 = water_density_kgm3(temp_c)
+    mu_cp = water_dynamic_viscosity_cP(temp_c)
+    return mu_cp / (rho_kgm3 / 1000.0)
+
+
 def make_fluid(spec: FluidSpec) -> Fluid:
     """Construct a ``pump.Fluid`` (or ``Water``) from a Fluid-node spec (UC-00)."""
     if spec.source == "water" and spec.temp_c is not None:
@@ -114,6 +132,8 @@ def make_design_point(rated: RatedPoint, fluid: Optional[Fluid] = None) -> Desig
     kwargs = {}
     if rated.head_shutoff_m is not None:
         kwargs["head_shutoff"] = Q_(rated.head_shutoff_m, "m")
+    if rated.npsha_m is not None:
+        kwargs["npsha"] = Q_(rated.npsha_m, "m")
     if rated.power_kw is not None:
         kwargs["breaking_power"] = Q_(rated.power_kw, "kW")
     return DesignPoint(

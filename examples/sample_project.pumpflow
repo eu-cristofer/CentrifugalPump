@@ -21,12 +21,14 @@
         "power_unit": "kW",
         "eff": 61.0,
         "head_shutoff": 117.0,
+        "npsha": 0.0,
         "dens_rel": 0.736,
+        "dens_unit": "kg/m³",
         "visc": 0.567,
         "visc_unit": "cSt",
-        "unit": "bar",
         "parallel": false,
-        "fluid_name": "Rated fluid"
+        "fluid_name": "Rated fluid",
+        "fluid_choice": ""
       }
     },
     {
@@ -37,6 +39,7 @@
       "settings": {
         "pump_tag": "B-2351105A",
         "unit": "bar",
+        "fluid_choice": "",
         "rows": [
           {
             "q": 300.0,
@@ -112,7 +115,8 @@
         "apply_speed": true,
         "apply_density": true,
         "apply_viscosity": false,
-        "degree": 3
+        "degree": 3,
+        "fluid_choice": ""
       }
     },
     {

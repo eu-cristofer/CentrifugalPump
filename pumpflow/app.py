@@ -80,7 +80,8 @@ class MainWindow(QMainWindow):
         m_file = bar.addMenu("&File")
         self._act(m_file, "New (empty canvas)", self.new_project, "Ctrl+N")
         self._act(m_file, "Open project (.pumpflow)…", self.open_project, "Ctrl+O")
-        self._act(m_file, "Save project (.pumpflow)…", self.save_project, "Ctrl+S")
+        self._act(m_file, "Save project", self.save_project, "Ctrl+S")
+        self._act(m_file, "Save project as (.pumpflow)…", self.save_project_as, "Ctrl+Shift+S")
         m_file.addSeparator()
         self._act(m_file, "Import data file (.json)…", self.import_data_file)
         self._act(m_file, "Export data file (.json)…", self.export_data_file)
@@ -466,12 +467,23 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------- project IO
     def save_project(self) -> None:
         """
-        Serialise the canvas to a ``.pumpflow`` file (File > Save).
+        Serialise the canvas to the current ``.pumpflow`` file (File > Save).
 
-        Opens a file-picker pre-filled with the last saved path when available.
-        On success the dirty flag is cleared, ``_current_path`` is updated,
-        and the path is prepended to the recent-files list.
+        Falls back to :meth:`save_project_as` when the project has not yet been
+        saved to disk.
         """
+        if self._current_path is None:
+            self.save_project_as()
+            return
+        doc = self.scene.to_dict()
+        doc["view"] = self.view.view_state()
+        write_json(self._current_path, doc)
+        self._mark_clean()
+        save_recent(self._current_path)
+        self.statusBar().showMessage(f"Saved {self._current_path}", 4000)
+
+    def save_project_as(self) -> None:
+        """Serialise the canvas to a chosen ``.pumpflow`` path (File > Save As)."""
         default = str(self._current_path) if self._current_path else "pipeline.pumpflow"
         path, _ = QFileDialog.getSaveFileName(
             self, "Save project", default, "PumpFlow (*.pumpflow)"
@@ -531,10 +543,11 @@ class MainWindow(QMainWindow):
                     "power_unit": "kW",
                     "eff": rated.efficiency_pct or 0,
                     "head_shutoff": rated.head_shutoff_m or 0,
+                    "npsha": rated.npsha_m or 0,
                     "dens_rel": rated.density_rel,
+                    "dens_unit": "kg/m³",
                     "visc": rated.viscosity_cst,
                     "visc_unit": "cSt",
-                    "unit": rated.pressure_unit,
                     "parallel": rated.parallel_operation,
                 }
             )

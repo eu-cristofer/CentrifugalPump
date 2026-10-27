@@ -48,6 +48,8 @@ def test_builder_shape():
     ids = {n["id"] for n in doc["nodes"]}
     for e in doc["edges"]:
         assert e["src_node"] in ids and e["dst_node"] in ids
+    rated = next(n for n in doc["nodes"] if n["kind"] == "rated_point")
+    assert rated["settings"]["npsha"] == 0.0
 
 
 # --------------------------------------------------------------------------- #

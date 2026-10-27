@@ -15,6 +15,11 @@ Run with::
 import pytest
 
 from pump import Q_, Fluid, quantity_factory
+from pumpflow.binding import (
+    water_density_kgm3,
+    water_dynamic_viscosity_cP,
+    water_kinematic_viscosity_cst,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -62,6 +67,12 @@ def test_fluid_density_canonicalizes_to_kg_per_m3():
 def test_fluid_repr_is_stable():
     water = Fluid(name="Water", density=Q_(1_000_000, "g/m**3"))
     assert repr(water) == "Fluid(name=Water, density=1000.0 kilogram / meter ** 3)"
+
+
+def test_water_property_helpers_match_expected_engineering_values():
+    assert water_density_kgm3(20.0) == pytest.approx(998.206, abs=0.02)
+    assert water_dynamic_viscosity_cP(20.0) == pytest.approx(1.002, abs=0.01)
+    assert water_kinematic_viscosity_cst(20.0) == pytest.approx(1.004, abs=0.01)
 
 
 # --------------------------------------------------------------------------- #

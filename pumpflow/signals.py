@@ -52,6 +52,7 @@ class RatedPoint:
 
     efficiency_pct: Optional[float] = None  # rated efficiency        [%]
     head_shutoff_m: Optional[float] = None  # rated shut-off head     [m]
+    npsha_m: Optional[float] = None  # rated NPSHa                [m]
 
     # Rated fluid: relative density is the user-facing field; absolute density is
     # kept in sync (rel * 1000 kg/m³).  Nominal viscosity is informational until
@@ -59,7 +60,6 @@ class RatedPoint:
     density_rel: float = 1.0  # relative density (SG)     [-]
     viscosity_cst: float = 1.0  # nominal viscosity         [cSt]
 
-    pressure_unit: str = "bar"  # "kgf/cm**2" | "bar"  (drives pressure_to_head)
     parallel_operation: bool = False
 
     fluid_name: str = "Rated fluid"
@@ -69,6 +69,11 @@ class RatedPoint:
     def density_kgm3(self) -> float:
         """Absolute rated density, kept in sync with the relative density."""
         return self.density_rel * 1000.0
+
+    @property
+    def pressure_unit(self) -> str:
+        """Rated-point exports use bar; test points still carry their own pressure unit."""
+        return "bar"
 
     def is_valid(self) -> tuple[bool, str]:
         """UI_SPEC §5.1 validation: Q ≥ 0, H > 0, N > 0, P > 0."""

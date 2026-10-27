@@ -24,7 +24,11 @@ import numpy as np
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from ..binding import water_density_kgm3
+from ..binding import (
+    water_density_kgm3,
+    water_dynamic_viscosity_cP,
+    water_kinematic_viscosity_cst,
+)
 from ..signals import FluidSpec
 from .. import units
 from .base import BaseNode, PortSpec
@@ -68,7 +72,7 @@ class FluidNode(BaseNode):
                 name=name,
                 source="water",
                 density_kgm3=water_density_kgm3(temp_c),
-                viscosity_cst=1.0,
+                viscosity_cst=water_kinematic_viscosity_cst(temp_c),
                 temp_c=temp_c,
             )
         dens_kgm3 = units.to_standard(
@@ -91,7 +95,10 @@ class FluidNode(BaseNode):
         if not ok:
             return self.emit_nothing(msg, "invalid")
         if spec.source == "water":
-            self.status = f"{spec.name} · {spec.density_kgm3:.1f} kg/m³"
+            self.status = (
+                f"{spec.name} · {spec.density_kgm3:.1f} kg/m³"
+                f" · {spec.viscosity_cst:.3f} cSt"
+            )
         else:
             self.status = (
                 f"{spec.name} · SG {spec.density_rel:g} · {spec.viscosity_cst:g} cSt"
@@ -168,7 +175,30 @@ class FluidNode(BaseNode):
         water_box = QWidget()
         wl = QVBoxLayout(water_box)
         wl.setContentsMargins(0, 0, 0, 0)
+        density_label = QLabel("—")
+        density_label.setWordWrap(True)
+        viscosity_cst_label = QLabel("—")
+        viscosity_cp_label = QLabel("—")
+        viscosity_cp_label.setWordWrap(True)
+        equation_label = QLabel(
+            "Density: 4th-order Kell polynomial in temperature. "
+            "Viscosity: Andrade-type exponential, "
+            "mu = 2.414e-5 * 10^(247.8 / (T[K] - 140)) Pa·s."
+        )
+        equation_label.setWordWrap(True)
+        reference_label = QLabel(
+            "References: Kell, G. S. (1975). Journal of Chemical and Engineering Data, "
+            "20(1), 97-105, doi:10.1021/je60064a005; Kestin, J., Sokolov, M., "
+            "Wakeham, W. A. (1978). Journal of Physical and Chemical Reference Data, "
+            "7(3), 941-948, doi:10.1063/1.555581."
+        )
+        reference_label.setWordWrap(True)
         wl.addWidget(temp_field.row("Temperature"))
+        wl.addWidget(ui.row("Density", density_label))
+        wl.addWidget(ui.row("Viscosity", viscosity_cst_label, "cSt"))
+        wl.addWidget(ui.row("Dynamic viscosity", viscosity_cp_label, "cP"))
+        wl.addWidget(equation_label)
+        wl.addWidget(reference_label)
         wl.addWidget(chart_widget)
 
         # ---- Manual mode: density (unit-aware) + derived SG + viscosity ----
@@ -212,18 +242,23 @@ class FluidNode(BaseNode):
             )
 
         def update_chart():
-            if plot is None:
-                return
             temp_c = units.convert_display(
                 float(temp_field.magnitude()),
                 "temperature",
                 temp_field.unit_label(),
                 "°C",
             )
+            rho = water_density_kgm3(temp_c)
+            nu_cst = water_kinematic_viscosity_cst(temp_c)
+            mu_cp = water_dynamic_viscosity_cP(temp_c)
+            density_label.setText(f"{rho:.3f} kg/m³  |  SG {rho / 1000.0:.6f}")
+            viscosity_cst_label.setText(f"{nu_cst:.6f}")
+            viscosity_cp_label.setText(f"{mu_cp:.6f}")
+            if plot is None:
+                return
             lo, hi = min(0.0, temp_c), max(100.0, temp_c)
             ts = np.linspace(lo, hi, 60)
             ds = [water_density_kgm3(float(t)) for t in ts]
-            rho = water_density_kgm3(temp_c)
             curve.setData(ts, ds)
             marker.setData([temp_c], [rho])
             plot.setTitle(f"{rho:.1f} kg/m³ @ {temp_c:g} °C")

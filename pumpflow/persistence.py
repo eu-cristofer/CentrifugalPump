@@ -42,9 +42,9 @@ def rated_from_json(doc: dict) -> RatedPoint:
         power_kw=parse_decimal(r.get("power_kw"), 0.0),
         efficiency_pct=parse_decimal(r.get("eff_pct"), None),
         head_shutoff_m=parse_decimal(r.get("head_shutoff"), None),
+        npsha_m=parse_decimal(r.get("npsha_m"), None),
         density_rel=parse_decimal(r.get("dens_rel"), 1.0),
         viscosity_cst=parse_decimal(r.get("visc_nom_cst"), 1.0),
-        pressure_unit=unit,
         parallel_operation=bool(r.get("parallel", False)),
         fluid_name=str(r.get("fluid_name", "Rated fluid")),
     )
@@ -87,6 +87,7 @@ def json_from_signals(rated: RatedPoint, tps: Optional[TestPointSet] = None) -> 
             "dens_rel": _num(rated.density_rel),
             "visc_nom_cst": _num(rated.viscosity_cst),
             "head_shutoff": _num(rated.head_shutoff_m),
+            "npsha_m": _num(rated.npsha_m),
             "parallel": rated.parallel_operation,
         },
     }
