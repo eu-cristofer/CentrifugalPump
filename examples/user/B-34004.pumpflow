@@ -12,22 +12,23 @@
         "tag": "B-34004",
         "service": "Wash water",
         "standard": "API610 (8th) + N-553",
-        "q": 1.8,
+        "q": 9.8,
         "q_unit": "m³/h",
         "head": 333.8,
         "head_unit": "m",
         "n": 1720.0,
         "power": 247.0,
         "power_unit": "kW",
-        "eff": 61.0,
-        "head_shutoff": 111.0,
+        "eff": 59.0,
+        "head_shutoff": 115.0,
         "dens_rel": 0.736,
-        "visc": 0.567,
+        "dens_unit": "kg/m³",
+        "visc": 0.5569999999999999,
         "visc_unit": "cSt",
-        "unit": "kgf/cm**2",
         "parallel": false,
         "fluid_name": "Rated fluid",
-        "fluid_choice": "Wash water"
+        "fluid_choice": "Wash water",
+        "unit": "kgf/cm**2"
       }
     },
     {
@@ -73,7 +74,7 @@
   ],
   "view": {
     "zoom": 1.4329428543183678,
-    "cx": -23.02952968469749,
-    "cy": -118.63697110298706
+    "cx": -318.22622837036533,
+    "cy": -207.96363169817732
   }
 }
