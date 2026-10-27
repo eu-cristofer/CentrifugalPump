@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "centrifugal-pump"
+version = "0.1.0"
+description = "A Python library for API 610 centrifugal pump performance computations."
+authors = [
+    { name = "Cristofer Antoni", email = "cristofercosta@yahoo.com.br" }
+]
+readme = "README.md"
+license = { text = "Apache 2.0" }
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "pint",
+    "python-docx",
+    "tabulate"
+]
+[project.optional-dependencies]
+dev = [
+    "black",
+    "build",
+    "pytest"
+]
+gui = [
+    "PySide6",
+    "pyqtgraph",
+]
+docs = [
+    "sphinx>=7",
+    "furo",
+    "myst-parser",
+    "sphinx-autodoc-typehints",
+    "sphinxcontrib-mermaid",
+]
+[project.urls]
+Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
+
+[tool.setuptools.packages.find]
+include = ["pump*", "pumpflow*"]
+
+[tool.setuptools.package-data]
+pumpflow = ["examples/*.pumpflow"]
+
+[tool.pytest.ini_options]
+# Collect the curated suite (tests/) plus the library's own docstrings (pump/)
+# as doctests. This keeps pytest from crawling into pumpflow/nodes/test_points.py
+# (a Qt widget module, not a test) and needing PySide6 just to run the headless
+# library tests, while ensuring every docstring example stays runnable.
+testpaths = ["tests", "pump"]
+addopts = "-ra -q --doctest-modules"

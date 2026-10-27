@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "unit_preset": "SI"
+  },
+  "nodes": [
+    {
+      "id": "rated_point-8",
+      "kind": "rated_point",
+      "x": -323.5483820488945,
+      "y": -337.7305647106868,
+      "settings": {
+        "tag": "B-34004",
+        "service": "Wash water",
+        "standard": "API610 (8th) + N-553",
+        "q": 1.8,
+        "q_unit": "m³/h",
+        "head": 333.8,
+        "head_unit": "m",
+        "n": 1720.0,
+        "power": 247.0,
+        "power_unit": "kW",
+        "eff": 61.0,
+        "head_shutoff": 111.0,
+        "dens_rel": 0.736,
+        "visc": 0.567,
+        "visc_unit": "cSt",
+        "unit": "kgf/cm**2",
+        "parallel": false,
+        "fluid_name": "Rated fluid",
+        "fluid_choice": "Wash water"
+      }
+    },
+    {
+      "id": "fluid-9",
+      "kind": "fluid",
+      "x": -573.8586925566915,
+      "y": -374.85051751299466,
+      "settings": {
+        "source": "water",
+        "name": "Wash water",
+        "temp": 53.0,
+        "temp_unit": "°C",
+        "dens": 736.0,
+        "dens_unit": "kg/m³",
+        "visc": 0.567,
+        "visc_unit": "cSt"
+      }
+    },
+    {
+      "id": "fluid-10",
+      "kind": "fluid",
+      "x": -585.096764097789,
+      "y": -175.37437443079907,
+      "settings": {
+        "source": "water",
+        "name": "Test fluid",
+        "temp": 25.0,
+        "temp_unit": "°C",
+        "dens": 736.0,
+        "dens_unit": "kg/m³",
+        "visc": 0.567,
+        "visc_unit": "cSt"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src_node": "fluid-9",
+      "src_port": "FluidSpec",
+      "dst_node": "rated_point-8",
+      "dst_port": "FluidSpec"
+    }
+  ],
+  "view": {
+    "zoom": 1.4329428543183678,
+    "cx": -23.02952968469749,
+    "cy": -118.63697110298706
+  }
+}

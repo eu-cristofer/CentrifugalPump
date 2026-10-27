@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "unit_preset": "SI"
+  },
+  "nodes": [
+    {
+      "id": "rated_point-2",
+      "kind": "rated_point",
+      "x": -50.0,
+      "y": -41.0,
+      "settings": {
+        "tag": "B-22025",
+        "service": "Decoker Pump",
+        "standard": "API610 (12a ed.) / ISO 13709 + N-553",
+        "q": 833.0,
+        "q_unit": "m³/h",
+        "head": 73.0,
+        "head_unit": "m",
+        "n": 1750.0,
+        "power": 252.0,
+        "power_unit": "kW",
+        "eff": 61.0,
+        "head_shutoff": 117.0,
+        "dens_rel": 0.735,
+        "visc": 0.407,
+        "visc_unit": "cP",
+        "unit": "bar",
+        "parallel": false,
+        "fluid_name": "Rated fluid",
+        "fluid_choice": ""
+      }
+    }
+  ],
+  "edges": [],
+  "view": {
+    "zoom": 1.0,
+    "cx": 296.0,
+    "cy": 69.0
+  }
+}
