@@ -62,6 +62,9 @@ Each run MUST:
 - [x] [Sprint 8 — UC-05 NPSH margin](sprint-8.md) — done 2026-11-14
   BLOCKED-PARTIAL: NPSH margin rule not configured. No ratio or margin is seeded, so the check reports "not configured" until the owner enters the N-553/API rule.
 - [ ] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md)
+  BLOCKED: needs owner input.
+  - The HI 9.6.7 / ISO TR 17766 worked example (inputs plus the expected B, C_Q, C_H and C_η), and confirmation of the equations listed in sprint-9.md.
+  - Tests must pin authoritative numbers, so the sprint cannot run without them. Later sprints wait, because the protocol forbids skipping ahead.
 - [ ] [Sprint 10 — UC-07 Impeller trim](sprint-10.md)
 - [ ] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md)
 - [ ] [Sprint 12 — UC-01 Pump selection](sprint-12.md)
