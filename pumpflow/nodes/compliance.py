@@ -52,11 +52,14 @@ class ComplianceCheckNode(BaseNode):
         self._last = result
         self._rated = rated
         n_fail = sum(1 for p in result.parameters if not p.passed)
+        # A verdict against criteria not verified from the standard text is
+        # provisional: say so, instead of presenting it as final.
+        tail = " (unverified criteria)" if result.unverified else ""
         if result.overall_pass:
-            self.status = f"{result.pump_tag} · ✅ APPROVED"
+            self.status = f"{result.pump_tag} · ✅ APPROVED{tail}"
             self.state = "ok"
         else:
-            self.status = f"{result.pump_tag} · ❌ {n_fail} out of tolerance"
+            self.status = f"{result.pump_tag} · ❌ {n_fail} out of tolerance{tail}"
             self.state = "reject"
         return {"ComplianceResult": result}
 
@@ -110,7 +113,10 @@ class ComplianceCheckNode(BaseNode):
             for p in result.parameters:
                 _append_param(table, p)
             ok = result.overall_pass
-            verdict.setText(f"{'APPROVED ✓' if ok else 'REJECTED ✗'}   ·   {result.pump_tag}")
+            tail = "  (unverified criteria)" if result.unverified else ""
+            verdict.setText(
+                f"{'APPROVED ✓' if ok else 'REJECTED ✗'}{tail}   ·   {result.pump_tag}"
+            )
             verdict.setProperty("verdict", "pass" if ok else "fail")
             _repolish(verdict)
             criteria_lbl.setText(f"Criteria: {result.criteria_label}")

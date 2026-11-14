@@ -99,12 +99,29 @@ def unverified_sentence(
 
 
 def mechanical_run_verdict(translate: Callable[[str], str], result) -> str:
-    """Localized overall verdict of a mechanical run result."""
+    """Localized overall verdict of a mechanical run result.
+
+    A verdict computed against limits that are not verified against the
+    standard text is provisional and says so ("FAILED (unverified limits)"), so
+    a seed/placeholder limit is never presented as a real test failure.
+    """
     if not result.passed:
-        return translate("FAILED")
-    if result.fully_assessed:
-        return translate("PASSED")
-    return translate("PASSED (not fully assessed)")
+        text = translate("FAILED")
+    elif result.fully_assessed:
+        text = translate("PASSED")
+    else:
+        text = translate("PASSED (not fully assessed)")
+    if not getattr(result, "verified", True):
+        text += f" ({translate('unverified limits')})"
+    return text
+
+
+def performance_verdict(translate: Callable[[str], str], passed: bool, acceptance=None) -> str:
+    """Localized performance verdict; provisional when the criteria are unverified."""
+    text = translate("APPROVED") if passed else translate("NOT APPROVED")
+    if acceptance and not acceptance.get("verified", True):
+        text += f" ({translate('unverified criteria')})"
+    return text
 
 
 def mechanical_run_duration_sentence(translate: Callable[[str], str], result) -> str:
@@ -385,7 +402,7 @@ class ReportGenerator:
         for tag, test_data in report_data["test_data"].items():
             document.add_paragraph(self._('Test Data - ') + tag, style='Title_2')
             if "verdict" in test_data:
-                verdict = self._("APPROVED") if test_data["verdict"] else self._("NOT APPROVED")
+                verdict = performance_verdict(self._, test_data["verdict"], acceptance)
                 document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
             self._add_test_data(document, test_data.get("test_data", {}))

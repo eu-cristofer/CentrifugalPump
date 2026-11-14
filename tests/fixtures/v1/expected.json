@@ -27,7 +27,7 @@
   "check_a": [
    "compliance",
    "ok",
-   "B-34004A · ✅ APPROVED",
+   "B-34004A · ✅ APPROVED (unverified criteria)",
    [
     [
      "Head",
@@ -205,7 +205,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "B-2351105A · ❌ 1 out of tolerance",
+   "B-2351105A · ❌ 1 out of tolerance (unverified criteria)",
    [
     [
      "Head",
@@ -272,7 +272,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "B-2351105A · ❌ 1 out of tolerance",
+   "B-2351105A · ❌ 1 out of tolerance (unverified criteria)",
    [
     [
      "Head",
@@ -339,7 +339,7 @@
   "check_a": [
    "compliance",
    "ok",
-   "P-1001A · ✅ APPROVED",
+   "P-1001A · ✅ APPROVED (unverified criteria)",
    [
     [
      "Head",

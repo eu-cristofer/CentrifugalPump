@@ -143,11 +143,16 @@ def overrides_to_quantities(ov: Optional[dict]) -> dict:
 
 
 def verdict_label(result) -> str:
+    """Status verdict; provisional when the limits are not verified."""
     if not getattr(result, "passed", False):
-        return "FAILED"
-    if not getattr(result, "fully_assessed", True):
-        return "PASSED (not fully assessed)"
-    return "PASSED"
+        text = "FAILED"
+    elif not getattr(result, "fully_assessed", True):
+        text = "PASSED (not fully assessed)"
+    else:
+        text = "PASSED"
+    if not getattr(result, "verified", True):
+        text += " (unverified limits)"
+    return text
 
 
 def _get(row, key, default=None):

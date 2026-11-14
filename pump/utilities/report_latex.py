@@ -45,6 +45,7 @@ from .report import (
     mechanical_run_notes,
     mechanical_run_table,
     mechanical_run_verdict,
+    performance_verdict,
     standard_sentence,
     unverified_sentence,
 )
@@ -230,7 +231,9 @@ class LatexReportGenerator:
             out.append(r"\clearpage")
             out.append(r"\subsection{%s}" % latex_escape(_("Test Data - ") + pump_tag))
             if "verdict" in entry:
-                verdict = _("APPROVED") if entry["verdict"] else _("NOT APPROVED")
+                verdict = performance_verdict(
+                    _, entry["verdict"], report_data.get("acceptance")
+                )
                 out.append(
                     r"\textbf{%s:} %s"
                     % (latex_escape(_("Overall verdict")), latex_escape(verdict))

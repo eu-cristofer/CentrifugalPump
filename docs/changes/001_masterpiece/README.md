@@ -142,3 +142,7 @@ Each run MUST:
 - S7: **UC-08 compare pumps**. `pump.compare` adds `compare_curves` (H, P and η per tag at chosen Q, with Δ% against the first, reference curve) and `plot_comparison` (overlay of H, P and η).
 - S7: any report with two or more fitted pumps (e.g. twin A vs B) gains a "Comparison" section in en and pt. The Explorer readout shows Δ% against the first model.
 - S7: no separate compare node; the Explorer and the report cover the use case. All projects are unchanged.
+- Fix (owner request, after S7): verdicts computed against criteria not verified from the standard text are now marked **provisional**.
+  - The node status, the Compliance banner and the report verdict in en and pt now read "APPROVED (unverified criteria)" and "FAILED (unverified limits)".
+  - B-34004A's mechanical run therefore reads **FAILED (unverified limits)**: a placeholder limit is never presented as a real test failure.
+  - Numbers and pass/fail are unchanged. `tests/fixtures/v1/expected.json` changed only by these status suffixes.

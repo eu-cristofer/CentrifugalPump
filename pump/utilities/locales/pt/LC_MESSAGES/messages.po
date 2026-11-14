@@ -234,3 +234,9 @@ msgstr "Referência"
 
 msgid "Δ vs reference"
 msgstr "Δ vs referência"
+
+msgid "unverified limits"
+msgstr "limites não verificados"
+
+msgid "unverified criteria"
+msgstr "critérios não verificados"
