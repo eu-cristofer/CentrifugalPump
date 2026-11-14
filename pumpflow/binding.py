@@ -20,7 +20,8 @@ Affinity-law speed correction           ``PerformanceCurve.to_speed(Q_(N, "rpm")
 Density correction                      ``PerformanceCurve.to_fluid(rated_fluid)``
 Polynomial fit + predictions            ``PerformanceCurve.fitter.*_coeffs`` / ``predict_*``
 Built-in matplotlib curve               ``PerformanceCurve.plot_performance_curve(...)``
-Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve)``
+Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve, criteria=)``
+Acceptance criteria (edition / client)  ``pump.acceptance.AcceptanceCriteria.load(key, client)``
 Units everywhere                        ``pump.Q_`` + ``quantity_factory`` (STANDARD_UNITS)
 ======================================  ====================================================
 """
@@ -43,10 +44,13 @@ from pump import (
     PerformanceCurve,
     PerformanceChecker,
 )
+from pump.acceptance import AcceptanceCriteria
+from pump.acceptance import deviation as acceptance_deviation
 from pump.constants import G
 
 from .mathx import NaturalCubicSpline, r_squared
 from .numfmt import parse_decimal
+from .settings_codec import parse_standard_text
 from .signals import (
     RatedPoint,
     FluidSpec,
@@ -420,25 +424,84 @@ def fit_model(
 
 
 # ---------------------------------------------------------------------------
+# Acceptance criteria  (sprint 5)
+# ---------------------------------------------------------------------------
+
+
+def criteria_for(rated: RatedPoint) -> AcceptanceCriteria:
+    """The ``AcceptanceCriteria`` selected by the rated point.
+
+    Falls back to the library default when the stored key / client is unknown
+    (e.g. a project saved by a newer version).
+    """
+    key = getattr(rated, "standard_key", None) or "api610:12"
+    client = getattr(rated, "client", None) or None
+    try:
+        return AcceptanceCriteria.load(key, client)
+    except KeyError:
+        return AcceptanceCriteria.default()
+
+
+def criteria_label(criteria: AcceptanceCriteria) -> str:
+    """Display label: edition label, plus `` + <client label>`` for an overlay."""
+    label = criteria.label
+    if criteria.client_label:
+        label += " + " + criteria.client_label
+    return label
+
+
+def standard_label(key: str, client: Optional[str] = None) -> str:
+    """Display label for an edition key (+ optional client overlay)."""
+    try:
+        return criteria_label(AcceptanceCriteria.load(key, client or None))
+    except KeyError:
+        return key
+
+
+def available_standards() -> list:
+    """``[(key, label)]`` of the editions the library offers."""
+    return list(AcceptanceCriteria.available())
+
+
+def available_clients() -> list:
+    """``[(client, label)]`` of the client overlays the library offers."""
+    return list(AcceptanceCriteria.clients())
+
+
+# ---------------------------------------------------------------------------
 # API 610 compliance  (UI_SPEC §5.6)
 # ---------------------------------------------------------------------------
 
 
 def default_tolerances(rated: RatedPoint) -> dict:
-    """Library-default tolerances exposed as editable fields (UI_SPEC §5.6)."""
-    head_m = float(rated.head.to("m").magnitude)
-    h = (
-        float(rated.head_shutoff.to("m").magnitude)
-        if rated.head_shutoff is not None
-        else head_m
-    )
-    if h <= 75:
-        shutoff = 0.10
-    elif h <= 300:
-        shutoff = 0.08
-    else:
-        shutoff = 0.05
-    return {"head": 0.03, "shutoff": shutoff, "power": 0.04, "efficiency": 0.03}
+    """Criteria-default tolerances exposed as editable fields (UI_SPEC §5.6).
+
+    Both the head and the shut-off band are keyed by the **rated** differential
+    head (the same rule as the library checker).
+    """
+    criteria = criteria_for(rated)
+    _, head_plus = criteria.head_tolerance(rated.head)
+    _, shutoff_plus = criteria.shutoff_tolerance(rated.head)
+    return {
+        "head": head_plus,
+        "shutoff": shutoff_plus,
+        "power": criteria.power_tol_plus,
+        "efficiency": criteria.efficiency_tol_minus,
+    }
+
+
+def _band(tol: float, default_plus: float, band: tuple) -> tuple:
+    """``(minus, plus)``: the criteria band, unless the user overrode the value."""
+    if abs(tol - default_plus) <= 1e-9:
+        return band
+    return (tol, tol)
+
+
+def _limit(value: float) -> float:
+    """Acceptance limits are rounded to 2 decimals, exactly as
+    ``PerformanceChecker._compute_limits`` does, so the GUI table and the
+    library/report limits are the same numbers."""
+    return round(value, 2)
 
 
 def check_compliance(
@@ -449,12 +512,15 @@ def check_compliance(
     """
     Evaluate API 610 deviations & verdict.
 
-    Numbers come straight from ``PerformanceChecker(design_point, curve)`` and the
-    curve's ``predict_*`` polynomials so they match ``report_summary`` /
-    ``test_summary_with_limits`` for the same inputs (UI_SPEC §9.4).
+    Numbers come straight from ``PerformanceChecker(design_point, curve,
+    criteria=)`` and the curve's ``predict_*`` polynomials so they match
+    ``report_summary`` / ``test_summary_with_limits`` for the same inputs
+    (UI_SPEC §9.4).  Every deviation is ``acceptance.deviation(rated,
+    predicted) = (predicted − rated) / rated``.
     """
+    criteria = criteria_for(rated)
     design_point = make_design_point(rated, fitted.curve.fluid)
-    checker = PerformanceChecker(design_point, fitted.curve)
+    checker = PerformanceChecker(design_point, fitted.curve, criteria=criteria)
 
     lib_defaults = default_tolerances(rated)
     tol = dict(lib_defaults)
@@ -463,41 +529,50 @@ def check_compliance(
     overridden = any(
         abs(tol[k] - lib_defaults[k]) > 1e-9 for k in lib_defaults if k in tol
     )
+    verified = bool(criteria.verified)
 
     rated_q = rated.q
     rated_head = float(rated.head.to("m").magnitude)
     rated_power = float(rated.power.to("kW").magnitude)
+    head_band = _band(
+        tol["head"], lib_defaults["head"], criteria.head_tolerance(rated.head)
+    )
+    shutoff_band = _band(
+        tol["shutoff"], lib_defaults["shutoff"], criteria.shutoff_tolerance(rated.head)
+    )
     params = []
 
-    # --- Head:  |δ| ≤ tol -----------------------------------------------------
+    # --- Head:  min ≤ predicted ≤ max ------------------------------------------
     pred_head = float(fitted.curve.predict_head(rated_q).to("m").magnitude)
-    dev_head = _deviation(rated_head, pred_head)
+    dev_head = acceptance_deviation(rated_head, pred_head)
     params.append(
         ParameterCheck(
             name="Head",
             actual=rated_head,
             predicted=pred_head,
-            minimum=_mag(checker.minimum_head),
-            maximum=_mag(checker.maximum_head),
+            minimum=_limit(rated_head * (1.0 - head_band[0])),
+            maximum=_limit(rated_head * (1.0 + head_band[1])),
             deviation=dev_head,
             tolerance=tol["head"],
-            passed=abs(dev_head) <= tol["head"] + 1e-9,
+            passed=-head_band[0] - 1e-9 <= dev_head <= head_band[1] + 1e-9,
+            verified=verified,
         )
     )
 
     # --- Power:  δ ≤ tol ------------------------------------------------------
     pred_power = float(fitted.curve.predict_breaking_power(rated_q).to("kW").magnitude)
-    dev_power = _deviation(rated_power, pred_power)
+    dev_power = acceptance_deviation(rated_power, pred_power)
     params.append(
         ParameterCheck(
             name="Power",
             actual=rated_power,
             predicted=pred_power,
             minimum=None,
-            maximum=_mag(getattr(checker, "maximum_breaking_power", None)),
+            maximum=_limit(rated_power * (1.0 + tol["power"])),
             deviation=dev_power,
             tolerance=tol["power"],
             passed=dev_power <= tol["power"] + 1e-9,
+            verified=verified,
         )
     )
 
@@ -507,7 +582,7 @@ def check_compliance(
         pred_eff = float(
             fitted.curve.predict_efficiency(rated_q).to("percent").magnitude
         )
-        dev_eff = _deviation(rated_eff, pred_eff)
+        dev_eff = acceptance_deviation(rated_eff, pred_eff)
         params.append(
             ParameterCheck(
                 name="Efficiency",
@@ -518,6 +593,7 @@ def check_compliance(
                 deviation=dev_eff,
                 tolerance=tol["efficiency"],
                 passed=dev_eff >= -tol["efficiency"] - 1e-9,
+                verified=verified,
             )
         )
 
@@ -525,35 +601,36 @@ def check_compliance(
     if rated.head_shutoff is not None:
         rated_so = float(rated.head_shutoff.to("m").magnitude)
         pred_so = float(fitted.curve.predict_head(Q_(0, "m**3/h")).to("m").magnitude)
-        dev_so = _deviation(rated_so, pred_so)
+        dev_so = acceptance_deviation(rated_so, pred_so)
         params.append(
             ParameterCheck(
                 name="Shutoff Head",
                 actual=rated_so,
                 predicted=pred_so,
-                minimum=_mag(getattr(checker, "minimum_head_shutoff", None)),
-                maximum=_mag(getattr(checker, "maximum_head_shutoff", None)),
+                minimum=_limit(rated_so * (1.0 - shutoff_band[0])),
+                maximum=_limit(rated_so * (1.0 + shutoff_band[1])),
                 deviation=dev_so,
                 tolerance=tol["shutoff"],
-                passed=abs(dev_so) <= tol["shutoff"] + 1e-9,
+                passed=-shutoff_band[0] - 1e-9 <= dev_so <= shutoff_band[1] + 1e-9,
+                extrapolated=bool(checker.shutoff_extrapolated),
+                verified=verified,
             )
         )
 
-    overall = all(p.passed for p in params)
+    # --- Parallel operation (only when the rated point asks for it) ----------
+    parallel_ok = checker.parallel_operation_ok() if rated.parallel_operation else None
+
+    overall = all(p.passed for p in params) and parallel_ok is not False
     return ComplianceResult(
         pump_tag=fitted.pump_tag,
         parameters=tuple(params),
         overall_pass=overall,
         tolerances=tol,
         overridden=overridden,
+        criteria_label=criteria_label(criteria),
+        unverified=tuple(criteria.unverified),
+        parallel_ok=parallel_ok,
     )
-
-
-def _deviation(nominal: float, predicted: float) -> float:
-    """δ = 1 − nominal/predicted  (UI_SPEC §5.6)."""
-    if not predicted:
-        return 0.0
-    return 1.0 - nominal / predicted
 
 
 def _mag(q) -> Optional[float]:
@@ -592,7 +669,9 @@ def build_report_png(
 def report_summary_for(fitted: FittedModel, rated: RatedPoint) -> dict:
     """``PerformanceChecker.report_summary`` for one branch (Check's numbers)."""
     design_point = make_design_point(rated, fitted.curve.fluid)
-    return PerformanceChecker(design_point, fitted.curve).report_summary
+    return PerformanceChecker(
+        design_point, fitted.curve, criteria=criteria_for(rated)
+    ).report_summary
 
 
 def assemble_report_data(
@@ -601,13 +680,15 @@ def assemble_report_data(
     """
     Build the ``report_data`` dict exactly as ``ReportGenerator.generate_report``
     expects (UI_SPEC §5.7): one shared design point + one keyed ``test_data``
-    entry per pump TAG.
+    entry per pump TAG, plus a top-level ``"acceptance"`` entry
+    (``{"label", "verified", "unverified"}``) describing the criteria used.
 
     A branch whose test set carried bench geometry adds a
     ``"Test bench geometry (<pump_tag>)"`` line to the equipment description.
     """
     equipment = equipment or {}
     design_point = make_design_point(rated)
+    criteria = criteria_for(rated)
 
     equipment_description = {"TAG": rated.tag}
     equipment_description.update({k: str(v) for k, v in equipment.items() if v})
@@ -638,6 +719,11 @@ def assemble_report_data(
         "equipment_description": equipment_description,
         "design_point": design_point,
         "test_data": test_data,
+        "acceptance": {
+            "label": criteria_label(criteria),
+            "verified": bool(criteria.verified),
+            "unverified": list(criteria.unverified),
+        },
     }
 
 

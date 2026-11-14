@@ -41,16 +41,17 @@ True
 from __future__ import annotations
 
 import copy
+import re
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pump import Q_
 from pump.constants import P_ATM
 
 from . import units
 
-__all__ = ["FIELDS", "encode", "decode", "upgrade_v1"]
+__all__ = ["FIELDS", "encode", "decode", "upgrade_v1", "parse_standard_text"]
 
 
 # ---------------------------------------------------------------------------
@@ -409,6 +410,41 @@ FIELDS: Dict[str, tuple] = {
 _V1_DROP = {"rated_point": ("unit",)}
 
 
+# ---------------------------------------------------------------------------
+# Free-text "standard" -> acceptance keys  (sprint 5)
+# ---------------------------------------------------------------------------
+
+_API610_EDITIONS = (8, 10, 11, 12)
+_DEFAULT_STANDARD_KEY = "api610:12"
+_API610_RE = re.compile(r"api\s*-?\s*610[^0-9]{0,6}(\d{1,2})(?!\d)", re.IGNORECASE)
+_N553_RE = re.compile(r"(?<![a-z0-9])n[-\s]?553", re.IGNORECASE)
+
+
+def parse_standard_text(text: Optional[str]) -> Tuple[str, Optional[str]]:
+    """``(standard_key, client)`` from the free-text rated-point ``standard``.
+
+    ``"API 610"`` / ``"API610"`` followed by an edition number (``8th``, ``12a``,
+    ``(12``, ``11ª``) gives ``"api610:<n>"`` when ``<n>`` is 8/10/11/12, else
+    ``"api610:12"``; ``N-553`` / ``N553`` gives client ``"n553"``, else ``None``.
+
+    Examples
+    --------
+    >>> parse_standard_text("API610 (12a ed.) / ISO 13709 + N-553")
+    ('api610:12', 'n553')
+    >>> parse_standard_text("API 610 8th + N-553C + API 682 3rd")
+    ('api610:8', 'n553')
+    >>> parse_standard_text("garbage")
+    ('api610:12', None)
+    """
+    text = str(text or "")
+    key = _DEFAULT_STANDARD_KEY
+    m = _API610_RE.search(text)
+    if m and int(m.group(1)) in _API610_EDITIONS:
+        key = f"api610:{int(m.group(1))}"
+    client = "n553" if _N553_RE.search(text) else None
+    return key, client
+
+
 def encode(kind: str, runtime: dict) -> dict:
     """Runtime settings -> v2 on-disk settings (new dict; input untouched)."""
     d = copy.deepcopy(runtime)
@@ -432,10 +468,16 @@ def upgrade_v1(kind: str, settings: dict) -> dict:
     the active preset: v1 magnitudes without a label were canonical), the stale
     rated-point ``"unit"`` key is dropped, and a v1 test-points ``unit`` becomes
     the ``columns`` map (pressure ``bar`` / ``kgf/cm²``, the rest canonical).
+    A rated point that carries a free-text ``standard`` but no ``standard_key`` /
+    ``client`` gets them parsed from that text (``client`` is ``""`` for none).
     """
     d = copy.deepcopy(settings)
     for key in _V1_DROP.get(kind, ()):
         d.pop(key, None)
     for spec in FIELDS.get(kind, ()):
         spec.fill_v1(d)
+    if kind == "rated_point" and d.get("standard") is not None:
+        key, client = parse_standard_text(d.get("standard"))
+        d.setdefault("standard_key", key)
+        d.setdefault("client", client or "")
     return d

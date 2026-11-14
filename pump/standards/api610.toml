@@ -1,0 +1,77 @@
+# API 610 / ISO 13709 acceptance criteria, one table per edition.
+#
+# IMPORTANT: every value below is a SEED copied from the pre-Sprint-5 code
+# defaults.  No edition has been checked against the standard text, so every
+# edition carries verified = false.  Do not flip a flag to true without a
+# clause-level source.
+
+standard = "api610"
+title = "API 610 / ISO 13709"
+
+[editions."8"]
+label = "API 610 8th edition"
+source = "seed: pre-S5 code defaults — confirm against API 610 8th edition performance tolerance table"
+verified = false
+power_tol_plus = 0.04
+efficiency_tol_minus = 0.03
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."10"]
+label = "API 610 10th edition"
+source = "seed: pre-S5 code defaults — confirm against API 610 10th edition performance tolerance table"
+verified = false
+power_tol_plus = 0.04
+efficiency_tol_minus = 0.03
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."11"]
+label = "API 610 11th edition"
+source = "seed: pre-S5 code defaults — confirm against API 610 11th edition performance tolerance table"
+verified = false
+power_tol_plus = 0.04
+efficiency_tol_minus = 0.03
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."12"]
+label = "API 610 12th edition"
+source = "seed: pre-S5 code defaults — confirm against API 610 12th edition performance tolerance table"
+verified = false
+power_tol_plus = 0.04
+efficiency_tol_minus = 0.03
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]

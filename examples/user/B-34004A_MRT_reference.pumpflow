@@ -71,7 +71,9 @@
         },
         "parallel": false,
         "fluid_name": "Rated fluid",
-        "fluid_choice": ""
+        "fluid_choice": "",
+        "standard_key": "api610:8",
+        "client": "n553"
       }
     },
     {

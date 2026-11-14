@@ -10,6 +10,7 @@ Submodules
 - utilities: Contains unit conversion utilities based on Pint.
 - constants: Shared physical constants (``G``, ``P_ATM``).
 - quantity_io: JSON (de)serialisation of Pint quantities.
+- acceptance: Edition-aware acceptance criteria (tolerance tables).
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
@@ -17,16 +18,18 @@ __version__ = "0.1.0"
 __email__ = "cristofercosta@yahoo.com.br"
 __status__ = "Development"
 
-from . import utilities, constants, quantity_io, point, performance_curve
+from . import utilities, constants, quantity_io, point, acceptance, performance_curve
 from .utilities import *
 from .constants import *
 from .point import *
+from .acceptance import *
 from .performance_curve import *
 
 __all__ = list(
     set(utilities.__all__) |
     set(constants.__all__) |
-    {"constants", "quantity_io"} |
+    {"constants", "quantity_io", "acceptance"} |
     set(point.__all__) |
+    set(acceptance.__all__) |
     set(performance_curve.__all__)
 )

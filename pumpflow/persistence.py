@@ -56,12 +56,18 @@ def testset_pressure_unit(tps: Optional[TestPointSet]) -> str:
 
 
 def rated_from_json(doc: dict) -> RatedPoint:
-    """Build a :class:`RatedPoint` from a §6.2 document (comma-decimals ok)."""
+    """Build a :class:`RatedPoint` from a §6.2 document (comma-decimals ok).
+
+    The acceptance keys are taken from ``standard_key`` / ``client`` when the
+    document has them, else parsed from the free-text ``standard``.
+    """
     r = doc.get("rated", {})
+    standard = str(r.get("standard", "API610 (12a ed.) / ISO 13709 + N-553"))
+    parsed_key, parsed_client = settings_codec.parse_standard_text(standard)
     return RatedPoint(
         tag=str(r.get("tag", "")).strip(),
         service=str(r.get("service", "")),
-        standard=str(r.get("standard", "API610 (12a ed.) / ISO 13709 + N-553")),
+        standard=standard,
         q=Q_(parse_decimal(r.get("q_m3h"), 0.0), "m**3/h"),
         head=Q_(parse_decimal(r.get("head_m"), 0.0), "m"),
         speed=Q_(parse_decimal(r.get("n_rpm"), 0.0), "rpm"),
@@ -73,6 +79,8 @@ def rated_from_json(doc: dict) -> RatedPoint:
         viscosity=Q_(parse_decimal(r.get("visc_nom_cst"), 1.0), "cSt"),
         parallel_operation=bool(r.get("parallel", False)),
         fluid_name=str(r.get("fluid_name", "Rated fluid")),
+        standard_key=str(r.get("standard_key") or parsed_key),
+        client=(r.get("client") or parsed_client) or None,
     )
 
 

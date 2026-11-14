@@ -45,7 +45,7 @@ class RatedPoint:
     """The rated (design) point + rated fluid, shared by every pump branch."""
 
     tag: str  # service / datasheet TAG (shared)
-    standard: str  # e.g. "API610 (12a ed.) / ISO 13709 + N-553"
+    standard: str  # display label, e.g. "API610 (12a ed.) / ISO 13709 + N-553"
 
     q: Q_  # rated capacity            (m³/h, any compatible unit)
     head: Q_  # rated differential head   (m)
@@ -66,6 +66,11 @@ class RatedPoint:
 
     fluid_name: str = "Rated fluid"
     service: str = ""  # human-readable service description
+
+    # Acceptance criteria selection (sprint 5): ``standard`` above stays the
+    # free-text display label; these two keys drive ``pump.acceptance``.
+    standard_key: str = "api610:12"  # AcceptanceCriteria key, e.g. "api610:8"
+    client: Optional[str] = None  # client overlay key, e.g. "n553"
 
     @property
     def density_rel(self) -> float:
@@ -310,9 +315,11 @@ class ParameterCheck:
     predicted: float  # value predicted from the fitted curve
     minimum: Optional[float]  # acceptable min (or None)
     maximum: Optional[float]  # acceptable max (or None)
-    deviation: float  # δ = 1 − nominal/predicted
+    deviation: float  # δ = (predicted − rated) / rated
     tolerance: float  # fractional tolerance
     passed: bool
+    extrapolated: bool = False  # predicted value extrapolated (shut-off, no Q≈0 point)
+    verified: bool = True  # criteria verified against the standard text
 
 
 @dataclass(frozen=True)
@@ -324,6 +331,9 @@ class ComplianceResult:
     overall_pass: bool
     tolerances: dict = field(default_factory=dict)  # editable tolerances used
     overridden: bool = False  # True if user changed library defaults
+    criteria_label: str = ""  # e.g. "API 610 12th edition + Petrobras N-553 (...)"
+    unverified: tuple = ()  # names of criteria parts not yet verified
+    parallel_ok: Optional[bool] = None  # parallel-operation rule (None = n/a)
 
     @property
     def verdict_label(self) -> str:

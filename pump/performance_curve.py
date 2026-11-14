@@ -13,11 +13,13 @@ Classes
 """
 
 from typing import Optional, List, Dict, Self, Any
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from .utilities.unit_conversion import Q_, quantity_factory
 from .utilities.fluid import Fluid
 from .point import DesignPoint, TestPoint
+from .acceptance import AcceptanceCriteria
 from tabulate import tabulate
 import io
 
@@ -619,10 +621,33 @@ class PerformanceCurve:
         return f"PerformanceCurve(fluid={self.fluid}, points={len(self.points)})"
     
 
+def _fmt_value(value) -> str:
+    """Format a table cell: Pint quantities with ``0.02f~P``, others as text."""
+    if value is None:
+        return "-"
+    if isinstance(value, str):
+        return value
+    try:
+        return f"{value:0.02f~P}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _dimensionless(value) -> float:
+    """Float value of a dimensionless quantity (percent aware) or a number."""
+    if hasattr(value, "to"):
+        return float(value.to("dimensionless").magnitude)
+    return float(value)
+
+
 class PerformanceChecker:
     """
     A class to check and validate the performance of a system based on a design point
     and performance curve.
+
+    The tolerances come from an :class:`pump.acceptance.AcceptanceCriteria`
+    (default: ``api610:12``, which reproduces the historical numbers: head
+    +/-3 %, shut-off +/-10/8/5 % by rated differential head, power +4 %).
 
     Examples
     --------
@@ -644,7 +669,13 @@ class PerformanceChecker:
     >>> chk.shutoff_tolerance  # rated head 73 m <= 75 -> 10%
     0.1
     """
-    def __init__(self, design_point: DesignPoint, performance_curve: PerformanceCurve, acceptable_limits: Optional[Dict[str, float]] = None):
+    def __init__(
+        self,
+        design_point: DesignPoint,
+        performance_curve: PerformanceCurve,
+        acceptable_limits: Optional[Dict[str, float]] = None,
+        criteria: Optional[AcceptanceCriteria] = None,
+    ):
         """
         Initializes the PerformanceChecker with a design point and performance curve.
         
@@ -655,48 +686,91 @@ class PerformanceChecker:
         performance_curve : Any
             The performance curve data to be evaluated.
         acceptable_limits : dict, optional
-            Predefined acceptable limits for validation (default is None).
+            Deprecated and ignored; pass ``criteria`` instead.
+        criteria : AcceptanceCriteria, optional
+            Tolerance tables (default: ``AcceptanceCriteria.default()``).
         """
+        if acceptable_limits is not None:
+            warnings.warn(
+                "acceptable_limits is ignored; pass criteria=AcceptanceCriteria…",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.design_point = design_point
         self.curve = performance_curve
+        self.criteria = criteria if criteria is not None else AcceptanceCriteria.default()
 
-        self.head_tolerance: float = 0.03  # ±3% of design head
+        rated_head = self.design_point.differential_head
+        self.head_tolerance_minus, self.head_tolerance = self.criteria.head_tolerance(rated_head)
         self.shutoff_tolerance: float = self._get_shutoff_tolerance()
-        self.breaking_power_tolerance: float = 0.04
+        self.breaking_power_tolerance: float = self.criteria.power_tol_plus
 
         self._compute_limits()
 
     def _get_shutoff_tolerance(self) -> float:
         """
-        Determines the shutoff head tolerance based on the design point head value.
+        Determines the shutoff head tolerance (plus side) from the rated
+        differential head of the design point.
 
         Returns
         -------
         float
             The tolerance value for the shutoff head.
         """
-        if self.design_point.differential_head.m <= 75:
-            return 0.1
-        elif self.design_point.differential_head.m <= 300:
-            return 0.08
-        else:
-            return 0.05
+        criteria = getattr(self, "criteria", None)
+        if criteria is None:
+            criteria = AcceptanceCriteria.default()
+        return criteria.shutoff_tolerance(self.design_point.differential_head)[1]
 
     def _compute_limits(self) -> None:
         """
         Computes the acceptable limits for head, shutoff head, and breaking power.
+        Limits without input data are ``None``.
         """
-        self.minimum_head = round(self.design_point.differential_head - self.head_tolerance * self.design_point.differential_head, 2)
-        self.maximum_head = round(self.design_point.differential_head + self.head_tolerance * self.design_point.differential_head, 2)
+        rated = self.design_point.differential_head
+        head_minus, head_plus = self.criteria.head_tolerance(rated)
+        self.minimum_head = round(rated - head_minus * rated, 2)
+        self.maximum_head = round(rated + head_plus * rated, 2)
 
-        if hasattr(self.design_point, "head_shutoff"):
-            self.maximum_head_shutoff = round(self.design_point.head_shutoff + self.shutoff_tolerance * self.design_point.head_shutoff, 2)
-            self.minimum_head_shutoff = round(self.design_point.head_shutoff - self.shutoff_tolerance * self.design_point.head_shutoff, 2)
+        self.minimum_head_shutoff = None
+        self.maximum_head_shutoff = None
+        self.maximum_breaking_power = None
 
-        
-        if hasattr(self.design_point, "breaking_power"):
-            self.maximum_breaking_power = round(self.design_point.breaking_power + self.breaking_power_tolerance * self.design_point.breaking_power, 2)
+        head_shutoff = getattr(self.design_point, "head_shutoff", None)
+        if head_shutoff is not None:
+            so_minus, so_plus = self.criteria.shutoff_tolerance(rated)
+            self.maximum_head_shutoff = round(head_shutoff + so_plus * head_shutoff, 2)
+            self.minimum_head_shutoff = round(head_shutoff - so_minus * head_shutoff, 2)
 
+        breaking_power = getattr(self.design_point, "breaking_power", None)
+        if breaking_power is not None:
+            self.maximum_breaking_power = round(
+                breaking_power + self.criteria.power_tol_plus * breaking_power, 2
+            )
+
+    @property
+    def shutoff_extrapolated(self) -> bool:
+        """
+        True when no curve point lies below ``shutoff_extrapolation_q_fraction``
+        of the rated capacity, i.e. the shut-off head is extrapolated.
+        """
+        threshold = (
+            self.criteria.shutoff_extrapolation_q_fraction * self.design_point.capacity
+        )
+        return not any(point.capacity < threshold for point in self.curve)
+
+    def parallel_operation_ok(self) -> Optional[bool]:
+        """
+        Parallel-operation rule: predicted shut-off head / rated differential
+        head >= ``parallel_shutoff_min_ratio``. ``None`` if there is no data.
+        """
+        try:
+            shutoff = self.curve.predict_head(Q_(0, "m**3/h"))
+            rated = self.design_point.differential_head
+            ratio = (shutoff / rated).to("dimensionless").magnitude
+        except Exception:
+            return None
+        return bool(ratio >= self.criteria.parallel_shutoff_min_ratio)
 
     @property
     def acceptable_limits(self) -> Dict[str, float]:
@@ -716,35 +790,76 @@ class PerformanceChecker:
     @property
     def check_summary(self) -> str:
         """
-        Checks whether the performance curve values fall within the acceptable limits.
-        Returns a table summarizing the results.
+        Table of the rated-point checks (not of every raw test point):
+        Head and Breaking Power at the rated capacity, Efficiency at the rated
+        capacity (when the design point has one) and Shutoff Head at Q=0
+        (flagged when extrapolated).
         """
-        results = []
-        for point in self.curve:
-            head_check = self.minimum_head <= point.head <= self.maximum_head
-            shutoff_check = (
-                self.minimum_head_shutoff <= point.head <= self.maximum_head_shutoff
-                if point.capacity.m < 0.1
-                else "N/A"
-            )
-            power_check = (
-                point.breaking_power <= self.maximum_breaking_power
-                if hasattr(point, "breaking_power") and hasattr(self, "maximum_breaking_power")
-                else "N/A"
-            )
+        rated_q = self.design_point.capacity
+        rows = []
 
-            results.append([
-                f"{point.capacity:0.02f~P}", 
-                f"{point.head:0.02f~P}", 
-                head_check,
-                f"{point.head:0.02f~P}" if point.capacity.m < 0.1 else "N/A", 
-                shutoff_check, 
-                f"{getattr(point, "breaking_power", 0):0.02f~P}" if hasattr(point, "breaking_power") else "N/A", 
-                power_check
+        pred_head = self.curve.predict_head(rated_q)
+        rows.append([
+            "Head",
+            _fmt_value(pred_head),
+            _fmt_value(self.minimum_head),
+            _fmt_value(self.maximum_head),
+            bool(self.minimum_head <= pred_head <= self.maximum_head),
+        ])
+
+        if self.maximum_breaking_power is not None:
+            try:
+                pred_power = self.curve.predict_breaking_power(rated_q)
+            except Exception:
+                pred_power = None
+            if pred_power is not None:
+                rows.append([
+                    "Breaking Power",
+                    _fmt_value(pred_power),
+                    "-",
+                    _fmt_value(self.maximum_breaking_power),
+                    bool(pred_power <= self.maximum_breaking_power),
+                ])
+
+        try:
+            rated_eff = getattr(self.design_point, "efficiency", None)
+        except Exception:
+            rated_eff = None
+        if rated_eff is not None:
+            try:
+                pred_eff = self.curve.predict_efficiency(rated_q)
+                min_eff = rated_eff - self.criteria.efficiency_tol_minus * rated_eff
+                rows.append([
+                    "Efficiency",
+                    _fmt_value(pred_eff),
+                    _fmt_value(min_eff),
+                    "-",
+                    bool(_dimensionless(pred_eff) >= _dimensionless(min_eff)),
+                ])
+            except Exception:
+                pass
+
+        extrapolated = False
+        if self.minimum_head_shutoff is not None and self.maximum_head_shutoff is not None:
+            pred_so = self.curve.predict_head(Q_(0, "m**3/h"))
+            extrapolated = self.shutoff_extrapolated
+            rows.append([
+                "Shutoff Head (extrapolated)" if extrapolated else "Shutoff Head",
+                _fmt_value(pred_so),
+                _fmt_value(self.minimum_head_shutoff),
+                _fmt_value(self.maximum_head_shutoff),
+                bool(self.minimum_head_shutoff <= pred_so <= self.maximum_head_shutoff),
             ])
 
-        headers = ["Flow", "Head", "Head OK", "Shutoff Head", "Shutoff OK", "Breaking Power", "B. Power OK"]
-        return tabulate(results, headers=headers, tablefmt="grid")
+        headers = ["Parameter", "Predicted", "Min", "Max", "OK"]
+        text = tabulate(rows, headers=headers, tablefmt="grid")
+        if extrapolated:
+            fraction = self.criteria.shutoff_extrapolation_q_fraction
+            text += (
+                "\nNote: shutoff head is extrapolated (no test point below "
+                f"{fraction:.0%} of rated capacity)."
+            )
+        return text
     
     @property
     def test_summary_with_limits(self) -> str:
@@ -763,10 +878,10 @@ class PerformanceChecker:
                 f"{point.head:0.02f~P}",
                 f"{self.minimum_head:0.02f~P}", f"{self.maximum_head:0.02f~P}",
                 f"{point.head:0.02f~P}" if point.capacity.m < 0.1 else "N/A",
-                f"{self.minimum_head_shutoff:0.02f~P}" if hasattr(self, "minimum_head_shutoff") else "N/A",
-                f"{self.maximum_head_shutoff:0.02f~P}" if hasattr(self, "maximum_head_shutoff") else "N/A",
+                f"{self.minimum_head_shutoff:0.02f~P}" if self.minimum_head_shutoff is not None else "N/A",
+                f"{self.maximum_head_shutoff:0.02f~P}" if self.maximum_head_shutoff is not None else "N/A",
                 f"{getattr(point, "breaking_power", 0):0.02f~P}" if hasattr(point, "breaking_power") else "N/A",
-                f"{self.maximum_breaking_power:0.02f~P}" if hasattr(self, "maximum_breaking_power") else "N/A"
+                f"{self.maximum_breaking_power:0.02f~P}" if self.maximum_breaking_power is not None else "N/A"
             ])
 
         headers = [
@@ -796,7 +911,7 @@ class PerformanceChecker:
                      self.maximum_head],
             "Breaking Power": [self.curve.predict_breaking_power(rated_capacity),
                                "-",
-                               self.maximum_breaking_power if hasattr(self, "maximum_breaking_power") else "-"],
+                               self.maximum_breaking_power if self.maximum_breaking_power is not None else "-"],
             "Efficiency": self.curve.predict_efficiency(rated_capacity),
             "Rated Capacity": self.design_point.capacity
         }

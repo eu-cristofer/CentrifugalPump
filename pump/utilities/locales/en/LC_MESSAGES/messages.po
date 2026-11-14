@@ -99,3 +99,9 @@ msgstr "Driver"
 
 msgid "Test bench"
 msgstr "Test bench"
+
+msgid "The computations in this section were performed in accordance with {standard}:"
+msgstr "The computations in this section were performed in accordance with {standard}:"
+
+msgid "Acceptance criteria not yet verified against the standard text: {items}."
+msgstr "Acceptance criteria not yet verified against the standard text: {items}."

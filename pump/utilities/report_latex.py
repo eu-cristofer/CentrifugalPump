@@ -35,6 +35,8 @@ from .report import (
     TEST_SUMMARY_DESCRIPTION,
     TESTS_DEVELOPMENT_TEXT,
     LocalizationHelper,
+    standard_sentence,
+    unverified_sentence,
 )
 
 __all__ = ["LatexReportGenerator", "latex_escape", "find_latex_engine"]
@@ -74,7 +76,7 @@ _UNICODE = {
     "–": "--",
     "—": "---",
     "‑": "-",
-    " ": "~",
+    "\u00a0": "~",  # no-break space (escape kept: a literal one is invisible)
 }
 
 
@@ -213,6 +215,7 @@ class LatexReportGenerator:
             out.append(latex_escape(_("Design Point data:")) + "\n")
             out.append(self._kv_table(rows))
 
+        acceptance = report_data.get("acceptance", {})
         for pump_tag, entry in report_data.get("test_data", {}).items():
             out.append(r"\clearpage")
             out.append(r"\subsection{%s}" % latex_escape(_("Test Data - ") + pump_tag))
@@ -223,7 +226,7 @@ class LatexReportGenerator:
                     % (latex_escape(_("Overall verdict")), latex_escape(verdict))
                     + "\n"
                 )
-            out.append(self._summary(entry.get("test_summary") or {}))
+            out.append(self._summary(entry.get("test_summary") or {}, acceptance))
             out.append(self._test_table(entry.get("test_data") or {}))
             for key in [k for k in entry if "Curve" in k]:
                 out.append(self._figure(key, entry[key], pump_tag, fig_dir, fig_rel))
@@ -269,7 +272,7 @@ class LatexReportGenerator:
             ]
         )
 
-    def _summary(self, summary: dict) -> str:
+    def _summary(self, summary: dict, acceptance: Optional[dict] = None) -> str:
         if not summary:
             return ""
         _ = self._
@@ -287,21 +290,23 @@ class LatexReportGenerator:
                 + r" \\"
             )
         head = " & ".join(r"\textbf{%s}" % latex_escape(_(c)) for c in SUMMARY_COLUMNS)
-        return "\n".join(
-            [
-                r"\subsubsection*{%s}" % latex_escape(_("Performance test summary.")),
-                latex_escape(_(TEST_SUMMARY_DESCRIPTION)),
-                r"\begin{quote}\itshape %s\end{quote}" % latex_escape(_(API_PARAGRAPH)),
-                latex_escape(_("Calculated Head and Power:")),
-                r"\begin{center}\begin{tabular}{lccc}",
-                r"\toprule",
-                head + r" \\",
-                r"\midrule",
-                *rows,
-                r"\bottomrule",
-                r"\end{tabular}\end{center}",
-            ]
-        )
+        parts = [
+            r"\subsubsection*{%s}" % latex_escape(_("Performance test summary.")),
+            latex_escape(standard_sentence(_, acceptance)),
+            r"\begin{quote}\itshape %s\end{quote}" % latex_escape(_(API_PARAGRAPH)),
+            latex_escape(_("Calculated Head and Power:")),
+            r"\begin{center}\begin{tabular}{lccc}",
+            r"\toprule",
+            head + r" \\",
+            r"\midrule",
+            *rows,
+            r"\bottomrule",
+            r"\end{tabular}\end{center}",
+        ]
+        note = unverified_sentence(_, acceptance)
+        if note:
+            parts.append(latex_escape(note) + "\n")
+        return "\n".join(parts)
 
     def _test_table(self, data: dict) -> str:
         if not data:

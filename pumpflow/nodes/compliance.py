@@ -4,7 +4,9 @@ nodes.compliance — API 610 Compliance Check  (UI_SPEC §5.6)
 Inputs ``FittedModel`` + ``RatedPoint`` → output ``ComplianceResult``.
 Per-parameter Actual / Predicted / Min / Max / Deviation / Tolerance / Verdict,
 plus a bold overall APPROVED / REJECTED banner.  Numbers come from
-``PerformanceChecker`` so they match the library's report tables.
+``PerformanceChecker`` so they match the library's report tables.  The criteria
+(edition + client overlay) come from the rated point; rows whose criteria are not
+yet verified against the standard text carry an amber "unverified" badge.
 """
 
 from __future__ import annotations
@@ -24,7 +26,11 @@ from ..style import ui_font
 from .base import BaseNode, PortSpec
 from . import ui
 
-_HEADERS = ["Parameter", "Actual", "Predicted", "Min", "Max", "Deviation", "Tol.", "Verdict"]
+_HEADERS = [
+    "Parameter", "Actual", "Predicted", "Min", "Max", "Deviation", "Tol.", "Verdict",
+    "Note",
+]
+_AMBER = "#b7791f"
 
 
 class ComplianceCheckNode(BaseNode):
@@ -63,12 +69,17 @@ class ComplianceCheckNode(BaseNode):
         s = self.settings
         dlg = ui.PropertyDialog(
             parent, "API 610 Compliance Check",
-            "Deviation δ = 1 − nominal/predicted.  Head |δ|≤tol · Power δ≤tol · "
-            "Efficiency δ≥−tol · Shut-off |δ|≤tol.",
+            "Deviation δ = (predicted − rated)/rated.  Head min ≤ pred ≤ max · "
+            "Power δ≤tol · Efficiency δ≥−tol · Shut-off |δ|≤tol.",
             width=680,
         )
         verdict = QLabel(objectName="VerdictBanner")
         verdict.setFont(ui_font(15, QFont.Bold))
+        criteria_lbl = QLabel("")
+        unverified_lbl = QLabel("")
+        unverified_lbl.setStyleSheet(f"color: {_AMBER};")
+        unverified_lbl.setWordWrap(True)
+        parallel_lbl = QLabel("")
         override_chip = ui.Banner()
 
         table = QTableWidget(0, len(_HEADERS))
@@ -92,6 +103,9 @@ class ComplianceCheckNode(BaseNode):
                 verdict.setText("—  awaiting inputs")
                 verdict.setProperty("verdict", "idle")
                 _repolish(verdict)
+                criteria_lbl.setVisible(False)
+                unverified_lbl.setVisible(False)
+                parallel_lbl.setVisible(False)
                 return
             for p in result.parameters:
                 _append_param(table, p)
@@ -99,9 +113,27 @@ class ComplianceCheckNode(BaseNode):
             verdict.setText(f"{'APPROVED ✓' if ok else 'REJECTED ✗'}   ·   {result.pump_tag}")
             verdict.setProperty("verdict", "pass" if ok else "fail")
             _repolish(verdict)
+            criteria_lbl.setText(f"Criteria: {result.criteria_label}")
+            criteria_lbl.setVisible(bool(result.criteria_label))
+            if result.unverified:
+                unverified_lbl.setText(
+                    "⚠ Unverified against the standard text: "
+                    + ", ".join(str(u) for u in result.unverified)
+                )
+                unverified_lbl.setVisible(True)
+            else:
+                unverified_lbl.setVisible(False)
+            if result.parallel_ok is None:
+                parallel_lbl.setVisible(False)
+            else:
+                parallel_lbl.setText(
+                    "Parallel operation: shut-off head rise "
+                    + ("OK ✓" if result.parallel_ok else "NOT MET ✗")
+                )
+                parallel_lbl.setVisible(True)
             if result.overridden:
                 override_chip.show_message(
-                    "⚠ Tolerances overridden — differ from PerformanceChecker defaults.", "warn"
+                    "⚠ Tolerances overridden — differ from the acceptance-criteria defaults.", "warn"
                 )
             else:
                 override_chip.setVisible(False)
@@ -134,6 +166,9 @@ class ComplianceCheckNode(BaseNode):
         reset.clicked.connect(do_reset)
 
         dlg.add(verdict)
+        dlg.add(criteria_lbl)
+        dlg.add(unverified_lbl)
+        dlg.add(parallel_lbl)
         dlg.add(override_chip)
         dlg.add(table)
         dlg.add(ui.hline())
@@ -153,17 +188,25 @@ class _Fallback:
 
     head = Q_(73.0, "m")
     head_shutoff = Q_(117.0, "m")
+    standard_key = "api610:12"
+    client = None
 
 
 def _append_param(table: QTableWidget, p) -> None:
     r = table.rowCount()
     table.insertRow(r)
+    notes = []
+    if not getattr(p, "verified", True):
+        notes.append("unverified")
+    if getattr(p, "extrapolated", False):
+        notes.append("extrapolated")
     cells = [
         p.name, fmt(p.actual), fmt(p.predicted),
         fmt(p.minimum) if p.minimum is not None else "—",
         fmt(p.maximum) if p.maximum is not None else "—",
         f"{p.deviation * 100:+.2f} %", f"{p.tolerance * 100:.1f} %",
         "✅" if p.passed else "❌",
+        " · ".join(notes),
     ]
     for c, text in enumerate(cells):
         item = QTableWidgetItem(str(text))
@@ -174,6 +217,8 @@ def _append_param(table: QTableWidget, p) -> None:
             f = item.font()
             f.setBold(True)
             item.setFont(f)
+        if c == 8 and notes:
+            item.setForeground(QColor(_AMBER))
         table.setItem(r, c, item)
 
 

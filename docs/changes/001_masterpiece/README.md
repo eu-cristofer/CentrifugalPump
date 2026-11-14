@@ -54,7 +54,8 @@ Each run MUST:
     - [x] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate` — done 2026-11-14
 - [x] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md) — done 2026-11-14
 - [x] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md) — done 2026-11-14
-- [ ] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md)
+- [x] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md) — done 2026-11-14
+  BLOCKED-PARTIAL: tolerance values unverified. API 610 8/10/11/12 are seeded with the pre-S5 code values and N-553 is an empty overlay, all `verified = false`, until the owner confirms them from the standard text.
 - [ ] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md)
 - [ ] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md)
 - [ ] [Sprint 8 — UC-05 NPSH margin](sprint-8.md)
@@ -99,3 +100,19 @@ Each run MUST:
   - A measured head override still wins.
   - The Head column tooltip shows each component, and the report lists the geometry.
 - S4: without geometry the results are bit-identical; all shipped projects are unchanged. Unset optional geometry is omitted on disk, so re-saved files match migrated ones.
+- S5: acceptance criteria are **data**: `pump/standards/api610.toml` (editions 8, 10, 11, 12) plus a client overlay `clients/n553.toml`, loaded through `pump.acceptance.AcceptanceCriteria`.
+  - **No row is verified.** Every edition carries the pre-S5 code values (head ±3 %, shut-off 10/8/5 %, power +4 %, η −3 %), marked unverified, and N-553 changes nothing until it is configured.
+  - ISO 9906 is deferred, because no confirmed values exist.
+- S5: the Rated Point gains Standard/edition and Client overlay pickers, and the edition is parsed from the old free text. B-34004A resolves to **API 610 8th + N-553**.
+- S5: one deviation formula, (predicted − rated)/rated, is shared by the GUI and the library (review F-05).
+  - Shut-off bands are keyed by rated differential head everywhere.
+  - The GUI limits now equal the library's 2-decimal limits.
+- S5: fixes:
+  - F-01: `acceptable_limits` no longer crashes without shut-off or power data.
+  - F-02: `check_summary` checks only the rated point.
+  - F-07: an extrapolated shut-off is flagged.
+- S5: new checks:
+  - the parallel-operation rule (shut-off ≥ 110 % of rated head, unverified) fails the verdict when `parallel` is set and the rule isn't met;
+  - the ignored `acceptable_limits` argument now warns.
+- S5: the report states the selected edition instead of a hard-coded "12th issue" and lists the unverified criteria, in en and pt.
+- S5: every shipped project's verdicts and limits are unchanged.

@@ -49,7 +49,9 @@
         },
         "parallel": false,
         "fluid_name": "Water (service)",
-        "fluid_choice": ""
+        "fluid_choice": "",
+        "standard_key": "api610:12",
+        "client": ""
       }
     },
     {

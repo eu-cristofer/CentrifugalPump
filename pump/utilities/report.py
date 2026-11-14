@@ -39,8 +39,12 @@ INTRO_PARAGRAPHS = (
 TESTS_DEVELOPMENT_TEXT = "Here we present the key details regarding the development of the tests."
 EQUIPMENT_TEXT = "The following section presents the main characteristics of the equipment."
 TEST_SUMMARY_DESCRIPTION = (
-    "The computations in this section were performed in accordancy with API 610 12th issue:"
+    "The computations in this section were performed in accordance with {standard}:"
 )
+UNVERIFIED_NOTE = (
+    "Acceptance criteria not yet verified against the standard text: {items}."
+)
+DEFAULT_STANDARD_LABEL = "API 610"
 API_PARAGRAPH = (
     "8.3.3.4.3 The test data shall be fit to a spline or an appropriate polynomial (typically, "
     "not less than a third order) for head and for power using a least squares method. The "
@@ -52,6 +56,22 @@ TEST_DATA_DESCRIPTION = (
     "based on the specified speed of rotation (or frequency) and density."
 )
 SUMMARY_COLUMNS = ("Parameter", "Actual", "Minimum", "Maximum")
+
+
+def standard_sentence(translate: Callable[[str], str], acceptance: Optional[dict]) -> str:
+    """Localized "computations performed in accordance with <standard>:" sentence."""
+    label = (acceptance or {}).get("label") or DEFAULT_STANDARD_LABEL
+    return translate(TEST_SUMMARY_DESCRIPTION).format(standard=label)
+
+
+def unverified_sentence(
+    translate: Callable[[str], str], acceptance: Optional[dict]
+) -> Optional[str]:
+    """Localized note listing unverified criteria, or ``None`` when all verified."""
+    items = list((acceptance or {}).get("unverified") or [])
+    if not items:
+        return None
+    return translate(UNVERIFIED_NOTE).format(items=", ".join(str(i) for i in items))
 
 
 def _parse_po(path) -> dict:
@@ -236,12 +256,13 @@ class ReportGenerator:
         self._add_intro(document)
         self._add_equipment_description(document, report_data.get("equipment_description", {}))
         self._add_design_point(document, report_data.get("design_point", {}))
+        acceptance = report_data.get("acceptance", {})
         for tag, test_data in report_data["test_data"].items():
             document.add_paragraph(self._('Test Data - ') + tag, style='Title_2')
             if "verdict" in test_data:
                 verdict = self._("APPROVED") if test_data["verdict"] else self._("NOT APPROVED")
                 document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
-            self._add_test_summary(document, test_data.get("test_summary", {}))
+            self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
             self._add_test_data(document, test_data.get("test_data", {}))
 
             # Adding  charts, if any.
@@ -350,7 +371,7 @@ class ReportGenerator:
                 run_left.font.name = table_font  # Use fixed-spacing font
                 run_rigth.font.name = table_font  # Use fixed-spacing font
 
-    def _add_test_summary(self, document, test_summary):
+    def _add_test_summary(self, document, test_summary, acceptance=None):
         """
         Add test summary section to the document.
         
@@ -360,12 +381,16 @@ class ReportGenerator:
             The Word document object to modify.
         test_summary : dict
             Dictionary containing test results and observations.
+        acceptance : dict, optional
+            ``{"label": str, "verified": bool, "unverified": list}`` describing
+            the acceptance criteria used; drives the standard sentence and the
+            "not yet verified" note.
         """
         table_font = "Consolas"
         width = Inches(1.25)
         if test_summary:
             document.add_paragraph(self._('Performance test summary.'), style='Title_3')
-            document.add_paragraph(self._(TEST_SUMMARY_DESCRIPTION), style='Text_body')
+            document.add_paragraph(standard_sentence(self._, acceptance), style='Text_body')
             document.add_paragraph(self._(API_PARAGRAPH), style="Intense Quote")
             document.add_paragraph(self._("Calculated Head and Power:"), style='Text_body')
             table = document.add_table(rows=len(test_summary) + 1, cols=4)
@@ -410,6 +435,10 @@ class ReportGenerator:
                     run.font.size = Pt(8)  # Set font size
                     run.font.name = table_font  # Use fixed-spacing font
                     cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+            note = unverified_sentence(self._, acceptance)
+            if note:
+                document.add_paragraph(note, style='Text_body')
 
     def _add_test_data(self, document, test_data):
         """
@@ -480,4 +509,3 @@ class ReportGenerator:
                             width=width,
                             height=height)
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-

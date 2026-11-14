@@ -12,6 +12,10 @@ are offered and how they map to the library's canonical units.  ``to_signal``
 always normalises Q/H/N/P/η/… to m³/h/m/rpm/kW/% (and viscosity to cSt) and wraps
 them as Pint Quantities so every downstream node sees standard units.
 A fresh node opens in whatever display units the active project preset selects.
+
+The acceptance criteria are chosen with the "Standard / edition" and "Client
+overlay" combos (``standard_key`` / ``client``); when those settings are absent
+(older projects) they are derived from the free-text ``standard`` label.
 """
 
 from __future__ import annotations
@@ -23,13 +27,27 @@ from PySide6.QtWidgets import QLabel
 from pump import Q_
 
 from .. import units
-from ..binding import water_density_kgm3
+from ..binding import (
+    available_clients,
+    available_standards,
+    standard_label,
+    water_density_kgm3,
+)
+from ..settings_codec import parse_standard_text
 from ..signals import RatedPoint
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
 
 _DEFAULT_LABEL = "Custom (entered below)"
+
+
+def _standard_keys(s: Dict):
+    """``(standard_key, client)`` of the settings: stored keys, else parsed text."""
+    if "standard_key" in s:
+        return (str(s.get("standard_key") or "api610:12"), str(s.get("client") or ""))
+    key, client = parse_standard_text(s.get("standard", ""))
+    return key, client or ""
 
 
 class RatedPointInputNode(BaseNode):
@@ -103,6 +121,11 @@ class RatedPointInputNode(BaseNode):
         hso_unit = s.get("head_shutoff_unit") or "m"
         npsha_unit = s.get("npsha_unit") or "m"
         n_unit = s.get("n_unit") or "rpm"
+        standard_key, client = _standard_keys(s)
+        # Persist the resolved edition: a file re-saved from an old project then
+        # carries explicit keys, exactly like one passed through migrate().
+        s.setdefault("standard_key", standard_key)
+        s.setdefault("client", client)
         return RatedPoint(
             tag=str(s["tag"]).strip(),
             service=str(s.get("service", "")),
@@ -141,6 +164,8 @@ class RatedPointInputNode(BaseNode):
             viscosity=viscosity,
             parallel_operation=bool(s["parallel"]),
             fluid_name=fluid_name,
+            standard_key=standard_key,
+            client=client or None,
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -297,6 +322,29 @@ class RatedPointInputNode(BaseNode):
         std = ui.line_edit(s["standard"], None)
         std.textChanged.connect(lambda v: (s.__setitem__("standard", v), apply()))
 
+        # ---- ACCEPTANCE CRITERIA — edition + client overlay ----
+        cur_key, cur_client = _standard_keys(s)
+        edition_combo = ui.combo(
+            [(label, key) for key, label in available_standards()], cur_key, None
+        )
+        client_combo = ui.combo(
+            [("None", "")] + [(label, c) for c, label in available_clients()],
+            cur_client,
+            None,
+        )
+
+        def on_standard_change():
+            key = edition_combo.currentData() or "api610:12"
+            client = client_combo.currentData() or ""
+            s["standard_key"], s["client"] = key, client
+            label = standard_label(key, client or None)
+            s["standard"] = label
+            std.setText(label)
+            apply()
+
+        edition_combo.currentIndexChanged.connect(lambda _=None: on_standard_change())
+        client_combo.currentIndexChanged.connect(lambda _=None: on_standard_change())
+
         # ---- RATED FLUID — relative ↔ absolute density kept in sync ----
         dens_rel = ui.spin(s["dens_rel"], 0.0, 5.0, 0.001, 6, None)
         density_rel_display = QLabel("—")
@@ -398,6 +446,8 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.section("Identification"))
         dlg.add(ui.row("Service", service))
         dlg.add(ui.row("Service TAG", tag))
+        dlg.add(ui.row("Standard / edition", edition_combo))
+        dlg.add(ui.row("Client overlay", client_combo))
         dlg.add(ui.row("Standard", std))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated duty"))
