@@ -570,6 +570,8 @@ def assemble_report_data(
             "test_summary": report_summary_for(b.fitted, rated),
             "test_data": b.fitted.curve.test_data,
         }
+        if b.compliance is not None:
+            entry["verdict"] = bool(b.compliance.overall_pass)
         png = b.plot_png
         if png is None and b.corrected is not None:
             png = build_report_png(b.corrected, rated)
@@ -597,3 +599,84 @@ def generate_docx(
         from pump.utilities.report import ReportGenerator
     gen = ReportGenerator(language=language, template_path=template_path)
     return gen.generate_report(report_data, output_file=output_file)
+
+
+def generate_tex(
+    report_data: dict, language: str = "en", output_file: Optional[str] = None
+) -> str:
+    """Write the LaTeX source of the report (``.tex`` + ``<stem>_figs/``)."""
+    from pump.utilities.report_latex import LatexReportGenerator
+
+    return LatexReportGenerator(language=language).generate_tex(
+        report_data, output_file
+    )
+
+
+def generate_pdf(
+    report_data: dict, language: str = "en", output_file: Optional[str] = None
+) -> str:
+    """Compile the LaTeX report to PDF (needs latexmk or pdflatex on PATH)."""
+    from pump.utilities.report_latex import LatexReportGenerator
+
+    return LatexReportGenerator(language=language).generate_pdf(
+        report_data, output_file
+    )
+
+
+REPORT_FORMATS = ("docx", "tex", "pdf")
+
+
+def export_reports(
+    report_data: dict,
+    formats=REPORT_FORMATS,
+    language: str = "en",
+    template_path: Optional[str] = None,
+    out_dir: Optional[str] = None,
+    stem: Optional[str] = None,
+):
+    """Write the report in every requested format.
+
+    Returns ``(paths, errors)``: ``{fmt: path}`` for the formats that succeeded
+    and ``{fmt: message}`` for the ones that failed. One failing format (e.g. no
+    TeX installed) never prevents the others from being written.
+    """
+    import io
+    from datetime import datetime
+    from pathlib import Path
+
+    if stem is None:
+        tag = report_data["equipment_description"]["TAG"].replace("/", "")
+        from pump.utilities.report import LocalizationHelper
+
+        report_word = LocalizationHelper(language)._("Report")
+        stem = f"{report_word}_{tag}_{datetime.now().strftime('%d-%m-%Y')}"
+    folder = Path(out_dir or ".")
+    folder.mkdir(parents=True, exist_ok=True)
+
+    writers = {
+        "docx": lambda out: generate_docx(
+            report_data, language=language, template_path=template_path, output_file=out
+        ),
+        "tex": lambda out: generate_tex(
+            report_data, language=language, output_file=out
+        ),
+        "pdf": lambda out: generate_pdf(
+            report_data, language=language, output_file=out
+        ),
+    }
+    paths, errors = {}, {}
+    for fmt in formats:
+        if fmt not in writers:
+            errors[fmt] = f"Unknown report format: {fmt!r}"
+            continue
+        # Each writer reads the in-memory PNG charts; rewind them so a previous
+        # format having consumed the buffer cannot leave the next one empty.
+        for entry in report_data.get("test_data", {}).values():
+            for value in entry.values():
+                if isinstance(value, io.BytesIO):
+                    value.seek(0)
+        try:
+            paths[fmt] = str(writers[fmt](str(folder / f"{stem}.{fmt}")))
+        except Exception as exc:  # collected, reported by the caller
+            errors[fmt] = f"{type(exc).__name__}: {exc}"
+    return paths, errors

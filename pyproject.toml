@@ -43,6 +43,7 @@ Homepage = "https://github.com/eu-cristofer/centrifugal-pump"
 include = ["pump*", "pumpflow*"]
 
 [tool.setuptools.package-data]
+pump = ["templates/*.docx", "utilities/locales/*/LC_MESSAGES/*.po"]
 pumpflow = ["examples/*.pumpflow"]
 
 [tool.pytest.ini_options]

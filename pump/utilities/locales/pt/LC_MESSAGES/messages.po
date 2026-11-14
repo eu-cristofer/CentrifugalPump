@@ -108,3 +108,66 @@ msgstr "Aviso: Não foi possível adicionar o gráfico"
 
 msgid "Warning: Unable to set locale, using default."
 msgstr "Aviso: Não foi possível definir o idioma, usando o padrão."
+
+msgid "Introduction"
+msgstr "Introdução"
+
+msgid "Performance Curve"
+msgstr "Curva de Performance"
+
+msgid "Factory Acceptance Test Report"
+msgstr "Relatório de Teste de Aceitação em Fábrica"
+
+msgid "Generated on"
+msgstr "Gerado em"
+
+msgid "Overall verdict"
+msgstr "Resultado geral"
+
+msgid "APPROVED"
+msgstr "APROVADO"
+
+msgid "NOT APPROVED"
+msgstr "REPROVADO"
+
+msgid "Capacity"
+msgstr "Vazão"
+
+msgid "Breaking Power"
+msgstr "Potência"
+
+msgid "Hydraulic Power"
+msgstr "Potência Hidráulica"
+
+msgid "Rated Capacity"
+msgstr "Vazão Nominal"
+
+msgid "Density"
+msgstr "Massa Específica"
+
+msgid "Viscosity"
+msgstr "Viscosidade"
+
+msgid "Differential Head"
+msgstr "Head Diferencial"
+
+msgid "Head Shutoff"
+msgstr "Head no Shutoff"
+
+msgid "Npsha"
+msgstr "NPSH Disponível"
+
+msgid "Speed Of Rotation"
+msgstr "Rotação"
+
+msgid "Serial No."
+msgstr "Nº de Série"
+
+msgid "Type"
+msgstr "Tipo"
+
+msgid "Driver"
+msgstr "Acionador"
+
+msgid "Test bench"
+msgstr "Bancada de Teste"

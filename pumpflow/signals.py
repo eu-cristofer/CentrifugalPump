@@ -167,6 +167,16 @@ class TestPointSet:
                 False,
                 f"At least 3 points required for a fit (have {len(self.rows)}).",
             )
+        # A row that is still blank (e.g. a template being filled in on test
+        # day) must be rejected here, not crash downstream: N=0 divides by zero
+        # in the affinity ratio and an empty ΔP yields a zero head.
+        for i, r in enumerate(self.rows, start=1):
+            if not r.speed_rpm or r.speed_rpm <= 0:
+                return False, f"Row {i}: speed N is missing."
+            if not r.power_kw or r.power_kw <= 0:
+                return False, f"Row {i}: power P is missing."
+            if r.head_m is None and r.p_discharge == r.p_suction:
+                return False, f"Row {i}: P_dis equals P_suc (no head)."
         return True, ""
 
     def has_shutoff(self) -> bool:

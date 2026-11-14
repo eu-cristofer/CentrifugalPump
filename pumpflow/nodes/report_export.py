@@ -6,8 +6,12 @@ accepts ``CorrectedCurve`` / ``FittedModel`` / ``ComplianceResult`` from each
 pump.  Payloads are grouped by pump TAG into a :class:`ReportBundle`.
 One branch → single-pump report; N branches → one consolidated report.
 
-Exports: ``.docx`` (via the library's ``ReportGenerator``), ``.json``
-(reusable data file), and the per-pump plot ``.png``.
+Exports: ``.docx`` (via the library's ``ReportGenerator``), ``.tex`` and
+``.pdf`` (LaTeX, via ``LatexReportGenerator``; the PDF is compiled with
+latexmk/pdflatex), ``.json`` (reusable data file), and the per-pump plot
+``.png``.  "Export all" writes every format listed in ``settings["formats"]``
+(default: docx + tex + pdf).  The same export runs headless with
+``python -m pumpflow.export_cli``.
 """
 
 from __future__ import annotations
@@ -21,7 +25,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
-from ..binding import assemble_report_data, generate_docx
+from ..binding import REPORT_FORMATS, assemble_report_data, export_reports
 from ..persistence import write_json
 from ..signals import BranchBundle, ComplianceResult, CorrectedCurve, FittedModel, RatedPoint
 from .base import BaseNode, PortSpec
@@ -158,28 +162,44 @@ class ReportExportNode(BaseNode):
             pumps_lbl.setText("\n".join(lines))
             banner.show_message(self.status, "ok" if self.state == "ok" else "info")
 
-        # export buttons
-        def export_docx():
+        # export buttons — every document format goes through
+        # binding.export_reports so the GUI and the CLI behave identically.
+        def run_export(formats):
             rated = getattr(self, "_rated", None)
-            branches = getattr(self, "_branches", ())
+            branches = [b for b in getattr(self, "_branches", ()) if b.fitted is not None]
             if not rated or not branches:
-                QMessageBox.warning(dlg, "Report Export", "Connect the rated point and at least one branch.")
+                QMessageBox.warning(
+                    dlg, "Report Export",
+                    "Connect the rated point and at least one complete branch "
+                    "(test points → correction → curve fit).",
+                )
                 return
             data = assemble_report_data(rated, branches, s["equipment"])
-            out = self._resolve_output(s, ".docx", rated)
-            try:
-                path = generate_docx(
-                    data, language=s["language"],
-                    template_path=s["template_path"] or None, output_file=out,
-                )
-                QMessageBox.information(dlg, "Report Export", f"Saved:\n{path}")
-            except FileNotFoundError as exc:
-                QMessageBox.warning(
-                    dlg, "Template not found",
-                    f"{exc}\n\nProvide a template_{s['language']}.docx via the Template field.",
-                )
-            except Exception as exc:
-                QMessageBox.critical(dlg, "Report Export failed", str(exc))
+            stem = self._resolve_output(s, "", rated)
+            folder, _, name = stem.rpartition("/")
+            paths, errors = export_reports(
+                data, formats, language=s["language"],
+                template_path=s["template_path"] or None,
+                out_dir=folder or ".", stem=name,
+            )
+            lines = [f"Saved {fmt}: {path}" for fmt, path in paths.items()]
+            lines += [f"FAILED {fmt}: {msg}" for fmt, msg in errors.items()]
+            if errors and "docx" in errors and "Template" in errors["docx"]:
+                lines.append(f"Provide a template_{s['language']}.docx via the Template field.")
+            box = QMessageBox.warning if errors else QMessageBox.information
+            box(dlg, "Report Export", "\n".join(lines))
+
+        def export_docx():
+            run_export(["docx"])
+
+        def export_tex():
+            run_export(["tex"])
+
+        def export_pdf():
+            run_export(["pdf"])
+
+        def export_all():
+            run_export(list(s.get("formats") or REPORT_FORMATS))
 
         def export_json():
             rated = getattr(self, "_rated", None)
@@ -209,7 +229,10 @@ class ReportExportNode(BaseNode):
                 n += 1
             QMessageBox.information(dlg, "Report Export", f"Exported {n} plot(s) to:\n{folder}")
 
-        btn_docx = _btn("Export .docx", export_docx, primary=True)
+        btn_all = _btn("Export all (docx + tex + pdf)", export_all, primary=True)
+        btn_docx = _btn("Export .docx", export_docx)
+        btn_tex = _btn("Export .tex", export_tex)
+        btn_pdf = _btn("Export .pdf", export_pdf)
         btn_json = _btn("Export .json", export_json)
         btn_png = _btn("Export .png", export_png)
 
@@ -218,6 +241,8 @@ class ReportExportNode(BaseNode):
         bl = QHBoxLayout(btnrow)
         bl.setContentsMargins(0, 0, 0, 0)
         bl.addWidget(btn_docx)
+        bl.addWidget(btn_tex)
+        bl.addWidget(btn_pdf)
         bl.addWidget(btn_json)
         bl.addWidget(btn_png)
         bl.addStretch(1)
@@ -245,6 +270,7 @@ class ReportExportNode(BaseNode):
         dlg.add(ui.hline())
         dlg.add(ui.section("Equipment description (service-level)"))
         dlg.add(equip)
+        dlg.add(btn_all)
         dlg.add(btnrow)
         dlg.add(banner)
         refresh_pumps()
@@ -263,8 +289,13 @@ class ReportExportNode(BaseNode):
 
     def _resolve_output(self, s, ext, rated) -> str:
         name = (s.get("filename") or self._default_filename()).strip()
-        if not name.endswith(ext):
-            name += ext
+        # A filename typed with one extension must not leak into another format
+        # ("rep.docx" exported as PDF would otherwise become "rep.docx.pdf").
+        for known in (".docx", ".tex", ".pdf", ".json"):
+            if name.lower().endswith(known):
+                name = name[: -len(known)]
+                break
+        name += ext
         folder = s.get("out_dir") or "."
         return f"{folder.rstrip('/')}/{name}"
 

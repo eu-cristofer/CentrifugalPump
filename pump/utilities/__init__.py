@@ -39,13 +39,15 @@ Fluid(name=Water, density=1000 kilogram / meter ** 3)
 >>> round(flow_rate.magnitude, 4), str(flow_rate.units)
 (0.6, 'meter ** 3 / hour')
 """
-from . import unit_conversion, fluid, report
+from . import unit_conversion, fluid, report, report_latex
 from .unit_conversion import *
 from .fluid import *
 from .report import *
+from .report_latex import *
 
 __all__ = list(
     set(unit_conversion.__all__) |
     set(fluid.__all__) |
-    set(report.__all__)
+    set(report.__all__) |
+    set(report_latex.__all__)
 )

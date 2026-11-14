@@ -24,3 +24,78 @@ msgstr "This is the conclusion of the document."
 
 msgid "New document saved at"
 msgstr "New document saved at"
+
+msgid "Introduction"
+msgstr "Introduction"
+
+msgid "Performance Curve"
+msgstr "Performance Curve"
+
+msgid "Factory Acceptance Test Report"
+msgstr "Factory Acceptance Test Report"
+
+msgid "Generated on"
+msgstr "Generated on"
+
+msgid "Overall verdict"
+msgstr "Overall verdict"
+
+msgid "APPROVED"
+msgstr "APPROVED"
+
+msgid "NOT APPROVED"
+msgstr "NOT APPROVED"
+
+msgid "Capacity"
+msgstr "Capacity"
+
+msgid "Head"
+msgstr "Head"
+
+msgid "Breaking Power"
+msgstr "Breaking Power"
+
+msgid "Hydraulic Power"
+msgstr "Hydraulic Power"
+
+msgid "Rated Capacity"
+msgstr "Rated Capacity"
+
+msgid "Density"
+msgstr "Density"
+
+msgid "Viscosity"
+msgstr "Viscosity"
+
+msgid "Differential Head"
+msgstr "Differential Head"
+
+msgid "Head Shutoff"
+msgstr "Head Shutoff"
+
+msgid "Npsha"
+msgstr "Npsha"
+
+msgid "Service"
+msgstr "Service"
+
+msgid "Speed Of Rotation"
+msgstr "Speed Of Rotation"
+
+msgid "Manufacturer"
+msgstr "Manufacturer"
+
+msgid "Model"
+msgstr "Model"
+
+msgid "Serial No."
+msgstr "Serial No."
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Driver"
+msgstr "Driver"
+
+msgid "Test bench"
+msgstr "Test bench"

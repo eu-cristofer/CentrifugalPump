@@ -12,6 +12,82 @@ from pathlib import Path
 
 __all__ = ["ReportGenerator"]
 
+
+# ---------------------------------------------------------------------------
+# Report prose shared by every output format (docx, LaTeX/PDF).  Kept here as
+# module constants so the gettext msgids stay identical across generators.
+# ---------------------------------------------------------------------------
+INTRO_PARAGRAPHS = (
+    (
+        "This report documents the Factory Acceptance Test (FAT) performed on an API 610 "
+        "centrifugal pump at the manufacturer's facility. The FAT was conducted to verify "
+        "compliance with the technical specifications and contractual requirements before shipment."
+    ),
+    (
+        "The primary objective of the FAT is to ensure that the pump meets the required  "
+        "mechanical, and performance criteria as defined in API 610 and the project specifications. "
+        "The test procedures include mechanical run tests and performance verification, vibration "
+        "analysis, and NPSH (Net Positive Suction Head) testing."
+    ),
+    (
+        "This report provides a detailed record of the test procedures, observed results, and "
+        "compliance with the acceptance criteria. Any deviations, corrective actions, and final "
+        "acceptance status are also documented to ensure transparency and traceability of the "
+        "qualification process."
+    ),
+)
+TESTS_DEVELOPMENT_TEXT = "Here we present the key details regarding the development of the tests."
+EQUIPMENT_TEXT = "The following section presents the main characteristics of the equipment."
+TEST_SUMMARY_DESCRIPTION = (
+    "The computations in this section were performed in accordancy with API 610 12th issue:"
+)
+API_PARAGRAPH = (
+    "8.3.3.4.3 The test data shall be fit to a spline or an appropriate polynomial (typically, "
+    "not less than a third order) for head and for power using a least squares method. The "
+    "resulting polynomial equation shall be stated on the head and power calculated. These "
+    "values shall be corrected for speed, viscosity, and density (specific gravity).[..]"
+)
+TEST_DATA_DESCRIPTION = (
+    "Here we can find the translation of the test results into data "
+    "based on the specified speed of rotation (or frequency) and density."
+)
+SUMMARY_COLUMNS = ("Parameter", "Actual", "Minimum", "Maximum")
+
+
+def _parse_po(path) -> dict:
+    """Minimal ``.po`` reader: ``{msgid: msgstr}`` for non-empty translations.
+
+    Handles multi-line (concatenated) strings and the standard C escapes; plural
+    forms and contexts are not used by the report catalogs.
+    """
+    import ast
+
+    catalog: dict = {}
+    msgid = msgstr = None
+    target = None
+
+    def flush():
+        if msgid and msgstr:
+            catalog[msgid] = msgstr
+
+    for raw in Path(path).read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("msgid "):
+            flush()
+            msgid, msgstr, target = ast.literal_eval(line[6:]), None, "id"
+        elif line.startswith("msgstr "):
+            msgstr, target = ast.literal_eval(line[7:]), "str"
+        elif line.startswith('"'):
+            if target == "id":
+                msgid += ast.literal_eval(line)
+            elif target == "str":
+                msgstr += ast.literal_eval(line)
+    flush()
+    return catalog
+
+
 class LocalizationHelper:
     """
     Handles translation and localization using gettext.
@@ -43,11 +119,21 @@ class LocalizationHelper:
         except locale.Error:
             print("Warning: Unable to set locale, using default.")
 
+        if self.locale_dir:
+            locale_dir = self.locale_dir
+        else:
+            locale_dir = Path(__file__).parent / "locales"
+
+        # Compiled catalogs (*.mo) are git-ignored, so a fresh checkout only has
+        # the *.po sources. Without this fallback gettext silently returns the
+        # English msgids and a "pt" report comes out in English.
+        if not gettext.find("messages", localedir=locale_dir, languages=[self.language]):
+            po_path = Path(locale_dir) / self.language / "LC_MESSAGES" / "messages.po"
+            if po_path.is_file():
+                catalog = _parse_po(po_path)
+                return lambda message: catalog.get(message) or message
+
         try:
-            if self.locale_dir:
-                locale_dir = self.locale_dir
-            else:
-                locale_dir = Path(__file__).parent / "locales"
             lang_translation = gettext.translation(
                 "messages",
                 localedir=locale_dir,
@@ -152,6 +238,9 @@ class ReportGenerator:
         self._add_design_point(document, report_data.get("design_point", {}))
         for tag, test_data in report_data["test_data"].items():
             document.add_paragraph(self._('Test Data - ') + tag, style='Title_2')
+            if "verdict" in test_data:
+                verdict = self._("APPROVED") if test_data["verdict"] else self._("NOT APPROVED")
+                document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}))
             self._add_test_data(document, test_data.get("test_data", {}))
 
@@ -185,32 +274,11 @@ class ReportGenerator:
         document.add_paragraph(self._(TOC_note), style='Text_body')
         
         # Note that the template already has an Title 1 called Introduction
-        introduction_text_1 = (
-            "This report documents the Factory Acceptance Test (FAT) performed on an API 610 "
-            "centrifugal pump at the manufacturer's facility. The FAT was conducted to verify "
-            "compliance with the technical specifications and contractual requirements before shipment."
-        )
-        document.add_paragraph(self._(introduction_text_1)).style = 'Text_body'
-        introduction_text_2 = (
-            "The primary objective of the FAT is to ensure that the pump meets the required  "
-            "mechanical, and performance criteria as defined in API 610 and the project specifications. "
-            "The test procedures include mechanical run tests and performance verification, vibration "
-            "analysis, and NPSH (Net Positive Suction Head) testing."
-        )
-        document.add_paragraph(self._(introduction_text_2)).style = 'Text_body'
-        introduction_text_3 = (
-            "This report provides a detailed record of the test procedures, observed results, and "
-            "compliance with the acceptance criteria. Any deviations, corrective actions, and final "
-            "acceptance status are also documented to ensure transparency and traceability of the "
-            "qualification process."
-        )
-        document.add_paragraph(self._(introduction_text_3)).style = 'Text_body'
+        for paragraph in INTRO_PARAGRAPHS:
+            document.add_paragraph(self._(paragraph)).style = 'Text_body'
 
         document.add_paragraph(self._("Tests Development"), style='Title_1')
-        document.add_paragraph(
-            self._("Here we present the key details regarding the development of the tests."), 
-            style='Text_body'
-        )
+        document.add_paragraph(self._(TESTS_DEVELOPMENT_TEXT), style='Text_body')
 
     def _add_design_point(self, document, design_point):
         """
@@ -236,7 +304,7 @@ class ReportGenerator:
             for row, (key, value) in enumerate(data.items()):
                 cell_left = table.cell(row, 0)
                 cell_rigth = table.cell(row, 1)
-                cell_left.text = self._(key.replace("_", " ").title()) if key != "name" else "Service"
+                cell_left.text = self._(key.replace("_", " ").title()) if key != "name" else self._("Service")
                 cell_rigth.text = value if isinstance(value, str) else f"{value:0.02f~P}"
                 cell_left.width = width
                 cell_rigth.width = width
@@ -263,7 +331,7 @@ class ReportGenerator:
         width = Inches(2)
         if equipment_description:
             document.add_paragraph(self._('Equipment Description'), style='Title_2')
-            document.add_paragraph(self._("The following section presents the main characteristics of the equipment."), style='Text_body')
+            document.add_paragraph(self._(EQUIPMENT_TEXT), style='Text_body')
             table = document.add_table(rows=len(equipment_description), cols=2)
             table.style = "Table Grid"
             table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
@@ -297,24 +365,15 @@ class ReportGenerator:
         width = Inches(1.25)
         if test_summary:
             document.add_paragraph(self._('Performance test summary.'), style='Title_3')
-            test_description = (
-                "The computations in this section were performed in accordancy with API 610 12th issue:"
-            )
-            document.add_paragraph(self._(test_description), style='Text_body')
-            api_paragraph = (
-                "8.3.3.4.3 The test data shall be fit to a spline or an appropriate polynomial (typically, "
-                "not less than a third order) for head and for power using a least squares method. The "
-                "resulting polynomial equation shall be stated on the head and power calculated. These "
-                "values shall be corrected for speed, viscosity, and density (specific gravity).[..]"
-            )
-            document.add_paragraph(api_paragraph, style="Intense Quote")
+            document.add_paragraph(self._(TEST_SUMMARY_DESCRIPTION), style='Text_body')
+            document.add_paragraph(self._(API_PARAGRAPH), style="Intense Quote")
             document.add_paragraph(self._("Calculated Head and Power:"), style='Text_body')
             table = document.add_table(rows=len(test_summary) + 1, cols=4)
             table.style = "Table Grid"
             table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             
             # Fill the first column with row names
-            col_names = ["Parameter", "Actual", "Minimum", "Maximum"]
+            col_names = list(SUMMARY_COLUMNS)
             
             
             for col, name in enumerate(col_names):
@@ -365,12 +424,8 @@ class ReportGenerator:
         """
         table_font = "Consolas"
         if test_data:
-            test_description = (
-                "Here we can find the translation of the test results into data "
-                "based on the specified speed of rotation (or frequency) and density."
-            )
             document.add_paragraph(" ", style='Text_body')
-            document.add_paragraph(self._(test_description), style='Text_body')           
+            document.add_paragraph(self._(TEST_DATA_DESCRIPTION), style='Text_body')           
             
             table = document.add_table(rows=len(test_data["Capacity"]) + 1, cols=len(test_data))
             table.style = "Table Grid"
