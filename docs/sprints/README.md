@@ -25,6 +25,10 @@ UC-09) comes first.
 
 **Total: 7 sprints × 8 h ≈ 56 h.**
 
+> **Next:** sprints continue under the sprint-loop layout in
+> [`docs/changes/001_masterpiece/`](../changes/001_masterpiece/README.md) (14 sprints, S7–S12 ADR
+> hardening folded in where relevant). Run with `/sprint-loop next 001_masterpiece`.
+
 ## Sprint template
 
 Copy this for new sprints:

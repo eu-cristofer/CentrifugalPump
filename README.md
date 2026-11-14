@@ -118,6 +118,9 @@ Current value targets the **FAT engineer** (see
 verification (UC-02), VFD/affinity speed change (UC-06), `.docx` report generation
 (UC-09).
 
+**Active project:** [001_masterpiece](docs/changes/001_masterpiece/README.md) — Pint end to end,
+every use case (UC-01…UC-11), edition-aware acceptance, mechanical run, CI. 14 sprints.
+
 Planned (v1.1+):
 
 1. Viscosity correction
