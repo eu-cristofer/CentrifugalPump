@@ -53,7 +53,7 @@ Each run MUST:
     - [x] 2a — signals carry Quantities, binding unit-free — done 2026-11-14
     - [x] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate` — done 2026-11-14
 - [x] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md) — done 2026-11-14
-- [ ] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md)
+- [x] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md) — done 2026-11-14
 - [ ] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md)
 - [ ] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md)
 - [ ] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md)
@@ -93,3 +93,9 @@ Each run MUST:
 - S3: on disk, units are always written in one compact Pint spelling, and unset plot limits are stored as bare `null`.
 - S3: all other shipped projects evaluate bit-identically to S2.
 - S3: the remaining plain spin boxes are dimensionless (tolerance %, SG).
+- S4: **complete head**: H = ΔP/(ρg) + (v_d² − v_s²)/(2g) + (z_d − z_s), computed through `pump.TestPoint.compute_head`.
+  - Optional test-bench geometry (pipe IDs and gauge elevations, any length unit) lives in Test Points.
+  - The velocity head needs both pipe IDs, and the elevation head needs both elevations.
+  - A measured head override still wins.
+  - The Head column tooltip shows each component, and the report lists the geometry.
+- S4: without geometry the results are bit-identical; all shipped projects are unchanged. Unset optional geometry is omitted on disk, so re-saved files match migrated ones.

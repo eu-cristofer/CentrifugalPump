@@ -346,8 +346,9 @@ class ExploreChartNode(BaseNode):
             color = _PALETTE[i % len(_PALETTE)]
             q, h, p, e = [], [], [], []
             test_rho = getattr(tps, "test_density", None)
+            geometry = getattr(tps, "geometry", None)
             for r in tps.rows:
-                head = row_head(r, test_rho)
+                head = row_head(r, test_rho, geometry)
                 q.append(r.q.to("m**3/h").magnitude)
                 h.append(head.to("m").magnitude)
                 p.append(r.power.to("kW").magnitude)

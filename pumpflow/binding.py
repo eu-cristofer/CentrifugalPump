@@ -50,6 +50,7 @@ from .numfmt import parse_decimal
 from .signals import (
     RatedPoint,
     FluidSpec,
+    BenchGeometry,
     TestPointSet,
     CorrectedCurve,
     FittedModel,
@@ -132,17 +133,89 @@ def make_design_point(rated: RatedPoint, fluid: Optional[Fluid] = None) -> Desig
 # ---------------------------------------------------------------------------
 
 
-def row_head(row, density: Optional[Q_] = None) -> Q_:
+def _geometry_point(row, rho: Q_, geometry: BenchGeometry) -> TestPoint:
+    """Temporary ``pump.TestPoint`` carrying the row's ΔP and the bench geometry.
+
+    Only the geometry attributes that are present are passed; the library then
+    evaluates ``pressure_head + velocity_head + elevation_head`` (the velocity
+    term needs both diameters, the elevation term both elevations).
+    ``delta_pressure`` is intentionally in the library's ``delta`` context.
+    """
+    kwargs = {"delta_pressure": row.p_discharge - row.p_suction}
+    if geometry.suction_id is not None:
+        kwargs["inlet_diameter"] = geometry.suction_id
+    if geometry.discharge_id is not None:
+        kwargs["outlet_diameter"] = geometry.discharge_id
+    if geometry.suction_elevation is not None:
+        kwargs["inlet_elevation"] = geometry.suction_elevation
+    if geometry.discharge_elevation is not None:
+        kwargs["outlet_elevation"] = geometry.discharge_elevation
+    return TestPoint(
+        fluid=Fluid(name="row", density=rho),
+        capacity=row.q,
+        **kwargs,
+    )
+
+
+def row_head(
+    row, density: Optional[Q_] = None, geometry: Optional[BenchGeometry] = None
+) -> Q_:
     """
     Read-only ``Head`` column for the Test Points grid (UI_SPEC §5.2):
     ``Head = (P_dis − P_suc) / (ρ·g)`` in metres.  ``ρ`` is water at ``T_water``
     by default, or ``density`` when a Fluid node overrides the test fluid
     (UC-00).  An explicit measured/overridden head on the row wins.
+
+    With a non-empty ``geometry`` the velocity and elevation heads are added
+    (``pump.TestPoint.compute_head``).  Without geometry the computation is the
+    unchanged pressure-only one.
     """
     if row.head is not None:
         return row.head.to("m")
     rho = density if density is not None else Water(row.temperature).density
-    return ((row.p_discharge - row.p_suction) / (rho * G)).to("m")
+    if geometry is None or geometry.is_empty:
+        return ((row.p_discharge - row.p_suction) / (rho * G)).to("m")
+    return _geometry_point(row, rho, geometry).compute_head.to("m")
+
+
+def row_head_components(
+    row, density: Optional[Q_] = None, geometry: Optional[BenchGeometry] = None
+) -> dict:
+    """Head split into its terms, all in metres (tooltips / reports).
+
+    Returns ``{"pressure", "velocity", "elevation", "total"}``.  An explicit row
+    head is reported as the pressure term with zero velocity/elevation.
+    """
+    zero = Q_(0.0, "m")
+    if row.head is not None:
+        total = row.head.to("m")
+        return {"pressure": total, "velocity": zero, "elevation": zero, "total": total}
+    rho = density if density is not None else Water(row.temperature).density
+    if geometry is None or geometry.is_empty:
+        total = ((row.p_discharge - row.p_suction) / (rho * G)).to("m")
+        return {"pressure": total, "velocity": zero, "elevation": zero, "total": total}
+    tp = _geometry_point(row, rho, geometry)
+    return {
+        "pressure": tp.pressure_head.to("m"),
+        "velocity": tp.velocity_head.to("m"),
+        "elevation": tp.elevation_head.to("m"),
+        "total": tp.compute_head.to("m"),
+    }
+
+
+def format_geometry(geometry: BenchGeometry) -> str:
+    """One-line description of the set geometry parts, in the entered units."""
+
+    def part(name: str, q: Optional[Q_]) -> Optional[str]:
+        return None if q is None else f"{name} {q.magnitude:g} {q.units:~P}"
+
+    parts = [
+        part("suction ID", geometry.suction_id),
+        part("discharge ID", geometry.discharge_id),
+        part("z_s", geometry.suction_elevation),
+        part("z_d", geometry.discharge_elevation),
+    ]
+    return " · ".join(p for p in parts if p)
 
 
 def row_efficiency(row, head: Q_, density: Optional[Q_] = None) -> Optional[Q_]:
@@ -204,7 +277,7 @@ def correct_curve(
     points = []
     before_after = []
     for r in tps.rows:
-        head = row_head(r, test_rho)
+        head = row_head(r, test_rho, tps.geometry)
         eff = row_efficiency(r, head, test_rho)
         kwargs = {
             "_head": head,
@@ -278,6 +351,7 @@ def correct_curve(
         fluid=fluid_used,
         target_speed=target,
         before_after=merged,
+        geometry=tps.geometry,
     )
 
 
@@ -528,6 +602,9 @@ def assemble_report_data(
     Build the ``report_data`` dict exactly as ``ReportGenerator.generate_report``
     expects (UI_SPEC §5.7): one shared design point + one keyed ``test_data``
     entry per pump TAG.
+
+    A branch whose test set carried bench geometry adds a
+    ``"Test bench geometry (<pump_tag>)"`` line to the equipment description.
     """
     equipment = equipment or {}
     design_point = make_design_point(rated)
@@ -537,6 +614,11 @@ def assemble_report_data(
 
     test_data = {}
     for b in bundles:
+        geometry = getattr(b.corrected, "geometry", None) if b.corrected else None
+        if geometry is not None and not geometry.is_empty:
+            equipment_description[f"Test bench geometry ({b.pump_tag})"] = (
+                format_geometry(geometry)
+            )
         if b.fitted is None:
             continue
         entry = {

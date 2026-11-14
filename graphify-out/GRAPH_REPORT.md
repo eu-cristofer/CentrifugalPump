@@ -1,16 +1,16 @@
 # Graph Report - CentrifugalPump  (2026-11-14)
 
 ## Corpus Check
-- 130 files · ~94,027 words
+- 132 files · ~96,426 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1769 nodes · 2832 edges · 192 communities (121 shown, 71 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 162 edges (avg confidence: 0.7)
+- 1820 nodes · 2969 edges · 194 communities (124 shown, 70 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 167 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `94e7703f`
+- Built from commit: `05cbb610`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -202,37 +202,39 @@
 - Data Formats
 - line_edit
 - with_changes
+- .is_empty
+- .density_rel
 
 ## God Nodes (most connected - your core abstractions)
 1. `quantity_factory()` - 43 edges
 2. `BaseNode` - 40 edges
 3. `MainWindow` - 33 edges
-4. `GraphScene` - 31 edges
-5. `TestPoint` - 28 edges
-6. `PerformanceChecker` - 25 edges
-7. `PerformanceCurve` - 24 edges
-8. `Fluid` - 24 edges
-9. `RatedPoint` - 24 edges
-10. `PortItem` - 23 edges
+4. `GraphScene` - 33 edges
+5. `TestPoint` - 29 edges
+6. `row_head()` - 27 edges
+7. `PerformanceChecker` - 25 edges
+8. `Fluid` - 25 edges
+9. `PerformanceCurve` - 24 edges
+10. `RatedPoint` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `test_checker_head_tolerance_band()` --calls--> `PerformanceChecker`  [INFERRED]
+  tests/test_pump_smoke.py → pump/performance_curve.py
+- `test_checker_shutoff_tolerance_tier()` --calls--> `PerformanceChecker`  [INFERRED]
+  tests/test_pump_smoke.py → pump/performance_curve.py
+- `test_report_summary_keys()` --calls--> `PerformanceChecker`  [INFERRED]
+  tests/test_pump_smoke.py → pump/performance_curve.py
+- `report_data()` --calls--> `PerformanceChecker`  [INFERRED]
+  tests/test_report_formats.py → pump/performance_curve.py
 - `test_quantity_factory_canonicalizes_capacity()` --calls--> `quantity_factory()`  [INFERRED]
   tests/test_pump_smoke.py → pump/utilities/unit_conversion.py
-- `test_quantity_factory_rejects_non_quantity()` --calls--> `quantity_factory()`  [INFERRED]
-  tests/test_pump_smoke.py → pump/utilities/unit_conversion.py
-- `test_cst_quantity_factory_emits_no_warning()` --calls--> `quantity_factory()`  [INFERRED]
-  tests/test_quantity_spine.py → pump/utilities/unit_conversion.py
-- `test_stokes_converts_to_cst()` --calls--> `quantity_factory()`  [INFERRED]
-  tests/test_quantity_spine.py → pump/utilities/unit_conversion.py
-- `correct_curve()` --calls--> `PerformanceCurve`  [INFERRED]
-  pumpflow/binding.py → pump/performance_curve.py
 
 ## Import Cycles
 - 1-file cycle: `pump/__init__.py -> pump/__init__.py`
 - 1-file cycle: `pump/utilities/__init__.py -> pump/utilities/__init__.py`
+- 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/curve_fit.py -> pumpflow/nodes/__init__.py`
 - 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/compliance.py -> pumpflow/nodes/__init__.py`
 - 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/correction.py -> pumpflow/nodes/__init__.py`
-- 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/curve_fit.py -> pumpflow/nodes/__init__.py`
 - 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/explore_plot.py -> pumpflow/nodes/__init__.py`
 - 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/fluid.py -> pumpflow/nodes/__init__.py`
 - 3-file cycle: `pumpflow/nodes/__init__.py -> pumpflow/nodes/registry.py -> pumpflow/nodes/markdown_note.py -> pumpflow/nodes/__init__.py`
@@ -245,43 +247,43 @@
 ## Hyperedges (group relationships)
 - **PumpFlow Layered Architecture (UI -> logic -> binding -> library)** — pumpflow_app_module, pumpflow_signals_module, pumpflow_binding_module, pumpflow_persistence_module, pumpflow_units_module, pumpflow_reactive_topological_evaluation, pumpflow_binding_boundary_single_entry [EXTRACTED 1.00]
 
-## Communities (192 total, 71 thin omitted)
+## Communities (194 total, 70 thin omitted)
 
 ### Community 0 - "GraphScene"
 Cohesion: 0.17
 Nodes (7): GraphScene, QPointF, Recompute every node in topological order and refresh the canvas., Serialize the canvas as a schema-v2 project document.          Node runtime sett, Rebuild the canvas from a project document (v1 is migrated to v2)., Connect an output port to an input port (orientation-tolerant)., QGraphicsScene
 
 ### Community 1 - "app.py"
-Cohesion: 0.18
-Nodes (10): canonical_columns(), default_columns(), _pint_of(), Flatten a ``TestPointSet`` to the node-settings ``columns`` / ``rows`` shape., Exchange/canonical column units: m³/h · pressure · °C · rpm · kW · m · %., Column units of a fresh table: the active preset's display units., Wrap one settings row (plain numbers in the column units) into a ``TestRow``., _row_from_dict() (+2 more)
+Cohesion: 0.12
+Nodes (20): canonical_columns(), default_geometry_settings(), _geo_quantity(), geometry_from_settings(), parse_paste_header(), _pint_of(), Q_, QTableWidget (+12 more)
 
 ### Community 2 - "binding.py"
-Cohesion: 0.09
-Nodes (34): Exception, BindingError, build_report_png(), check_compliance(), correct_curve(), default_tolerances(), _deviation(), _has_eff() (+26 more)
+Cohesion: 0.12
+Nodes (28): assemble_report_data(), build_report_png(), check_compliance(), correct_curve(), default_tolerances(), _deviation(), _has_eff(), _mag() (+20 more)
 
 ### Community 3 - "WelcomeDialog"
-Cohesion: 0.08
-Nodes (19): _btn(), _pick_dir(), _pick_file(), ReportExportNode, load_recent(), Path, QDialog, QFrame (+11 more)
+Cohesion: 0.13
+Nodes (14): load_recent(), Path, QDialog, QFrame, QWidget, welcome =======  Start-screen dialog shown on application launch.  Presents Rece, Splash / start-screen modal shown over the main window at launch.      The calle, Build the left column listing the most recently opened projects.          Notes (+6 more)
 
 ### Community 4 - "registry.py"
-Cohesion: 0.11
-Nodes (24): Figure, Density of water at ``temp_c`` (°C) via ``pump.Water`` — kg/m³ (UC-00)., water_density_kgm3(), PumpFlow — API 610 Pump Performance Workbench (Orange-style node canvas).  A thi, PortSpec, nodes.base ==========  The Qt-agnostic logic of a widget node.  A node declares, nodes.curve_fit — Curve Fit  (UI_SPEC §5.4)  Input ``CorrectedCurve`` → output `, nodes.explore_plot — Performance Explorer  An *interactive* exploratory chart (p (+16 more)
+Cohesion: 0.10
+Nodes (24): Figure, PumpFlow — API 610 Pump Performance Workbench (Orange-style node canvas).  A thi, PortSpec, nodes.base ==========  The Qt-agnostic logic of a widget node.  A node declares, nodes.correction — Speed / Affinity Correction  (UI_SPEC §5.3)  Inputs ``RatedPo, nodes.curve_fit — Curve Fit  (UI_SPEC §5.4)  Input ``CorrectedCurve`` → output `, nodes.explore_plot — Performance Explorer  An *interactive* exploratory chart (p, nodes.fluid — Fluid (UC-00 service fluid object)  Source node.  Makes the *fluid (+16 more)
 
 ### Community 5 - "MainWindow"
-Cohesion: 0.07
-Nodes (23): _d(), MainWindow, Path, Switch the project's display-unit preset (File-level preference)., Reflect the active ``units.PREFS`` preset in the Units menu check., Flag the session as having unsaved changes.          Appends an asterisk to the, Clear the unsaved-changes flag.          Removes the asterisk appended by :meth:, Guard destructive actions with a Save / Discard / Cancel prompt.          Presen (+15 more)
+Cohesion: 0.19
+Nodes (6): MainWindow, Switch the project's display-unit preset (File-level preference)., Reflect the active ``units.PREFS`` preset in the Units menu check., Flag the session as having unsaved changes.          Appends an asterisk to the, QAction, QMainWindow
 
 ### Community 6 - "PerformanceChecker"
-Cohesion: 0.07
-Nodes (22): PerformanceChecker, A class to check and validate the performance of a system based on a design poin, Initializes the PerformanceChecker with a design point and performance curve., Determines the shutoff head tolerance based on the design point head value., Computes the acceptable limits for head, shutoff head, and breaking power., Checks whether the performance curve values fall within the acceptable limits., Generates a summary table checking if performance values are within limits., API 610 compliance bands — UC-02 (verify pump performance / FAT).  Pins the nume (+14 more)
+Cohesion: 0.12
+Nodes (15): PerformanceChecker, A class to check and validate the performance of a system based on a design poin, Initializes the PerformanceChecker with a design point and performance curve., Determines the shutoff head tolerance based on the design point head value., Computes the acceptable limits for head, shutoff head, and breaking power., Checks whether the performance curve values fall within the acceptable limits., Generates a summary table checking if performance values are within limits., API 610 compliance bands — UC-02 (verify pump performance / FAT).  Pins the nume (+7 more)
 
 ### Community 7 - "UnitField"
 Cohesion: 0.13
 Nodes (9): The unit combo of a ``ui.PressureField`` (tolerant of its internals)., _unit_combo(), combo(), A unit-aware numeric field: a spinbox + a display-unit combo that     auto-conve, Programmatically switch the display unit (converts the shown value)., spin(), UnitField, QComboBox (+1 more)
 
 ### Community 8 - "TestPoint"
-Cohesion: 0.08
-Nodes (14): Access an individual TestPoint by index.          Parameters         ----------, Specialized version of the BasePoint class for handling test or operational data, Calculates the fluid velocity at the pump inlet.          Returns         ------, Calculates the fluid velocity at the pump outlet.          Returns         -----, Calculates the head difference due to change in fluid velocity.          Returns, Calculates the head difference due to elevation.          Returns         ------, Computes the total dynamic head (TDH) from its components.          The TDH is t, The total dynamic head of the point.          Returns a cached `_head` value if (+6 more)
+Cohesion: 0.09
+Nodes (16): Q_, Specialized version of the BasePoint class for handling test or operational data, Calculates the head generated due to pressure difference.          Returns, Calculates the fluid velocity at the pump inlet.          Returns         ------, Calculates the fluid velocity at the pump outlet.          Returns         -----, Calculates the head difference due to change in fluid velocity.          ``(v_ou, Calculates the head difference due to elevation.          ``outlet_elevation - i, Computes the total dynamic head (TDH) from its components.          The TDH is t (+8 more)
 
 ### Community 9 - "Q_"
 Cohesion: 0.06
@@ -292,44 +294,44 @@ Cohesion: 0.36
 Nodes (9): body_font(), mono_font(), canvas.theme ============  Central palette + metrics for the workbench — a clean, title_font(), mono_font(), A QFont in the resolved UI family — drop-in for QFont('Segoe UI', ...)., A QFont in the resolved monospace family — drop-in for QFont('Consolas', ...)., ui_font() (+1 more)
 
 ### Community 11 - "ReportGenerator"
-Cohesion: 0.13
-Nodes (12): Generates a report from predefined templates using the `python-docx` library., Retrieve the appropriate template file based on the selected language., Generates a report from a predefined template.          Parameters         -----, Add introductory section to the document.                  Parameters         --, Add design point section to the document.                  Parameters         --, Add equipment description section to the document.                  Parameters, Add test summary section to the document.                  Parameters         --, Add test data section to the document.                  Parameters         ----- (+4 more)
+Cohesion: 0.05
+Nodes (45): find_latex_engine(), _fmt(), latex_escape(), LatexReportGenerator, Path, LaTeX (``.tex``) and PDF report generation.  Consumes the **same** ``report_data, Write the FAT report as a LaTeX source and/or a compiled PDF.      Parameters, Write ``output_file`` (``.tex``) plus a ``<stem>_figs/`` folder. (+37 more)
 
 ### Community 12 - "BaseNode"
 Cohesion: 0.10
 Nodes (6): BaseNode, Return ``{output_port_name: payload}``.  Override me., Return a configured ``QDialog`` (or ``None`` if the node has none)., Helper: clear outputs and show an amber/idle status (UI_SPEC §7)., Plain-JSON view of ``settings`` for ``.pumpflow`` (override if needed)., MarkdownNoteNode
 
 ### Community 13 - "DesignPoint"
-Cohesion: 0.09
-Nodes (24): DesignPoint, Q_, Specific energy is the energy per unit mass of fluid.         It is calculated a, The mechanical power transferred to the liquid as it passes through the pump,, Calculates the outlet pressure based on inlet pressure and various heads., Calculates the head difference due to elevation.          Returns         ------, Calculates the fluid velocity at the pump inlet.          Returns         ------, Calculates the fluid velocity at the pump outlet.          Returns         ----- (+16 more)
+Cohesion: 0.11
+Nodes (10): DesignPoint, Specific energy is the energy per unit mass of fluid.         It is calculated a, The mechanical power transferred to the liquid as it passes through the pump,, Calculates the outlet pressure based on inlet pressure and various heads., Calculates the head difference due to elevation.          Returns         ------, Calculates the fluid velocity at the pump inlet.          Returns         ------, Calculates the fluid velocity at the pump outlet.          Returns         -----, Calculates the head difference due to change in fluid velocity.          Returns (+2 more)
 
 ### Community 14 - "GraphView"
 Cohesion: 0.12
 Nodes (8): GraphView, QPointF, Capture the current zoom + scene-space center for ``.pumpflow`` files., Restore a zoom + center previously captured by :meth:`view_state`., Apply a multiplicative zoom about the cursor, clamped to the band., Scroll the viewport by a pixel delta (touchpad / plain wheel pan)., Frame every node in the view (zoom extents), clamped to the zoom band., QGraphicsView
 
 ### Community 15 - "quantity_factory"
-Cohesion: 0.14
-Nodes (14): utilities =========  This submodule provides unit conversion utilities to standa, find_latex_engine(), LaTeX (``.tex``) and PDF report generation.  Consumes the **same** ``report_data, Return the command used to build a PDF, or ``None`` when no TeX is found., LocalizationHelper, _parse_po(), Sets up gettext for localization.          Returns         -------         Calla, Minimal ``.po`` reader: ``{msgid: msgstr}`` for non-empty translations.      Han (+6 more)
+Cohesion: 0.17
+Nodes (27): format_geometry(), _geometry_point(), Temporary ``pump.TestPoint`` carrying the row's ΔP and the bench geometry., Read-only ``Head`` column for the Test Points grid (UI_SPEC §5.2):     ``Head =, Head split into its terms, all in metres (tooltips / reports).      Returns ``{", One-line description of the set geometry parts, in the entered units., row_head(), row_head_components() (+19 more)
 
 ### Community 16 - "units.py"
 Cohesion: 0.13
 Nodes (19): atm_in(), convert_display(), _convert_viscosity(), label_for(), _match_unit(), options_for(), parse_unit_header(), pint_str() (+11 more)
 
 ### Community 17 - "unit_conversion.py"
-Cohesion: 0.12
-Nodes (16): ABC, from_json(), Any, Q_, quantity_io ===========  One serialisation path for Pint quantities: a ``{"value, Serialise a quantity to a JSON-ready ``{"value", "unit"}`` dict.      Parameters, Rebuild a quantity from :func:`to_json` output.      Parameters     ----------, to_json() (+8 more)
+Cohesion: 0.13
+Nodes (16): ABC, constants =========  Physical constants shared by the whole library, as Pint qua, pump ====  This module provides tools for API 610 pumping system calculations., peroformance_curve ==================  This module defines the PerformanceCurve, point =====  This module defines the `BasePoint` class and its subclasses, which, quantity_io ===========  One serialisation path for Pint quantities: a ``{"value, This module provides a representation of fluids and their physical properties, e, utilities =========  This submodule provides unit conversion utilities to standa (+8 more)
 
 ### Community 19 - "PerformanceFitter"
 Cohesion: 0.14
 Nodes (10): PerformanceFitter, ndarray, Lazily computes the polynomial regression coefficients for head vs. capacity., Lazily computes the polynomial regression coefficients for efficiency vs. capaci, Lazily computes the polynomial regression coefficients for power vs. capacity., Handles polynomial regression for performance metrics (head, efficiency, power),, Lazily computes and returns the capacity values as a NumPy array.          Retur, Lazily computes and returns the head values as a NumPy array.          Returns (+2 more)
 
 ### Community 20 - "PointNode"
-Cohesion: 0.15
-Nodes (11): _opt(), _p_label(), PointNode, nodes.point — Point  Source node.  A single ad-hoc Q/H/P/η measurement the user, Return a positive float, or ``None`` when blank/zero/non-numeric., ``_opt``, normalise to the standard unit and wrap as a Quantity in     ``out_uni, The stored pressure display label, tolerating legacy Pint-string values., Derive head (m) from suction/discharge pressures + fluid density. (+3 more)
+Cohesion: 0.11
+Nodes (16): choice_options(), current_choice(), nodes.fluidpick — shared "which fluid drives this node" selection logic.  A flui, Return the chosen ``FluidSpec`` from ``specs``, or ``None`` for the node     def, ``[(label, data)]`` pairs for :func:`pumpflow.nodes.ui.combo`.      A leading de, The combo ``data`` value that should be shown selected, accounting for     the d, resolve_fluid(), _opt() (+8 more)
 
 ### Community 23 - "Fluid"
-Cohesion: 0.10
-Nodes (16): constants =========  Physical constants shared by the whole library, as Pint qua, pump ====  This module provides tools for API 610 pumping system calculations., peroformance_curve ==================  This module defines the PerformanceCurve, point =====  This module defines the `BasePoint` class and its subclasses, which, Fluid, This module provides a representation of fluids and their physical properties, e, Returns a detailed string representation of the fluid., Returns a detailed string representation of the fluid's properties. (+8 more)
+Cohesion: 0.09
+Nodes (21): Fluid, Returns a detailed string representation of the fluid., Returns a detailed string representation of the fluid's properties., A class to represent a fluid and its properties, enabling engineering calculatio, Initializes a Fluid object with converted physical properties.          Paramete, Returns a detailed string with fluid's properties., Q_, quantity_factory() (+13 more)
 
 ### Community 25 - "Module Reference"
 Cohesion: 0.06
@@ -340,12 +342,12 @@ Cohesion: 0.20
 Nodes (6): BasePoint, Returns a detailed string representation of the fluid's properties., Represents a system point with physical quantities.      Parameters     --------, Returns a detailed string representation of the fluid's properties., Returns a detailed string with fluid's properties., Returns a detailed string representation of the fluid's properties.
 
 ### Community 27 - "PerformancePlotNode"
-Cohesion: 0.12
-Nodes (24): parse_decimal(), Parse a number that may use ``,`` or ``.`` as the decimal separator.      Heuris, json_from_signals(), _mag(), _normalize_unit(), _num(), _opt(), rated_from_json() (+16 more)
+Cohesion: 0.13
+Nodes (19): _mag_or(), Magnitude of an optional Quantity in ``unit``, or ``default`` when ``None``., default_columns(), Column units of a fresh table: the active preset's display units., Flatten a ``TestPointSet`` to the node-settings ``columns`` / ``rows`` shape., testset_settings(), _normalize_unit(), Exchange pressure unit of a test set: its rows' unit, else ``"bar"``. (+11 more)
 
 ### Community 31 - "QPushButton"
-Cohesion: 0.21
-Nodes (10): _fmt(), latex_escape(), LatexReportGenerator, Path, Write the FAT report as a LaTeX source and/or a compiled PDF.      Parameters, Write ``output_file`` (``.tex``) plus a ``<stem>_figs/`` folder., Compile the LaTeX report into ``output_file`` (``.pdf``)., Escape LaTeX special characters in ``text`` (converted with ``str``). (+2 more)
+Cohesion: 0.16
+Nodes (10): Path, Clear the unsaved-changes flag.          Removes the asterisk appended by :meth:, Guard destructive actions with a Save / Discard / Cancel prompt.          Presen, Intercept the window close event to guard unsaved work.          Parameters, Replace the canvas with *doc* and update session state.          Parameters, Serialise the canvas to the current ``.pumpflow`` file (File > Save).          F, Serialise the canvas to a chosen ``.pumpflow`` path (File > Save As)., Load a ``.pumpflow`` project file into the canvas (File > Open).          Guards (+2 more)
 
 ### Community 32 - "conftest.py"
 Cohesion: 0.25
@@ -356,12 +358,12 @@ Cohesion: 0.07
 Nodes (27): 1. Findings index, 2. Findings in detail, 3. Next-generation options, 4. Suggested first sprint (if Option A is accepted), Code Review — Toward the Next-Generation Tool, 🔴 F-01 — `acceptable_limits` raises instead of degrading, 🔴 F-02 — Head verdict applied at the wrong altitude, 🔴 F-03 — `test_data` builds ragged/crashing columns (+19 more)
 
 ### Community 35 - "ReportExportNode"
-Cohesion: 0.24
-Nodes (9): _convert(), _label_or_canonical(), _norm(), _pint(), ``(label, converted?)`` for a stored unit: its label, else canonical., Normalise the compact ``%`` spelling to Pint's ``percent``., Convert ``value`` from ``src`` to ``dst``; untouched when the units agree., Pint string of a display label (a bare Pint string is accepted too). (+1 more)
+Cohesion: 0.07
+Nodes (32): _atm(), _convert(), decode(), _disk_unit(), Disp, encode(), _fmt(), _label_or_canonical() (+24 more)
 
 ### Community 38 - "curve_fit.py"
-Cohesion: 0.09
-Nodes (22): migrate(), Raw JSON read (also used for the §6.2 exchange JSON; never migrated)., Upgrade a ``.pumpflow`` document to schema v2 (pure, idempotent).      Returns a, Read a ``.pumpflow`` project file and migrate it to the current schema., read_json(), read_project(), test_b34004_roundtrip_and_wiring(), test_shipped_file_matches_builder() (+14 more)
+Cohesion: 0.10
+Nodes (21): migrate(), persistence ===========  Two on-disk formats (UI_SPEC §6):  - **Data-exchange JS, Raw JSON read (also used for the §6.2 exchange JSON; never migrated)., Upgrade a ``.pumpflow`` document to schema v2 (pure, idempotent).      Returns a, Read a ``.pumpflow`` project file and migrate it to the current schema., read_json(), read_project(), ``.pumpflow`` schema v2 — migration + settings codec (Sprint 2b).  Qt-free layer (+13 more)
 
 ### Community 39 - "FluidNode"
 Cohesion: 0.22
@@ -392,12 +394,12 @@ Cohesion: 0.10
 Nodes (19): 1.1 Specification-by-Example (SBE) and Behavior-Driven Development (BDD), 1.2 Living Documentation, 1.3 Traceability and Change Proposals, 1. Theoretical Fundamentals of OpenSpec, 2.1 Technical and Strategic Alignment, 2.2 Decision Matrix, 2. Evaluation: Should You Implement This?, 3.1 Step-by-Step "How" Guide (+11 more)
 
 ### Community 57 - "LatexReportGenerator"
-Cohesion: 0.10
-Nodes (10): _append_param(), ComplianceCheckNode, _Fallback, QTableWidget, nodes.compliance — API 610 Compliance Check  (UI_SPEC §5.6)  Inputs ``FittedMode, Stand-in rated point for the tolerance dialog before a RatedPoint is wired., CurveFitNode, fmt() (+2 more)
+Cohesion: 0.11
+Nodes (13): port_color(), _append_param(), ComplianceCheckNode, _Fallback, QTableWidget, nodes.compliance — API 610 Compliance Check  (UI_SPEC §5.6)  Inputs ``FittedMode, Stand-in rated point for the tolerance dialog before a RatedPoint is wired., _append() (+5 more)
 
 ### Community 58 - "test_persistence_roundtrip.py"
-Cohesion: 0.16
-Nodes (15): make_node(), Return the canonical single-pump ``.pumpflow`` document (Qt-free, schema v2)., sample_project_doc(), b34004_scene(), _build_scene(), ``.pumpflow`` persistence guard — UC-02 / UC-09 (the workbench demo case).  Two, Open every node's property dialog: on the B-34004 project (branch B has     no f, A template row with no N / P / ΔP must be rejected by validation; before     the (+7 more)
+Cohesion: 0.13
+Nodes (20): make_node(), Return the canonical single-pump ``.pumpflow`` document (Qt-free, schema v2)., sample_project_doc(), _heads(), _logic(), Qt (offscreen) test: Test Points node with bench geometry (sprint 4)., test_dialog_head_column_tooltip_lists_components(), test_geometry_shifts_head_by_velocity_plus_elevation() (+12 more)
 
 ### Community 59 - "test_report_formats.py"
 Cohesion: 0.17
@@ -416,12 +418,12 @@ Cohesion: 0.24
 Nodes (6): Sprint index, Sprint template, Sprints, Contents, Guidelines, Use-case worked examples
 
 ### Community 63 - "PerformanceCurve"
-Cohesion: 0.11
-Nodes (15): PerformanceCurve, Any, Q_, A container for handling a collection of TestPoint objects that share the same f, Predicts the head for a given flow (capacity) using the stored polynomial., Predicts the efficiency for a given flow (capacity) using the stored polynomial., Predicts the power for a given flow (capacity) using the stored polynomial., Plots the pump performance curve with three subplots:         - Head vs. Capacit (+7 more)
+Cohesion: 0.10
+Nodes (16): PerformanceCurve, Any, Q_, A container for handling a collection of TestPoint objects that share the same f, Predicts the head for a given flow (capacity) using the stored polynomial., Predicts the efficiency for a given flow (capacity) using the stored polynomial., Predicts the power for a given flow (capacity) using the stored polynomial., Plots the pump performance curve with three subplots:         - Head vs. Capacit (+8 more)
 
 ### Community 64 - "ExploreChartNode"
-Cohesion: 0.09
-Nodes (32): Read-only ``Head`` column for the Test Points grid (UI_SPEC §5.2):     ``Head =, η = hydraulic / breaking, in percent.  ``ρ`` is water at ``T_water`` by     defa, row_efficiency(), row_head(), _axis_scale(), ExploreChartNode, _mag(), Pin every left axis to the widest one so the plot frames (and the         shared (+24 more)
+Cohesion: 0.08
+Nodes (32): η = hydraulic / breaking, in percent.  ``ρ`` is water at ``T_water`` by     defa, row_efficiency(), _axis_scale(), ExploreChartNode, _mag(), Pin every left axis to the widest one so the plot frames (and the         shared, A capacity field (any capacity unit) + a table of the values each         fitted, Magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``). (+24 more)
 
 ### Community 65 - "QLabel"
 Cohesion: 0.17
@@ -444,8 +446,8 @@ Cohesion: 0.17
 Nodes (12): 2026-10-27, A use case is "in production" when…, Dev Journey — your map when it feels like too much, Latest Work Log, Read this when you're overwhelmed, The next sprints (sequenced for you), The one rule, The second rule — structure by domain, steer by use cases (+4 more)
 
 ### Community 71 - "test_pump_smoke.py"
-Cohesion: 0.13
-Nodes (5): Qt-free tests for the multi-unit spine: UNIT_OPTIONS, header parsing, codec., test_codec_decode_unlabelled_columns_go_canonical(), test_codec_roundtrip_test_points_columns(), test_test_points_us_columns_equal_si_columns(), _tp_runtime()
+Cohesion: 0.14
+Nodes (4): Qt-free tests for the multi-unit spine: UNIT_OPTIONS, header parsing, codec., test_codec_decode_unlabelled_columns_go_canonical(), test_codec_roundtrip_test_points_columns(), _tp_runtime()
 
 ### Community 72 - "Removal Map — scaffolding vs. product"
 Cohesion: 0.18
@@ -552,8 +554,8 @@ Cohesion: 0.33
 Nodes (5): Acceptance criteria, Definition of Done, Files touched, Sprint S4 — Docstrings & doctests (8 h), Tasks (≈ 8 h)
 
 ### Community 98 - "Sprint S5 — Read the Docs (Sphinx + autodoc) (8 h)"
-Cohesion: 0.29
-Nodes (8): head_from_pressures(), Q_, Head in metres from a pressure pair and a constant density (Point node)., Dynamic viscosity of liquid water at ``temp_c`` (°C) — cP.      Delegates to ``p, Kinematic viscosity of liquid water at ``temp_c`` (°C) — cSt.      Delegates to, water_dynamic_viscosity_cP(), water_kinematic_viscosity_cst(), test_water_property_helpers_match_expected_engineering_values()
+Cohesion: 0.24
+Nodes (10): head_from_pressures(), Q_, Head in metres from a pressure pair and a constant density (Point node)., Density of water at ``temp_c`` (°C) via ``pump.Water`` — kg/m³ (UC-00)., Dynamic viscosity of liquid water at ``temp_c`` (°C) — cP.      Delegates to ``p, Kinematic viscosity of liquid water at ``temp_c`` (°C) — cSt.      Delegates to, water_density_kgm3(), water_dynamic_viscosity_cP() (+2 more)
 
 ### Community 99 - ".__init__"
 Cohesion: 0.22
@@ -562,10 +564,6 @@ Nodes (8): Acceptance, Assumes, Definition of done, Files, Goal, Reuse, Sprint 1
 ### Community 100 - "PumpLab — Documentation"
 Cohesion: 0.33
 Nodes (6): Capabilities at a glance, Documentation map, Project layout, PumpLab — Documentation, Quick start, The seven widgets
-
-### Community 101 - "RatedPointInputNode"
-Cohesion: 0.10
-Nodes (17): port_color(), _append(), QTableWidget, nodes.correction — Speed / Affinity Correction  (UI_SPEC §5.3)  Inputs ``RatedPo, choice_options(), current_choice(), nodes.fluidpick — shared "which fluid drives this node" selection logic.  A flui, Return the chosen ``FluidSpec`` from ``specs``, or ``None`` for the node     def (+9 more)
 
 ### Community 102 - "ADR 0003 — Correct the Python version floor metadata"
 Cohesion: 0.40
@@ -596,8 +594,8 @@ Cohesion: 0.22
 Nodes (8): Acceptance, Assumes, Definition of done, Files, Goal, Reuse, Sprint 14 — Masterpiece polish: report, CI, docs, Tests
 
 ### Community 109 - "run"
-Cohesion: 0.16
-Nodes (16): _mag_or(), app ===  The PumpFlow main window: a node toolbox, the reactive canvas, the menu, Magnitude of an optional Quantity in ``unit``, or ``default`` when ``None``., run(), Run PumpFlow:  python -m pumpflow, app_qss(), _first_available(), init_fonts() (+8 more)
+Cohesion: 0.18
+Nodes (14): app ===  The PumpFlow main window: a node toolbox, the reactive canvas, the menu, run(), Run PumpFlow:  python -m pumpflow, app_qss(), _first_available(), init_fonts(), style =====  Global Qt stylesheet — a clean, calm, professional desktop look in, Return the first installed family from ``prefs`` (last as a fallback).      Requ (+6 more)
 
 ### Community 110 - "ADR 0001 — Establish an automated test harness"
 Cohesion: 0.50
@@ -668,44 +666,60 @@ Cohesion: 0.16
 Nodes (9): fit_model(), Polynomial coeffs (primary) + natural cubic splines (secondary)., NaturalCubicSpline, ndarray, r_squared(), mathx =====  Maths ported into the UI layer from the reference notebook (``pump_, Return ``(xs, ys)`` of ``n`` evenly spaced samples across the data., Coefficient of determination, R². (+1 more)
 
 ### Community 174 - ".__init__"
-Cohesion: 0.20
-Nodes (6): _disk_unit(), Disp, Value with a runtime display label: ``key`` + ``unit_key`` <-> quantity., Optional ``[lo, hi]`` axis limits with a runtime unit label., The unit string written to disk for a display label.      Compact Pint spelling, YLimDisp
+Cohesion: 0.15
+Nodes (7): Smoke / regression tests for the ``pump`` engineering library.  These are intent, test_checker_head_tolerance_band(), test_checker_shutoff_tolerance_tier(), test_mixed_fluid_curve_is_rejected(), test_quantity_factory_canonicalizes_capacity(), test_quantity_factory_rejects_non_quantity(), test_report_summary_keys()
 
 ### Community 175 - "001_masterpiece — Loop Protocol"
-Cohesion: 0.25
-Nodes (7): encode(), Test-points table: runtime ``columns`` (labels) <-> on-disk ``columns`` (Pint)., v1 runtime shape (``unit`` + canonical rows) -> ``columns`` shape., Runtime settings -> v2 on-disk settings (new dict; input untouched)., Normalise a v1 runtime-shaped settings dict before :func:`encode`.      Missing, TestRows, upgrade_v1()
+Cohesion: 0.22
+Nodes (7): Exception, BindingError, Human-readable wrapper around library/validation failures (UI_SPEC §7)., ComplianceResult, FittedModel, Polynomial coeffs (+ optional natural cubic splines) for H, P, η., Per-parameter verdicts + the per-pump overall verdict.
 
 ### Community 176 - ".paint"
 Cohesion: 0.23
 Nodes (4): _elide(), NodeItem, QGraphicsObject, QRectF
 
 ### Community 178 - ".to_speed"
-Cohesion: 0.29
-Nodes (6): _atm(), decode(), _fmt(), settings_codec ==============  Qt-free translation between node **runtime settin, v2 on-disk settings -> runtime settings (new dict; input untouched)., Compact (``~C``) Pint spelling, as produced by ``pump.quantity_io.to_json``.
+Cohesion: 0.25
+Nodes (4): _d(), Wire a Pump B branch to the same Rated Point + Report (UI_SPEC §2 A/B)., Path, write_json()
 
 ### Community 179 - ".__getitem__"
 Cohesion: 0.33
 Nodes (3): A unit combo for one table column (or ``span`` adjacent columns).      ``on_chan, Select ``label``; ``on_change`` is only called when ``notify``., UnitColumnHeader
 
+### Community 180 - ".__iter__"
+Cohesion: 0.33
+Nodes (3): Create a blank canvas (File > New).          Prompts to save unsaved changes bef, Display the start-screen dialog and act on the user's choice.          Called on, Frame the whole pipeline (zoom extents).
+
 ### Community 181 - ".__len__"
-Cohesion: 0.50
-Nodes (4): _bundle_json(), _mag(), Float magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``)., Richer §7 bundle: shared rated + per-pump corrected data + verdict.
+Cohesion: 0.11
+Nodes (17): _btn(), _bundle_json(), _mag(), _pick_dir(), _pick_file(), nodes.report_export — Report Export  (UI_SPEC §5.7)  Inputs: the shared ``RatedP, Float magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``)., Richer §7 bundle: shared rated + per-pump corrected data + verdict. (+9 more)
+
+### Community 182 - ".__repr__"
+Cohesion: 0.40
+Nodes (6): from_json(), Any, Q_, Serialise a quantity to a JSON-ready ``{"value", "unit"}`` dict.      Parameters, Rebuild a quantity from :func:`to_json` output.      Parameters     ----------, to_json()
 
 ### Community 183 - "checkbox"
 Cohesion: 0.25
 Nodes (4): canonical_unit(), The library's standard display label for a dimension (first option)., Holds the active project-level unit preset (SI / US / custom).      ``default_un, UnitPrefs
 
 ### Community 184 - "line_edit"
-Cohesion: 0.14
-Nodes (17): assemble_report_data(), export_reports(), generate_pdf(), generate_tex(), Build the ``report_data`` dict exactly as ``ReportGenerator.generate_report``, Write the LaTeX source of the report (``.tex`` + ``<stem>_figs/``)., Compile the LaTeX report to PDF (needs latexmk or pdflatex on PATH)., Write the report in every requested format.      Returns ``(paths, errors)``: `` (+9 more)
+Cohesion: 0.32
+Nodes (7): build_scene(), main(), Headless report export: ``.pumpflow`` project → Word / LaTeX / PDF.  Usage::, Load ``project`` into an evaluated :class:`GraphScene` (offscreen Qt)., ``(rated, branches, settings)`` from the project's Report Export node., report_inputs(), test_b34004_cli_exports()
 
 ### Community 185 - "PerformancePlotNode"
-Cohesion: 0.32
+Cohesion: 0.28
 Nodes (3): BytesIO, PerformancePlotNode, Y-limits converted from their display unit to canonical m / kW / %.
+
+### Community 186 - ".absolute"
+Cohesion: 0.33
+Nodes (6): parse_decimal(), Parse a number that may use ``,`` or ``.`` as the decimal separator.      Heuris, _opt(), rated_from_json(), ``Q_(value, unit)`` or ``None`` (floats ↔ Quantities at the JSON edge)., Build a :class:`RatedPoint` from a §6.2 document (comma-decimals ok).
 
 ### Community 187 - "Sprint S5 — Read the Docs (Sphinx + autodoc) (8 h)"
 Cohesion: 0.33
 Nodes (5): Acceptance criteria, Definition of Done, Files touched, Sprint S5 — Read the Docs (Sphinx + autodoc) (8 h), Tasks (≈ 8 h)
+
+### Community 188 - "TestPointsTableNode"
+Cohesion: 0.40
+Nodes (5): json_from_signals(), _mag(), _num(), Export back to the §6.2 shape (exporter mirrors importer)., Plain magnitude of an optional Quantity in ``unit`` (``None`` stays).
 
 ### Community 189 - "Data Formats"
 Cohesion: 0.40
@@ -714,22 +728,22 @@ Nodes (5): 1 · Data-exchange JSON (UI_SPEC §6.2), 2 · Project file — `.pump
 ## Knowledge Gaps
 - **483 isolated node(s):** `centrifugal-pump`, `Fast Orientation`, `Commands (Match Repo Config)`, `Testing Gotchas`, `Hard Boundary` (+478 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **71 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **70 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GraphView` connect `GraphView` to `MainWindow`, `PortItem`, `EdgeItem`, `run`, `theme.py`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `quantity_factory()` connect `DesignPoint` to `PerformanceChecker`, `TestPoint`, `Q_`, `units.py`, `unit_conversion.py`, `Fluid`, `PerformanceCurve`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
-- **Why does `correct_curve()` connect `binding.py` to `ExploreChartNode`, `Sprint S5 — Read the Docs (Sphinx + autodoc) (8 h)`, `NodeItem`, `RatedPointInputNode`, `TestPoint`, `Q_`, `Fluid`, `PerformanceCurve`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+- **Why does `quantity_factory()` connect `Fluid` to `TestPoint`, `Q_`, `DesignPoint`, `.__init__`, `units.py`, `unit_conversion.py`, `PerformanceCurve`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `correct_curve()` connect `binding.py` to `ExploreChartNode`, `Sprint S5 — Read the Docs (Sphinx + autodoc) (8 h)`, `registry.py`, `NodeItem`, `TestPoint`, `Q_`, `001_masterpiece — Loop Protocol`, `quantity_factory`, `Fluid`, `PerformanceCurve`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `ReportGenerator` connect `ReportGenerator` to `binding.py`, `001_masterpiece — Loop Protocol`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
 - **Are the 12 inferred relationships involving `quantity_factory()` (e.g. with `test_quantity_factory_canonicalizes_capacity()` and `test_quantity_factory_rejects_non_quantity()`) actually correct?**
   _`quantity_factory()` has 12 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 12 inferred relationships involving `BaseNode` (e.g. with `ComplianceCheckNode` and `_Fallback`) actually correct?**
   _`BaseNode` has 12 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 3 inferred relationships involving `GraphScene` (e.g. with `EdgeItem` and `NodeItem`) actually correct?**
   _`GraphScene` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 6 inferred relationships involving `TestPoint` (e.g. with `PerformanceChecker` and `PerformanceCurve`) actually correct?**
-  _`TestPoint` has 6 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 5 inferred relationships involving `TestPoint` (e.g. with `PerformanceChecker` and `PerformanceCurve`) actually correct?**
+  _`TestPoint` has 5 INFERRED edges - model-reasoned connections that need verification._

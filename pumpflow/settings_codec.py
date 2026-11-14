@@ -23,6 +23,9 @@ Invariants
 - Magnitudes are never perturbed when the unit does not change: values are
   passed through untouched and only converted with Pint when the stored unit
   has no display label (then the canonical display unit is used).
+- Optional quantities (:class:`OptDisp`, e.g. the test-bench geometry) are
+  stored as ``null`` when unset, with no stray ``*_unit`` key; an unset value
+  therefore decodes without a unit label (the dialog re-seeds its default).
 
 Examples
 --------
@@ -161,6 +164,31 @@ class Disp:
             value = _convert(value, unit, _pint(self.dimension, label))
         d[self.key] = value
         d[self.unit_key] = label
+
+
+@dataclass(frozen=True)
+class OptDisp(Disp):
+    """Optional :class:`Disp`: an unset (``None``) value is **omitted** on disk.
+
+    The ``unit_key`` is always consumed on encode, so nothing stray is left
+    behind.  Omitting (rather than writing ``null``) makes a file saved with the
+    field unset identical to a file written before the field existed, so
+    migration and re-saving agree.  Keys absent from a document stay absent on
+    decode and the runtime defaults apply.
+    """
+
+    def fill_v1(self, d: dict) -> None:
+        return None
+
+    def enc(self, d: dict) -> None:
+        v = d.get(self.key)
+        label = d.pop(self.unit_key, units.canonical_unit(self.dimension))
+        if v is None:
+            d.pop(self.key, None)
+            return
+        if isinstance(v, dict):
+            return
+        d[self.key] = {"value": v, "unit": _disk_unit(self.dimension, label)}
 
 
 @dataclass(frozen=True)
@@ -367,7 +395,14 @@ FIELDS: Dict[str, tuple] = {
         YLimDisp("power_ylim", "power", "power_ylim_unit"),
         YLimDisp("eff_ylim", "efficiency", "eff_ylim_unit"),
     ),
-    "test_points": (TestRows(),),
+    "test_points": (
+        TestRows(),
+        # Optional test-bench geometry (sprint 4): four optional lengths.
+        OptDisp("suction_id", "length", "suction_id_unit"),
+        OptDisp("discharge_id", "length", "discharge_id_unit"),
+        OptDisp("suction_z", "length", "suction_z_unit"),
+        OptDisp("discharge_z", "length", "discharge_z_unit"),
+    ),
 }
 
 # Stale v1 keys removed by upgrade_v1 (the old exchange-style rated "unit").

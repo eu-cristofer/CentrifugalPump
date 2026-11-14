@@ -146,6 +146,48 @@ class TestRow:
 
 
 @dataclass(frozen=True)
+class BenchGeometry:
+    """Optional test-bench geometry completing the head (sprint 4).
+
+    ``H = ΔP/(ρ·g) + (v_d² − v_s²)/(2g) + (z_d − z_s)``.  Every field is an
+    optional length Quantity in whatever unit the user entered.  The velocity
+    term needs **both** pipe inner diameters, the elevation term **both** gauge
+    elevations; a missing partner makes that term 0 (library behaviour).
+
+    Examples
+    --------
+    >>> from pump import Q_
+    >>> BenchGeometry().is_empty
+    True
+    >>> g = BenchGeometry(suction_id=Q_(150, "mm"), discharge_id=Q_(100, "mm"))
+    >>> g.is_empty, g.components_available()
+    (False, (True, False))
+    """
+
+    suction_id: Optional[Q_] = None  # suction pipe inner diameter
+    discharge_id: Optional[Q_] = None  # discharge pipe inner diameter
+    suction_elevation: Optional[Q_] = None  # suction gauge elevation z_s
+    discharge_elevation: Optional[Q_] = None  # discharge gauge elevation z_d
+
+    @property
+    def is_empty(self) -> bool:
+        """True when no field is set (the head is then ΔP/(ρ·g) only)."""
+        return (
+            self.suction_id is None
+            and self.discharge_id is None
+            and self.suction_elevation is None
+            and self.discharge_elevation is None
+        )
+
+    def components_available(self) -> tuple[bool, bool]:
+        """``(velocity, elevation)`` — which head terms can be evaluated."""
+        return (
+            self.suction_id is not None and self.discharge_id is not None,
+            self.suction_elevation is not None and self.discharge_elevation is not None,
+        )
+
+
+@dataclass(frozen=True)
 class TestPointSet:
     """A physical pump's raw measured rows (the source for one branch)."""
 
@@ -159,6 +201,9 @@ class TestPointSet:
     # the row temperature.  Runtime-only — set by the node from its FluidSpec
     # input, never persisted (the table stores only its own rows).
     test_density: Optional[Q_] = None
+    # Optional bench geometry (pipe IDs + gauge elevations) for the velocity and
+    # elevation head terms.  ``None`` keeps the pressure-only head.
+    geometry: Optional[BenchGeometry] = None
 
     def is_valid(self) -> tuple[bool, str]:
         """UI_SPEC §5.2: at least 3 points for a degree-3 fit."""
@@ -226,6 +271,8 @@ class CorrectedCurve:
     # A display table: plain floats in m³/h, m, kW, % and rpm (the one documented
     # exception to "signals carry Quantities").
     before_after: tuple[dict, ...] = ()
+    # Bench geometry the measured heads were derived with (for the report).
+    geometry: Optional[BenchGeometry] = None
 
 
 # ---------------------------------------------------------------------------

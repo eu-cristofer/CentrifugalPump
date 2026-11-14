@@ -7,7 +7,8 @@ Source node.  An editable, spreadsheet-like grid of raw measured rows for one
 - comma- or dot-decimals accepted (Excel-friendly paste)
 - every column has its own display unit (combo above the column); the rows are
   stored in those units and converted only when the unit is changed
-- read-only computed ``Head = (P_dis − P_suc)/(ρ·g)`` and ``η`` columns, live
+- read-only computed ``Head = ΔP/(ρ·g) [+ velocity + elevation]`` and ``η``
+  columns, live (velocity/elevation only with the optional bench geometry)
 - ≥ 3 points required for a degree-3 fit; warns if a shut-off point is missing
 """
 
@@ -30,11 +31,11 @@ from PySide6.QtWidgets import (
 from pump import Q_, Pressure
 
 from .. import units
-from ..binding import row_efficiency, row_head
+from ..binding import row_efficiency, row_head, row_head_components
 from ..numfmt import fmt, parse_decimal
 from ..persistence import testset_from_json, testset_pressure_unit
 from ..sample_data import SINGLE_PUMP_JSON
-from ..signals import TestPointSet, TestRow
+from ..signals import BenchGeometry, TestPointSet, TestRow
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
@@ -45,6 +46,47 @@ _KEYS = _ALL_KEYS[:6]  # editable columns
 _EDITABLE = {0, 1, 2, 3, 4, 5}
 _PRESSURE_KEYS = ("p_suc", "p_dis")
 _DEFAULT_LABEL = "Water at T_water"
+
+# Optional bench geometry (runtime settings keys; value None = unset).
+_GEO_KEYS = ("suction_id", "discharge_id", "suction_z", "discharge_z")
+_GEO_ID_KEYS = ("suction_id", "discharge_id")
+
+
+def default_geometry_settings(prefs=None) -> Dict:
+    """Runtime defaults of the geometry keys: values unset, units from the preset."""
+    prefs = prefs if prefs is not None else units.PREFS
+    out: Dict = {}
+    for k in _GEO_KEYS:
+        out[k] = None
+        out[f"{k}_unit"] = prefs.default_unit("length") if k in _GEO_ID_KEYS else "m"
+    return out
+
+
+def _geo_quantity(s: dict, key: str) -> Optional[Q_]:
+    """One geometry setting as a length Quantity (``None`` when unset).
+
+    A non-positive pipe ID counts as "not entered" (it would divide by zero);
+    a zero elevation is a legitimate value.
+    """
+    v = s.get(key)
+    if v is None:
+        return None
+    v = float(v)
+    if key in _GEO_ID_KEYS and v <= 0:
+        return None
+    label = s.get(f"{key}_unit") or default_geometry_settings()[f"{key}_unit"]
+    return Q_(v, units.pint_str("length", label))
+
+
+def geometry_from_settings(s: dict) -> Optional[BenchGeometry]:
+    """``BenchGeometry`` from node settings, or ``None`` when nothing is set."""
+    geom = BenchGeometry(
+        suction_id=_geo_quantity(s, "suction_id"),
+        discharge_id=_geo_quantity(s, "discharge_id"),
+        suction_elevation=_geo_quantity(s, "suction_z"),
+        discharge_elevation=_geo_quantity(s, "discharge_z"),
+    )
+    return None if geom.is_empty else geom
 
 
 def canonical_columns(pressure_label: str = "bar") -> Dict[str, str]:
@@ -183,9 +225,14 @@ class TestPointsTableNode(BaseNode):
             "columns": shape["columns"],
             "pressure_ref": shape["pressure_ref"],
             "rows": shape["rows"],
+            **default_geometry_settings(),
         }
 
     # -- payload -----------------------------------------------------------
+    def geometry(self) -> Optional[BenchGeometry]:
+        """The optional bench geometry from the current settings (or ``None``)."""
+        return geometry_from_settings(self.settings)
+
     def to_signal(self, test_density=None) -> TestPointSet:
         s = self.settings
         columns = s.get("columns") or canonical_columns()
@@ -195,6 +242,7 @@ class TestPointsTableNode(BaseNode):
             pump_tag=str(s["pump_tag"]).strip(),
             rows=tuple(rows),
             test_density=test_density,
+            geometry=self.geometry(),
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -223,6 +271,8 @@ class TestPointsTableNode(BaseNode):
         s = self.settings
         s["columns"] = {**canonical_columns(), **(s.get("columns") or {})}
         s.setdefault("pressure_ref", "g")
+        for k, v in default_geometry_settings().items():
+            s.setdefault(k, v)
         cols = s["columns"]
         dims = units.COLUMN_DIMENSIONS
 
@@ -287,16 +337,27 @@ class TestPointsTableNode(BaseNode):
             r = s["rows"][row_idx]
             tr = _row_from_dict(r, cols, s["pressure_ref"])
             test_rho = getattr(self, "_test_density", None)
+            geom = geometry_from_settings(s)
+            tip = ""
             try:
-                head_q = row_head(tr, test_rho)
+                head_q = row_head(tr, test_rho, geom)
                 eff_q = row_efficiency(tr, head_q, test_rho)
                 head = head_q.to(_pint_of(cols, "head")).magnitude
                 eff = (
                     None if eff_q is None else eff_q.to(_pint_of(cols, "eff")).magnitude
                 )
+                if geom is not None:
+                    comps = row_head_components(tr, test_rho, geom)
+                    hp = _pint_of(cols, "head")
+                    v = {k: c.to(hp).magnitude for k, c in comps.items()}
+                    tip = (
+                        f"pressure {v['pressure']:.3f} + velocity {v['velocity']:.3f}"
+                        f" + elevation {v['elevation']:.3f} = {v['total']:.3f}"
+                        f" {cols['head']}"
+                    )
             except Exception:
                 head, eff = 0.0, None
-            _set_ro(table, row_idx, 6, fmt(head, 2))
+            _set_ro(table, row_idx, 6, fmt(head, 2), tip)
             _set_ro(table, row_idx, 7, fmt(eff, 1) if eff is not None else "—")
 
         def fill():
@@ -384,6 +445,48 @@ class TestPointsTableNode(BaseNode):
             recompute_status()
 
         fluid_pick.currentIndexChanged.connect(lambda _=None: on_pick())
+
+        # -- optional bench geometry: one checkbox gates four length fields
+        geo_labels = {
+            "suction_id": "Suction pipe ID",
+            "discharge_id": "Discharge pipe ID",
+            "suction_z": "Suction gauge elevation z_s",
+            "discharge_z": "Discharge gauge elevation z_d",
+        }
+        geo_fields: Dict[str, ui.UnitField] = {}
+
+        def on_geo_change():
+            applied = geo_chk.isChecked()
+            for k, f in geo_fields.items():
+                s[f"{k}_unit"] = f.unit_label()
+                s[k] = f.magnitude() if applied else None
+                f.spin.setEnabled(applied)
+                f.combo.setEnabled(applied)
+            fill()  # Head column (and tooltips) re-derive with the geometry
+            recompute_status()
+
+        geo_chk = ui.checkbox(
+            "Apply bench geometry",
+            any(s.get(k) is not None for k in _GEO_KEYS),
+            lambda: on_geo_change(),
+        )
+        geo_chk.setObjectName("ApplyGeometry")
+        for k in _GEO_KEYS:
+            is_id = k in _GEO_ID_KEYS
+            f = ui.UnitField(
+                "length",
+                s[k] if s.get(k) is not None else 0.0,
+                s.get(f"{k}_unit"),
+                on_change=lambda: on_geo_change(),
+                lo=0.0 if is_id else -1.0e4,
+                hi=1.0e5,
+                step=1.0 if is_id else 0.1,
+                decimals=3,
+            )
+            f.spin.setObjectName(f"Geo_{k}")
+            f.spin.setEnabled(geo_chk.isChecked())
+            f.combo.setEnabled(geo_chk.isChecked())
+            geo_fields[k] = f
 
         # toolbar
         def blank_row() -> dict:
@@ -509,20 +612,29 @@ class TestPointsTableNode(BaseNode):
         if fluids:
             dlg.add(ui.row("Fluid source", fluid_pick))
         dlg.add(ui.hline())
+        dlg.add(ui.section("Test bench geometry (optional)"))
+        dlg.add(geo_chk)
+        for k in _GEO_KEYS:
+            dlg.add(geo_fields[k].row(geo_labels[k]))
+        dlg.add(ui.hline())
         dlg.add(ui.section("Measured points"))
         dlg.add(bar)
         dlg.add(grid)
         dlg.add(banner)
         fill()
         recompute_status()
-        dlg.resize(760, 620)
+        dlg.resize(760, 700)
         QTimer.singleShot(0, strip.sync)
         return dlg
 
 
-def _set_ro(table: QTableWidget, row: int, col: int, text: str) -> None:
+def _set_ro(
+    table: QTableWidget, row: int, col: int, text: str, tooltip: str = ""
+) -> None:
     item = QTableWidgetItem(text)
     item.setFlags(Qt.ItemIsEnabled)
     item.setForeground(QColor("#3b6ea5"))
     item.setBackground(QColor("#f1f5f9"))
+    if tooltip:
+        item.setToolTip(tooltip)
     table.setItem(row, col, item)

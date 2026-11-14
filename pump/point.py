@@ -384,11 +384,25 @@ class TestPoint(BasePoint):
         """
         Calculates the head difference due to change in fluid velocity.
 
+        ``(v_out**2 - v_in**2) / (2 g)`` with the velocities taken from
+        ``capacity`` and the inlet/outlet diameters.  **Both** ``inlet_diameter``
+        and ``outlet_diameter`` are required; if either is missing the velocity
+        head is 0 m (it never uses a half-specified geometry).
+
         Returns
         -------
         Q_
             The velocity head. Returns 0 m if `inlet_diameter` or
             `outlet_diameter` are not provided.
+
+        Examples
+        --------
+        >>> from pump import Q_, Fluid, TestPoint
+        >>> water = Fluid("Water", density=Q_(998, "kg/m**3"))
+        >>> tp = TestPoint(fluid=water, capacity=Q_(100, "m**3/h"),
+        ...                inlet_diameter=Q_(150, "mm"))
+        >>> tp.velocity_head.magnitude
+        0
         """
         if hasattr(self, "inlet_diameter") and hasattr(self, "outlet_diameter"):
             return quantity_factory(
@@ -401,11 +415,24 @@ class TestPoint(BasePoint):
         """
         Calculates the head difference due to elevation.
 
+        ``outlet_elevation - inlet_elevation``.  **Both** elevations are
+        required; if either is missing the elevation head is 0 m.
+
         Returns
         -------
         Q_
             The elevation head. Returns 0 m if `inlet_elevation` or
             `outlet_elevation` are not provided.
+
+        Examples
+        --------
+        >>> from pump import Q_, Fluid, TestPoint
+        >>> water = Fluid("Water", density=Q_(998, "kg/m**3"))
+        >>> tp = TestPoint(fluid=water, capacity=Q_(100, "m**3/h"),
+        ...                inlet_elevation=Q_(0.3, "m"),
+        ...                outlet_elevation=Q_(0.8, "m"))
+        >>> round(tp.elevation_head.to("m").magnitude, 3)
+        0.5
         """
         if hasattr(self, "inlet_elevation") and hasattr(self, "outlet_elevation"):
             return quantity_factory(self.outlet_elevation - self.inlet_elevation)
@@ -423,6 +450,18 @@ class TestPoint(BasePoint):
         -------
         Q_
             The computed total dynamic head.
+
+        Examples
+        --------
+        A measured pressure rise (``delta_pressure``) over a fluid whose density
+        is given in kg/m³:
+
+        >>> from pump import Q_, Fluid, TestPoint
+        >>> water = Fluid("Water", density=Q_(998, "kg/m**3"))
+        >>> tp = TestPoint(fluid=water, capacity=Q_(100, "m**3/h"),
+        ...                delta_pressure=Q_(5, "bar"))
+        >>> round(tp.compute_head.to("m").magnitude, 1)
+        51.1
         """
         TDH = self.pressure_head + self.velocity_head + self.elevation_head
         self._head = quantity_factory(TDH)
