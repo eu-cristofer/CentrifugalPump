@@ -510,6 +510,64 @@ class RunLog:
         self._overrides(d.get("overrides"), _q_dec)
 
 
+# ---------------------------------------------------------------------------
+# NPSH (sprint 8)
+# ---------------------------------------------------------------------------
+
+#: NPSHr-table column key -> unit dimension.
+_NPSH_COLUMNS: Dict[str, str] = {"q": "capacity", "npshr": "npsh"}
+
+
+@dataclass(frozen=True)
+class NPSHTable:
+    """NPSH-node settings: per-column units of the NPSHr table + the margin override.
+
+    ``columns`` is ``{"q", "npshr"}`` (display labels at runtime, Pint strings on
+    disk); rows are stored in their column units on both sides and only converted
+    when a stored unit has no display label.  ``overrides["min_margin"]`` is a
+    ``{"value", "unit"}`` quantity (label <-> Pint); ``min_ratio`` is a plain
+    float.  The optional/other quantities of the node (``npsha``, the calculator
+    suction conditions) use the generic :class:`Disp` / :class:`OptDisp` /
+    :class:`Pressures` specs listed beside this one in :data:`FIELDS`.
+    """
+
+    def fill_v1(self, d: dict) -> None:
+        return None
+
+    def enc(self, d: dict) -> None:
+        cols = d.get("columns")
+        if isinstance(cols, dict):
+            d["columns"] = {
+                key: _disk_unit(dim, cols.get(key, units.canonical_unit(dim)))
+                for key, dim in _NPSH_COLUMNS.items()
+            }
+        ov = d.get("overrides")
+        if isinstance(ov, dict) and ov.get("min_margin") is not None:
+            ov["min_margin"] = _q_enc(ov["min_margin"], "npsh", "q")
+
+    def dec(self, d: dict) -> None:
+        cols = d.get("columns")
+        if isinstance(cols, dict):
+            rows = d.get("rows") or []
+            labels: Dict[str, str] = {}
+            for key, dim in _NPSH_COLUMNS.items():
+                stored = cols.get(key)
+                if stored is None:
+                    labels[key] = units.canonical_unit(dim)
+                    continue
+                label, convert = _label_or_canonical(dim, stored)
+                if convert:
+                    dst = _pint(dim, label)
+                    for r in rows:
+                        if r.get(key) is not None:
+                            r[key] = _convert(r[key], stored, dst)
+                labels[key] = label
+            d["columns"] = labels
+        ov = d.get("overrides")
+        if isinstance(ov, dict) and ov.get("min_margin") is not None:
+            ov["min_margin"] = _q_dec(ov["min_margin"], "npsh", "q")
+
+
 FIELDS: Dict[str, tuple] = {
     "rated_point": (
         Disp("q", "capacity", "q_unit"),
@@ -548,6 +606,16 @@ FIELDS: Dict[str, tuple] = {
         OptDisp("discharge_z", "length", "discharge_z_unit"),
     ),
     "mechanical_run": (RunLog(),),
+    "npsh": (
+        NPSHTable(),
+        # Optional NPSHa typed in the node (unset = use the rated point's).
+        OptDisp("npsha", "npsh", "npsha_unit"),
+        # NPSHa calculator: suction conditions (suction ID is optional).
+        Pressures(keys=("calc_p",), unit_key="calc_p_unit", ref_key="calc_p_ref"),
+        Disp("calc_temp", "temperature", "calc_temp_unit"),
+        OptDisp("calc_id", "length", "calc_id_unit"),
+        Disp("calc_z", "length", "calc_z_unit"),
+    ),
 }
 
 # Stale v1 keys removed by upgrade_v1 (the old exchange-style rated "unit").

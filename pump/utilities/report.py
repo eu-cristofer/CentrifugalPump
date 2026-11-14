@@ -67,6 +67,10 @@ MECHANICAL_RUN_UNVERIFIED_NOTE = (
     "Mechanical running test limits not yet verified against the standard text."
 )
 
+# NPSH section (UC-05), shared by docx and LaTeX.
+NPSH_KEY = "NPSH"
+NPSH_TITLE = "NPSH"
+
 # Pump comparison section (UC-08), shared by docx and LaTeX.
 COMPARISON_KEY = "comparison"
 COMPARISON_TITLE = "Comparison"
@@ -174,6 +178,38 @@ def mechanical_run_notes(translate: Callable[[str], str], result) -> list:
     if not getattr(result, "verified", False):
         notes.append(translate(MECHANICAL_RUN_UNVERIFIED_NOTE))
     return notes
+
+
+def npsh_verdict(translate: Callable[[str], str], result) -> str:
+    """Localized NPSH margin verdict.
+
+    ``"not configured"`` when no margin rule is set (status ``info``); otherwise
+    PASSED / FAILED, marked "(unverified criteria)" when the rule is not verified.
+    """
+    if result.status == "info":
+        return translate("not configured")
+    text = translate("PASSED") if result.status == "pass" else translate("FAILED")
+    if not getattr(result, "verified", False):
+        text += f" ({translate('unverified criteria')})"
+    return text
+
+
+def npsh_summary_rows(translate: Callable[[str], str], result) -> list:
+    """``[(label, value), ...]`` strings: NPSHa, NPSHr, ratio, margin, verdict."""
+    return [
+        (translate("NPSH available"), f"{result.npsha.to('m'):0.2f~P}"),
+        (translate("NPSH required"), f"{result.npshr.to('m'):0.2f~P}"),
+        (translate("Ratio"), f"{result.ratio:0.2f}"),
+        (translate("Margin"), f"{result.margin.to('m'):0.2f~P}"),
+        (translate("Overall verdict"), npsh_verdict(translate, result)),
+    ]
+
+
+def npsh_points_table(translate: Callable[[str], str], table) -> tuple:
+    """``(header, rows)`` of strings for the ``[(q, npshr), ...]`` points table."""
+    header = [translate("Capacity"), translate("NPSH required")]
+    rows = [[f"{q:0.2f~P}", f"{r:0.2f~P}"] for q, r in (table or ())]
+    return header, rows
 
 
 def comparison_sentence(translate: Callable[[str], str], comparison: dict) -> str:
@@ -416,6 +452,9 @@ class ReportGenerator:
 
             if MECHANICAL_RUN_KEY in test_data:
                 self._add_mechanical_run(document, test_data[MECHANICAL_RUN_KEY])
+
+            if NPSH_KEY in test_data:
+                self._add_npsh(document, test_data[NPSH_KEY])
 
         if report_data.get(COMPARISON_KEY):
             self._add_comparison(document, report_data[COMPARISON_KEY])
@@ -714,6 +753,75 @@ class ReportGenerator:
 
         for note in mechanical_run_notes(self._, result):
             document.add_paragraph(note, style='Text_body')
+
+    def _add_npsh(self, document, entry):
+        """
+        Add the NPSH section (UC-05).
+
+        Parameters
+        ----------
+        document : docx.Document
+            The Word document object to modify.
+        entry : dict
+            ``{"result": NPSHResult, "plot": BytesIO | None,
+            "table": [(q, npshr), ...]}``.
+        """
+        result = (entry or {}).get("result")
+        if result is None:
+            return
+        table_font = "Consolas"
+        document.add_paragraph(self._(NPSH_TITLE), style='Title_3')
+
+        rows = npsh_summary_rows(self._, result)
+        table = document.add_table(rows=len(rows), cols=2)
+        table.style = "Table Grid"
+        table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        width = Inches(2)
+        for r, (label, value) in enumerate(rows):
+            left, right = table.cell(r, 0), table.cell(r, 1)
+            left.text, right.text = label, value
+            left.width = right.width = width
+            run_left = left.paragraphs[0].runs[0]
+            run_right = right.paragraphs[0].runs[0]
+            run_left.bold = True
+            run_left.font.size = Pt(9)
+            run_right.font.size = Pt(8)
+            run_left.font.name = table_font
+            run_right.font.name = table_font
+
+        points = (entry or {}).get("table")
+        if points:
+            header, prows = npsh_points_table(self._, points)
+            document.add_paragraph(" ", style='Text_body')
+            ptable = document.add_table(rows=len(prows) + 1, cols=len(header))
+            ptable.style = "Table Grid"
+            ptable.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            for col, name in enumerate(header):
+                cell = ptable.cell(0, col)
+                cell.text = name
+                cell.width = width
+                run = cell.paragraphs[0].runs[0]
+                run.bold = True
+                run.font.size = Pt(9)
+                run.font.name = table_font
+                cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            for r, values in enumerate(prows, start=1):
+                for col, text in enumerate(values):
+                    cell = ptable.cell(r, col)
+                    cell.text = text
+                    cell.width = width
+                    run = cell.paragraphs[0].runs[0]
+                    run.font.size = Pt(8)
+                    run.font.name = table_font
+                    cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        plot = (entry or {}).get("plot")
+        if isinstance(plot, io.BytesIO):
+            plot.seek(0)
+        if isinstance(plot, io.BytesIO) or (isinstance(plot, str) and os.path.exists(plot)):
+            paragraph = document.add_paragraph()
+            paragraph.add_run().add_picture(plot, width=Inches(6))
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
     def _add_comparison(self, document, comparison):
         """

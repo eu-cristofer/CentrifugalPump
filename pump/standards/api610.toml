@@ -5,6 +5,10 @@
 # No edition has been checked against the standard text, so every edition
 # carries verified = false.  Do not flip a flag to true without a
 # clause-level source.
+#
+# The [editions."N".npsh] tables are NOT-CONFIGURED placeholders: min_ratio and
+# min_margin are deliberately omitted so no NPSH margin verdict is ever issued
+# from an invented number.  Enter the client/API margin rule to activate it.
 
 standard = "api610"
 title = "API 610 / ISO 13709"
@@ -39,6 +43,10 @@ max = "2.0 mm/s"
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
 
+[editions."8".npsh]
+source = "not configured — enter the client/API margin rule"
+verified = false
+
 [editions."10"]
 label = "API 610 10th edition"
 source = "seed: pre-S5 code defaults — confirm against API 610 10th edition performance tolerance table"
@@ -68,6 +76,10 @@ max = "2.0 mm/s"
 [[editions."10".mechanical_run.roles]]
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
+
+[editions."10".npsh]
+source = "not configured — enter the client/API margin rule"
+verified = false
 
 [editions."11"]
 label = "API 610 11th edition"
@@ -99,6 +111,10 @@ max = "2.0 mm/s"
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
 
+[editions."11".npsh]
+source = "not configured — enter the client/API margin rule"
+verified = false
+
 [editions."12"]
 label = "API 610 12th edition"
 source = "seed: pre-S5 code defaults — confirm against API 610 12th edition performance tolerance table"
@@ -128,3 +144,7 @@ max = "2.0 mm/s"
 [[editions."12".mechanical_run.roles]]
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
+
+[editions."12".npsh]
+source = "not configured — enter the client/API margin rule"
+verified = false

@@ -240,3 +240,18 @@ msgstr "limites não verificados"
 
 msgid "unverified criteria"
 msgstr "critérios não verificados"
+
+msgid "NPSH"
+msgstr "NPSH"
+
+msgid "NPSH available"
+msgstr "NPSH disponível"
+
+msgid "NPSH required"
+msgstr "NPSH requerido"
+
+msgid "Margin"
+msgstr "Margem"
+
+msgid "Ratio"
+msgstr "Razão"

@@ -92,6 +92,16 @@
   - Against the placeholder 3.0 mm/s seed limit, B-34004A's unfiltered vibration of 0.16 in/s (4.06 mm/s) reads as **FAILED**.
   - That limit came from the reference notebook and isn't confirmed for this OH6 pump, so the API 610 vibration limits the owner supplies will decide the real verdict.
 
+### UC-05 — Check NPSH margin ✅
+- **Input:** NPSHr points (any units) or a suction-condition NPSHa calculation;
+  NPSHa from the node or the rated point.
+- **Output:** NPSHr at rated (fitted curve), NPSHa, ratio and margin, verdict
+  against the configured margin rule ("not configured" until the owner enters
+  one), plot, report section.
+- **Supported by:** `pump.npsh` (`npsh_available` with vapour pressure,
+  `npsh3_from_sweep`, `NPSHrCurve`, `check_npsh`, `plot_npsh`), `npsh` node.
+- **Pinned by:** `tests/test_npsh.py`, `tests/test_npsh_gui.py`.
+
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
 | UC | Title | Why deferred |
@@ -99,7 +109,6 @@
 | UC-01 | Select a pump for given conditions | No pump catalogue in the library. |
 | UC-03 | Analyse system curve | No system-curve module. |
 | UC-04 | Find operating point | Blocked by UC-03. |
-| UC-05 | Check NPSH margin | No NPSH module. |
 | UC-07 | Evaluate impeller trim | Diameter affinity branch not implemented. |
 
 ## Out of scope

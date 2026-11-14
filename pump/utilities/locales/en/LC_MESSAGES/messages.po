@@ -171,3 +171,18 @@ msgstr "unverified limits"
 
 msgid "unverified criteria"
 msgstr "unverified criteria"
+
+msgid "NPSH"
+msgstr "NPSH"
+
+msgid "NPSH available"
+msgstr "NPSH available"
+
+msgid "NPSH required"
+msgstr "NPSH required"
+
+msgid "Margin"
+msgstr "Margin"
+
+msgid "Ratio"
+msgstr "Ratio"

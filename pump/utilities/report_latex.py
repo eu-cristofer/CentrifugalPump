@@ -34,6 +34,8 @@ from .report import (
     INTRO_PARAGRAPHS,
     MECHANICAL_RUN_KEY,
     MECHANICAL_RUN_TITLE,
+    NPSH_KEY,
+    NPSH_TITLE,
     SUMMARY_COLUMNS,
     TEST_DATA_DESCRIPTION,
     TEST_SUMMARY_DESCRIPTION,
@@ -45,6 +47,8 @@ from .report import (
     mechanical_run_notes,
     mechanical_run_table,
     mechanical_run_verdict,
+    npsh_points_table,
+    npsh_summary_rows,
     performance_verdict,
     standard_sentence,
     unverified_sentence,
@@ -247,6 +251,8 @@ class LatexReportGenerator:
                 out.append(
                     self._mechanical_run(entry[MECHANICAL_RUN_KEY], pump_tag, fig_dir, fig_rel)
                 )
+            if NPSH_KEY in entry:
+                out.append(self._npsh(entry[NPSH_KEY], pump_tag, fig_dir, fig_rel))
 
         if report_data.get(COMPARISON_KEY):
             out.append(self._comparison(report_data[COMPARISON_KEY], fig_dir, fig_rel))
@@ -386,6 +392,45 @@ class LatexReportGenerator:
             )
         for note in mechanical_run_notes(_, result):
             parts.append(latex_escape(note) + "\n")
+        return "\n".join(parts)
+
+    def _npsh(self, entry, pump_tag, fig_dir: Path, fig_rel: str) -> str:
+        """NPSH section (UC-05); empty without a result."""
+        result = (entry or {}).get("result")
+        if result is None:
+            return ""
+        _ = self._
+        summary = [
+            r"\textbf{%s} & %s \\" % (latex_escape(label), latex_escape(value))
+            for label, value in npsh_summary_rows(_, result)
+        ]
+        parts = [
+            r"\subsubsection*{%s}" % latex_escape(_(NPSH_TITLE)),
+            r"\begin{center}\begin{tabular}{ll}",
+            r"\toprule",
+            *summary,
+            r"\bottomrule",
+            r"\end{tabular}\end{center}",
+        ]
+        points = (entry or {}).get("table")
+        if points:
+            header, rows = npsh_points_table(_, points)
+            head = " & ".join(r"\textbf{%s}" % latex_escape(h) for h in header) + r" \\"
+            body = [" & ".join(latex_escape(c) for c in row) + r" \\" for row in rows]
+            parts += [
+                r"\begin{center}\begin{tabular}{cc}",
+                r"\toprule",
+                head,
+                r"\midrule",
+                *body,
+                r"\bottomrule",
+                r"\end{tabular}\end{center}",
+            ]
+        plot = (entry or {}).get("plot")
+        if plot is not None:
+            if isinstance(plot, io.BytesIO):
+                plot.seek(0)
+            parts.append(self._figure(NPSH_TITLE, plot, pump_tag, fig_dir, fig_rel))
         return "\n".join(parts)
 
     def _comparison(self, comparison, fig_dir: Path, fig_rel: str) -> str:

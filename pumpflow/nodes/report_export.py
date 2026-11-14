@@ -3,8 +3,8 @@ nodes.report_export — Report Export  (UI_SPEC §5.7)
 
 Inputs: the shared ``RatedPoint`` + a **multi-connection** ``branch`` input that
 accepts ``CorrectedCurve`` / ``FittedModel`` / ``ComplianceResult`` /
-``MechanicalRunResultSignal`` from each pump.  Payloads are grouped by pump TAG
-into a :class:`ReportBundle`.
+``MechanicalRunResultSignal`` / ``NPSHResultSignal`` from each pump.  Payloads
+are grouped by pump TAG into a :class:`ReportBundle`.
 One branch → single-pump report; N branches → one consolidated report.
 
 Exports: ``.docx`` (via the library's ``ReportGenerator``), ``.tex`` and
@@ -30,7 +30,8 @@ from ..binding import REPORT_FORMATS, assemble_report_data, export_reports
 from ..persistence import write_json
 from ..signals import (
     BranchBundle, ComplianceResult, CorrectedCurve, FittedModel,
-    MechanicalRunResultSignal, MechanicalRunSet, RatedPoint,
+    MechanicalRunResultSignal, MechanicalRunSet, NPSHResultSignal, NPSHSet,
+    RatedPoint,
 )
 from .base import BaseNode, PortSpec
 from . import ui
@@ -60,7 +61,7 @@ class ReportExportNode(BaseNode):
         groups: Dict[str, dict] = {}
         for payload in self.all_of(inputs, "branch"):
             tag = getattr(payload, "pump_tag", None)
-            if tag is None or isinstance(payload, MechanicalRunSet):
+            if tag is None or isinstance(payload, (MechanicalRunSet, NPSHSet)):
                 continue
             g = groups.setdefault(tag, {})
             if isinstance(payload, CorrectedCurve):
@@ -71,6 +72,8 @@ class ReportExportNode(BaseNode):
                 g["compliance"] = payload
             elif isinstance(payload, MechanicalRunResultSignal):
                 g["mechanical"] = payload
+            elif isinstance(payload, NPSHResultSignal):
+                g["npsh"] = payload
         branches = tuple(
             BranchBundle(
                 pump_tag=tag,
@@ -79,6 +82,7 @@ class ReportExportNode(BaseNode):
                 compliance=g.get("compliance"),
                 equipment=self.settings.get("equipment", {}),
                 mechanical=g.get("mechanical"),
+                npsh=g.get("npsh"),
             )
             for tag, g in groups.items()
         )
@@ -165,10 +169,10 @@ class ReportExportNode(BaseNode):
                 has = "".join(
                     m for m, ok in [
                         ("C", b.corrected), ("F", b.fitted), ("V", b.compliance),
-                        ("M", b.mechanical),
+                        ("M", b.mechanical), ("N", b.npsh),
                     ] if ok
                 )
-                lines.append(f"{b.pump_tag:<14} [{has:<4}]  {verdict}")
+                lines.append(f"{b.pump_tag:<14} [{has:<5}]  {verdict}")
             pumps_lbl.setText("\n".join(lines))
             banner.show_message(self.status, "ok" if self.state == "ok" else "info")
 
@@ -179,12 +183,14 @@ class ReportExportNode(BaseNode):
             branches = [
                 b for b in getattr(self, "_branches", ())
                 if b.fitted is not None or b.mechanical is not None
+                or b.npsh is not None
             ]
             if not rated or not branches:
                 QMessageBox.warning(
                     dlg, "Report Export",
                     "Connect the rated point and at least one complete branch "
-                    "(test points → correction → curve fit) or a mechanical run.",
+                    "(test points → correction → curve fit), a mechanical run "
+                    "or an NPSH result.",
                 )
                 return
             data = assemble_report_data(rated, branches, s["equipment"])
@@ -357,6 +363,17 @@ def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
                 "passed": bool(getattr(res, "passed", False)),
                 "fully_assessed": bool(getattr(res, "fully_assessed", True)),
                 "criteria": b.mechanical.criteria_label,
+            }
+        if b.npsh is not None:
+            res = b.npsh.result
+            entry["npsh"] = {
+                "status": getattr(res, "status", None),
+                "npsha_m": _mag(getattr(res, "npsha", None), "m"),
+                "npshr_m": _mag(getattr(res, "npshr", None), "m"),
+                "ratio": getattr(res, "ratio", None),
+                "margin_m": _mag(getattr(res, "margin", None), "m"),
+                "verified": bool(getattr(res, "verified", False)),
+                "criteria": b.npsh.criteria_label,
             }
         doc["pumps"].append(entry)
     return doc

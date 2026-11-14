@@ -12,7 +12,8 @@ subset of the keys of an edition.
 
 Every table currently shipped is a **seed** copied from the pre-Sprint-5 code
 defaults and is flagged ``verified = false``; :attr:`AcceptanceCriteria.unverified`
-lists the parts that still need confirmation against the standard text.
+lists the parts that still need confirmation against the standard text.  The
+NPSH margin rule is shipped *not configured* (no limits at all).
 
 Tolerance bands are keyed on the **rated differential head** (including the
 shut-off band, which is selected by the rated head, not by the shut-off head).
@@ -30,6 +31,8 @@ Examples
 (0.1, 0.1)
 >>> crit.shutoff_tolerance(Q_(400, "m"))
 (0.05, 0.05)
+>>> crit.npsh.configured
+False
 """
 
 from __future__ import annotations
@@ -41,6 +44,7 @@ from pathlib import Path
 from typing import Optional
 
 from .mechanical_run import MechanicalRunCriteria
+from .npsh import NPSHCriteria
 from .utilities.unit_conversion import Q_
 
 __all__ = ["AcceptanceCriteria", "deviation"]
@@ -60,6 +64,10 @@ _PARTS = {
 
 # The ``mechanical_run`` sub-table is merged key by key (not replaced wholesale).
 _MR_PART = "mechanical running test limits"
+
+# The ``npsh`` sub-table is merged key by key as well.
+_NPSH_PART_UNCONFIGURED = "NPSH margin rule (not configured)"
+_NPSH_PART = "NPSH margin rule"
 
 _DEFAULT_KEY = "api610:12"
 
@@ -152,6 +160,8 @@ class AcceptanceCriteria:
         Human-readable names of the parts not verified against the standard.
     mechanical_run : MechanicalRunCriteria
         Mechanical running test limits (minimum duration, vibration limits).
+    npsh : NPSHCriteria
+        NPSH margin rule (shipped *not configured*: no limits).
     """
 
     key: str
@@ -168,6 +178,7 @@ class AcceptanceCriteria:
     shutoff_extrapolation_q_fraction: float
     unverified: tuple
     mechanical_run: MechanicalRunCriteria = field(default_factory=MechanicalRunCriteria)
+    npsh: NPSHCriteria = field(default_factory=NPSHCriteria)
 
     # ------------------------------------------------------------ discovery
     @staticmethod
@@ -213,11 +224,13 @@ class AcceptanceCriteria:
         base, _title = standards[norm]
         merged = {k: base[k] for k in _PARTS if k in base}
         mr_table = dict(base["mechanical_run"]) if "mechanical_run" in base else None
+        npsh_table = dict(base["npsh"]) if "npsh" in base else None
         verified = bool(base.get("verified", False))
         source = base.get("source", "")
         client_label = None
         overlay_unverified = None
         mr_overridden = False
+        npsh_overridden = False
 
         if client:
             overlays = _client_overlays()
@@ -235,6 +248,9 @@ class AcceptanceCriteria:
             if "mechanical_run" in overlay:
                 mr_table = {**(mr_table or {}), **overlay["mechanical_run"]}
                 mr_overridden = overlay_verified
+            if "npsh" in overlay:
+                npsh_table = {**(npsh_table or {}), **overlay["npsh"]}
+                npsh_overridden = overlay_verified
             verified = verified and overlay_verified
             if overlay.get("source"):
                 source = f"{source} | {client_label}: {overlay['source']}"
@@ -248,6 +264,12 @@ class AcceptanceCriteria:
             overridden_verified = set()
             client = None
 
+        npsh_criteria = (
+            NPSHCriteria.from_table(npsh_table)
+            if npsh_table is not None
+            else NPSHCriteria()
+        )
+
         unverified = []
         if not base.get("verified", False):
             unverified += [
@@ -257,6 +279,12 @@ class AcceptanceCriteria:
             mr_overridden or mr_table.get("verified", False)
         ):
             unverified.append(_MR_PART)
+        if npsh_table is not None and not (
+            npsh_overridden or npsh_table.get("verified", False)
+        ):
+            unverified.append(
+                _NPSH_PART if npsh_criteria.configured else _NPSH_PART_UNCONFIGURED
+            )
         if overlay_unverified:
             unverified.append(overlay_unverified)
 
@@ -281,6 +309,7 @@ class AcceptanceCriteria:
                 if mr_table is not None
                 else MechanicalRunCriteria()
             ),
+            npsh=npsh_criteria,
         )
 
     @classmethod

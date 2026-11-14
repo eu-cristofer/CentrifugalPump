@@ -59,7 +59,8 @@ Each run MUST:
 - [x] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md) — done 2026-11-14
   BLOCKED-PARTIAL: mechanical-run limits unverified. The 4 h duration seed and the notebook vibration seeds (2.0 / 3.0 mm/s) are `verified = false`, and stabilisation is unconfigured.
 - [x] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md) — done 2026-11-14
-- [ ] [Sprint 8 — UC-05 NPSH margin](sprint-8.md)
+- [x] [Sprint 8 — UC-05 NPSH margin](sprint-8.md) — done 2026-11-14
+  BLOCKED-PARTIAL: NPSH margin rule not configured. No ratio or margin is seeded, so the check reports "not configured" until the owner enters the N-553/API rule.
 - [ ] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md)
 - [ ] [Sprint 10 — UC-07 Impeller trim](sprint-10.md)
 - [ ] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md)
@@ -146,3 +147,12 @@ Each run MUST:
   - The node status, the Compliance banner and the report verdict in en and pt now read "APPROVED (unverified criteria)" and "FAILED (unverified limits)".
   - B-34004A's mechanical run therefore reads **FAILED (unverified limits)**: a placeholder limit is never presented as a real test failure.
   - Numbers and pass/fail are unchanged. `tests/fixtures/v1/expected.json` changed only by these status suffixes.
+- S8: **UC-05 NPSH**. `pump.npsh` provides:
+  - NPSHa from suction conditions (absolute pressure, IAPWS vapour pressure, velocity and elevation);
+  - NPSH3 from a 3 % head-drop sweep;
+  - a fitted NPSHr curve with an extrapolation flag;
+  - ratio and margin, plus an NPSH plot.
+- S8: the margin rule is **not seeded**, so the verdict is "not configured" until the owner enters one; a rule entered but unverified is labelled "(unverified criteria)".
+- S8: new **NPSH** node with direct NPSHr points or an NPSHa calculator; the 3 % sweep is library-only. An NPSH section appears in the reports (en/pt).
+- S8: B-34004A has Sundyne's NPSHr points. NPSHr is 1.08 m (3.54 ft) at rated vs NPSHa 2.40 m, a ratio of 2.22, plus a blank B sheet.
+- S8: `DesignPoint(NPSH_available=…)` is accepted as a deprecated alias of `npsha`.

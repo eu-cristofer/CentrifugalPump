@@ -956,6 +956,114 @@
           "stabilisation": {}
         }
       }
+    },
+    {
+      "id": "npsh_a",
+      "kind": "npsh",
+      "x": -20.0,
+      "y": 860.0,
+      "settings": {
+        "pump_tag": "B-34004A",
+        "mode": "points",
+        "degree": 2,
+        "columns": {
+          "q": "gal/min",
+          "npshr": "ft"
+        },
+        "rows": [
+          {
+            "q": 15.2,
+            "npshr": 2.7
+          },
+          {
+            "q": 29.4,
+            "npshr": 2.9
+          },
+          {
+            "q": 34.8,
+            "npshr": 3.3
+          },
+          {
+            "q": 43.5,
+            "npshr": 4.1
+          },
+          {
+            "q": 47.9,
+            "npshr": 3.3
+          }
+        ],
+        "calc_p": {
+          "value": 1.2,
+          "unit": "bar",
+          "ref": "a"
+        },
+        "calc_temp": {
+          "value": 20.0,
+          "unit": "°C"
+        },
+        "calc_z": {
+          "value": 0.0,
+          "unit": "m"
+        },
+        "overrides": {
+          "min_ratio": null,
+          "min_margin": null
+        }
+      }
+    },
+    {
+      "id": "npsh_b",
+      "kind": "npsh",
+      "x": 280.0,
+      "y": 860.0,
+      "settings": {
+        "pump_tag": "B-34004B",
+        "mode": "points",
+        "degree": 2,
+        "columns": {
+          "q": "gal/min",
+          "npshr": "ft"
+        },
+        "rows": [
+          {
+            "q": 15.2,
+            "npshr": null
+          },
+          {
+            "q": 29.4,
+            "npshr": null
+          },
+          {
+            "q": 34.8,
+            "npshr": null
+          },
+          {
+            "q": 43.5,
+            "npshr": null
+          },
+          {
+            "q": 47.9,
+            "npshr": null
+          }
+        ],
+        "calc_p": {
+          "value": 1.2,
+          "unit": "bar",
+          "ref": "a"
+        },
+        "calc_temp": {
+          "value": 20.0,
+          "unit": "°C"
+        },
+        "calc_z": {
+          "value": 0.0,
+          "unit": "m"
+        },
+        "overrides": {
+          "min_ratio": null,
+          "min_margin": null
+        }
+      }
     }
   ],
   "edges": [
@@ -1112,6 +1220,30 @@
     {
       "src_node": "mrt_b",
       "src_port": "MechanicalRunResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "npsh_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "npsh_a",
+      "src_port": "NPSHResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "npsh_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "npsh_b",
+      "src_port": "NPSHResult",
       "dst_node": "report",
       "dst_port": "branch"
     }

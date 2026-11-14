@@ -12,6 +12,8 @@ Classes
 - TestPoint: A specialized point for test or operational data (measured points).
 """
 
+import warnings
+
 import numpy as np
 from .constants import G
 from .utilities.unit_conversion import extract_context, Q_, quantity_factory
@@ -87,6 +89,9 @@ class DesignPoint(BasePoint):
     """
     Specialized version of the BasePoint class, representing a design condition.
 
+    The legacy keyword ``NPSH_available`` is accepted as an alias of ``npsha``
+    (with a ``DeprecationWarning``).
+
     Examples
     --------
     >>> from pump import Q_, Fluid, DesignPoint
@@ -102,6 +107,14 @@ class DesignPoint(BasePoint):
     def __init__(
         self, fluid: Fluid, capacity: Q_, differential_head: Q_, **kwargs: dict[str, Q_]
     ) -> None:
+        if "NPSH_available" in kwargs:
+            warnings.warn(
+                "The 'NPSH_available' keyword is deprecated; use 'npsha'.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            legacy = kwargs.pop("NPSH_available")
+            kwargs.setdefault("npsha", legacy)
         kwargs = {"differential_head": differential_head} | kwargs
         super().__init__(fluid, capacity, **kwargs)
 

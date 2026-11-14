@@ -23,6 +23,7 @@ Built-in matplotlib curve               ``PerformanceCurve.plot_performance_curv
 Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve, criteria=)``
 Acceptance criteria (edition / client)  ``pump.acceptance.AcceptanceCriteria.load(key, client)``
 Mechanical run verdict + trend plot     ``pump.mechanical_run.MechanicalRunChecker`` / ``plot_mechanical_run``
+NPSHa / NPSHr curve / margin verdict    ``pump.npsh.npsh_available`` / ``NPSHrCurve`` / ``check_npsh`` / ``plot_npsh``
 Units everywhere                        ``pump.Q_`` + ``quantity_factory`` (STANDARD_UNITS)
 ======================================  ====================================================
 """
@@ -65,6 +66,8 @@ from .signals import (
     ParameterCheck,
     MechanicalRunSet,
     MechanicalRunResultSignal,
+    NPSHSet,
+    NPSHResultSignal,
 )
 
 
@@ -716,6 +719,112 @@ def check_mechanical_run(
 
 
 # ---------------------------------------------------------------------------
+# NPSH margin  (sprint 8 / UC-05)
+# ---------------------------------------------------------------------------
+
+
+def npsha_from_suction(
+    p_suction: Pressure,
+    temperature: Q_,
+    q: Q_,
+    suction_id: Optional[Q_] = None,
+    z_suction: Optional[Q_] = None,
+) -> Q_:
+    """NPSHa (metres) of water at ``temperature`` from the suction conditions.
+
+    Thin adapter over ``pump.npsh.npsh_available`` (water density and vapour
+    pressure come from ``pump.Water``).  ``suction_id`` adds the velocity head
+    (omit for none); ``z_suction`` is the suction gauge elevation (default 0 m).
+    """
+    from pump.npsh import npsh_available
+
+    return npsh_available(
+        p_suction,
+        Water(temperature),
+        q,
+        suction_id=suction_id,
+        z_suction=z_suction if z_suction is not None else Q_(0.0, "m"),
+    )
+
+
+def check_npsh_set(
+    npsh_set: NPSHSet,
+    rated: Optional[RatedPoint] = None,
+    overrides: Optional[dict] = None,
+) -> NPSHResultSignal:
+    """Judge a pump's NPSH margin: NPSHa against the NPSHr curve at rated Q.
+
+    The criteria come from ``criteria_for(rated).npsh`` when a rated point is
+    wired, else from the library default (seeded as *not configured*, so the
+    verdict is ``info``).  ``overrides`` (user-entered) are merged on top::
+
+        {"min_ratio": float | None, "min_margin": Q_ | None}
+
+    Any override marks the criteria as unverified.  NPSHa is the set's own
+    value, else ``rated.npsha`` (when positive); NPSHr is the fitted curve at
+    ``rated.q`` (or the largest data capacity without a rated point).
+    """
+    from pump.npsh import NPSHCriteria, NPSHrCurve, check_npsh, plot_npsh
+
+    pts = [(q, n) for q, n in npsh_set.points if q is not None and n is not None]
+    if len(pts) < 2:
+        raise BindingError("At least 2 NPSHr points (Q, NPSHr) are required.")
+    pts.sort(key=lambda p: float(p[0].to("m**3/h").magnitude))
+    curve = NPSHrCurve(
+        q=tuple(p[0] for p in pts),
+        npshr=tuple(p[1] for p in pts),
+        degree=int(npsh_set.degree),
+    )
+    q_eval = rated.q if rated is not None else curve.q[-1]
+    npshr = curve.at_rated(q_eval)
+
+    npsha = npsh_set.npsha
+    if npsha is None or not float(npsha.to("m").magnitude) > 0:
+        rated_npsha = getattr(rated, "npsha", None) if rated is not None else None
+        if rated_npsha is not None and float(rated_npsha.to("m").magnitude) > 0:
+            npsha = rated_npsha
+        else:
+            raise BindingError(
+                "NPSHa is not set (enter it, use the calculator, or set it on "
+                "the rated point)."
+            )
+
+    full = criteria_for(rated) if rated is not None else AcceptanceCriteria.default()
+    base = getattr(full, "npsh", None) or NPSHCriteria()
+    label = criteria_label(full)
+    ov = overrides or {}
+
+    min_ratio = ov.get("min_ratio")
+    if min_ratio is None:
+        min_ratio = base.min_ratio
+    min_margin = ov.get("min_margin")
+    if min_margin is None:
+        min_margin = base.min_margin
+    overridden = ov.get("min_ratio") is not None or ov.get("min_margin") is not None
+    source = getattr(base, "source", "") or ""
+    if overridden:
+        source = (source + " | " if source else "") + "user overrides in the node"
+    criteria = NPSHCriteria(
+        min_ratio=min_ratio,
+        min_margin=min_margin,
+        source=source,
+        verified=False if overridden else bool(getattr(base, "verified", False)),
+    )
+    result = check_npsh(npsha, npshr, criteria)
+    try:
+        plot = plot_npsh(curve, npsha, rated.q if rated is not None else None)
+    except Exception:
+        plot = None
+    return NPSHResultSignal(
+        pump_tag=npsh_set.pump_tag,
+        result=result,
+        curve=curve,
+        plot_png=plot,
+        criteria_label=label,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Report image  (UI_SPEC §5.5 / §5.7)
 # ---------------------------------------------------------------------------
 
@@ -789,6 +898,10 @@ def assemble_report_data(
     (no fitted curve) still gets an entry, which then lacks ``test_summary`` /
     ``test_data``.
 
+    A branch with an NPSH result adds an ``"NPSH"`` entry
+    (``{"result", "plot", "table"}``, ``table`` = ``[(Q, NPSHr), ...]`` of
+    Quantities) under its tag; a tag with *only* NPSH is handled the same way.
+
     With two or more fitted branches a top-level ``"comparison"`` entry
     (``{"table", "plot", "at"}``, see :func:`comparison_for`) is added.
     """
@@ -820,6 +933,15 @@ def assemble_report_data(
         mech = getattr(b, "mechanical", None)
         if mech is not None:
             entry["Mechanical Run"] = {"result": mech.result, "plot": mech.plot_png}
+        npsh = getattr(b, "npsh", None)
+        if npsh is not None:
+            curve = npsh.curve
+            table = list(zip(curve.q, curve.npshr)) if curve is not None else []
+            entry["NPSH"] = {
+                "result": npsh.result,
+                "plot": npsh.plot_png,
+                "table": table,
+            }
         if entry:
             test_data[b.pump_tag] = entry
 

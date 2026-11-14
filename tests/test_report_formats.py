@@ -306,3 +306,89 @@ def test_no_comparison_heading_without_comparison(tmp_path, report_data):
     with zipfile.ZipFile(paths["docx"]) as z:
         xml = z.read("word/document.xml").decode("utf-8")
     assert "Comparison" not in xml
+
+
+# --------------------------------------------------------------------------- #
+# NPSH section (UC-05)
+# --------------------------------------------------------------------------- #
+def _npsh_entry(criteria=None):
+    from pump.npsh import NPSHCriteria, NPSHrCurve, check_npsh, plot_npsh
+
+    points = [(15.2, 2.7), (29.4, 2.9), (34.8, 3.3), (43.5, 4.1), (47.9, 3.3)]
+    q = tuple(Q_(a, "gallon/minute") for a, _ in points)
+    r = tuple(Q_(b, "ft") for _, b in points)
+    curve = NPSHrCurve(q, r)
+    rated = Q_(43.1, "gallon/minute")
+    npsha = Q_(2.4, "m")
+    result = check_npsh(npsha, curve.at_rated(rated), criteria or NPSHCriteria())
+    return {
+        "result": result,
+        "plot": plot_npsh(curve, npsha, rated),
+        "table": list(zip(q, r)),
+    }
+
+
+def _npsh_only_data(report_data):
+    return {
+        "equipment_description": report_data["equipment_description"],
+        "design_point": report_data["design_point"],
+        "test_data": {TAG: {"NPSH": _npsh_entry()}},
+    }
+
+
+def test_tex_npsh_section_not_configured(tmp_path, report_data):
+    report_data["test_data"][TAG]["NPSH"] = _npsh_entry()
+    out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "np.tex"))
+    tex = open(out, encoding="utf-8").read()
+    assert "NPSH available" in tex and "NPSH required" in tex
+    assert "Ratio" in tex and "Margin" in tex
+    assert "not configured" in tex
+    assert "PASSED (unverified" not in tex and "FAILED (unverified" not in tex
+    assert tex.count(r"\begin{tabular}") == 4  # summary + data + NPSH + NPSH points
+    assert len(list((tmp_path / "np_figs").glob("*.png"))) == 2
+
+
+def test_tex_npsh_section_unverified_verdict(tmp_path, report_data):
+    from pump.npsh import NPSHCriteria
+
+    report_data["test_data"][TAG]["NPSH"] = _npsh_entry(NPSHCriteria(min_ratio=3.0))
+    out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "np.tex"))
+    tex = open(out, encoding="utf-8").read()
+    assert "FAILED (unverified criteria)" in tex
+    assert "not configured" not in tex
+
+
+def test_tex_npsh_only_entry_and_pt(tmp_path, report_data):
+    out = LatexReportGenerator("pt").generate_tex(
+        _npsh_only_data(report_data), str(tmp_path / "np.tex")
+    )
+    tex = open(out, encoding="utf-8").read()
+    assert "NPSH disponível" in tex and "NPSH requerido" in tex
+    assert "Margem" in tex and "não configurado" in tex
+    assert len(list((tmp_path / "np_figs").glob("*.png"))) == 1
+
+
+def test_docx_npsh_section(tmp_path, report_data):
+    report_data["test_data"][TAG]["NPSH"] = _npsh_entry()
+    paths, errors = export_reports(
+        report_data, ["docx"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "NPSH" in xml and "NPSH required" in xml and "not configured" in xml
+
+
+def test_docx_npsh_only_entry(tmp_path, report_data):
+    paths, errors = export_reports(
+        _npsh_only_data(report_data), ["docx"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "NPSH available" in xml and TAG in xml
+
+
+def test_no_npsh_heading_without_npsh(tmp_path, report_data):
+    out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "n.tex"))
+    assert "NPSH required" not in open(out, encoding="utf-8").read()

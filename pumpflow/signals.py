@@ -364,6 +364,40 @@ class MechanicalRunResultSignal:
 
 
 # ---------------------------------------------------------------------------
+# 5c. NPSH margin — produced by the NPSH node  (sprint 8 / UC-05)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class NPSHSet:
+    """A pump's NPSHr test points plus the NPSHa they are judged against.
+
+    ``points`` is a tuple of ``(Q_capacity, Q_npshr)`` pairs; ``npsha`` is the
+    available NPSH (``None`` when the node has none of its own, then the rated
+    point's value is used); ``mode`` records where NPSHa came from
+    (``"points"`` = entered / rated, ``"calculator"`` = computed from suction
+    conditions); ``degree`` is the NPSHr polynomial degree.
+    """
+
+    pump_tag: str  # physical unit TAG (unique per branch)
+    points: tuple = ()  # ((Q_ capacity, Q_ npshr), ...)
+    npsha: Optional[Q_] = None
+    mode: str = "points"
+    degree: int = 2
+
+
+@dataclass(frozen=True)
+class NPSHResultSignal:
+    """Verdict of the NPSH margin check (``pump.npsh.NPSHResult``)."""
+
+    pump_tag: str
+    result: Any  # pump.npsh.NPSHResult
+    curve: Any = None  # pump.npsh.NPSHrCurve
+    plot_png: Any = None  # io.BytesIO PNG | None
+    criteria_label: str = ""
+
+
+# ---------------------------------------------------------------------------
 # 6. ReportBundle — assembled inside Report Export (UI_SPEC §5.7 / §3)
 # ---------------------------------------------------------------------------
 
@@ -379,6 +413,7 @@ class BranchBundle:
     plot_png: Any = None  # io.BytesIO PNG | None
     equipment: dict = field(default_factory=dict)  # per-pump key/value sub-table
     mechanical: Optional[MechanicalRunResultSignal] = None  # sprint 6
+    npsh: Optional[NPSHResultSignal] = None  # sprint 8
 
 
 @dataclass(frozen=True)
