@@ -67,6 +67,15 @@ Each run MUST:
 - [ ] [Sprint 13 — UC-10 Educational mode + worked notebooks](sprint-13.md)
 - [ ] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md)
 
+## Open items needing owner input
+
+- **B-34004A mechanical-run verdict depends on vibration limits.**
+  - Against the placeholder 3.0 mm/s seed limit, B-34004A's unfiltered vibration of 0.16 in/s (4.06 mm/s) reads as **FAILED**.
+  - That limit came from the reference notebook and isn't confirmed for this OH6 pump.
+  - The API 610 vibration limits supplied by the owner will decide the real verdict.
+  - Enter them in `pump/standards/api610.toml` (`mechanical_run` roles, `verified = true`, with the clause as `source`) or as overrides in the Mechanical Run node.
+- **Performance tolerances (S5).** The API 610 8th-edition and N-553 head, shut-off, power and efficiency tolerances are unverified seeds.
+
 ## Changelog
 
 - Registered project 001_masterpiece (14 sprints) on `feat/masterpiece`.

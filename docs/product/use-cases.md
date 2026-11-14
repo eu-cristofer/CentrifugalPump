@@ -89,6 +89,8 @@
   `tests/test_mechanical_run_gui.py`.
 - **Open:** vibration / stabilisation limits must be confirmed by the owner
   (shipped `verified = false`).
+  - Against the placeholder 3.0 mm/s seed limit, B-34004A's unfiltered vibration of 0.16 in/s (4.06 mm/s) reads as **FAILED**.
+  - That limit came from the reference notebook and isn't confirmed for this OH6 pump, so the API 610 vibration limits the owner supplies will decide the real verdict.
 
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
