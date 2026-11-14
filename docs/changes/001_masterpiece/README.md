@@ -52,7 +52,7 @@ Each run MUST:
   - Split per the spec's overrun clause:
     - [x] 2a — signals carry Quantities, binding unit-free — done 2026-11-14
     - [x] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate` — done 2026-11-14
-- [ ] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md)
+- [x] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md) — done 2026-11-14
 - [ ] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md)
 - [ ] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md)
 - [ ] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md)
@@ -82,3 +82,14 @@ Each run MUST:
 - S2b: old v1 files migrate automatically on open. Missing `*_unit` keys now take the canonical unit, never the active preset, which fixes a latent gpm/m³/h mix-up, and the stale rated `"unit"` key is dropped.
 - S2b: the shipped examples and the B-34004A reference were re-saved as v2 with bit-identical results. Your own `examples/user/*` v1 files are untouched and still evaluate identically.
 - S2b: found that Pint's `Hz` is 1/s while rpm is rev/min with 2π rad per rev. Speed units must use `revolution/second`, never `Hz`; this is noted in sprint 3.
+- S3: every dimensional input has a unit choice.
+  - New dimensions: pressure (kgf/cm², bar, psi, kPa, MPa, mH₂O) with a **g/a** reference, speed (rpm, rev/s), length, NPSH, efficiency and vibration velocity, plus extended SI/US presets.
+  - Rated N, η, shut-off and NPSHa, the correction target speed, Point pressures and plot y-limits now use unit fields.
+- S3: **Test Points has a unit per column**.
+  - Changing a column's unit converts the stored values, which fixes the old relabel-only pressure combo.
+  - g↔a conversion is lossless (5 decimals).
+  - Pasted data can carry a header row, e.g. `Q [gpm]`, `P_dis [psi g]`.
+- S3: **B-34004A re-entered exactly as Sundyne printed it** (gpm, psi g, °F, hp, pump rpm), with no hand conversion. Results change only by the old rounding: H 339.546 m (+0.0006 %), P 24.603 kW, η 36.80 %, still APPROVED.
+- S3: on disk, units are always written in one compact Pint spelling, and unset plot limits are stored as bare `null`.
+- S3: all other shipped projects evaluate bit-identically to S2.
+- S3: the remaining plain spin boxes are dimensionless (tolerance %, SG).

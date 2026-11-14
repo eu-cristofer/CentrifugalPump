@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetIte
 
 from pump import Q_
 
+from .. import units
 from ..binding import BindingError, correct_curve, make_fluid
 from ..numfmt import fmt
 from ..signals import RatedPoint, TestPointSet
@@ -42,9 +43,11 @@ class SpeedCorrectionNode(BaseNode):
     outputs = [PortSpec("CorrectedCurve", "CorrectedCurve")]
 
     def default_settings(self) -> Dict:
+        su = units.PREFS.default_unit("speed")
         return {
             "lock_to_rated": True,
-            "target_speed": 1750.0,
+            "target_speed": units.convert_display(1750.0, "speed", "rpm", su),
+            "target_speed_unit": su,
             "apply_speed": True,
             "apply_density": True,
             "apply_viscosity": False,
@@ -56,6 +59,12 @@ class SpeedCorrectionNode(BaseNode):
         rated = self.first(inputs, "RatedPoint")
         tps = self.first(inputs, "TestPointSet")
         return rated, tps
+
+    def _manual_target(self):
+        """The manual target speed as a Quantity in rpm."""
+        s = self.settings
+        unit = s.get("target_speed_unit") or "rpm"
+        return Q_(float(s["target_speed"]), units.pint_str("speed", unit)).to("rpm")
 
     def compute(self, inputs) -> Dict[str, object]:
         rated, tps = self._resolve(inputs)
@@ -73,12 +82,10 @@ class SpeedCorrectionNode(BaseNode):
             # Forced speed correction: no rated point → manual target speed.
             # Density correction needs a target fluid, so it runs only when a
             # Fluid node is connected.
-            target = Q_(float(s["target_speed"]), "rpm")
+            target = self._manual_target()
             apply_density = s["apply_density"] and override_fluid is not None
         else:
-            target = (
-                rated.speed if s["lock_to_rated"] else Q_(float(s["target_speed"]), "rpm")
-            )
+            target = rated.speed if s["lock_to_rated"] else self._manual_target()
             apply_density = s["apply_density"]
         try:
             corrected = correct_curve(
@@ -123,8 +130,21 @@ class SpeedCorrectionNode(BaseNode):
         )
         banner = ui.Banner()
 
-        target = ui.spin(s["target_speed"], 0, 1e5, 10, 0, None)
-        target.setEnabled(not s["lock_to_rated"])
+        target = ui.UnitField(
+            "speed",
+            s["target_speed"],
+            s.get("target_speed_unit"),
+            on_change=lambda: on_target(),
+            hi=1e5,
+            step=10,
+            decimals=3,
+        )
+
+        def set_target_enabled(flag: bool) -> None:
+            target.spin.setEnabled(flag)
+            target.combo.setEnabled(flag)
+
+        set_target_enabled(not s["lock_to_rated"])
         lock = ui.checkbox("Lock target speed to rated N", s["lock_to_rated"], None)
         sp = ui.checkbox("Speed (affinity) correction", s["apply_speed"], None)
         de = ui.checkbox(
@@ -161,7 +181,7 @@ class SpeedCorrectionNode(BaseNode):
             # lock control is disabled.  Density correction needs a target fluid,
             # so it stays available whenever a rated point *or* a Fluid node is
             # connected.
-            target.setEnabled(not s["lock_to_rated"] or not has_rated)
+            set_target_enabled(not s["lock_to_rated"] or not has_rated)
             lock.setEnabled(has_rated)
             de.setEnabled(has_rated or has_fluid)
             corrected = getattr(self, "_last", None) if self.state == "ok" else None
@@ -220,10 +240,12 @@ class SpeedCorrectionNode(BaseNode):
             s["lock_to_rated"] = bool(v)
             refresh()  # refresh() owns the manual-target enabled state
 
+        def on_target():
+            s["target_speed"] = target.magnitude()
+            s["target_speed_unit"] = target.unit_label()
+            refresh()
+
         lock.toggled.connect(set_lock)
-        target.valueChanged.connect(
-            lambda v: (s.__setitem__("target_speed", v), refresh())
-        )
         sp.toggled.connect(lambda v: (s.__setitem__("apply_speed", bool(v)), refresh()))
         de.toggled.connect(
             lambda v: (s.__setitem__("apply_density", bool(v)), refresh())
@@ -236,7 +258,7 @@ class SpeedCorrectionNode(BaseNode):
         )
 
         dlg.add(ui.section("Target & corrections"))
-        dlg.add(ui.row("Target speed", target, "rpm"))
+        dlg.add(target.row("Target speed"))
         dlg.add(ui.row("", lock))
         dlg.add(ui.row("", sp))
         dlg.add(ui.row("", de))

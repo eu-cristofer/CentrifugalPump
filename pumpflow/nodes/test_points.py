@@ -5,15 +5,17 @@ Source node.  An editable, spreadsheet-like grid of raw measured rows for one
 **physical pump** (the branch identity).  Emits a ``TestPointSet``.
 
 - comma- or dot-decimals accepted (Excel-friendly paste)
+- every column has its own display unit (combo above the column); the rows are
+  stored in those units and converted only when the unit is changed
 - read-only computed ``Head = (P_dis − P_suc)/(ρ·g)`` and ``η`` columns, live
 - ≥ 3 points required for a degree-3 fit; warns if a shut-off point is missing
 """
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -21,11 +23,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QVBoxLayout,
     QWidget,
 )
 
 from pump import Q_, Pressure
 
+from .. import units
 from ..binding import row_efficiency, row_head
 from ..numfmt import fmt, parse_decimal
 from ..persistence import testset_from_json, testset_pressure_unit
@@ -35,46 +39,87 @@ from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
 
-_COLS = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
-_UNITS = ["m³/h", "", "", "°C", "rpm", "kW", "m", "%"]
+_NAMES = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
+_ALL_KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power", "head", "eff"]
+_KEYS = _ALL_KEYS[:6]  # editable columns
 _EDITABLE = {0, 1, 2, 3, 4, 5}
-_KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power"]
+_PRESSURE_KEYS = ("p_suc", "p_dis")
 _DEFAULT_LABEL = "Water at T_water"
 
 
-def _row_from_dict(r: dict, unit: str) -> TestRow:
-    """Wrap one v1 settings row (plain floats) into a ``TestRow`` of Quantities.
+def canonical_columns(pressure_label: str = "bar") -> Dict[str, str]:
+    """Exchange/canonical column units: m³/h · pressure · °C · rpm · kW · m · %."""
+    cols = {k: units.canonical_unit(dim) for k, dim in units.COLUMN_DIMENSIONS.items()}
+    cols["p_suc"] = cols["p_dis"] = pressure_label
+    return cols
 
-    ``unit`` is the table's pressure unit (``"bar"`` or ``"kgf/cm**2"``).  Blank
-    cells become 0.0 (temperature: 25 °C), exactly as before.
+
+def default_columns(prefs=None) -> Dict[str, str]:
+    """Column units of a fresh table: the active preset's display units."""
+    prefs = prefs if prefs is not None else units.PREFS
+    return {k: prefs.default_unit(dim) for k, dim in units.COLUMN_DIMENSIONS.items()}
+
+
+def _pint_of(columns: dict, key: str) -> str:
+    dim = units.COLUMN_DIMENSIONS[key]
+    return units.pint_str(dim, columns.get(key) or units.canonical_unit(dim))
+
+
+def _row_from_dict(r: dict, columns: dict, pressure_ref: str = "g") -> TestRow:
+    """Wrap one settings row (plain numbers in the column units) into a ``TestRow``.
+
+    Blank cells become 0.0 (temperature: 25 °C converted to the column unit),
+    exactly as before.  ``head`` / ``eff`` overrides stay ``None`` when blank.
     """
+    cols = {**canonical_columns(), **(columns or {})}
+
+    def num(key: str, default: float = 0.0) -> float:
+        v = r.get(key)
+        return default if v is None else float(v)
+
+    if cols["temp_c"] == "°C":
+        t_default = 25.0
+    else:
+        t_default = Q_(25.0, "degC").to(_pint_of(cols, "temp_c")).magnitude
+
     head = r.get("head")
     eff = r.get("eff")
     return TestRow(
-        q=Q_(float(r.get("q") or 0.0), "m**3/h"),
-        p_suction=Pressure(Q_(float(r.get("p_suc") or 0.0), unit), "g"),
-        p_discharge=Pressure(Q_(float(r.get("p_dis") or 0.0), unit), "g"),
-        temperature=Q_(float(r.get("temp_c") or 25.0), "degC"),
-        speed=Q_(float(r.get("n") or 0.0), "rpm"),
-        power=Q_(float(r.get("power") or 0.0), "kW"),
-        head=None if head is None else Q_(float(head), "m"),
-        efficiency=None if eff is None else Q_(float(eff), "percent"),
+        q=Q_(num("q"), _pint_of(cols, "q")),
+        p_suction=Pressure(Q_(num("p_suc"), _pint_of(cols, "p_suc")), pressure_ref),
+        p_discharge=Pressure(Q_(num("p_dis"), _pint_of(cols, "p_dis")), pressure_ref),
+        temperature=Q_(num("temp_c", t_default), _pint_of(cols, "temp_c")),
+        speed=Q_(num("n"), _pint_of(cols, "n")),
+        power=Q_(num("power"), _pint_of(cols, "power")),
+        head=None if head is None else Q_(float(head), _pint_of(cols, "head")),
+        efficiency=None if eff is None else Q_(float(eff), _pint_of(cols, "eff")),
     )
 
 
-def testset_settings(tps: TestPointSet):
-    """Flatten a ``TestPointSet`` to the v1 node-settings ``(unit, rows)``.
+def testset_settings(tps: TestPointSet, columns: Optional[dict] = None) -> dict:
+    """Flatten a ``TestPointSet`` to the node-settings ``columns`` / ``rows`` shape.
 
-    The pressure unit comes from :func:`persistence.testset_pressure_unit`.
+    Without ``columns`` the exchange-canonical units are used (m³/h, the set's
+    bar / kgf/cm² pressure unit, °C, rpm, kW, m, %) so values are untouched.
+    With ``columns`` (display labels) every value is converted into them.
+
+    Returns ``{"columns", "pressure_ref", "rows"}``.
     """
-    unit = testset_pressure_unit(tps)
+    pu = testset_pressure_unit(tps)  # "bar" | "kgf/cm**2"
+    base = canonical_columns(units.label_for("pressure", pu) or "bar")
+    ref = tps.rows[0].p_suction.reference if tps.rows else "g"
+
+    def p_mag(p: Pressure) -> float:
+        q = p.gauge() if ref == "g" else p.absolute()
+        return q.to(pu).magnitude
+
     rows = []
     for r in tps.rows:
         rows.append(
             {
                 "q": r.q.to("m**3/h").magnitude,
-                "p_suc": r.p_suction.value.to(unit).magnitude,
-                "p_dis": r.p_discharge.value.to(unit).magnitude,
+                "p_suc": p_mag(r.p_suction),
+                "p_dis": p_mag(r.p_discharge),
                 "temp_c": r.temperature.to("degC").magnitude,
                 "n": r.speed.to("rpm").magnitude,
                 "power": r.power.to("kW").magnitude,
@@ -84,7 +129,38 @@ def testset_settings(tps: TestPointSet):
                 else r.efficiency.to("percent").magnitude,
             }
         )
-    return unit, rows
+    target = dict(base)
+    if columns:
+        target.update(columns)
+        for key, dim in units.COLUMN_DIMENSIONS.items():
+            if target[key] == base[key]:
+                continue
+            for row in rows:
+                if row.get(key) is not None:
+                    row[key] = units.convert_display(
+                        row[key], dim, base[key], target[key]
+                    )
+    return {"columns": target, "pressure_ref": ref, "rows": rows}
+
+
+def parse_paste_header(cells: List[str]):
+    """Parse the first pasted line as unit headers.
+
+    Returns ``[(key, label, ref), ...]`` when **every** cell parses as a known
+    column header (unique keys), else ``None`` (the line is data).
+    """
+    if not cells or any(not c.strip() for c in cells):
+        return None
+    parsed = []
+    for c in cells:
+        try:
+            parsed.append(units.parse_unit_header(c))
+        except ValueError:
+            return None
+    keys = [p[0] for p in parsed]
+    if len(set(keys)) != len(keys):
+        return None
+    return parsed
 
 
 class TestPointsTableNode(BaseNode):
@@ -100,19 +176,21 @@ class TestPointsTableNode(BaseNode):
 
     def default_settings(self) -> Dict:
         tps = testset_from_json(SINGLE_PUMP_JSON)
-        unit, rows = testset_settings(tps)
+        shape = testset_settings(tps, default_columns())
         return {
             "pump_tag": tps.pump_tag,
-            "unit": unit,
             "fluid_choice": "",  # ""=first wired (default), "__default__"=water, or a name
-            "rows": rows,
+            "columns": shape["columns"],
+            "pressure_ref": shape["pressure_ref"],
+            "rows": shape["rows"],
         }
 
     # -- payload -----------------------------------------------------------
     def to_signal(self, test_density=None) -> TestPointSet:
         s = self.settings
-        unit = str(s["unit"])
-        rows = [_row_from_dict(r, unit) for r in s["rows"]]
+        columns = s.get("columns") or canonical_columns()
+        ref = s.get("pressure_ref", "g")
+        rows = [_row_from_dict(r, columns, ref) for r in s["rows"]]
         return TestPointSet(
             pump_tag=str(s["pump_tag"]).strip(),
             rows=tuple(rows),
@@ -143,6 +221,11 @@ class TestPointsTableNode(BaseNode):
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
         s = self.settings
+        s["columns"] = {**canonical_columns(), **(s.get("columns") or {})}
+        s.setdefault("pressure_ref", "g")
+        cols = s["columns"]
+        dims = units.COLUMN_DIMENSIONS
+
         dlg = ui.PropertyDialog(
             parent,
             "Test Points Table",
@@ -152,7 +235,10 @@ class TestPointsTableNode(BaseNode):
         banner = ui.Banner()
 
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. B-2351105A")
-        unit = ui.combo([("bar", "bar"), ("kgf/cm²", "kgf/cm**2")], s["unit"], None)
+        ref_combo = ui.combo(
+            [("g (gauge)", "g"), ("a (absolute)", "a")], s["pressure_ref"], None
+        )
+        ref_combo.setObjectName("PressureRef")
 
         fluids = getattr(self, "_fluids", [])
         fluid_pick = ui.combo(
@@ -161,13 +247,22 @@ class TestPointsTableNode(BaseNode):
             None,
         )
 
-        table = QTableWidget(len(s["rows"]), len(_COLS))
-        table.setHorizontalHeaderLabels(
-            [f"{c}\n[{u}]" if u else c for c, u in zip(_COLS, _UNITS)]
-        )
+        table = QTableWidget(len(s["rows"]), len(_NAMES))
         table.verticalHeader().setVisible(True)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setObjectName("TestGrid")
+
+        def header_text(i: int) -> str:
+            key = _ALL_KEYS[i]
+            lab = cols[key]
+            if key in _PRESSURE_KEYS:
+                lab = f"{lab} {s['pressure_ref']}"
+            return f"{_NAMES[i]} [{lab}]"
+
+        def update_headers():
+            table.setHorizontalHeaderLabels([header_text(i) for i in range(len(_NAMES))])
+
+        update_headers()
 
         def recompute_status():
             ok, msg = self.to_signal().is_valid()
@@ -190,13 +285,15 @@ class TestPointsTableNode(BaseNode):
 
         def refresh_computed(row_idx: int):
             r = s["rows"][row_idx]
-            tr = _row_from_dict(r, s["unit"])
+            tr = _row_from_dict(r, cols, s["pressure_ref"])
             test_rho = getattr(self, "_test_density", None)
             try:
                 head_q = row_head(tr, test_rho)
                 eff_q = row_efficiency(tr, head_q, test_rho)
-                head = head_q.to("m").magnitude
-                eff = None if eff_q is None else eff_q.to("percent").magnitude
+                head = head_q.to(_pint_of(cols, "head")).magnitude
+                eff = (
+                    None if eff_q is None else eff_q.to(_pint_of(cols, "eff")).magnitude
+                )
             except Exception:
                 head, eff = 0.0, None
             _set_ro(table, row_idx, 6, fmt(head, 2))
@@ -225,17 +322,59 @@ class TestPointsTableNode(BaseNode):
             table.blockSignals(False)
             recompute_status()
 
+        # -- unit headers (one combo per column; one shared by both pressures)
+        strip = ui.UnitHeaderStrip(table)
+        headers: Dict[str, ui.UnitColumnHeader] = {}
+
+        def on_col_unit(keys):
+            def handler(old: str, new: str):
+                for k in keys:
+                    for r in s["rows"]:
+                        if r.get(k) is not None:
+                            r[k] = units.convert_display(r[k], dims[k], old, new)
+                    cols[k] = new
+                update_headers()
+                fill()
+                recompute_status()
+
+            return handler
+
+        for i, key in enumerate(_ALL_KEYS):
+            if key == "p_dis":
+                continue
+            keys = _PRESSURE_KEYS if key == "p_suc" else (key,)
+            headers[key] = ui.UnitColumnHeader(
+                table,
+                i,
+                dims[key],
+                cols[key],
+                on_col_unit(keys),
+                span=len(keys),
+                strip=strip,
+            )
+        strip.headers = list(headers.values())
+
+        def on_ref_changed(_=None):
+            new = ref_combo.currentData()
+            old = s["pressure_ref"]
+            if new == old:
+                return
+            atm = units.atm_in(cols["p_suc"])
+            delta = atm if new == "a" else -atm
+            for r in s["rows"]:
+                for k in _PRESSURE_KEYS:
+                    if r.get(k) is not None:
+                        r[k] = r[k] + delta
+            s["pressure_ref"] = new
+            update_headers()
+            fill()
+            recompute_status()
+
         table.itemChanged.connect(on_cell_changed)
         tag.textChanged.connect(
             lambda v: (s.__setitem__("pump_tag", v), recompute_status())
         )
-        unit.currentIndexChanged.connect(
-            lambda _: (
-                s.__setitem__("unit", unit.currentData()),
-                fill(),
-                recompute_status(),
-            )
-        )
+        ref_combo.currentIndexChanged.connect(on_ref_changed)
 
         def on_pick():
             s["fluid_choice"] = fluid_pick.currentData()
@@ -247,8 +386,11 @@ class TestPointsTableNode(BaseNode):
         fluid_pick.currentIndexChanged.connect(lambda _=None: on_pick())
 
         # toolbar
+        def blank_row() -> dict:
+            return {k: None for k in _ALL_KEYS}
+
         def add_row():
-            s["rows"].append({k: None for k in _KEYS} | {"head": None, "eff": None})
+            s["rows"].append(blank_row())
             fill()
             recompute_status()
 
@@ -270,22 +412,70 @@ class TestPointsTableNode(BaseNode):
             fill()
             recompute_status()
 
+        def sync_header_widgets():
+            for key, h in headers.items():
+                h.set_unit(cols[key], notify=False)
+            ref_combo.blockSignals(True)
+            idx = ref_combo.findData(s["pressure_ref"])
+            if idx >= 0:
+                ref_combo.setCurrentIndex(idx)
+            ref_combo.blockSignals(False)
+
         def paste():
             text = QGuiApplication.clipboard().text()
             if not text.strip():
                 return
+            lines = [ln for ln in text.splitlines() if ln.strip()]
+
+            def split(line: str) -> List[str]:
+                return line.replace(";", "\t").split("\t")
+
+            hdr = parse_paste_header(split(lines[0]))
+            hdr_labels: Dict[str, str] = {}
+            if hdr:
+                col_keys = [h[0] for h in hdr]
+                data_lines = lines[1:]
+                for key, label, ref in hdr:
+                    if label is not None:
+                        hdr_labels[key] = label
+                    if ref is not None:
+                        s["pressure_ref"] = ref
+                # Pressures share one unit: the first labelled pressure header wins.
+                p_target = next(
+                    (hdr_labels[k] for k in col_keys if k in _PRESSURE_KEYS and k in hdr_labels),
+                    cols["p_suc"],
+                )
+                for key, label in hdr_labels.items():
+                    cols[key] = p_target if key in _PRESSURE_KEYS else label
+                if any(k in _PRESSURE_KEYS for k in col_keys):
+                    cols["p_suc"] = cols["p_dis"] = p_target
+            else:
+                col_keys = list(_KEYS)
+                data_lines = lines
+                p_target = cols["p_suc"]
+
             new_rows = []
-            for line in text.splitlines():
-                if not line.strip():
-                    continue
-                cells = line.replace(";", "\t").split("\t")
-                rd = {k: None for k in _KEYS} | {"head": None, "eff": None}
-                for c, key in enumerate(_KEYS):
+            for line in data_lines:
+                cells = split(line)
+                rd = blank_row()
+                for c, key in enumerate(col_keys):
                     if c < len(cells):
-                        rd[key] = parse_decimal(cells[c], None)
+                        v = parse_decimal(cells[c], None)
+                        if (
+                            v is not None
+                            and key in _PRESSURE_KEYS
+                            and key in hdr_labels
+                            and hdr_labels[key] != p_target
+                        ):
+                            v = units.convert_display(
+                                v, "pressure", hdr_labels[key], p_target
+                            )
+                        rd[key] = v
                 new_rows.append(rd)
             if new_rows:
                 s["rows"] = new_rows
+                sync_header_widgets()
+                update_headers()
                 fill()
                 recompute_status()
 
@@ -306,19 +496,27 @@ class TestPointsTableNode(BaseNode):
             bl.addWidget(b)
         bl.addStretch(1)
 
+        grid = QWidget()
+        gl = QVBoxLayout(grid)
+        gl.setContentsMargins(0, 0, 0, 0)
+        gl.setSpacing(2)
+        gl.addWidget(strip)
+        gl.addWidget(table)
+
         dlg.add(ui.section("Pump identity"))
         dlg.add(ui.row("Pump TAG", tag))
-        dlg.add(ui.row("Pressure unit", unit))
+        dlg.add(ui.row("Pressure reference", ref_combo))
         if fluids:
             dlg.add(ui.row("Fluid source", fluid_pick))
         dlg.add(ui.hline())
         dlg.add(ui.section("Measured points"))
         dlg.add(bar)
-        dlg.add(table)
+        dlg.add(grid)
         dlg.add(banner)
         fill()
         recompute_status()
         dlg.resize(760, 620)
+        QTimer.singleShot(0, strip.sync)
         return dlg
 
 

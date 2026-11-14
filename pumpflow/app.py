@@ -29,7 +29,7 @@ from .canvas.scene import GraphScene
 from .canvas.view import GraphView
 from .nodes import make_node
 from .nodes.registry import NODE_KINDS
-from .nodes.test_points import testset_settings
+from .nodes.test_points import canonical_columns, testset_settings
 from .persistence import (
     json_from_signals,
     rated_from_json,
@@ -422,7 +422,8 @@ class MainWindow(QMainWindow):
             QPointF(-660, 470),
             settings={
                 "pump_tag": SECOND_PUMP_POINTS["pump_tag"],
-                "unit": "bar",
+                "columns": canonical_columns("bar"),
+                "pressure_ref": "g",
                 "rows": [
                     {
                         "q": _d(p.get("q")),
@@ -540,11 +541,15 @@ class MainWindow(QMainWindow):
                     "head": rated.head.to("m").magnitude,
                     "head_unit": "m",
                     "n": rated.speed.to("rpm").magnitude,
+                    "n_unit": "rpm",
                     "power": rated.power.to("kW").magnitude,
                     "power_unit": "kW",
                     "eff": _mag_or(rated.efficiency, "percent", 0),
+                    "eff_unit": "%",
                     "head_shutoff": _mag_or(rated.head_shutoff, "m", 0),
+                    "head_shutoff_unit": "m",
                     "npsha": _mag_or(rated.npsha, "m", 0),
+                    "npsha_unit": "m",
                     "dens_rel": rated.density_rel,
                     "dens_unit": "kg/m³",
                     "visc": rated.viscosity.to("cSt").magnitude,
@@ -553,13 +558,10 @@ class MainWindow(QMainWindow):
                 }
             )
         if test_node:
-            unit, rows = testset_settings(tps)
+            # Exchange JSON is m³/h · bar|kgf/cm² · °C · rpm · kW · m · %: the
+            # table adopts those column units, values untouched.
             test_node.logic.settings.update(
-                {
-                    "pump_tag": tps.pump_tag,
-                    "unit": unit,
-                    "rows": rows,
-                }
+                {"pump_tag": tps.pump_tag, **testset_settings(tps)}
             )
         self.scene.evaluate()
         self.statusBar().showMessage(f"Imported {path}", 4000)

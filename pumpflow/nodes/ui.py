@@ -10,10 +10,12 @@ dialog", left settings pane + main area).
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
 from PySide6.QtGui import QFont
+
+from pump import Q_, Pressure
 
 from ..style import ui_font
 from PySide6.QtWidgets import (
@@ -285,6 +287,12 @@ class UnitField:
             self.unit = new_unit
         self._fire()
 
+    def set_unit(self, label: str) -> None:
+        """Programmatically switch the display unit (converts the shown value)."""
+        idx = self.combo.findData(label)
+        if idx >= 0:
+            self.combo.setCurrentIndex(idx)
+
     # -- reads -------------------------------------------------------------
     def magnitude(self) -> float:
         return float(self.spin.value())
@@ -299,6 +307,233 @@ class UnitField:
     # -- layout ------------------------------------------------------------
     def row(self, label: str) -> QWidget:
         return unit_row(label, self.spin, self.combo)
+
+
+class PressureField:
+    """A pressure field: ``UnitField("pressure")`` plus a gauge/absolute combo.
+
+    Constructor: ``PressureField(value, unit=None, ref="g", *, prefs=None,
+    on_change=None, lo=-1e6, hi=1e6, step=0.1, decimals=3)``.
+
+    Reads: :meth:`magnitude`, :meth:`unit_label`, :meth:`ref`,
+    :meth:`pressure` (a ``pump.Pressure``).  Layout: :meth:`row`.
+
+    Switching g<->a converts the displayed value by adding / subtracting the
+    standard atmosphere expressed in the *current* unit.  Two fields that must
+    share one unit and reference are tied with :func:`link_pressure_fields`
+    (or ``add_listener`` / :meth:`set_unit` / :meth:`set_ref` by hand).
+    """
+
+    def __init__(
+        self,
+        value: float,
+        unit: Optional[str] = None,
+        ref: str = "g",
+        *,
+        prefs=None,
+        on_change: Optional[Callable] = None,
+        lo: float = -1e6,
+        hi: float = 1e6,
+        step: float = 0.1,
+        decimals: int = 5,  # g<->a adds 1.01325 bar: keep it lossless
+    ):
+        self._on_change = on_change
+        self._listeners: List[Callable] = []
+        self.unit_field = UnitField(
+            "pressure",
+            value,
+            unit,
+            prefs=prefs,
+            on_change=self._inner_changed,
+            lo=lo,
+            hi=hi,
+            step=step,
+            decimals=decimals,
+        )
+        self.spin = self.unit_field.spin
+        self.combo = self.unit_field.combo
+        self._last_unit = self.unit_field.unit
+        self._ref = ref if ref in ("g", "a") else "g"
+        self.ref_combo = combo([("g", "g"), ("a", "a")], self._ref, None)
+        self.ref_combo.currentIndexChanged.connect(self._on_ref_changed)
+
+    # -- wiring ------------------------------------------------------------
+    def add_listener(self, fn: Callable) -> None:
+        """``fn(kind, field)`` is called with ``kind`` in ``{"unit", "ref"}``."""
+        self._listeners.append(fn)
+
+    def _notify(self, kind: str) -> None:
+        for fn in list(self._listeners):
+            fn(kind, self)
+
+    def _fire(self) -> None:
+        if self._on_change:
+            self._on_change()
+
+    def _inner_changed(self) -> None:
+        if self.unit_field.unit != self._last_unit:
+            self._last_unit = self.unit_field.unit
+            self._notify("unit")
+        self._fire()
+
+    def _on_ref_changed(self, _idx=None) -> None:
+        new = self.ref_combo.currentData()
+        if new and new != self._ref:
+            atm = _units.atm_in(self.unit_field.unit)
+            v = float(self.spin.value()) + (atm if new == "a" else -atm)
+            self.spin.blockSignals(True)
+            self.spin.setValue(v)
+            self.spin.blockSignals(False)
+            self._ref = new
+            self._notify("ref")
+        self._fire()
+
+    def set_unit(self, label: str) -> None:
+        if label != self.unit_field.unit:
+            self.unit_field.set_unit(label)
+
+    def set_ref(self, ref: str) -> None:
+        if ref != self._ref:
+            idx = self.ref_combo.findData(ref)
+            if idx >= 0:
+                self.ref_combo.setCurrentIndex(idx)
+
+    # -- reads -------------------------------------------------------------
+    def magnitude(self) -> float:
+        return self.unit_field.magnitude()
+
+    def unit_label(self) -> str:
+        return self.unit_field.unit_label()
+
+    def ref(self) -> str:
+        return self._ref
+
+    def pressure(self) -> Pressure:
+        pint = _units.pint_str("pressure", self.unit_label())
+        return Pressure(Q_(self.magnitude(), pint), self._ref)
+
+    # -- layout ------------------------------------------------------------
+    def row(self, label: str) -> QWidget:
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(8)
+        lab = QLabel(label, objectName="FieldLabel")
+        lab.setMinimumWidth(150)
+        h.addWidget(lab)
+        h.addWidget(self.spin, 1)
+        h.addWidget(self.combo)
+        h.addWidget(self.ref_combo)
+        return w
+
+
+def link_pressure_fields(a: PressureField, b: PressureField) -> None:
+    """Keep two pressure fields on the same unit and g/a reference."""
+
+    def mirror(src: PressureField, dst: PressureField):
+        def on(kind, _field):
+            if kind == "unit":
+                dst.set_unit(src.unit_label())
+            else:
+                dst.set_ref(src.ref())
+
+        src.add_listener(on)
+
+    mirror(a, b)
+    mirror(b, a)
+    b.set_unit(a.unit_label())
+    b.set_ref(a.ref())
+
+
+class UnitHeaderStrip(QWidget):
+    """A strip of unit combos laid out above a ``QTableWidget``'s columns."""
+
+    def __init__(self, table):
+        super().__init__()
+        self.table = table
+        self.headers: List["UnitColumnHeader"] = []
+        self.setFixedHeight(28)
+        self.setObjectName("UnitHeaderStrip")
+        table.installEventFilter(self)
+        table.horizontalHeader().sectionResized.connect(lambda *_: self.sync())
+
+    def add(self, header: "UnitColumnHeader") -> None:
+        header.combo.setParent(self)
+        header.combo.show()
+        self.headers.append(header)
+        self.sync()
+
+    def eventFilter(self, obj, event):
+        if obj is self.table and event.type() in (QEvent.Resize, QEvent.Show):
+            QTimer.singleShot(0, self.sync)
+        return False
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self.sync()
+
+    def sync(self) -> None:
+        tbl = self.table
+        hh = tbl.horizontalHeader()
+        vh = tbl.verticalHeader()
+        base = self.mapFromGlobal(tbl.mapToGlobal(QPoint(0, 0))).x()
+        vw = vh.width() if vh.isVisible() else 0
+        for h in self.headers:
+            x = base + tbl.frameWidth() + vw + hh.sectionViewportPosition(h.col)
+            w = sum(hh.sectionSize(c) for c in range(h.col, h.col + h.span))
+            h.combo.setGeometry(x + 1, 2, max(w - 2, 20), 24)
+
+
+class UnitColumnHeader:
+    """A unit combo for one table column (or ``span`` adjacent columns).
+
+    ``on_change(old_label, new_label)`` is called when the user picks another
+    unit; the caller converts its stored values.  Build a :class:`UnitHeaderStrip`
+    above the table and pass it as ``strip`` (or call ``strip.add(header)``).
+    """
+
+    def __init__(
+        self,
+        table,
+        col: int,
+        dimension: str,
+        unit: str,
+        on_change: Callable[[str, str], None],
+        *,
+        span: int = 1,
+        strip: Optional[UnitHeaderStrip] = None,
+    ):
+        self.table = table
+        self.col = col
+        self.span = span
+        self.dimension = dimension
+        self.unit = unit
+        self._on_change = on_change
+        self.combo = combo(_units.options_for(dimension), unit, None)
+        self.unit = self.combo.currentData() or unit
+        self.combo.currentIndexChanged.connect(self._changed)
+        if strip is not None:
+            strip.add(self)
+
+    def _changed(self, _idx=None) -> None:
+        new = self.combo.currentData()
+        old = self.unit
+        if new and new != old:
+            self.unit = new
+            self._on_change(old, new)
+
+    def set_unit(self, label: str, notify: bool = False) -> None:
+        """Select ``label``; ``on_change`` is only called when ``notify``."""
+        idx = self.combo.findData(label)
+        if idx < 0:
+            return
+        if notify:
+            self.combo.setCurrentIndex(idx)
+            return
+        self.combo.blockSignals(True)
+        self.combo.setCurrentIndex(idx)
+        self.combo.blockSignals(False)
+        self.unit = label
 
 
 def checkbox(text: str, value: bool, on_change: Optional[Callable] = None) -> QCheckBox:

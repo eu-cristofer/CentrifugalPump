@@ -60,6 +60,17 @@
       "settings": {
         "pump_tag": "P-1001A",
         "fluid_choice": "",
+        "columns": {
+          "q": "m**3/h",
+          "p_suc": "bar",
+          "p_dis": "bar",
+          "temp_c": "°C",
+          "n": "rpm",
+          "power": "kW",
+          "head": "m",
+          "eff": "percent"
+        },
+        "pressure_ref": "g",
         "rows": [
           {
             "q": 160.0,
@@ -121,18 +132,7 @@
             "head": null,
             "eff": null
           }
-        ],
-        "columns": {
-          "q": "m**3/h",
-          "p_suc": "bar",
-          "p_dis": "bar",
-          "temp_c": "degC",
-          "n": "rpm",
-          "power": "kW",
-          "head": "m",
-          "eff": "percent"
-        },
-        "pressure_ref": "g"
+        ]
       }
     },
     {

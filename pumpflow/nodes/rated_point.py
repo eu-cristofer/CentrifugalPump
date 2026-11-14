@@ -5,12 +5,12 @@ Source node.  Captures the shared rated (design) point + rated fluid and emits a
 ``RatedPoint`` signal.  Density is entered as relative density **and** kg/m³ kept
 in sync.
 
-Unit selection for Q, H, P, and viscosity is handled by the reusable
-``ui.UnitField`` widget, backed by the central :mod:`pumpflow.units` registry —
-the single place that knows which display units are offered and how they map to
-the library's canonical units.  ``to_signal`` always normalises Q/H/P to
-m³/h/m/kW (and viscosity to cSt) and wraps them as Pint Quantities so every
-downstream node sees standard units.
+Unit selection for Q, H, N, P, η, shut-off head, NPSHa and viscosity is handled
+by the reusable ``ui.UnitField`` widget, backed by the central
+:mod:`pumpflow.units` registry — the single place that knows which display units
+are offered and how they map to the library's canonical units.  ``to_signal``
+always normalises Q/H/N/P/η/… to m³/h/m/rpm/kW/% (and viscosity to cSt) and wraps
+them as Pint Quantities so every downstream node sees standard units.
 A fresh node opens in whatever display units the active project preset selects.
 """
 
@@ -50,6 +50,10 @@ class RatedPointInputNode(BaseNode):
         hu = p.default_unit("head")
         pu = p.default_unit("power")
         vu = p.default_unit("viscosity")
+        nu = p.default_unit("speed")
+        eu = p.default_unit("efficiency")
+        hsu = p.default_unit("head")
+        npu = p.default_unit("npsh")
         return {
             "tag": "B-2351105",
             "service": "",
@@ -58,12 +62,16 @@ class RatedPointInputNode(BaseNode):
             "q_unit": qu,
             "head": units.convert_display(73.0, "head", "m", hu),
             "head_unit": hu,
-            "n": 1750.0,
+            "n": units.convert_display(1750.0, "speed", "rpm", nu),
+            "n_unit": nu,
             "power": units.convert_display(252.0, "power", "kW", pu),
             "power_unit": pu,
-            "eff": 61.0,
-            "head_shutoff": 117.0,
-            "npsha": 0.0,
+            "eff": units.convert_display(61.0, "efficiency", "%", eu),
+            "eff_unit": eu,
+            "head_shutoff": units.convert_display(117.0, "head", "m", hsu),
+            "head_shutoff_unit": hsu,
+            "npsha": units.convert_display(0.0, "npsh", "m", npu),
+            "npsha_unit": npu,
             "dens_rel": 0.736,
             "dens_unit": p.default_unit("density"),
             "visc": 0.567,
@@ -91,6 +99,10 @@ class RatedPointInputNode(BaseNode):
         eff = _opt(s.get("eff"))
         head_shutoff = _opt(s.get("head_shutoff"))
         npsha = _opt(s.get("npsha"))
+        eff_unit = s.get("eff_unit") or "%"
+        hso_unit = s.get("head_shutoff_unit") or "m"
+        npsha_unit = s.get("npsha_unit") or "m"
+        n_unit = s.get("n_unit") or "rpm"
         return RatedPoint(
             tag=str(s["tag"]).strip(),
             service=str(s.get("service", "")),
@@ -103,16 +115,28 @@ class RatedPointInputNode(BaseNode):
                 units.to_standard(float(s["head"]), "head", s.get("head_unit") or "m"),
                 "m",
             ),
-            speed=Q_(float(s["n"]), "rpm"),
+            speed=Q_(float(s["n"]), units.pint_str("speed", n_unit)).to("rpm"),
             power=Q_(
                 units.to_standard(
                     float(s["power"]), "power", s.get("power_unit") or "kW"
                 ),
                 "kW",
             ),
-            efficiency=None if eff is None else Q_(eff, "percent"),
-            head_shutoff=None if head_shutoff is None else Q_(head_shutoff, "m"),
-            npsha=None if npsha is None else Q_(npsha, "m"),
+            efficiency=(
+                None
+                if eff is None
+                else Q_(eff, units.pint_str("efficiency", eff_unit)).to("percent")
+            ),
+            head_shutoff=(
+                None
+                if head_shutoff is None
+                else Q_(units.to_standard(head_shutoff, "head", hso_unit), "m")
+            ),
+            npsha=(
+                None
+                if npsha is None
+                else Q_(units.to_standard(npsha, "npsh", npsha_unit), "m")
+            ),
             density=density,
             viscosity=viscosity,
             parallel_operation=bool(s["parallel"]),
@@ -153,8 +177,9 @@ class RatedPointInputNode(BaseNode):
         )
         banner = ui.Banner()
 
-        # Unit-aware fields (Q, H, P, density, viscosity). Viscosity reads the live
-        # relative density for its kinematic↔dynamic conversion.
+        # Unit-aware fields (Q, H, N, P, η, H shut-off, NPSHa, density, viscosity).
+        # Viscosity reads the live relative density for its kinematic↔dynamic
+        # conversion.
         q_field = ui.UnitField(
             "capacity",
             s["q"],
@@ -173,6 +198,15 @@ class RatedPointInputNode(BaseNode):
             step=1,
             decimals=3,
         )
+        n_field = ui.UnitField(
+            "speed",
+            s["n"],
+            s.get("n_unit"),
+            on_change=lambda: apply(),
+            hi=1e5,
+            step=10,
+            decimals=3,
+        )
         power_field = ui.UnitField(
             "power",
             s["power"],
@@ -180,6 +214,33 @@ class RatedPointInputNode(BaseNode):
             on_change=lambda: apply(),
             hi=1e5,
             step=1,
+            decimals=3,
+        )
+        eff_field = ui.UnitField(
+            "efficiency",
+            s.get("eff") or 0,
+            s.get("eff_unit"),
+            on_change=lambda: apply(),
+            hi=100,
+            step=0.5,
+            decimals=3,
+        )
+        hso_field = ui.UnitField(
+            "head",
+            s.get("head_shutoff") or 0,
+            s.get("head_shutoff_unit"),
+            on_change=lambda: apply(),
+            hi=1e5,
+            step=1,
+            decimals=3,
+        )
+        npsha_field = ui.UnitField(
+            "npsh",
+            s.get("npsha") or 0,
+            s.get("npsha_unit"),
+            on_change=lambda: apply(),
+            hi=1e5,
+            step=0.1,
             decimals=3,
         )
         density_field = ui.UnitField(
@@ -211,9 +272,19 @@ class RatedPointInputNode(BaseNode):
         def sync_fields():
             s["q"], s["q_unit"] = q_field.magnitude(), q_field.unit_label()
             s["head"], s["head_unit"] = head_field.magnitude(), head_field.unit_label()
+            s["n"], s["n_unit"] = n_field.magnitude(), n_field.unit_label()
             s["power"], s["power_unit"] = (
                 power_field.magnitude(),
                 power_field.unit_label(),
+            )
+            s["eff"], s["eff_unit"] = eff_field.magnitude(), eff_field.unit_label()
+            s["head_shutoff"], s["head_shutoff_unit"] = (
+                hso_field.magnitude(),
+                hso_field.unit_label(),
+            )
+            s["npsha"], s["npsha_unit"] = (
+                npsha_field.magnitude(),
+                npsha_field.unit_label(),
             )
             s["dens_unit"] = density_field.unit_label()
             s["visc"], s["visc_unit"] = visc_field.magnitude(), visc_field.unit_label()
@@ -225,20 +296,6 @@ class RatedPointInputNode(BaseNode):
         tag.textChanged.connect(lambda v: (s.__setitem__("tag", v), apply()))
         std = ui.line_edit(s["standard"], None)
         std.textChanged.connect(lambda v: (s.__setitem__("standard", v), apply()))
-
-        # ---- plain spinboxes (no alternate units) ----
-        n_spin = ui.spin(s["n"], 0, 1e5, 10, 0, None)
-        eff_spin = ui.spin(s.get("eff") or 0, 0, 100, 0.5, 1, None)
-        hso_spin = ui.spin(s.get("head_shutoff") or 0, 0, 1e5, 1, 2, None)
-        npsha_spin = ui.spin(s.get("npsha") or 0, 0, 1e5, 0.1, 2, None)
-        n_spin.valueChanged.connect(lambda v: (s.__setitem__("n", v), apply()))
-        eff_spin.valueChanged.connect(lambda v: (s.__setitem__("eff", v), apply()))
-        hso_spin.valueChanged.connect(
-            lambda v: (s.__setitem__("head_shutoff", v), apply())
-        )
-        npsha_spin.valueChanged.connect(
-            lambda v: (s.__setitem__("npsha", v), apply())
-        )
 
         # ---- RATED FLUID — relative ↔ absolute density kept in sync ----
         dens_rel = ui.spin(s["dens_rel"], 0.0, 5.0, 0.001, 6, None)
@@ -346,11 +403,11 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.section("Rated duty"))
         dlg.add(q_field.row("Capacity  Q"))
         dlg.add(head_field.row("Diff. head  H"))
-        dlg.add(ui.row("Speed  N", n_spin, "rpm"))
+        dlg.add(n_field.row("Speed  N"))
         dlg.add(power_field.row("Power  P"))
-        dlg.add(ui.row("Efficiency  η", eff_spin, "%"))
-        dlg.add(ui.row("Shut-off head", hso_spin, "m"))
-        dlg.add(ui.row("NPSHa", npsha_spin, "m"))
+        dlg.add(eff_field.row("Efficiency  η"))
+        dlg.add(hso_field.row("Shut-off head"))
+        dlg.add(npsha_field.row("NPSHa"))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated fluid"))
         if fluids:

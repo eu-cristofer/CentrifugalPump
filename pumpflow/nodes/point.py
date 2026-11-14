@@ -10,8 +10,9 @@ derives head/η from suction/discharge pressures — a Point carries the plotted
 quantities directly, so it is a lightweight marker rather than a measurement to
 correct.
 
-Q/H/P accept any display unit via the reusable ``ui.UnitField`` widget; the
-emitted ``PointSample`` carries Pint Quantities normalised to m³/h/m/kW, so the
+Q/H/P/η (and the suction/discharge pressures) accept any display unit via the
+reusable ``ui.UnitField`` / ``ui.PressureField`` widgets; the emitted
+``PointSample`` carries Pint Quantities normalised to m³/h/m/kW/%, so the
 marker lands in the same physical spot regardless of the units typed.
 """
 
@@ -31,6 +32,32 @@ from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
 
 
+def _p_label(s) -> str:
+    """The stored pressure display label, tolerating legacy Pint-string values."""
+    raw = s.get("p_unit") or units.PREFS.default_unit("pressure")
+    labels = [lab for lab, _ in units.UNIT_OPTIONS["pressure"]]
+    if raw in labels:
+        return raw
+    return units.label_for("pressure", raw) or "bar"
+
+
+def _unit_combo(pf):
+    """The unit combo of a ``ui.PressureField`` (tolerant of its internals)."""
+    c = getattr(pf, "combo", None)
+    if c is None:
+        inner = getattr(pf, "field", None) or getattr(pf, "unit_field", None)
+        c = getattr(inner, "combo", None)
+    return c
+
+
+def _ref_combo(pf):
+    for name in ("ref_combo", "ref_cb", "gauge_combo"):
+        c = getattr(pf, name, None)
+        if c is not None:
+            return c
+    return None
+
+
 class PointNode(BaseNode):
     kind = "point"
     title = "Point"
@@ -47,6 +74,8 @@ class PointNode(BaseNode):
         qu = p.default_unit("capacity")
         hu = p.default_unit("head")
         pu = p.default_unit("power")
+        pru = p.default_unit("pressure")
+        eu = p.default_unit("efficiency")
         return {
             "label": "Point",
             "mode": "direct",  # "direct" | "pressures"
@@ -54,13 +83,15 @@ class PointNode(BaseNode):
             "q_unit": qu,
             "head": units.convert_display(75.0, "head", "m", hu),
             "head_unit": hu,
-            "p_suc": 0.5,
-            "p_dis": 8.0,
-            "p_unit": "bar",
+            "p_suc": units.convert_display(0.5, "pressure", "bar", pru),
+            "p_dis": units.convert_display(8.0, "pressure", "bar", pru),
+            "p_unit": pru,
+            "p_ref": "g",
             "fluid_choice": "",  # ""=first wired (default), or a fluid name
             "power": 0.0,
             "power_unit": pu,
             "eff": 0.0,
+            "eff_unit": eu,
         }
 
     # -- payload -----------------------------------------------------------
@@ -69,9 +100,10 @@ class PointNode(BaseNode):
         if fluid_density is None:
             return None
         s = self.settings
-        unit = s.get("p_unit") or "bar"
-        p_suc = Pressure(Q_(float(s.get("p_suc") or 0.0), unit), "g")
-        p_dis = Pressure(Q_(float(s.get("p_dis") or 0.0), unit), "g")
+        pint = units.pint_str("pressure", _p_label(s))
+        ref = s.get("p_ref") or "g"
+        p_suc = Pressure(Q_(float(s.get("p_suc") or 0.0), pint), ref)
+        p_dis = Pressure(Q_(float(s.get("p_dis") or 0.0), pint), ref)
         return head_from_pressures(p_suc, p_dis, fluid_density)
 
     def to_signal(self, fluid_density=None) -> PointSample:
@@ -81,6 +113,7 @@ class PointNode(BaseNode):
         else:
             head = _std_opt(s.get("head"), "head", s.get("head_unit") or "m", "m")
         eff = _opt(s.get("eff"))
+        eff_unit = s.get("eff_unit") or "%"
         return PointSample(
             label=str(s.get("label", "Point")).strip() or "Point",
             q=Q_(
@@ -91,7 +124,11 @@ class PointNode(BaseNode):
             ),
             head=head,
             power=_std_opt(s.get("power"), "power", s.get("power_unit") or "kW", "kW"),
-            efficiency=None if eff is None else Q_(eff, "percent"),
+            efficiency=(
+                None
+                if eff is None
+                else Q_(eff, units.pint_str("efficiency", eff_unit)).to("percent")
+            ),
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -154,7 +191,15 @@ class PointNode(BaseNode):
             step=1,
             decimals=2,
         )
-        eff = ui.spin(s.get("eff") or 0, 0, 100, 0.5, 1, None)
+        eff_field = ui.UnitField(
+            "efficiency",
+            s.get("eff") or 0,
+            s.get("eff_unit"),
+            on_change=lambda: apply(),
+            hi=100,
+            step=0.5,
+            decimals=3,
+        )
 
         # Head source: direct value, or derived from suction/discharge pressures
         # (the latter needs a connected Fluid node for the density).
@@ -163,11 +208,50 @@ class PointNode(BaseNode):
             s.get("mode", "direct"),
             None,
         )
-        p_suc = ui.spin(s.get("p_suc") or 0, 0, 1e5, 0.1, 3, None)
-        p_dis = ui.spin(s.get("p_dis") or 0, 0, 1e5, 0.1, 3, None)
-        p_unit = ui.combo(
-            [("bar", "bar"), ("kgf/cm²", "kgf/cm**2")], s.get("p_unit", "bar"), None
+        p_unit0 = _p_label(s)
+        p_ref0 = s.get("p_ref") or "g"
+        p_suc = ui.PressureField(
+            s.get("p_suc") or 0,
+            p_unit0,
+            p_ref0,
+            on_change=lambda: on_pressure(p_suc),
+            hi=1e5,
+            step=0.1,
+            decimals=3,
         )
+        p_dis = ui.PressureField(
+            s.get("p_dis") or 0,
+            p_unit0,
+            p_ref0,
+            on_change=lambda: on_pressure(p_dis),
+            hi=1e5,
+            step=0.1,
+            decimals=3,
+        )
+        _guard = {"busy": False}
+
+        def on_pressure(src):
+            """Keep both pressure fields on one shared unit and g/a reference."""
+            if _guard["busy"]:
+                return
+            other = p_dis if src is p_suc else p_suc
+            _guard["busy"] = True
+            try:
+                if other.unit_label() != src.unit_label():
+                    cb = _unit_combo(other)
+                    if cb is not None:
+                        i = cb.findData(src.unit_label())
+                        if i >= 0:
+                            cb.setCurrentIndex(i)
+                if other.ref() != src.ref():
+                    cb = _ref_combo(other)
+                    if cb is not None:
+                        i = cb.findData(src.ref())
+                        if i >= 0:
+                            cb.setCurrentIndex(i)
+            finally:
+                _guard["busy"] = False
+            apply()
 
         # Fluid picker (pressures mode) — Point has no own fluid, so wired-only.
         fluids = getattr(self, "_fluids", [])
@@ -185,9 +269,8 @@ class PointNode(BaseNode):
         press_box = QWidget()
         pbl = QVBoxLayout(press_box)
         pbl.setContentsMargins(0, 0, 0, 0)
-        pbl.addWidget(ui.row("Suction  P_suc", p_suc))
-        pbl.addWidget(ui.row("Discharge  P_dis", p_dis))
-        pbl.addWidget(ui.row("Pressure unit", p_unit))
+        pbl.addWidget(p_suc.row("Suction  P_suc"))
+        pbl.addWidget(p_dis.row("Discharge  P_dis"))
         if fluids:
             pbl.addWidget(ui.row("Fluid", fluid_pick))
 
@@ -203,21 +286,18 @@ class PointNode(BaseNode):
                 power_field.magnitude(),
                 power_field.unit_label(),
             )
-            s["eff"] = eff.value()
+            s["eff"], s["eff_unit"] = eff_field.magnitude(), eff_field.unit_label()
             s["mode"] = mode.currentData()
-            s["p_suc"], s["p_dis"] = p_suc.value(), p_dis.value()
-            s["p_unit"] = p_unit.currentData()
+            s["p_suc"], s["p_dis"] = p_suc.magnitude(), p_dis.magnitude()
+            s["p_unit"] = p_suc.unit_label()
+            s["p_ref"] = p_suc.ref()
             s["fluid_choice"] = fluid_pick.currentData() or ""
             refresh_mode()
             on_change()
 
         label = ui.line_edit(s.get("label", "Point"), None, "marker label")
         label.textChanged.connect(lambda v: (s.__setitem__("label", v), on_change()))
-        eff.valueChanged.connect(lambda _=None: apply())
         mode.currentIndexChanged.connect(lambda _=None: apply())
-        p_suc.valueChanged.connect(lambda _=None: apply())
-        p_dis.valueChanged.connect(lambda _=None: apply())
-        p_unit.currentIndexChanged.connect(lambda _=None: apply())
         fluid_pick.currentIndexChanged.connect(lambda _=None: apply())
 
         dlg.add(ui.section("Marker"))
@@ -229,7 +309,7 @@ class PointNode(BaseNode):
         dlg.add(direct_box)
         dlg.add(press_box)
         dlg.add(power_field.row("Power  P"))
-        dlg.add(ui.row("Efficiency  η", eff, "%"))
+        dlg.add(eff_field.row("Efficiency  η"))
         apply()
         return dlg
 

@@ -35,6 +35,10 @@ RATED = {
     "eff": 61.0,
     "head_shutoff": 117.0,
     "npsha": 0.0,
+    "n_unit": "rpm",
+    "eff_unit": "%",
+    "head_shutoff_unit": "m",
+    "npsha_unit": "m",
     "dens_rel": 0.736,
     "dens_unit": "kg/m³",
     "visc": 0.567,
@@ -55,8 +59,18 @@ FLUID = {
 }
 TEST_POINTS = {
     "pump_tag": "B-2351105A",
-    "unit": "bar",
     "fluid_choice": "",
+    "columns": {
+        "q": "m³/h",
+        "p_suc": "bar",
+        "p_dis": "bar",
+        "temp_c": "°C",
+        "n": "rpm",
+        "power": "kW",
+        "head": "m",
+        "eff": "%",
+    },
+    "pressure_ref": "g",
     "rows": [
         {
             "q": 300.0,
@@ -94,10 +108,13 @@ POINT = {
     "power": 0.0,
     "power_unit": "kW",
     "eff": 0.0,
+    "eff_unit": "%",
+    "p_ref": "g",
 }
 CORRECTION = {
     "lock_to_rated": True,
     "target_speed": 1750.0,
+    "target_speed_unit": "rpm",
     "apply_speed": True,
     "apply_density": True,
     "apply_viscosity": False,
@@ -215,7 +232,9 @@ def test_codec_roundtrip_ylim_lists_and_us_units():
     v2 = codec.encode("performance_plot", plot)
     assert v2["head_ylim"] == {"value": [0.0, 100.0], "unit": "m"}
     assert v2["power_ylim"]["unit"] == "kW" and v2["eff_ylim"]["unit"] == "percent"
-    assert codec.decode("performance_plot", v2) == plot
+    assert codec.decode("performance_plot", v2) == dict(
+        plot, head_ylim_unit="m", power_ylim_unit="kW", eff_ylim_unit="%"
+    )
     rated = dict(
         RATED, q=3000.0, q_unit="US GPM", head=240.0, head_unit="ft", power_unit="hp"
     )
@@ -262,20 +281,25 @@ def test_decode_unknown_display_unit_goes_canonical():
     assert out["q_unit"] == "m³/h"
 
 
-def test_decode_fixed_unit_fields_are_converted():
+def test_decode_keeps_stored_units_for_former_fixed_fields():
+    """Since S3, n / η / shut-off / NPSHa have their own unit keys: decode keeps
+    the stored unit (as a display label) and the value untouched; the standard
+    magnitude is what to_signal sees."""
     out = codec.decode(
         "rated_point",
         {
-            # revolution/second, NOT Hz: Pint's Hz is 1/s while rpm is rev/min (1 rev = 2π rad),
-            # so Hz -> rpm would be off by 2π.
+            # revolution/second, NOT Hz: Pint's Hz is 1/s while rpm is rev/min
+            # (1 rev = 2π rad), so Hz -> rpm would be off by 2π.
             "n": {"value": 29.1666666667, "unit": "revolution/second"},
             "head_shutoff": {"value": 300.0, "unit": "ft"},
             "eff": {"value": 0.61, "unit": "dimensionless"},
         },
     )
-    assert out["n"] == pytest.approx(1750.0, rel=1e-6)
-    assert out["head_shutoff"] == pytest.approx(91.44)
-    assert out["eff"] == pytest.approx(61.0)
+    assert (out["n"], out["n_unit"]) == (29.1666666667, "rev/s")
+    assert (out["head_shutoff"], out["head_shutoff_unit"]) == (300.0, "ft")
+    assert (out["eff"], out["eff_unit"]) == (0.61, "fraction")
+    assert units.to_standard(out["n"], "speed", "rev/s") == pytest.approx(1750.0)
+    assert units.to_standard(300.0, "head", "ft") == pytest.approx(91.44)
 
 
 # --------------------------------------------------------------------------- #
@@ -314,29 +338,37 @@ def _tp_stored(**over):
     return st
 
 
-def test_test_points_columns_convert_to_runtime_units():
+def test_test_points_columns_keep_their_units():
+    """Since S3 the table works in per-column units: decode maps Pint strings to
+    display labels and leaves every row value untouched."""
     rt = codec.decode("test_points", _tp_stored())
-    row = rt["rows"][0]
-    assert rt["unit"] == "bar" and "columns" not in rt and "pressure_ref" not in rt
-    assert row["q"] == pytest.approx(22.7125, rel=1e-5)
-    assert row["p_suc"] == pytest.approx(1.0, rel=1e-6)
-    assert row["p_dis"] == pytest.approx(10.0, rel=1e-6)
-    assert row["temp_c"] == pytest.approx(100.0)
-    assert row["n"] == 1800.0 and row["power"] == 10.0
-    assert row["head"] is None and row["eff"] is None
+    assert "unit" not in rt and rt["pressure_ref"] == "g"
+    assert rt["columns"] == {
+        "q": "US GPM",
+        "p_suc": "psi",
+        "p_dis": "psi",
+        "temp_c": "°F",
+        "n": "rpm",
+        "power": "kW",
+        "head": "m",
+        "eff": "%",
+    }
+    assert rt["rows"][0] == _tp_stored()["rows"][0]
+    # Re-encoding writes the one compact on-disk spelling (as quantity_io does):
+    back = codec.encode("test_points", rt)
+    assert back["columns"]["q"] == "gal/min" and back["columns"]["temp_c"] == "°F"
+    assert back["rows"] == _tp_stored()["rows"]
+    assert codec.encode("test_points", codec.decode("test_points", back)) == back
 
 
-def test_test_points_kgf_kept_and_absolute_reference():
+def test_test_points_kgf_and_absolute_reference_are_kept():
     st = _tp_stored()
     st["columns"].update(p_suc="kgf/cm**2", p_dis="kgf/cm**2")
-    assert codec.decode("test_points", st)["unit"] == "kgf/cm**2"
-    st = _tp_stored()
-    st["columns"].update(p_suc="bar", p_dis="bar")
     st["pressure_ref"] = "a"
-    st["rows"][0].update(p_suc=2.01325, p_dis=11.01325)
-    row = codec.decode("test_points", st)["rows"][0]
-    assert row["p_suc"] == pytest.approx(1.0)
-    assert row["p_dis"] - row["p_suc"] == pytest.approx(9.0)
+    rt = codec.decode("test_points", st)
+    assert rt["columns"]["p_suc"] == rt["columns"]["p_dis"] == "kgf/cm²"
+    assert rt["pressure_ref"] == "a"
+    assert rt["rows"][0] == st["rows"][0]
 
 
 # --------------------------------------------------------------------------- #

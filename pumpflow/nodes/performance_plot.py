@@ -4,6 +4,10 @@ nodes.performance_plot — Performance Plot  (UI_SPEC §5.5)
 Inputs ``FittedModel`` (+ ``RatedPoint`` for the marker) → optional ``image/png``.
 Three stacked shared-x charts Q×H / Q×P / Q×η with corrected points, the
 polynomial, the spline (dashed) and a crosshair at the rated capacity.
+
+Optional y-axis limits are entered per chart in a chosen display unit
+(``head_ylim_unit`` / ``power_ylim_unit`` / ``eff_ylim_unit``); they are
+converted to the canonical m / kW / % only when plotting.
 """
 
 from __future__ import annotations
@@ -14,9 +18,17 @@ from typing import Dict, Optional
 from PySide6.QtWidgets import QFileDialog, QVBoxLayout, QWidget
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
+from .. import units
 from .base import BaseNode, PortSpec
 from . import ui
 from .plotting import build_figure
+
+# (plot key, units dimension, settings key, unit settings key, default [lo, hi] in canonical units)
+_YLIMS = (
+    ("head", "head", "head_ylim", "head_ylim_unit", (0.0, 100.0)),
+    ("power", "power", "power_ylim", "power_ylim_unit", (0.0, 500.0)),
+    ("efficiency", "efficiency", "eff_ylim", "eff_ylim_unit", (0.0, 100.0)),
+)
 
 
 class PerformancePlotNode(BaseNode):
@@ -27,9 +39,13 @@ class PerformancePlotNode(BaseNode):
     outputs = [PortSpec("image", "*")]
 
     def default_settings(self) -> Dict:
+        p = units.PREFS
         return {
             "show_poly": True, "show_spline": True, "show_points": True,
             "head_ylim": None, "power_ylim": None, "eff_ylim": None,
+            "head_ylim_unit": p.default_unit("head"),
+            "power_ylim_unit": p.default_unit("power"),
+            "eff_ylim_unit": p.default_unit("efficiency"),
         }
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -48,8 +64,21 @@ class PerformancePlotNode(BaseNode):
         return {"FittedModel": "Model", "RatedPoint": "Rated", "image": "PNG"}.get(name, name)
 
     def _ylims(self) -> dict:
+        """Y-limits converted from their display unit to canonical m / kW / %."""
         s = self.settings
-        return {"head": s["head_ylim"], "power": s["power_ylim"], "efficiency": s["eff_ylim"]}
+        out = {}
+        for key, dim, skey, ukey, _default in _YLIMS:
+            lim = s.get(skey)
+            if not lim:
+                out[key] = None
+                continue
+            unit = s.get(ukey) or units.canonical_unit(dim)
+            canon = units.canonical_unit(dim)
+            lo, hi = (
+                units.convert_display(float(v), dim, unit, canon) for v in lim
+            )
+            out[key] = (lo, hi) if lo < hi else None
+        return out
 
     def _render_png(self) -> Optional[io.BytesIO]:
         fitted = getattr(self, "_fitted", None)
@@ -139,7 +168,58 @@ class PerformancePlotNode(BaseNode):
         export.clicked.connect(do_export)
         tl.addWidget(export)
 
+        # ---- optional y-axis limits: "auto" checkbox + lo/hi UnitFields ----
+        def ylim_editor(title, dim, skey, ukey, default_canon):
+            cur = s.get(skey)
+            unit = s.get(ukey) or units.PREFS.default_unit(dim)
+            s[ukey] = unit
+            canon = units.canonical_unit(dim)
+            if cur:
+                lo0, hi0 = float(cur[0]), float(cur[1])
+            else:
+                lo0, hi0 = (
+                    units.convert_display(v, dim, canon, unit) for v in default_canon
+                )
+            auto = ui.checkbox("auto", cur is None, None)
+            guard = {"busy": False}
+            lo_f = ui.UnitField(dim, lo0, unit, on_change=lambda: changed(lo_f),
+                                lo=-1e6, hi=1e6, step=1, decimals=3)
+            hi_f = ui.UnitField(dim, hi0, unit, on_change=lambda: changed(hi_f),
+                                lo=-1e6, hi=1e6, step=1, decimals=3)
+
+            def changed(src):
+                if guard["busy"]:
+                    return
+                other = hi_f if src is lo_f else lo_f
+                guard["busy"] = True
+                try:
+                    if other.unit_label() != src.unit_label():
+                        i = other.combo.findData(src.unit_label())
+                        if i >= 0:
+                            other.combo.setCurrentIndex(i)
+                finally:
+                    guard["busy"] = False
+                manual = not auto.isChecked()
+                for f in (lo_f, hi_f):
+                    f.spin.setEnabled(manual)
+                    f.combo.setEnabled(manual)
+                s[ukey] = src.unit_label()
+                s[skey] = [lo_f.magnitude(), hi_f.magnitude()] if manual else None
+                redraw()
+
+            auto.toggled.connect(lambda _=None: changed(lo_f))
+            for f in (lo_f, hi_f):
+                f.spin.setEnabled(cur is not None)
+                f.combo.setEnabled(cur is not None)
+            dlg.add(ui.row(title, auto))
+            dlg.add(lo_f.row("   min"))
+            dlg.add(hi_f.row("   max"))
+
         dlg.add(toolbar)
+        dlg.add(ui.section("Y-axis limits"))
+        for _key, dim, skey, ukey, default_canon in _YLIMS:
+            ylim_editor({"head": "Head", "power": "Power", "efficiency": "Efficiency η"}[_key],
+                        dim, skey, ukey, default_canon)
         dlg.add(plot_area)
         dlg.add(banner)
         redraw()

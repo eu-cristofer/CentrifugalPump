@@ -10,7 +10,9 @@ branches, and poke at the curves.
 It re-implements **no** physics — measured rows are reduced to Q/H/η via the
 existing :mod:`pumpflow.binding` helpers, and fitted curves are merely *sampled*
 (``np.polyval`` / spline ``sample``) for drawing.  Signal Quantities are
-converted to plain floats at the drawing edge only.
+converted to plain floats at the drawing edge only.  Plotted data stays in
+canonical units (m³/h, m, kW, %); the axes merely *display* the active preset's
+units through a linear tick scale.
 
 Inputs (all optional, all fan-in):
   - ``Points``         — :class:`PointSample` overlays (Point nodes)
@@ -27,6 +29,7 @@ from typing import Dict, List
 import numpy as np
 from PySide6.QtCore import Qt
 
+from .. import units
 from ..binding import row_efficiency, row_head
 from .base import BaseNode, PortSpec
 from . import ui
@@ -38,6 +41,14 @@ _PALETTE = ["#2f6fb0", "#b4413c", "#2e7d5b", "#8a5a9e", "#c98a1b", "#3b8a8a"]
 def _mag(q, unit):
     """Magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``)."""
     return None if q is None else float(q.to(unit).magnitude)
+
+
+def _axis_scale(dimension: str):
+    """``(scale, display_unit)`` mapping canonical axis values to the preset's
+    display unit.  All plotted dimensions are linear, so a factor suffices."""
+    unit = units.PREFS.default_unit(dimension)
+    canon = units.canonical_unit(dimension)
+    return units.convert_display(1.0, dimension, canon, unit), unit
 
 
 class ExploreChartNode(BaseNode):
@@ -109,18 +120,26 @@ class ExploreChartNode(BaseNode):
         glw = pg.GraphicsLayoutWidget()
         glw.setMinimumHeight(560)
 
+        h_scale, h_unit = _axis_scale("head")
+        p_scale, p_unit = _axis_scale("power")
+        e_scale, e_unit = _axis_scale("efficiency")
+        q_scale, q_unit = _axis_scale("capacity")
+        self._q_scale = q_scale
+
         p_h = glw.addPlot(row=0, col=0)
         p_p = glw.addPlot(row=1, col=0)
         p_e = glw.addPlot(row=2, col=0)
-        for ax, ylabel in (
-            (p_h, "Head (m)"),
-            (p_p, "Power (kW)"),
-            (p_e, "Efficiency (%)"),
+        for ax, ylabel, sc in (
+            (p_h, f"Head ({h_unit})", h_scale),
+            (p_p, f"Power ({p_unit})", p_scale),
+            (p_e, f"Efficiency ({e_unit})", e_scale),
         ):
             ax.showGrid(x=True, y=True, alpha=0.25)
             ax.setLabel("left", ylabel)
+            ax.getAxis("left").setScale(sc)
+            ax.getAxis("bottom").setScale(q_scale)
             ax.addLegend(offset=(-10, 10), labelTextSize="7pt")
-        p_e.setLabel("bottom", "Capacity  Q (m³/h)")
+        p_e.setLabel("bottom", f"Capacity  Q ({q_unit})")
         p_p.setXLink(p_h)
         p_e.setXLink(p_h)
 
@@ -169,11 +188,10 @@ class ExploreChartNode(BaseNode):
 
     # -- flow readout (regression values at a chosen Q) --------------------
     def _build_readout(self, pg, dlg, panes):
-        """A capacity spin-box + a table of the values each fitted polynomial
-        regression predicts at that Q (one row per wired Curve Fit), with a
-        dashed Q-marker on all three panes."""
+        """A capacity field (any capacity unit) + a table of the values each
+        fitted polynomial regression predicts at that Q (one row per wired Curve
+        Fit), with a dashed Q-marker on all three panes."""
         from PySide6.QtWidgets import (
-            QDoubleSpinBox,
             QHeaderView,
             QLabel,
             QTableWidget,
@@ -187,7 +205,7 @@ class ExploreChartNode(BaseNode):
 
         models = list(getattr(self, "_models", []))
 
-        # capacity span across all fitted curves → spin default + range
+        # capacity span across all fitted curves → field default
         spans = []
         for m in models:
             c = np.asarray(m.curve.fitter.capacities, dtype=float)
@@ -202,7 +220,7 @@ class ExploreChartNode(BaseNode):
             else (cmin + cmax) / 2.0
         )
 
-        # dashed Q-marker on every pane (moves with the spin)
+        # dashed Q-marker on every pane (moves with the field; canonical m³/h)
         qlines = []
         for p in panes:
             ln = pg.InfiniteLine(
@@ -220,15 +238,20 @@ class ExploreChartNode(BaseNode):
         ctrl = QWidget()
         cl = QHBoxLayout(ctrl)
         cl.setContentsMargins(0, 0, 0, 0)
-        cl.addWidget(QLabel("Readout flow Q"))
-        spin = QDoubleSpinBox()
-        spin.setRange(0.0, 1.0e5)
-        spin.setDecimals(1)
-        spin.setSingleStep(1.0)
-        spin.setValue(float(default_q))
-        spin.setSuffix("  m³/h")
-        cl.addWidget(spin)
-        cl.addStretch(1)
+
+        q_unit0 = units.PREFS.default_unit("capacity")
+        qfield = ui.UnitField(
+            "capacity",
+            units.convert_display(float(default_q), "capacity", "m³/h", q_unit0),
+            q_unit0,
+            on_change=lambda: recompute(
+                units.to_standard(qfield.magnitude(), "capacity", qfield.unit_label())
+            ),
+            hi=1.0e6,
+            step=1.0,
+            decimals=1,
+        )
+        cl.addWidget(qfield.row("Readout flow Q"))
         lay.addWidget(ctrl)
 
         table = QTableWidget(0, 5)
@@ -290,7 +313,6 @@ class ExploreChartNode(BaseNode):
                         cell.setForeground(QColor(color))
                     table.setItem(r, c, cell)
 
-        spin.valueChanged.connect(recompute)
         recompute(float(default_q))
         return container
 
@@ -435,7 +457,7 @@ class ExploreChartNode(BaseNode):
                     mp = ax.vb.mapSceneToView(pos)
                     for vl in vlines:
                         vl.setPos(mp.x())
-                    label.setText(f"Q = {mp.x():.1f}")
+                    label.setText(f"Q = {mp.x() * getattr(self, '_q_scale', 1.0):.1f}")
                     yr = axes[0].vb.viewRange()[1]
                     label.setPos(mp.x(), yr[1])
                     break

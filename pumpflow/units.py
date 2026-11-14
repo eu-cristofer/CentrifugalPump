@@ -19,6 +19,9 @@ unit model.  The division of responsibility (the design philosophy) is:
 4. **One conversion path.** Everything goes through ``quantity_factory``.  The
    viscosity kinematic↔dynamic case is the single documented exception (cSt is
    not in ``STANDARD_UNITS``), and it lives here in :func:`to_cst` only.
+   Efficiency is the other small special case: it converts directly between
+   ``percent`` and ``dimensionless`` (the ``%`` spelling is not parseable by
+   every Pint build, so ``quantity_factory`` is bypassed for it).
 5. **Preset, then override.** A field's default display unit comes from the
    active project preset (:data:`PREFS`); an explicit per-field choice wins.
 
@@ -28,8 +31,10 @@ This module is Qt-agnostic so it can be imported by node logic, the reusable
 
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Optional, Tuple
 
+from pump.constants import P_ATM
 from pump.utilities.unit_conversion import Q_, quantity_factory
 
 # ---------------------------------------------------------------------------
@@ -72,11 +77,49 @@ UNIT_OPTIONS: Dict[str, List[Tuple[str, str]]] = {
         ("kg/m³", "kg/m**3"),
         ("g/cm³", "g/cm**3"),
     ],
+    # Pressure standardises to kgf/cm² (quantity_factory default context).
+    "pressure": [
+        ("kgf/cm²", "kgf/cm**2"),
+        ("bar", "bar"),
+        ("psi", "psi"),
+        ("kPa", "kPa"),
+        ("MPa", "MPa"),
+        ("mH₂O", "meter_H2O"),
+    ],
+    # Shaft speed.  Never use Hz (Pint's Hz is 1/s, i.e. 2*pi off from rev/s).
+    "speed": [
+        ("rpm", "rpm"),
+        ("rev/s", "revolution/second"),
+    ],
+    "length": [
+        ("m", "m"),
+        ("mm", "mm"),
+        ("in", "inch"),
+    ],
+    # NPSH: same Pint dimensionality as head, separate so presets can differ.
+    "npsh": [
+        ("m", "m"),
+        ("ft", "ft"),
+    ],
+    # Efficiency standardises to percent.
+    "efficiency": [
+        ("%", "percent"),
+        ("fraction", "dimensionless"),
+    ],
+    "vibration_velocity": [
+        ("m/s", "m/s"),
+        ("mm/s", "mm/s"),
+        ("in/s", "inch/s"),
+    ],
 }
 
 # Dimensions whose conversion needs the density-based special case rather than
 # plain quantity_factory normalisation.
 _DENSITY_COUPLED = {"viscosity"}
+
+# Dimensions converted directly with Pint (standard unit given here) instead of
+# through quantity_factory.
+_DIRECT_STD = {"efficiency": "percent"}
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +136,12 @@ PRESETS: Dict[str, Dict[str, str]] = {
         "viscosity": "cSt",
         "temperature": "°C",
         "density": "kg/m³",
+        "pressure": "bar",
+        "speed": "rpm",
+        "length": "mm",
+        "npsh": "m",
+        "efficiency": "%",
+        "vibration_velocity": "mm/s",
     },
     "US": {
         "capacity": "US GPM",
@@ -101,11 +150,29 @@ PRESETS: Dict[str, Dict[str, str]] = {
         "viscosity": "cSt",  # cSt is the industry norm for viscosity in both
         "temperature": "°F",
         "density": "kg/m³",
+        "pressure": "psi",
+        "speed": "rpm",
+        "length": "in",
+        "npsh": "ft",
+        "efficiency": "%",
+        "vibration_velocity": "in/s",
     },
     "custom": {},
 }
 
 DEFAULT_PRESET = "SI"
+
+# Test Points column key -> unit dimension.
+COLUMN_DIMENSIONS: Dict[str, str] = {
+    "q": "capacity",
+    "p_suc": "pressure",
+    "p_dis": "pressure",
+    "temp_c": "temperature",
+    "n": "speed",
+    "power": "power",
+    "head": "head",
+    "eff": "efficiency",
+}
 
 
 def canonical_unit(dimension: str) -> str:
@@ -118,11 +185,36 @@ def options_for(dimension: str) -> List[Tuple[str, str]]:
     return [(label, label) for label, _pint in UNIT_OPTIONS[dimension]]
 
 
-def _pint_str(dimension: str, unit: str) -> str:
+def pint_str(dimension: str, unit: str) -> str:
+    """Pint unit string of a display label (``KeyError`` if the label is unknown).
+
+    Examples
+    --------
+    >>> pint_str("capacity", "US GPM")
+    'gallon/min'
+    >>> pint_str("pressure", "bar")
+    'bar'
+    """
     for label, pint in UNIT_OPTIONS[dimension]:
         if label == unit:
             return pint
     raise KeyError(f"unknown {dimension} unit: {unit!r}")
+
+
+_pint_str = pint_str  # backwards-compatible private alias
+
+
+def atm_in(unit: str) -> float:
+    """Standard atmosphere expressed in the pressure display unit ``unit``.
+
+    Used to switch a pressure between gauge and absolute in its current unit.
+
+    Examples
+    --------
+    >>> round(atm_in("bar"), 5)
+    1.01325
+    """
+    return P_ATM.to(pint_str("pressure", unit)).magnitude
 
 
 def label_for(dimension: str, pint_str: str) -> Optional[str]:
@@ -141,6 +233,8 @@ def label_for(dimension: str, pint_str: str) -> Optional[str]:
     >>> label_for("head", "psi") is None
     True
     """
+    if pint_str == "%":
+        pint_str = "percent"
     try:
         target = Q_(1, pint_str)
     except Exception:
@@ -199,7 +293,9 @@ def to_standard(
     """
     if dimension in _DENSITY_COUPLED:
         return to_cst(value, unit, dens_rel if dens_rel is not None else 1.0)
-    return quantity_factory(Q_(value, _pint_str(dimension, unit))).magnitude
+    if dimension in _DIRECT_STD:
+        return Q_(value, pint_str(dimension, unit)).to(_DIRECT_STD[dimension]).magnitude
+    return quantity_factory(Q_(value, pint_str(dimension, unit))).magnitude
 
 
 def convert_display(
@@ -214,8 +310,14 @@ def convert_display(
         return value
     if dimension in _DENSITY_COUPLED:
         return _convert_viscosity(value, old_unit, new_unit, dens_rel)
-    std = quantity_factory(Q_(value, _pint_str(dimension, old_unit)))
-    return std.to(_pint_str(dimension, new_unit)).magnitude
+    if dimension in _DIRECT_STD:
+        return (
+            Q_(value, pint_str(dimension, old_unit))
+            .to(pint_str(dimension, new_unit))
+            .magnitude
+        )
+    std = quantity_factory(Q_(value, pint_str(dimension, old_unit)))
+    return std.to(pint_str(dimension, new_unit)).magnitude
 
 
 def to_cst(value: float, unit: str, dens_rel: float) -> float:
@@ -240,3 +342,120 @@ def _convert_viscosity(
     if old_unit == "cP" and new_unit == "cSt":
         return (Q_(value, "cP") / rho).to("cSt").magnitude
     return value
+
+
+# ---------------------------------------------------------------------------
+# Column-header parsing ("Q [gpm]", "P_dis [psi g]", ...) for paste.
+# ---------------------------------------------------------------------------
+
+_HEADER_KEYS = {
+    "q": "q",
+    "p_suc": "p_suc",
+    "p_dis": "p_dis",
+    "t": "temp_c",
+    "t_water": "temp_c",
+    "temp": "temp_c",
+    "temp_c": "temp_c",
+    "n": "n",
+    "p": "power",
+    "power": "power",
+    "head": "head",
+    "h": "head",
+    "η": "eff",
+    "eta": "eff",
+    "eff": "eff",
+}
+
+# Aliases are keyed by casefolded text.
+_UNIT_ALIASES: Dict[str, Dict[str, str]] = {
+    "capacity": {
+        "gpm": "US GPM",
+        "m3/h": "m³/h",
+        "m**3/h": "m³/h",
+        "lps": "l/s",
+        "lpm": "l/min",
+    },
+    "temperature": {"degf": "°F", "f": "°F", "degc": "°C", "c": "°C"},
+    "pressure": {
+        "kgf/cm2": "kgf/cm²",
+        "kgf/cm**2": "kgf/cm²",
+        "kg/cm2": "kgf/cm²",
+        "mh2o": "mH₂O",
+        "mh₂o": "mH₂O",
+        "meter_h2o": "mH₂O",
+    },
+    "speed": {"rev/s": "rev/s", "rps": "rev/s"},
+    "efficiency": {"percent": "%", "pct": "%"},
+    "power": {"cv": "CV"},
+}
+
+# "psig" -> ("psi", "g"), etc.
+_REF_SUFFIX = {
+    "barg": ("bar", "g"),
+    "bara": ("bar", "a"),
+    "psig": ("psi", "g"),
+    "psia": ("psi", "a"),
+}
+_REF_WORDS = {"g": "g", "gauge": "g", "a": "a", "abs": "a", "absolute": "a"}
+
+
+def _match_unit(dimension: str, text: str) -> str:
+    t = text.strip()
+    options = UNIT_OPTIONS[dimension]
+    for label, _p in options:
+        if label == t:
+            return label
+    fold = t.casefold()
+    alias = _UNIT_ALIASES.get(dimension, {}).get(fold)
+    if alias:
+        return alias
+    for label, pint in options:
+        if label.casefold() == fold or pint.casefold() == fold:
+            return label
+    raise ValueError(f"unknown {dimension} unit: {text!r}")
+
+
+def parse_unit_header(text: str) -> Tuple[str, Optional[str], Optional[str]]:
+    """Parse a column header such as ``"Q [gpm]"`` or ``"P_dis [psi g]"``.
+
+    Returns ``(column_key, display_label, ref)`` where ``column_key`` is a Test
+    Points key (``q``, ``p_suc``, ``p_dis``, ``temp_c``, ``n``, ``power``,
+    ``head``, ``eff``), ``display_label`` is the matching ``UNIT_OPTIONS`` label
+    (``None`` when no brackets) and ``ref`` is ``"g"``/``"a"`` for pressures
+    (``None`` when absent).  Matching is case-insensitive.
+
+    Raises
+    ------
+    ValueError
+        Unknown column key or unknown unit.
+
+    Examples
+    --------
+    >>> parse_unit_header("Q [gpm]")
+    ('q', 'US GPM', None)
+    >>> parse_unit_header("P_dis [psi g]")
+    ('p_dis', 'psi', 'g')
+    >>> parse_unit_header("T [°F]")
+    ('temp_c', '°F', None)
+    >>> parse_unit_header("Head")
+    ('head', None, None)
+    """
+    m = re.match(r"^\s*([^\[\]]+?)\s*(?:\[([^\]]*)\])?\s*$", str(text))
+    if not m:
+        raise ValueError(f"cannot parse column header: {text!r}")
+    key = _HEADER_KEYS.get(re.sub(r"\s+", "_", m.group(1).strip().lower()))
+    if key is None:
+        raise ValueError(f"unknown column: {m.group(1)!r}")
+    unit_text = (m.group(2) or "").strip()
+    if not unit_text:
+        return key, None, None
+    dimension = COLUMN_DIMENSIONS[key]
+    ref: Optional[str] = None
+    if dimension == "pressure":
+        tokens = unit_text.split()
+        if len(tokens) > 1 and tokens[-1].casefold() in _REF_WORDS:
+            ref = _REF_WORDS[tokens[-1].casefold()]
+            unit_text = " ".join(tokens[:-1])
+        elif len(tokens) == 1 and tokens[0].casefold() in _REF_SUFFIX:
+            unit_text, ref = _REF_SUFFIX[tokens[0].casefold()]
+    return key, _match_unit(dimension, unit_text), ref
