@@ -11,19 +11,26 @@ Two on-disk formats (UI_SPEC §6):
   converted here, at the JSON edge.
 - **Project file** (``.pumpflow``, §6.1) — the *whole* canvas: node positions,
   links and every widget's settings.  Generic read/write lives here; the scene
-  builds/consumes the document (it owns the node graph).
+  builds/consumes the document (it owns the node graph).  Schema **v2** stores
+  quantities as ``{"value", "unit"}`` pairs (see :mod:`pumpflow.settings_codec`);
+  :func:`migrate` upgrades v1 documents.  The exchange JSON is not a project and
+  is never migrated.
 """
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 from typing import Optional
 
 from pump import Q_, Pressure
 
+from . import settings_codec
 from .numfmt import parse_decimal
 from .signals import RatedPoint, TestPointSet, TestRow
+
+SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Data-exchange JSON  (UI_SPEC §6.2)
@@ -155,6 +162,7 @@ def _normalize_unit(unit: str) -> str:
 
 
 def read_json(path: str | Path) -> dict:
+    """Raw JSON read (also used for the §6.2 exchange JSON; never migrated)."""
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -162,3 +170,45 @@ def read_json(path: str | Path) -> dict:
 def write_json(path: str | Path, doc: dict) -> None:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(doc, fh, ensure_ascii=False, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Project schema versions
+# ---------------------------------------------------------------------------
+
+
+def migrate(doc: dict) -> dict:
+    """Upgrade a ``.pumpflow`` document to schema v2 (pure, idempotent).
+
+    Returns a new dict; the input is never mutated.  A v1 document has every
+    node's settings run through ``settings_codec.upgrade_v1`` (missing ``*_unit``
+    keys get the canonical label, never the active preset) and then
+    ``settings_codec.encode``; ``meta.schema_version`` becomes 2 while
+    ``meta.unit_preset`` is kept.  A v2 document is returned as a deep copy.
+
+    Examples
+    --------
+    >>> v1 = {"nodes": [{"id": "r", "kind": "rated_point", "settings": {"q": 833.0}}]}
+    >>> migrate(v1)["nodes"][0]["settings"]["q"]
+    {'value': 833.0, 'unit': 'm**3/h'}
+    >>> migrate(migrate(v1)) == migrate(v1)
+    True
+    """
+    out = copy.deepcopy(doc)
+    meta = out.get("meta") or {}
+    if int(meta.get("schema_version", 1)) >= 2:
+        return out
+    for node in out.get("nodes", []):
+        settings = node.get("settings")
+        if isinstance(settings, dict):
+            kind = node.get("kind", "")
+            node["settings"] = settings_codec.encode(
+                kind, settings_codec.upgrade_v1(kind, settings)
+            )
+    out["meta"] = {**meta, "schema_version": SCHEMA_VERSION}
+    return out
+
+
+def read_project(path: str | Path) -> dict:
+    """Read a ``.pumpflow`` project file and migrate it to the current schema."""
+    return migrate(read_json(path))

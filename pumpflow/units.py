@@ -125,6 +125,37 @@ def _pint_str(dimension: str, unit: str) -> str:
     raise KeyError(f"unknown {dimension} unit: {unit!r}")
 
 
+def label_for(dimension: str, pint_str: str) -> Optional[str]:
+    """Display label of the ``UNIT_OPTIONS`` entry that is the same unit as ``pint_str``.
+
+    Matches by Pint unit equality / unit conversion (not string equality), so
+    ``"gal/min"`` finds ``"US GPM"`` and ``"°C"`` finds ``"°C"``.  Returns
+    ``None`` when the dimension offers no such unit.
+
+    Examples
+    --------
+    >>> label_for("capacity", "m**3/h")
+    'm³/h'
+    >>> label_for("head", "ft")
+    'ft'
+    >>> label_for("head", "psi") is None
+    True
+    """
+    try:
+        target = Q_(1, pint_str)
+    except Exception:
+        return None
+    for label, pint in UNIT_OPTIONS.get(dimension, []):
+        if Q_(1, pint).units == target.units:
+            return label
+        try:
+            if abs(target.to(pint).magnitude - 1.0) < 1e-12:
+                return label
+        except Exception:
+            continue
+    return None
+
+
 class UnitPrefs:
     """Holds the active project-level unit preset (SI / US / custom).
 

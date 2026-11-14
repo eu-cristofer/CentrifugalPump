@@ -1730,7 +1730,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure",
-      "community": 9,
+      "community": 175,
       "norm_label": "pressure"
     },
     {
@@ -1740,7 +1740,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_post_init",
-      "community": 9,
+      "community": 175,
       "norm_label": ".__post_init__()"
     },
     {
@@ -1750,7 +1750,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_absolute",
-      "community": 9,
+      "community": 186,
       "norm_label": ".absolute()"
     },
     {
@@ -1760,7 +1760,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pump_utilities_pressure_py_q",
-      "community": 9,
+      "community": 186,
       "norm_label": "q_"
     },
     {
@@ -1770,7 +1770,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_gauge",
-      "community": 9,
+      "community": 186,
       "norm_label": ".gauge()"
     },
     {
@@ -1780,7 +1780,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_sub",
-      "community": 9,
+      "community": 186,
       "norm_label": ".__sub__()"
     },
     {
@@ -1790,7 +1790,7 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_to_json",
-      "community": 9,
+      "community": 175,
       "norm_label": ".to_json()"
     },
     {
@@ -1800,7 +1800,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pump_utilities_pressure_py_any",
-      "community": 9,
+      "community": 175,
       "norm_label": "any"
     },
     {
@@ -1810,7 +1810,7 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "pump_utilities_pressure_pressure_from_json",
-      "community": 9,
+      "community": 175,
       "norm_label": ".from_json()"
     },
     {
@@ -1830,7 +1830,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_39",
-      "community": 9,
+      "community": 175,
       "norm_label": "a pressure value together with its reference.      parameters     ----------"
     },
     {
@@ -1840,7 +1840,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_83",
-      "community": 9,
+      "community": 186,
       "norm_label": "absolute pressure, in the units of ``value``.          examples         --------"
     },
     {
@@ -1850,7 +1850,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_99",
-      "community": 9,
+      "community": 186,
       "norm_label": "gauge pressure, in the units of ``value``.          examples         --------"
     },
     {
@@ -1860,7 +1860,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_113",
-      "community": 9,
+      "community": 186,
       "norm_label": "difference of two pressures (reference-free), in the units of ``self``."
     },
     {
@@ -1870,7 +1870,7 @@
       "source_location": "L133",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_133",
-      "community": 9,
+      "community": 175,
       "norm_label": "serialise to ``{\"value\", \"unit\", \"ref\", \"atm\": {\"value\", \"unit\"}}``.          ex"
     },
     {
@@ -1880,7 +1880,7 @@
       "source_location": "L150",
       "_origin": "ast",
       "id": "pump_utilities_pressure_rationale_150",
-      "community": 9,
+      "community": 175,
       "norm_label": "rebuild from :meth:`to_json` output (``ref`` defaults to gauge, ``atm``"
     },
     {
@@ -2560,7 +2560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_main",
-      "community": 27,
+      "community": 109,
       "norm_label": "__main__.py"
     },
     {
@@ -2570,7 +2570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_main_rationale_1",
-      "community": 27,
+      "community": 109,
       "norm_label": "run pumpflow:  python -m pumpflow"
     },
     {
@@ -2580,7 +2580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_app",
-      "community": 27,
+      "community": 109,
       "norm_label": "app.py"
     },
     {
@@ -2610,7 +2610,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "pumpflow_app_mainwindow_init",
-      "community": 58,
+      "community": 5,
       "norm_label": ".__init__()"
     },
     {
@@ -2890,7 +2890,7 @@
       "source_location": "L520",
       "_origin": "ast",
       "id": "pumpflow_app_mainwindow_import_data_file",
-      "community": 5,
+      "community": 1,
       "norm_label": ".import_data_file()"
     },
     {
@@ -2900,7 +2900,7 @@
       "source_location": "L568",
       "_origin": "ast",
       "id": "pumpflow_app_mainwindow_export_data_file",
-      "community": 1,
+      "community": 5,
       "norm_label": ".export_data_file()"
     },
     {
@@ -2920,7 +2920,7 @@
       "source_location": "L590",
       "_origin": "ast",
       "id": "pumpflow_app_d",
-      "community": 27,
+      "community": 5,
       "norm_label": "_d()"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "L596",
       "_origin": "ast",
       "id": "pumpflow_app_mag_or",
-      "community": 5,
+      "community": 1,
       "norm_label": "_mag_or()"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L601",
       "_origin": "ast",
       "id": "pumpflow_app_run",
-      "community": 27,
+      "community": 109,
       "norm_label": "run()"
     },
     {
@@ -2950,7 +2950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_app_rationale_1",
-      "community": 27,
+      "community": 109,
       "norm_label": "app ===  the pumpflow main window: a node toolbox, the reactive canvas, the menu"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L597",
       "_origin": "ast",
       "id": "pumpflow_app_rationale_597",
-      "community": 5,
+      "community": 1,
       "norm_label": "magnitude of an optional quantity in ``unit``, or ``default`` when ``none``."
     },
     {
@@ -3260,7 +3260,7 @@
       "source_location": "L297",
       "_origin": "ast",
       "id": "pumpflow_binding_fit_model",
-      "community": 38,
+      "community": 173,
       "norm_label": "fit_model()"
     },
     {
@@ -3500,7 +3500,7 @@
       "source_location": "L300",
       "_origin": "ast",
       "id": "pumpflow_binding_rationale_300",
-      "community": 38,
+      "community": 173,
       "norm_label": "polynomial coeffs (primary) + natural cubic splines (secondary)."
     },
     {
@@ -3770,7 +3770,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem",
-      "community": 0,
+      "community": 176,
       "norm_label": "nodeitem"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_py_qgraphicsobject",
-      "community": 0,
+      "community": 176,
       "norm_label": "qgraphicsobject"
     },
     {
@@ -3790,7 +3790,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_init",
-      "community": 0,
+      "community": 176,
       "norm_label": ".__init__()"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_build_ports",
-      "community": 0,
+      "community": 176,
       "norm_label": "._build_ports()"
     },
     {
@@ -3810,7 +3810,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_compute_height",
-      "community": 0,
+      "community": 176,
       "norm_label": "._compute_height()"
     },
     {
@@ -3820,7 +3820,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_layout_ports",
-      "community": 0,
+      "community": 176,
       "norm_label": "._layout_ports()"
     },
     {
@@ -3850,7 +3850,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_itemchange",
-      "community": 0,
+      "community": 176,
       "norm_label": ".itemchange()"
     },
     {
@@ -3870,7 +3870,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_refresh",
-      "community": 68,
+      "community": 57,
       "norm_label": ".refresh()"
     },
     {
@@ -3880,7 +3880,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "pumpflow_canvas_node_item_nodeitem_mousedoubleclickevent",
-      "community": 0,
+      "community": 176,
       "norm_label": ".mousedoubleclickevent()"
     },
     {
@@ -4217,7 +4217,7 @@
       "label": ".load_dict()",
       "file_type": "code",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L199",
+      "source_location": "L209",
       "_origin": "ast",
       "id": "pumpflow_canvas_scene_graphscene_load_dict",
       "community": 0,
@@ -4254,13 +4254,33 @@
       "norm_label": "recompute every node in topological order and refresh the canvas."
     },
     {
+      "label": "Serialize the canvas as a schema-v2 project document.          Node runtime sett",
+      "file_type": "rationale",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L172",
+      "_origin": "ast",
+      "id": "pumpflow_canvas_scene_rationale_172",
+      "community": 0,
+      "norm_label": "serialize the canvas as a schema-v2 project document.          node runtime sett"
+    },
+    {
+      "label": "Rebuild the canvas from a project document (v1 is migrated to v2).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L210",
+      "_origin": "ast",
+      "id": "pumpflow_canvas_scene_rationale_210",
+      "community": 0,
+      "norm_label": "rebuild the canvas from a project document (v1 is migrated to v2)."
+    },
+    {
       "label": "theme.py",
       "file_type": "code",
       "source_file": "pumpflow/canvas/theme.py",
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_canvas_theme",
-      "community": 109,
+      "community": 10,
       "norm_label": "theme.py"
     },
     {
@@ -4290,7 +4310,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "pumpflow_canvas_theme_title_font",
-      "community": 109,
+      "community": 10,
       "norm_label": "title_font()"
     },
     {
@@ -4300,7 +4320,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "qfont",
-      "community": 109,
+      "community": 10,
       "norm_label": "qfont"
     },
     {
@@ -4310,7 +4330,7 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "pumpflow_canvas_theme_body_font",
-      "community": 109,
+      "community": 10,
       "norm_label": "body_font()"
     },
     {
@@ -4320,7 +4340,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "pumpflow_canvas_theme_mono_font",
-      "community": 109,
+      "community": 10,
       "norm_label": "mono_font()"
     },
     {
@@ -4330,7 +4350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_canvas_theme_rationale_1",
-      "community": 109,
+      "community": 10,
       "norm_label": "canvas.theme ============  central palette + metrics for the workbench \u2014 a clean"
     },
     {
@@ -4600,7 +4620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_export_cli",
-      "community": 58,
+      "community": 184,
       "norm_label": "export_cli.py"
     },
     {
@@ -4610,7 +4630,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "pumpflow_export_cli_build_scene",
-      "community": 58,
+      "community": 184,
       "norm_label": "build_scene()"
     },
     {
@@ -4620,7 +4640,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "pumpflow_export_cli_report_inputs",
-      "community": 58,
+      "community": 184,
       "norm_label": "report_inputs()"
     },
     {
@@ -4630,7 +4650,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "pumpflow_export_cli_main",
-      "community": 58,
+      "community": 184,
       "norm_label": "main()"
     },
     {
@@ -4640,7 +4660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_export_cli_rationale_1",
-      "community": 58,
+      "community": 184,
       "norm_label": "headless report export: ``.pumpflow`` project \u2192 word / latex / pdf.  usage::"
     },
     {
@@ -4650,7 +4670,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "pumpflow_export_cli_rationale_24",
-      "community": 58,
+      "community": 184,
       "norm_label": "load ``project`` into an evaluated :class:`graphscene` (offscreen qt)."
     },
     {
@@ -4660,7 +4680,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "pumpflow_export_cli_rationale_39",
-      "community": 58,
+      "community": 184,
       "norm_label": "``(rated, branches, settings)`` from the project's report export node."
     },
     {
@@ -4670,7 +4690,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_mathx",
-      "community": 38,
+      "community": 173,
       "norm_label": "mathx.py"
     },
     {
@@ -4740,7 +4760,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "pumpflow_mathx_r_squared",
-      "community": 38,
+      "community": 173,
       "norm_label": "r_squared()"
     },
     {
@@ -4750,7 +4770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_mathx_rationale_1",
-      "community": 38,
+      "community": 173,
       "norm_label": "mathx =====  maths ported into the ui layer from the reference notebook (``pump_"
     },
     {
@@ -4780,7 +4800,7 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "pumpflow_mathx_rationale_137",
-      "community": 38,
+      "community": 173,
       "norm_label": "coefficient of determination, r2."
     },
     {
@@ -5010,7 +5030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_compliance",
-      "community": 57,
+      "community": 4,
       "norm_label": "compliance.py"
     },
     {
@@ -5080,7 +5100,7 @@
       "source_location": "L158",
       "_origin": "ast",
       "id": "pumpflow_nodes_compliance_append_param",
-      "community": 57,
+      "community": 4,
       "norm_label": "_append_param()"
     },
     {
@@ -5100,7 +5120,7 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "pumpflow_nodes_compliance_repolish",
-      "community": 57,
+      "community": 4,
       "norm_label": "_repolish()"
     },
     {
@@ -5110,7 +5130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_compliance_rationale_1",
-      "community": 57,
+      "community": 4,
       "norm_label": "nodes.compliance \u2014 api 610 compliance check  (ui_spec \u00a75.6)  inputs ``fittedmode"
     },
     {
@@ -5140,7 +5160,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode",
-      "community": 68,
+      "community": 101,
       "norm_label": "speedcorrectionnode"
     },
     {
@@ -5150,7 +5170,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode_default_settings",
-      "community": 68,
+      "community": 101,
       "norm_label": ".default_settings()"
     },
     {
@@ -5160,7 +5180,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode_resolve",
-      "community": 68,
+      "community": 101,
       "norm_label": "._resolve()"
     },
     {
@@ -5170,7 +5190,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode_compute",
-      "community": 68,
+      "community": 101,
       "norm_label": ".compute()"
     },
     {
@@ -5180,7 +5200,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode_port_label",
-      "community": 68,
+      "community": 101,
       "norm_label": ".port_label()"
     },
     {
@@ -5190,7 +5210,7 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "pumpflow_nodes_correction_speedcorrectionnode_create_dialog",
-      "community": 68,
+      "community": 101,
       "norm_label": ".create_dialog()"
     },
     {
@@ -5240,7 +5260,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "pumpflow_nodes_curve_fit_curvefitnode",
-      "community": 38,
+      "community": 57,
       "norm_label": "curvefitnode"
     },
     {
@@ -5250,7 +5270,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "pumpflow_nodes_curve_fit_curvefitnode_default_settings",
-      "community": 38,
+      "community": 57,
       "norm_label": ".default_settings()"
     },
     {
@@ -5260,7 +5280,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "pumpflow_nodes_curve_fit_curvefitnode_compute",
-      "community": 38,
+      "community": 173,
       "norm_label": ".compute()"
     },
     {
@@ -5270,7 +5290,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "pumpflow_nodes_curve_fit_curvefitnode_port_label",
-      "community": 38,
+      "community": 57,
       "norm_label": ".port_label()"
     },
     {
@@ -5280,7 +5300,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "pumpflow_nodes_curve_fit_curvefitnode_create_dialog",
-      "community": 68,
+      "community": 57,
       "norm_label": ".create_dialog()"
     },
     {
@@ -5560,7 +5580,7 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluid_fluidnode_create_dialog",
-      "community": 65,
+      "community": 39,
       "norm_label": ".create_dialog()"
     },
     {
@@ -5580,7 +5600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick",
-      "community": 4,
+      "community": 101,
       "norm_label": "fluidpick.py"
     },
     {
@@ -5590,7 +5610,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_resolve_fluid",
-      "community": 4,
+      "community": 101,
       "norm_label": "resolve_fluid()"
     },
     {
@@ -5600,7 +5620,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_choice_options",
-      "community": 4,
+      "community": 101,
       "norm_label": "choice_options()"
     },
     {
@@ -5610,7 +5630,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_current_choice",
-      "community": 4,
+      "community": 101,
       "norm_label": "current_choice()"
     },
     {
@@ -5620,7 +5640,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_rationale_1",
-      "community": 4,
+      "community": 101,
       "norm_label": "nodes.fluidpick \u2014 shared \"which fluid drives this node\" selection logic.  a flui"
     },
     {
@@ -5630,7 +5650,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_rationale_22",
-      "community": 4,
+      "community": 101,
       "norm_label": "return the chosen ``fluidspec`` from ``specs``, or ``none`` for the node     def"
     },
     {
@@ -5640,7 +5660,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_rationale_44",
-      "community": 4,
+      "community": 101,
       "norm_label": "``[(label, data)]`` pairs for :func:`pumpflow.nodes.ui.combo`.      a leading de"
     },
     {
@@ -5650,7 +5670,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "pumpflow_nodes_fluidpick_rationale_58",
-      "community": 4,
+      "community": 101,
       "norm_label": "the combo ``data`` value that should be shown selected, accounting for     the d"
     },
     {
@@ -5730,7 +5750,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode",
-      "community": 64,
+      "community": 185,
       "norm_label": "performanceplotnode"
     },
     {
@@ -5740,7 +5760,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_default_settings",
-      "community": 64,
+      "community": 185,
       "norm_label": ".default_settings()"
     },
     {
@@ -5750,7 +5770,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_compute",
-      "community": 64,
+      "community": 185,
       "norm_label": ".compute()"
     },
     {
@@ -5760,7 +5780,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_port_label",
-      "community": 64,
+      "community": 185,
       "norm_label": ".port_label()"
     },
     {
@@ -5770,7 +5790,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_ylims",
-      "community": 64,
+      "community": 185,
       "norm_label": "._ylims()"
     },
     {
@@ -5780,7 +5800,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_render_png",
-      "community": 64,
+      "community": 185,
       "norm_label": "._render_png()"
     },
     {
@@ -5790,7 +5810,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "bytesio",
-      "community": 64,
+      "community": 185,
       "norm_label": "bytesio"
     },
     {
@@ -5800,7 +5820,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "pumpflow_nodes_performance_plot_performanceplotnode_create_dialog",
-      "community": 64,
+      "community": 31,
       "norm_label": ".create_dialog()"
     },
     {
@@ -5930,7 +5950,7 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "pumpflow_nodes_point_pointnode_create_dialog",
-      "community": 4,
+      "community": 101,
       "norm_label": ".create_dialog()"
     },
     {
@@ -6000,7 +6020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_rated_point",
-      "community": 4,
+      "community": 101,
       "norm_label": "rated_point.py"
     },
     {
@@ -6060,7 +6080,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "pumpflow_nodes_rated_point_ratedpointinputnode_create_dialog",
-      "community": 4,
+      "community": 101,
       "norm_label": ".create_dialog()"
     },
     {
@@ -6080,7 +6100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_nodes_rated_point_rationale_1",
-      "community": 4,
+      "community": 101,
       "norm_label": "nodes.rated_point \u2014 rated point input  (ui_spec \u00a75.1)  source node.  captures th"
     },
     {
@@ -6130,7 +6150,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "pumpflow_nodes_report_export_reportexportnode",
-      "community": 35,
+      "community": 31,
       "norm_label": "reportexportnode"
     },
     {
@@ -6140,7 +6160,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "pumpflow_nodes_report_export_reportexportnode_default_settings",
-      "community": 35,
+      "community": 31,
       "norm_label": ".default_settings()"
     },
     {
@@ -6160,7 +6180,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "pumpflow_nodes_report_export_reportexportnode_compute",
-      "community": 35,
+      "community": 31,
       "norm_label": ".compute()"
     },
     {
@@ -6170,7 +6190,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "pumpflow_nodes_report_export_reportexportnode_port_label",
-      "community": 35,
+      "community": 31,
       "norm_label": ".port_label()"
     },
     {
@@ -6310,7 +6330,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_row_from_dict",
-      "community": 10,
+      "community": 188,
       "norm_label": "_row_from_dict()"
     },
     {
@@ -6330,7 +6350,7 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_testpointstablenode",
-      "community": 10,
+      "community": 188,
       "norm_label": "testpointstablenode"
     },
     {
@@ -6350,7 +6370,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_testpointstablenode_to_signal",
-      "community": 10,
+      "community": 188,
       "norm_label": ".to_signal()"
     },
     {
@@ -6360,7 +6380,7 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_testpointstablenode_compute",
-      "community": 10,
+      "community": 188,
       "norm_label": ".compute()"
     },
     {
@@ -6370,7 +6390,7 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_testpointstablenode_port_label",
-      "community": 10,
+      "community": 188,
       "norm_label": ".port_label()"
     },
     {
@@ -6380,7 +6400,7 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_testpointstablenode_create_dialog",
-      "community": 10,
+      "community": 101,
       "norm_label": ".create_dialog()"
     },
     {
@@ -6420,7 +6440,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "pumpflow_nodes_test_points_rationale_46",
-      "community": 10,
+      "community": 188,
       "norm_label": "wrap one v1 settings row (plain floats) into a ``testrow`` of quantities.      `"
     },
     {
@@ -6570,7 +6590,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "pumpflow_nodes_ui_hline",
-      "community": 177,
+      "community": 4,
       "norm_label": "hline()"
     },
     {
@@ -6580,7 +6600,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pumpflow_nodes_ui_py_qframe",
-      "community": 177,
+      "community": 4,
       "norm_label": "qframe"
     },
     {
@@ -6600,7 +6620,7 @@
       "source_location": "L159",
       "_origin": "ast",
       "id": "pumpflow_nodes_ui_line_edit",
-      "community": 184,
+      "community": 4,
       "norm_label": "line_edit()"
     },
     {
@@ -6610,7 +6630,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "qlineedit",
-      "community": 184,
+      "community": 4,
       "norm_label": "qlineedit"
     },
     {
@@ -6640,7 +6660,7 @@
       "source_location": "L189",
       "_origin": "ast",
       "id": "pumpflow_nodes_ui_int_spin",
-      "community": 177,
+      "community": 4,
       "norm_label": "int_spin()"
     },
     {
@@ -6650,7 +6670,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "qspinbox",
-      "community": 177,
+      "community": 4,
       "norm_label": "qspinbox"
     },
     {
@@ -6770,7 +6790,7 @@
       "source_location": "L304",
       "_origin": "ast",
       "id": "pumpflow_nodes_ui_checkbox",
-      "community": 183,
+      "community": 4,
       "norm_label": "checkbox()"
     },
     {
@@ -6780,7 +6800,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "qcheckbox",
-      "community": 183,
+      "community": 4,
       "norm_label": "qcheckbox"
     },
     {
@@ -6850,7 +6870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_numfmt",
-      "community": 57,
+      "community": 4,
       "norm_label": "numfmt.py"
     },
     {
@@ -6880,7 +6900,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "pumpflow_numfmt_fmt_pct",
-      "community": 57,
+      "community": 4,
       "norm_label": "fmt_pct()"
     },
     {
@@ -6890,7 +6910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_numfmt_rationale_1",
-      "community": 57,
+      "community": 4,
       "norm_label": "numfmt ======  locale-tolerant number parsing/formatting (ui_spec \u00a75.2 / \u00a76.2)."
     },
     {
@@ -6920,34 +6940,34 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_persistence",
-      "community": 1,
+      "community": 27,
       "norm_label": "persistence.py"
     },
     {
       "label": "_opt()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L33",
+      "source_location": "L40",
       "_origin": "ast",
       "id": "pumpflow_persistence_opt",
-      "community": 1,
+      "community": 27,
       "norm_label": "_opt()"
     },
     {
       "label": "_mag()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L38",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "pumpflow_persistence_mag",
-      "community": 1,
+      "community": 27,
       "norm_label": "_mag()"
     },
     {
       "label": "testset_pressure_unit()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L43",
+      "source_location": "L50",
       "_origin": "ast",
       "id": "pumpflow_persistence_testset_pressure_unit",
       "community": 1,
@@ -6957,7 +6977,7 @@
       "label": "rated_from_json()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L51",
+      "source_location": "L58",
       "_origin": "ast",
       "id": "pumpflow_persistence_rated_from_json",
       "community": 27,
@@ -6967,7 +6987,7 @@
       "label": "testset_from_json()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L72",
+      "source_location": "L79",
       "_origin": "ast",
       "id": "pumpflow_persistence_testset_from_json",
       "community": 1,
@@ -6977,27 +6997,27 @@
       "label": "json_from_signals()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L93",
+      "source_location": "L100",
       "_origin": "ast",
       "id": "pumpflow_persistence_json_from_signals",
-      "community": 1,
+      "community": 27,
       "norm_label": "json_from_signals()"
     },
     {
       "label": "_num()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L136",
+      "source_location": "L143",
       "_origin": "ast",
       "id": "pumpflow_persistence_num",
-      "community": 1,
+      "community": 27,
       "norm_label": "_num()"
     },
     {
       "label": "_normalize_unit()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L143",
+      "source_location": "L150",
       "_origin": "ast",
       "id": "pumpflow_persistence_normalize_unit",
       "community": 1,
@@ -7007,10 +7027,10 @@
       "label": "read_json()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L157",
+      "source_location": "L164",
       "_origin": "ast",
       "id": "pumpflow_persistence_read_json",
-      "community": 58,
+      "community": 38,
       "norm_label": "read_json()"
     },
     {
@@ -7020,18 +7040,38 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pumpflow_persistence_py_path",
-      "community": 1,
+      "community": 38,
       "norm_label": "path"
     },
     {
       "label": "write_json()",
       "file_type": "code",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L162",
+      "source_location": "L170",
       "_origin": "ast",
       "id": "pumpflow_persistence_write_json",
-      "community": 1,
+      "community": 27,
       "norm_label": "write_json()"
+    },
+    {
+      "label": "migrate()",
+      "file_type": "code",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L180",
+      "_origin": "ast",
+      "id": "pumpflow_persistence_migrate",
+      "community": 38,
+      "norm_label": "migrate()"
+    },
+    {
+      "label": "read_project()",
+      "file_type": "code",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L212",
+      "_origin": "ast",
+      "id": "pumpflow_persistence_read_project",
+      "community": 38,
+      "norm_label": "read_project()"
     },
     {
       "label": "persistence ===========  Two on-disk formats (UI_SPEC \u00a76):  - **Data-exchange JS",
@@ -7040,36 +7080,36 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_persistence_rationale_1",
-      "community": 1,
+      "community": 27,
       "norm_label": "persistence ===========  two on-disk formats (ui_spec \u00a76):  - **data-exchange js"
     },
     {
       "label": "``Q_(value, unit)`` or ``None`` (floats \u2194 Quantities at the JSON edge).",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L34",
+      "source_location": "L41",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_34",
-      "community": 1,
+      "id": "pumpflow_persistence_rationale_41",
+      "community": 27,
       "norm_label": "``q_(value, unit)`` or ``none`` (floats \u2194 quantities at the json edge)."
     },
     {
       "label": "Plain magnitude of an optional Quantity in ``unit`` (``None`` stays).",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L39",
+      "source_location": "L46",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_39",
-      "community": 1,
+      "id": "pumpflow_persistence_rationale_46",
+      "community": 27,
       "norm_label": "plain magnitude of an optional quantity in ``unit`` (``none`` stays)."
     },
     {
       "label": "Exchange pressure unit of a test set: its rows' unit, else ``\"bar\"``.",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L44",
+      "source_location": "L51",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_44",
+      "id": "pumpflow_persistence_rationale_51",
       "community": 1,
       "norm_label": "exchange pressure unit of a test set: its rows' unit, else ``\"bar\"``."
     },
@@ -7077,9 +7117,9 @@
       "label": "Build a :class:`RatedPoint` from a \u00a76.2 document (comma-decimals ok).",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L52",
+      "source_location": "L59",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_52",
+      "id": "pumpflow_persistence_rationale_59",
       "community": 27,
       "norm_label": "build a :class:`ratedpoint` from a \u00a76.2 document (comma-decimals ok)."
     },
@@ -7087,9 +7127,9 @@
       "label": "Build a :class:`TestPointSet` from a \u00a76.2 document.",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L73",
+      "source_location": "L80",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_73",
+      "id": "pumpflow_persistence_rationale_80",
       "community": 1,
       "norm_label": "build a :class:`testpointset` from a \u00a76.2 document."
     },
@@ -7097,11 +7137,41 @@
       "label": "Export back to the \u00a76.2 shape (exporter mirrors importer).",
       "file_type": "rationale",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L94",
+      "source_location": "L101",
       "_origin": "ast",
-      "id": "pumpflow_persistence_rationale_94",
-      "community": 1,
+      "id": "pumpflow_persistence_rationale_101",
+      "community": 27,
       "norm_label": "export back to the \u00a76.2 shape (exporter mirrors importer)."
+    },
+    {
+      "label": "Raw JSON read (also used for the \u00a76.2 exchange JSON; never migrated).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L165",
+      "_origin": "ast",
+      "id": "pumpflow_persistence_rationale_165",
+      "community": 38,
+      "norm_label": "raw json read (also used for the \u00a76.2 exchange json; never migrated)."
+    },
+    {
+      "label": "Upgrade a ``.pumpflow`` document to schema v2 (pure, idempotent).      Returns a",
+      "file_type": "rationale",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L181",
+      "_origin": "ast",
+      "id": "pumpflow_persistence_rationale_181",
+      "community": 38,
+      "norm_label": "upgrade a ``.pumpflow`` document to schema v2 (pure, idempotent).      returns a"
+    },
+    {
+      "label": "Read a ``.pumpflow`` project file and migrate it to the current schema.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L213",
+      "_origin": "ast",
+      "id": "pumpflow_persistence_rationale_213",
+      "community": 38,
+      "norm_label": "read a ``.pumpflow`` project file and migrate it to the current schema."
     },
     {
       "label": "sample_data.py",
@@ -7117,7 +7187,7 @@
       "label": "_test_rows()",
       "file_type": "code",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L195",
+      "source_location": "L197",
       "_origin": "ast",
       "id": "pumpflow_sample_data_test_rows",
       "community": 1,
@@ -7127,7 +7197,7 @@
       "label": "sample_project_doc()",
       "file_type": "code",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L214",
+      "source_location": "L216",
       "_origin": "ast",
       "id": "pumpflow_sample_data_sample_project_doc",
       "community": 58,
@@ -7137,7 +7207,7 @@
       "label": "explore_project_doc()",
       "file_type": "code",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L402",
+      "source_location": "L405",
       "_origin": "ast",
       "id": "pumpflow_sample_data_explore_project_doc",
       "community": 1,
@@ -7157,31 +7227,491 @@
       "label": "The \u00a76.2 measured rows, normalized to the test-points node settings shape.",
       "file_type": "rationale",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L196",
+      "source_location": "L198",
       "_origin": "ast",
-      "id": "pumpflow_sample_data_rationale_196",
+      "id": "pumpflow_sample_data_rationale_198",
       "community": 1,
       "norm_label": "the \u00a76.2 measured rows, normalized to the test-points node settings shape."
     },
     {
-      "label": "Return the canonical single-pump ``.pumpflow`` document (Qt-free).      Pipeline",
+      "label": "Return the canonical single-pump ``.pumpflow`` document (Qt-free, schema v2).",
       "file_type": "rationale",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L215",
+      "source_location": "L217",
       "_origin": "ast",
-      "id": "pumpflow_sample_data_rationale_215",
+      "id": "pumpflow_sample_data_rationale_217",
       "community": 58,
-      "norm_label": "return the canonical single-pump ``.pumpflow`` document (qt-free).      pipeline"
+      "norm_label": "return the canonical single-pump ``.pumpflow`` document (qt-free, schema v2)."
     },
     {
-      "label": "Return the interactive-exploration ``.pumpflow`` document (Qt-free).      Pipeli",
+      "label": "Return the interactive-exploration ``.pumpflow`` document (Qt-free, schema v2).",
       "file_type": "rationale",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L403",
+      "source_location": "L406",
       "_origin": "ast",
-      "id": "pumpflow_sample_data_rationale_403",
+      "id": "pumpflow_sample_data_rationale_406",
       "community": 1,
-      "norm_label": "return the interactive-exploration ``.pumpflow`` document (qt-free).      pipeli"
+      "norm_label": "return the interactive-exploration ``.pumpflow`` document (qt-free, schema v2)."
+    },
+    {
+      "label": "settings_codec.py",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec",
+      "community": 35,
+      "norm_label": "settings_codec.py"
+    },
+    {
+      "label": "_norm()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L58",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_norm",
+      "community": 35,
+      "norm_label": "_norm()"
+    },
+    {
+      "label": "_same_unit()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_same_unit",
+      "community": 35,
+      "norm_label": "_same_unit()"
+    },
+    {
+      "label": "_convert()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_convert",
+      "community": 35,
+      "norm_label": "_convert()"
+    },
+    {
+      "label": "_fmt()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L82",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_fmt",
+      "community": 35,
+      "norm_label": "_fmt()"
+    },
+    {
+      "label": "_pint()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pint",
+      "community": 35,
+      "norm_label": "_pint()"
+    },
+    {
+      "label": "_pressure_runtime_unit()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L98",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressure_runtime_unit",
+      "community": 35,
+      "norm_label": "_pressure_runtime_unit()"
+    },
+    {
+      "label": "_atm()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L106",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_atm",
+      "community": 35,
+      "norm_label": "_atm()"
+    },
+    {
+      "label": "Disp",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L116",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_disp",
+      "community": 35,
+      "norm_label": "disp"
+    },
+    {
+      "label": ".fill_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L123",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_disp_fill_v1",
+      "community": 35,
+      "norm_label": ".fill_v1()"
+    },
+    {
+      "label": ".enc()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_disp_enc",
+      "community": 35,
+      "norm_label": ".enc()"
+    },
+    {
+      "label": ".dec()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L134",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_disp_dec",
+      "community": 35,
+      "norm_label": ".dec()"
+    },
+    {
+      "label": "Fixed",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L148",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_fixed",
+      "community": 35,
+      "norm_label": "fixed"
+    },
+    {
+      "label": ".fill_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L154",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_fixed_fill_v1",
+      "community": 35,
+      "norm_label": ".fill_v1()"
+    },
+    {
+      "label": ".enc()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L157",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_fixed_enc",
+      "community": 35,
+      "norm_label": ".enc()"
+    },
+    {
+      "label": ".dec()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L163",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_fixed_dec",
+      "community": 35,
+      "norm_label": ".dec()"
+    },
+    {
+      "label": "YLim",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L170",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_ylim",
+      "community": 35,
+      "norm_label": "ylim"
+    },
+    {
+      "label": ".fill_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L176",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_ylim_fill_v1",
+      "community": 35,
+      "norm_label": ".fill_v1()"
+    },
+    {
+      "label": ".enc()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L179",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_ylim_enc",
+      "community": 35,
+      "norm_label": ".enc()"
+    },
+    {
+      "label": ".dec()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L184",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_ylim_dec",
+      "community": 35,
+      "norm_label": ".dec()"
+    },
+    {
+      "label": "Pressures",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L191",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressures",
+      "community": 35,
+      "norm_label": "pressures"
+    },
+    {
+      "label": "._present()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L197",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressures_present",
+      "community": 35,
+      "norm_label": "._present()"
+    },
+    {
+      "label": ".fill_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L200",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressures_fill_v1",
+      "community": 35,
+      "norm_label": ".fill_v1()"
+    },
+    {
+      "label": ".enc()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L204",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressures_enc",
+      "community": 35,
+      "norm_label": ".enc()"
+    },
+    {
+      "label": ".dec()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L216",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_pressures_dec",
+      "community": 35,
+      "norm_label": ".dec()"
+    },
+    {
+      "label": "TestRows",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L242",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_testrows",
+      "community": 35,
+      "norm_label": "testrows"
+    },
+    {
+      "label": ".fill_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L247",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_testrows_fill_v1",
+      "community": 35,
+      "norm_label": ".fill_v1()"
+    },
+    {
+      "label": ".enc()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L250",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_testrows_enc",
+      "community": 35,
+      "norm_label": ".enc()"
+    },
+    {
+      "label": ".dec()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L266",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_testrows_dec",
+      "community": 35,
+      "norm_label": ".dec()"
+    },
+    {
+      "label": "encode()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L324",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_encode",
+      "community": 35,
+      "norm_label": "encode()"
+    },
+    {
+      "label": "decode()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L332",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_decode",
+      "community": 35,
+      "norm_label": "decode()"
+    },
+    {
+      "label": "upgrade_v1()",
+      "file_type": "code",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L340",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_upgrade_v1",
+      "community": 35,
+      "norm_label": "upgrade_v1()"
+    },
+    {
+      "label": "settings_codec ==============  Qt-free translation between node **runtime settin",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_1",
+      "community": 35,
+      "norm_label": "settings_codec ==============  qt-free translation between node **runtime settin"
+    },
+    {
+      "label": "Normalise the compact ``%`` spelling to Pint's ``percent``.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_59",
+      "community": 35,
+      "norm_label": "normalise the compact ``%`` spelling to pint's ``percent``."
+    },
+    {
+      "label": "Convert ``value`` from ``src`` to ``dst``; untouched when the units agree.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_75",
+      "community": 35,
+      "norm_label": "convert ``value`` from ``src`` to ``dst``; untouched when the units agree."
+    },
+    {
+      "label": "Compact (``~C``) Pint spelling, as produced by ``pump.quantity_io.to_json``.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L83",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_83",
+      "community": 35,
+      "norm_label": "compact (``~c``) pint spelling, as produced by ``pump.quantity_io.to_json``."
+    },
+    {
+      "label": "Pint string of a display label (a bare Pint string is accepted too).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_88",
+      "community": 35,
+      "norm_label": "pint string of a display label (a bare pint string is accepted too)."
+    },
+    {
+      "label": "The runtime combo unit (bar / kgf/cm**2) for a stored pressure unit.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L99",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_99",
+      "community": 35,
+      "norm_label": "the runtime combo unit (bar / kgf/cm**2) for a stored pressure unit."
+    },
+    {
+      "label": "Value with a runtime display label: ``key`` + ``unit_key`` <-> quantity.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L117",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_117",
+      "community": 35,
+      "norm_label": "value with a runtime display label: ``key`` + ``unit_key`` <-> quantity."
+    },
+    {
+      "label": "Value with a fixed runtime unit (no ``*_unit`` key).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L149",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_149",
+      "community": 35,
+      "norm_label": "value with a fixed runtime unit (no ``*_unit`` key)."
+    },
+    {
+      "label": "Optional ``[lo, hi]`` axis limits (``null`` stays ``null``).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L171",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_171",
+      "community": 35,
+      "norm_label": "optional ``[lo, hi]`` axis limits (``null`` stays ``null``)."
+    },
+    {
+      "label": "Gauge pressures sharing one runtime unit key -> ``{value, unit, ref}``.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L192",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_192",
+      "community": 35,
+      "norm_label": "gauge pressures sharing one runtime unit key -> ``{value, unit, ref}``."
+    },
+    {
+      "label": "Test-points table: runtime ``unit`` + rows <-> ``columns`` + ``rows``.",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L243",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_243",
+      "community": 35,
+      "norm_label": "test-points table: runtime ``unit`` + rows <-> ``columns`` + ``rows``."
+    },
+    {
+      "label": "Runtime settings -> v2 on-disk settings (new dict; input untouched).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L325",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_325",
+      "community": 35,
+      "norm_label": "runtime settings -> v2 on-disk settings (new dict; input untouched)."
+    },
+    {
+      "label": "v2 on-disk settings -> runtime settings (new dict; input untouched).",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L333",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_333",
+      "community": 35,
+      "norm_label": "v2 on-disk settings -> runtime settings (new dict; input untouched)."
+    },
+    {
+      "label": "Normalise a v1 runtime-shaped settings dict before :func:`encode`.      Missing",
+      "file_type": "rationale",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L341",
+      "_origin": "ast",
+      "id": "pumpflow_settings_codec_rationale_341",
+      "community": 35,
+      "norm_label": "normalise a v1 runtime-shaped settings dict before :func:`encode`.      missing"
     },
     {
       "label": "signals.py",
@@ -7640,7 +8170,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "pumpflow_style_app_qss",
-      "community": 27,
+      "community": 109,
       "norm_label": "app_qss()"
     },
     {
@@ -7650,7 +8180,7 @@
       "source_location": "L170",
       "_origin": "ast",
       "id": "pumpflow_style_ui_font",
-      "community": 109,
+      "community": 10,
       "norm_label": "ui_font()"
     },
     {
@@ -7660,7 +8190,7 @@
       "source_location": "L183",
       "_origin": "ast",
       "id": "pumpflow_style_mono_font",
-      "community": 109,
+      "community": 10,
       "norm_label": "mono_font()"
     },
     {
@@ -7720,7 +8250,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "pumpflow_style_rationale_166",
-      "community": 27,
+      "community": 109,
       "norm_label": "the global stylesheet with the resolved font families substituted in."
     },
     {
@@ -7730,7 +8260,7 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "pumpflow_style_rationale_171",
-      "community": 109,
+      "community": 10,
       "norm_label": "a qfont in the resolved ui family \u2014 drop-in for qfont('segoe ui', ...)."
     },
     {
@@ -7740,7 +8270,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "pumpflow_style_rationale_184",
-      "community": 109,
+      "community": 10,
       "norm_label": "a qfont in the resolved monospace family \u2014 drop-in for qfont('consolas', ...)."
     },
     {
@@ -7760,7 +8290,7 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "pumpflow_units_canonical_unit",
-      "community": 16,
+      "community": 183,
       "norm_label": "canonical_unit()"
     },
     {
@@ -7784,70 +8314,80 @@
       "norm_label": "_pint_str()"
     },
     {
-      "label": "UnitPrefs",
+      "label": "label_for()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
       "source_location": "L128",
       "_origin": "ast",
-      "id": "pumpflow_units_unitprefs",
+      "id": "pumpflow_units_label_for",
       "community": 16,
+      "norm_label": "label_for()"
+    },
+    {
+      "label": "UnitPrefs",
+      "file_type": "code",
+      "source_file": "pumpflow/units.py",
+      "source_location": "L159",
+      "_origin": "ast",
+      "id": "pumpflow_units_unitprefs",
+      "community": 183,
       "norm_label": "unitprefs"
     },
     {
       "label": ".__init__()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L136",
+      "source_location": "L167",
       "_origin": "ast",
       "id": "pumpflow_units_unitprefs_init",
-      "community": 16,
+      "community": 183,
       "norm_label": ".__init__()"
     },
     {
       "label": ".set_preset()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L139",
+      "source_location": "L170",
       "_origin": "ast",
       "id": "pumpflow_units_unitprefs_set_preset",
-      "community": 16,
+      "community": 183,
       "norm_label": ".set_preset()"
     },
     {
       "label": ".default_unit()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L142",
+      "source_location": "L173",
       "_origin": "ast",
       "id": "pumpflow_units_unitprefs_default_unit",
-      "community": 16,
+      "community": 183,
       "norm_label": ".default_unit()"
     },
     {
       "label": ".to_dict()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L145",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "pumpflow_units_unitprefs_to_dict",
-      "community": 16,
+      "community": 183,
       "norm_label": ".to_dict()"
     },
     {
       "label": ".load()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L148",
+      "source_location": "L179",
       "_origin": "ast",
       "id": "pumpflow_units_unitprefs_load",
-      "community": 16,
+      "community": 183,
       "norm_label": ".load()"
     },
     {
       "label": "to_standard()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L162",
+      "source_location": "L193",
       "_origin": "ast",
       "id": "pumpflow_units_to_standard",
       "community": 16,
@@ -7857,7 +8397,7 @@
       "label": "convert_display()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L174",
+      "source_location": "L205",
       "_origin": "ast",
       "id": "pumpflow_units_convert_display",
       "community": 16,
@@ -7867,7 +8407,7 @@
       "label": "to_cst()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L190",
+      "source_location": "L221",
       "_origin": "ast",
       "id": "pumpflow_units_to_cst",
       "community": 16,
@@ -7877,7 +8417,7 @@
       "label": "_convert_viscosity()",
       "file_type": "code",
       "source_file": "pumpflow/units.py",
-      "source_location": "L203",
+      "source_location": "L234",
       "_origin": "ast",
       "id": "pumpflow_units_convert_viscosity",
       "community": 16,
@@ -7900,7 +8440,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "pumpflow_units_rationale_112",
-      "community": 16,
+      "community": 183,
       "norm_label": "the library's standard display label for a dimension (first option)."
     },
     {
@@ -7914,22 +8454,32 @@
       "norm_label": "``[(label, label)]`` pairs suitable for :func:`pumpflow.nodes.ui.combo`."
     },
     {
-      "label": "Holds the active project-level unit preset (SI / US / custom).      ``default_un",
+      "label": "Display label of the ``UNIT_OPTIONS`` entry that is the same unit as ``pint_str`",
       "file_type": "rationale",
       "source_file": "pumpflow/units.py",
       "source_location": "L129",
       "_origin": "ast",
       "id": "pumpflow_units_rationale_129",
       "community": 16,
+      "norm_label": "display label of the ``unit_options`` entry that is the same unit as ``pint_str`"
+    },
+    {
+      "label": "Holds the active project-level unit preset (SI / US / custom).      ``default_un",
+      "file_type": "rationale",
+      "source_file": "pumpflow/units.py",
+      "source_location": "L160",
+      "_origin": "ast",
+      "id": "pumpflow_units_rationale_160",
+      "community": 183,
       "norm_label": "holds the active project-level unit preset (si / us / custom).      ``default_un"
     },
     {
       "label": "Normalise a display value to the library's standard magnitude.      For density-",
       "file_type": "rationale",
       "source_file": "pumpflow/units.py",
-      "source_location": "L165",
+      "source_location": "L196",
       "_origin": "ast",
-      "id": "pumpflow_units_rationale_165",
+      "id": "pumpflow_units_rationale_196",
       "community": 16,
       "norm_label": "normalise a display value to the library's standard magnitude.      for density-"
     },
@@ -7937,9 +8487,9 @@
       "label": "Re-express a value from one display unit to another (live combo switch).",
       "file_type": "rationale",
       "source_file": "pumpflow/units.py",
-      "source_location": "L181",
+      "source_location": "L212",
       "_origin": "ast",
-      "id": "pumpflow_units_rationale_181",
+      "id": "pumpflow_units_rationale_212",
       "community": 16,
       "norm_label": "re-express a value from one display unit to another (live combo switch)."
     },
@@ -7947,9 +8497,9 @@
       "label": "Kinematic viscosity in cSt from a cSt/cP display value.      cSt is *kinematic*",
       "file_type": "rationale",
       "source_file": "pumpflow/units.py",
-      "source_location": "L191",
+      "source_location": "L222",
       "_origin": "ast",
-      "id": "pumpflow_units_rationale_191",
+      "id": "pumpflow_units_rationale_222",
       "community": 16,
       "norm_label": "kinematic viscosity in cst from a cst/cp display value.      cst is *kinematic*"
     },
@@ -8060,7 +8610,7 @@
       "source_location": "L159",
       "_origin": "ast",
       "id": "pumpflow_welcome_welcomedialog_make_content",
-      "community": 77,
+      "community": 3,
       "norm_label": "._make_content()"
     },
     {
@@ -8070,7 +8620,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pumpflow_welcome_py_qwidget",
-      "community": 77,
+      "community": 3,
       "norm_label": "qwidget"
     },
     {
@@ -8090,7 +8640,7 @@
       "source_location": "L203",
       "_origin": "ast",
       "id": "pumpflow_welcome_welcomedialog_make_examples_panel",
-      "community": 77,
+      "community": 3,
       "norm_label": "._make_examples_panel()"
     },
     {
@@ -8140,7 +8690,7 @@
       "source_location": "L285",
       "_origin": "ast",
       "id": "pumpflow_welcome_welcomedialog_pick_example",
-      "community": 77,
+      "community": 3,
       "norm_label": "._pick_example()"
     },
     {
@@ -8210,7 +8760,7 @@
       "source_location": "L204",
       "_origin": "ast",
       "id": "pumpflow_welcome_rationale_204",
-      "community": 77,
+      "community": 3,
       "norm_label": "build the right column listing bundled example pipelines.          only examples"
     },
     {
@@ -8230,7 +8780,7 @@
       "source_location": "L286",
       "_origin": "ast",
       "id": "pumpflow_welcome_rationale_286",
-      "community": 77,
+      "community": 3,
       "norm_label": "load a bundled example from *path* and accept the dialog.          unlike :meth:"
     },
     {
@@ -8510,7 +9060,7 @@
       "label": "test_builder_shape()",
       "file_type": "code",
       "source_file": "tests/test_persistence_roundtrip.py",
-      "source_location": "L39",
+      "source_location": "L38",
       "_origin": "ast",
       "id": "tests_test_persistence_roundtrip_test_builder_shape",
       "community": 58,
@@ -8603,7 +9153,7 @@
       "source_location": "L156",
       "_origin": "ast",
       "id": "tests_test_persistence_roundtrip_test_b34004_cli_exports",
-      "community": 58,
+      "community": 184,
       "norm_label": "test_b34004_cli_exports()"
     },
     {
@@ -8783,7 +9333,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_quantity_spine",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_quantity_spine.py"
     },
     {
@@ -8793,7 +9343,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_quantity_json_round_trip",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_quantity_json_round_trip()"
     },
     {
@@ -8803,7 +9353,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_from_json_bare_number_uses_default_unit",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_from_json_bare_number_uses_default_unit()"
     },
     {
@@ -8813,7 +9363,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_from_json_bare_number_without_default_unit_raises",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_from_json_bare_number_without_default_unit_raises()"
     },
     {
@@ -8823,7 +9373,7 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_from_json_malformed_input_raises",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_from_json_malformed_input_raises()"
     },
     {
@@ -8833,7 +9383,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_to_json_rejects_non_quantity",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_to_json_rejects_non_quantity()"
     },
     {
@@ -8843,7 +9393,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_difference_is_reference_free",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_difference_is_reference_free()"
     },
     {
@@ -8853,7 +9403,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_gauge_to_absolute",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_gauge_to_absolute()"
     },
     {
@@ -8863,7 +9413,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_absolute_to_gauge",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_absolute_to_gauge()"
     },
     {
@@ -8873,7 +9423,7 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_mixed_references_raise",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_mixed_references_raise()"
     },
     {
@@ -8883,7 +9433,7 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_validates_inputs",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_validates_inputs()"
     },
     {
@@ -8893,7 +9443,7 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_pressure_json_round_trip",
-      "community": 9,
+      "community": 175,
       "norm_label": "test_pressure_json_round_trip()"
     },
     {
@@ -8903,7 +9453,7 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_standard_gravity_and_atmosphere",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_standard_gravity_and_atmosphere()"
     },
     {
@@ -8913,7 +9463,7 @@
       "source_location": "L133",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_points_use_shared_gravity_constant",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_points_use_shared_gravity_constant()"
     },
     {
@@ -8973,7 +9523,7 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_cst_quantity_factory_emits_no_warning",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_cst_quantity_factory_emits_no_warning()"
     },
     {
@@ -8983,7 +9533,7 @@
       "source_location": "L179",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_test_stokes_converts_to_cst",
-      "community": 9,
+      "community": 177,
       "norm_label": "test_stokes_converts_to_cst()"
     },
     {
@@ -8993,7 +9543,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_quantity_spine_rationale_1",
-      "community": 9,
+      "community": 177,
       "norm_label": "library quantity spine \u2014 sprint 1 of project 001_masterpiece.  asserts the new s"
     },
     {
@@ -9115,6 +9665,236 @@
       "id": "tests_test_report_formats_rationale_1",
       "community": 11,
       "norm_label": "report export in every format \u2014 uc-09 (word / latex / pdf).  qt-free: builds the"
+    },
+    {
+      "label": "test_schema_migration.py",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration",
+      "community": 38,
+      "norm_label": "test_schema_migration.py"
+    },
+    {
+      "label": "test_fixtures_present()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L135",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_fixtures_present",
+      "community": 38,
+      "norm_label": "test_fixtures_present()"
+    },
+    {
+      "label": "test_migrate_idempotent_and_v2_shapes()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L140",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_migrate_idempotent_and_v2_shapes",
+      "community": 38,
+      "norm_label": "test_migrate_idempotent_and_v2_shapes()"
+    },
+    {
+      "label": "test_codec_fixed_point_on_shipped_files()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L161",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_codec_fixed_point_on_shipped_files",
+      "community": 38,
+      "norm_label": "test_codec_fixed_point_on_shipped_files()"
+    },
+    {
+      "label": "test_float_magnitudes_not_perturbed()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L168",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_float_magnitudes_not_perturbed",
+      "community": 38,
+      "norm_label": "test_float_magnitudes_not_perturbed()"
+    },
+    {
+      "label": "test_missing_unit_key_is_canonical_not_preset()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L178",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_missing_unit_key_is_canonical_not_preset",
+      "community": 38,
+      "norm_label": "test_missing_unit_key_is_canonical_not_preset()"
+    },
+    {
+      "label": "test_codec_roundtrip_defaults()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L204",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_codec_roundtrip_defaults",
+      "community": 38,
+      "norm_label": "test_codec_roundtrip_defaults()"
+    },
+    {
+      "label": "test_codec_roundtrip_ylim_lists_and_us_units()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L211",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_codec_roundtrip_ylim_lists_and_us_units",
+      "community": 38,
+      "norm_label": "test_codec_roundtrip_ylim_lists_and_us_units()"
+    },
+    {
+      "label": "test_passthrough_kinds_and_unknown_keys()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L225",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_passthrough_kinds_and_unknown_keys",
+      "community": 38,
+      "norm_label": "test_passthrough_kinds_and_unknown_keys()"
+    },
+    {
+      "label": "test_label_for()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L246",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_label_for",
+      "community": 38,
+      "norm_label": "test_label_for()"
+    },
+    {
+      "label": "test_decode_display_unit_kept_when_known()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L254",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_decode_display_unit_kept_when_known",
+      "community": 38,
+      "norm_label": "test_decode_display_unit_kept_when_known()"
+    },
+    {
+      "label": "test_decode_unknown_display_unit_goes_canonical()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L259",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_decode_unknown_display_unit_goes_canonical",
+      "community": 38,
+      "norm_label": "test_decode_unknown_display_unit_goes_canonical()"
+    },
+    {
+      "label": "test_decode_fixed_unit_fields_are_converted()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L265",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_decode_fixed_unit_fields_are_converted",
+      "community": 38,
+      "norm_label": "test_decode_fixed_unit_fields_are_converted()"
+    },
+    {
+      "label": "_tp_stored()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L284",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_tp_stored",
+      "community": 38,
+      "norm_label": "_tp_stored()"
+    },
+    {
+      "label": "test_test_points_columns_convert_to_runtime_units()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L317",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_test_points_columns_convert_to_runtime_units",
+      "community": 38,
+      "norm_label": "test_test_points_columns_convert_to_runtime_units()"
+    },
+    {
+      "label": "test_test_points_kgf_kept_and_absolute_reference()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L329",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_test_points_kgf_kept_and_absolute_reference",
+      "community": 38,
+      "norm_label": "test_test_points_kgf_kept_and_absolute_reference()"
+    },
+    {
+      "label": "qapp()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L346",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_qapp",
+      "community": 38,
+      "norm_label": "qapp()"
+    },
+    {
+      "label": "expected()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L355",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_expected",
+      "community": 38,
+      "norm_label": "expected()"
+    },
+    {
+      "label": "_scene()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L359",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_scene",
+      "community": 38,
+      "norm_label": "_scene()"
+    },
+    {
+      "label": "_summary()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L366",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_summary",
+      "community": 38,
+      "norm_label": "_summary()"
+    },
+    {
+      "label": "test_v1_fixture_loads_with_same_results()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L390",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_v1_fixture_loads_with_same_results",
+      "community": 38,
+      "norm_label": "test_v1_fixture_loads_with_same_results()"
+    },
+    {
+      "label": "test_scene_to_dict_is_v2_fixed_point()",
+      "file_type": "code",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L397",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_test_scene_to_dict_is_v2_fixed_point",
+      "community": 38,
+      "norm_label": "test_scene_to_dict_is_v2_fixed_point()"
+    },
+    {
+      "label": "``.pumpflow`` schema v2 \u2014 migration + settings codec (Sprint 2b).  Qt-free layer",
+      "file_type": "rationale",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "tests_test_schema_migration_rationale_1",
+      "community": 38,
+      "norm_label": "``.pumpflow`` schema v2 \u2014 migration + settings codec (sprint 2b).  qt-free layer"
     },
     {
       "label": "test_signals_quantities.py",
@@ -12203,7 +12983,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme",
-      "community": 62,
+      "community": 59,
       "norm_label": "readme.md"
     },
     {
@@ -12213,7 +12993,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme_001_masterpiece_pint_end_to_end_every_use_case_fat_grade_acceptance",
-      "community": 62,
+      "community": 59,
       "norm_label": "001_masterpiece \u2014 pint end to end, every use case, fat-grade acceptance"
     },
     {
@@ -12223,7 +13003,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme_001_masterpiece_loop_protocol",
-      "community": 175,
+      "community": 59,
       "norm_label": "001_masterpiece \u2014 loop protocol"
     },
     {
@@ -12233,7 +13013,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme_standing_rules_every_sprint",
-      "community": 175,
+      "community": 59,
       "norm_label": "standing rules (every sprint)"
     },
     {
@@ -12243,7 +13023,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme_tracker",
-      "community": 175,
+      "community": 59,
       "norm_label": "tracker"
     },
     {
@@ -12253,7 +13033,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "docs_changes_001_masterpiece_readme_changelog",
-      "community": 175,
+      "community": 59,
       "norm_label": "changelog"
     },
     {
@@ -14543,7 +15323,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs",
-      "community": 60,
+      "community": 187,
       "norm_label": "sprint-05-read-the-docs.md"
     },
     {
@@ -14553,7 +15333,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs_sprint_s5_read_the_docs_sphinx_autodoc_8_h",
-      "community": 60,
+      "community": 187,
       "norm_label": "sprint s5 \u2014 read the docs (sphinx + autodoc) (8 h)"
     },
     {
@@ -14563,7 +15343,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs_tasks_8_h",
-      "community": 60,
+      "community": 187,
       "norm_label": "tasks (\u2248 8 h)"
     },
     {
@@ -14573,7 +15353,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs_files_touched",
-      "community": 60,
+      "community": 187,
       "norm_label": "files touched"
     },
     {
@@ -14583,7 +15363,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs_acceptance_criteria",
-      "community": 60,
+      "community": 187,
       "norm_label": "acceptance criteria"
     },
     {
@@ -14593,7 +15373,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "docs_sprints_sprint_05_read_the_docs_definition_of_done",
-      "community": 60,
+      "community": 187,
       "norm_label": "definition of done"
     },
     {
@@ -14943,7 +15723,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pumpflow_docs_index_data_formats",
-      "community": 60,
+      "community": 189,
       "norm_label": "data formats"
     },
     {
@@ -14953,7 +15733,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "pumpflow_docs_index_1_data_exchange_json_ui_spec_6_2",
-      "community": 60,
+      "community": 189,
       "norm_label": "1 \u00b7 data-exchange json (ui_spec \u00a76.2)"
     },
     {
@@ -14963,7 +15743,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "pumpflow_docs_index_field_reference",
-      "community": 60,
+      "community": 189,
       "norm_label": "field reference"
     },
     {
@@ -14973,7 +15753,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "pumpflow_docs_index_2_project_file_pumpflow_ui_spec_6_1",
-      "community": 60,
+      "community": 189,
       "norm_label": "2 \u00b7 project file \u2014 `.pumpflow` (ui_spec \u00a76.1)"
     },
     {
@@ -14983,7 +15763,7 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "pumpflow_docs_index_3_report_outputs",
-      "community": 60,
+      "community": 189,
       "norm_label": "3 \u00b7 report outputs"
     },
     {
@@ -16371,6 +17151,17 @@
       "source_location": "L46",
       "weight": 1.0,
       "source": "pumpflow_binding",
+      "target": "pump_constants",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
       "target": "pump_constants",
       "confidence_score": 1.0
     },
@@ -19934,7 +20725,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L81",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pump_utilities_pressure_pressure"
@@ -21469,7 +22260,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L186",
+      "source_location": "L217",
       "weight": 1.0,
       "source": "pumpflow_units_convert_display",
       "target": "pump_utilities_unit_conversion_quantity_factory",
@@ -21480,7 +22271,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L171",
+      "source_location": "L202",
       "weight": 1.0,
       "source": "pumpflow_units_to_standard",
       "target": "pump_utilities_unit_conversion_quantity_factory",
@@ -21691,6 +22482,28 @@
       "source_location": "L34",
       "weight": 1.0,
       "source": "pumpflow_nodes_ui",
+      "target": "pumpflow_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "pumpflow_persistence",
+      "target": "pumpflow_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
       "target": "pumpflow_init",
       "confidence_score": 1.0
     },
@@ -26235,6 +27048,28 @@
       "source_location": "L29",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene",
+      "target": "pumpflow_persistence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "pumpflow_canvas_scene",
+      "target": "pumpflow_settings_codec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "pumpflow_canvas_scene",
       "target": "pumpflow_units",
       "confidence_score": 1.0
     },
@@ -26312,7 +27147,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L199",
+      "source_location": "L209",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene",
       "target": "pumpflow_canvas_scene_graphscene_load_dict",
@@ -26455,6 +27290,28 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L360",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_canvas_scene_graphscene",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L363",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_scene",
+      "target": "pumpflow_canvas_scene_graphscene",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "context": "parameter_type",
       "confidence": "EXTRACTED",
@@ -26470,7 +27327,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L209",
+      "source_location": "L221",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_add_node",
@@ -26481,7 +27338,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L211",
+      "source_location": "L223",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_py_qpointf",
@@ -26503,7 +27360,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L207",
+      "source_location": "L219",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_remove_node",
@@ -26525,7 +27382,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L216",
+      "source_location": "L228",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_node_by_id",
@@ -26536,7 +27393,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L223",
+      "source_location": "L235",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_connect_ports",
@@ -26568,7 +27425,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L205",
+      "source_location": "L217",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_remove_edge",
@@ -26612,7 +27469,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/canvas/scene.py",
-      "source_location": "L224",
+      "source_location": "L236",
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_graphscene_load_dict",
       "target": "pumpflow_canvas_scene_graphscene_evaluate",
@@ -26626,6 +27483,26 @@
       "weight": 1.0,
       "source": "pumpflow_canvas_scene_rationale_161",
       "target": "pumpflow_canvas_scene_graphscene_evaluate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L172",
+      "weight": 1.0,
+      "source": "pumpflow_canvas_scene_rationale_172",
+      "target": "pumpflow_canvas_scene_graphscene_to_dict",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/canvas/scene.py",
+      "source_location": "L210",
+      "weight": 1.0,
+      "source": "pumpflow_canvas_scene_rationale_210",
+      "target": "pumpflow_canvas_scene_graphscene_load_dict",
       "confidence_score": 1.0
     },
     {
@@ -30891,6 +31768,28 @@
       "target": "pumpflow_nodes_registry_make_node"
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L361",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_nodes_registry_make_node",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L363",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_scene",
+      "target": "pumpflow_nodes_registry_make_node"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/nodes/report_export.py",
@@ -32458,7 +33357,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L25",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_numfmt",
@@ -32479,7 +33378,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L25",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_numfmt_parse_decimal",
@@ -32490,7 +33389,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L58",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "pumpflow_persistence_rated_from_json",
       "target": "pumpflow_numfmt_parse_decimal",
@@ -32501,7 +33400,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L80",
+      "source_location": "L87",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pumpflow_numfmt_parse_decimal",
@@ -32521,7 +33420,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L93",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_json_from_signals",
@@ -32531,7 +33430,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L38",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_mag",
@@ -32541,7 +33440,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L143",
+      "source_location": "L180",
+      "weight": 1.0,
+      "source": "pumpflow_persistence",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L150",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_normalize_unit",
@@ -32551,7 +33460,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L136",
+      "source_location": "L143",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_num",
@@ -32561,7 +33470,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L33",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_opt",
@@ -32571,7 +33480,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L51",
+      "source_location": "L58",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_rated_from_json",
@@ -32581,7 +33490,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L157",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_read_json",
@@ -32591,7 +33500,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L72",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "pumpflow_persistence",
+      "target": "pumpflow_persistence_read_project",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L79",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_testset_from_json",
@@ -32601,7 +33520,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L43",
+      "source_location": "L50",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_testset_pressure_unit",
@@ -32611,7 +33530,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L162",
+      "source_location": "L170",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_persistence_write_json",
@@ -32619,10 +33538,21 @@
     },
     {
       "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "pumpflow_persistence",
+      "target": "pumpflow_settings_codec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L26",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_signals",
@@ -32633,7 +33563,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L26",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_signals_ratedpoint",
@@ -32644,7 +33574,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L26",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_signals_testpointset",
@@ -32655,7 +33585,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L26",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "pumpflow_persistence",
       "target": "pumpflow_signals_testrow",
@@ -32694,11 +33624,22 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_persistence",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L62",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "pumpflow_persistence_rated_from_json",
       "target": "pumpflow_persistence_opt",
@@ -32708,9 +33649,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L34",
+      "source_location": "L41",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_34",
+      "source": "pumpflow_persistence_rationale_41",
       "target": "pumpflow_persistence_opt",
       "confidence_score": 1.0
     },
@@ -32719,7 +33660,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L86",
+      "source_location": "L93",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pumpflow_persistence_opt",
@@ -32730,7 +33671,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L102",
+      "source_location": "L109",
       "weight": 1.0,
       "source": "pumpflow_persistence_json_from_signals",
       "target": "pumpflow_persistence_mag",
@@ -32740,9 +33681,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L39",
+      "source_location": "L46",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_39",
+      "source": "pumpflow_persistence_rationale_46",
       "target": "pumpflow_persistence_mag",
       "confidence_score": 1.0
     },
@@ -32751,7 +33692,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L95",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "pumpflow_persistence_json_from_signals",
       "target": "pumpflow_persistence_testset_pressure_unit",
@@ -32761,9 +33702,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L44",
+      "source_location": "L51",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_44",
+      "source": "pumpflow_persistence_rationale_51",
       "target": "pumpflow_persistence_testset_pressure_unit",
       "confidence_score": 1.0
     },
@@ -32772,7 +33713,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L43",
+      "source_location": "L50",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_pressure_unit",
       "target": "pumpflow_signals_testpointset",
@@ -32794,7 +33735,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L446",
+      "source_location": "L449",
       "weight": 1.0,
       "source": "pumpflow_sample_data_explore_project_doc",
       "target": "pumpflow_persistence_testset_pressure_unit",
@@ -32805,7 +33746,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L257",
+      "source_location": "L259",
       "weight": 1.0,
       "source": "pumpflow_sample_data_sample_project_doc",
       "target": "pumpflow_persistence_testset_pressure_unit",
@@ -32816,7 +33757,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L198",
+      "source_location": "L200",
       "weight": 1.0,
       "source": "pumpflow_sample_data_test_rows",
       "target": "pumpflow_persistence_testset_pressure_unit",
@@ -32827,7 +33768,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L51",
+      "source_location": "L58",
       "weight": 1.0,
       "source": "pumpflow_persistence_rated_from_json",
       "target": "pumpflow_signals_ratedpoint",
@@ -32837,9 +33778,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L52",
+      "source_location": "L59",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_52",
+      "source": "pumpflow_persistence_rationale_59",
       "target": "pumpflow_persistence_rated_from_json",
       "confidence_score": 1.0
     },
@@ -32847,9 +33788,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L73",
+      "source_location": "L80",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_73",
+      "source": "pumpflow_persistence_rationale_80",
       "target": "pumpflow_persistence_testset_from_json",
       "confidence_score": 1.0
     },
@@ -32858,7 +33799,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L74",
+      "source_location": "L81",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pumpflow_persistence_normalize_unit",
@@ -32869,7 +33810,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L72",
+      "source_location": "L79",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pumpflow_signals_testpointset",
@@ -32880,7 +33821,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L79",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "pumpflow_persistence_testset_from_json",
       "target": "pumpflow_signals_testrow",
@@ -32902,7 +33843,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L409",
+      "source_location": "L412",
       "weight": 1.0,
       "source": "pumpflow_sample_data_explore_project_doc",
       "target": "pumpflow_persistence_testset_from_json",
@@ -32913,7 +33854,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L220",
+      "source_location": "L222",
       "weight": 1.0,
       "source": "pumpflow_sample_data_sample_project_doc",
       "target": "pumpflow_persistence_testset_from_json",
@@ -32924,7 +33865,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L197",
+      "source_location": "L199",
       "weight": 1.0,
       "source": "pumpflow_sample_data_test_rows",
       "target": "pumpflow_persistence_testset_from_json",
@@ -32935,7 +33876,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L102",
+      "source_location": "L109",
       "weight": 1.0,
       "source": "pumpflow_persistence_json_from_signals",
       "target": "pumpflow_persistence_num",
@@ -32946,7 +33887,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L93",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "pumpflow_persistence_json_from_signals",
       "target": "pumpflow_signals_ratedpoint",
@@ -32957,7 +33898,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L93",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "pumpflow_persistence_json_from_signals",
       "target": "pumpflow_signals_testpointset",
@@ -32967,10 +33908,20 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L94",
+      "source_location": "L101",
       "weight": 1.0,
-      "source": "pumpflow_persistence_rationale_94",
+      "source": "pumpflow_persistence_rationale_101",
       "target": "pumpflow_persistence_json_from_signals",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L165",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_rationale_165",
+      "target": "pumpflow_persistence_read_json",
       "confidence_score": 1.0
     },
     {
@@ -32978,10 +33929,21 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/persistence.py",
-      "source_location": "L157",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "pumpflow_persistence_read_json",
       "target": "pumpflow_persistence_py_path",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L214",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_read_project",
+      "target": "pumpflow_persistence_read_json",
       "confidence_score": 1.0
     },
     {
@@ -32999,12 +33961,230 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "source_file": "tests/test_persistence_roundtrip.py",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "tests_test_persistence_roundtrip_test_shipped_file_matches_builder",
+      "target": "pumpflow_persistence_read_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_persistence_read_json",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L162",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_codec_fixed_point_on_shipped_files",
+      "target": "pumpflow_persistence_read_json"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L141",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_migrate_idempotent_and_v2_shapes",
+      "target": "pumpflow_persistence_read_json"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L399",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_scene_to_dict_is_v2_fixed_point",
+      "target": "pumpflow_persistence_read_json"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L392",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_v1_fixture_loads_with_same_results",
+      "target": "pumpflow_persistence_read_json"
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_read_project",
+      "target": "pumpflow_persistence_py_path",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L170",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_write_json",
+      "target": "pumpflow_persistence_py_path",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L181",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_rationale_181",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L214",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_read_project",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/sample_data.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "pumpflow_sample_data",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/sample_data.py",
+      "source_location": "L550",
+      "weight": 1.0,
+      "source": "pumpflow_sample_data_explore_project_doc",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/sample_data.py",
+      "source_location": "L402",
+      "weight": 1.0,
+      "source": "pumpflow_sample_data_sample_project_doc",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L162",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_codec_fixed_point_on_shipped_files",
+      "target": "pumpflow_persistence_migrate"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_migrate_idempotent_and_v2_shapes",
+      "target": "pumpflow_persistence_migrate"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L192",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_missing_unit_key_is_canonical_not_preset",
+      "target": "pumpflow_persistence_migrate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L402",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_scene_to_dict_is_v2_fixed_point",
+      "target": "pumpflow_persistence_migrate"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/persistence.py",
+      "source_location": "L213",
+      "weight": 1.0,
+      "source": "pumpflow_persistence_rationale_213",
+      "target": "pumpflow_persistence_read_project",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_persistence_roundtrip.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_test_persistence_roundtrip",
+      "target": "pumpflow_persistence_read_project",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_persistence_roundtrip.py",
       "source_location": "L129",
       "weight": 1.0,
       "source": "tests_test_persistence_roundtrip_b34004_scene",
-      "target": "pumpflow_persistence_read_json"
+      "target": "pumpflow_persistence_read_project"
     },
     {
       "relation": "calls",
@@ -33014,36 +34194,36 @@
       "source_location": "L134",
       "weight": 1.0,
       "source": "tests_test_persistence_roundtrip_test_b34004_roundtrip_and_wiring",
-      "target": "pumpflow_persistence_read_json",
+      "target": "pumpflow_persistence_read_project",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_persistence_read_project",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "tests/test_persistence_roundtrip.py",
-      "source_location": "L36",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L147",
       "weight": 1.0,
-      "source": "tests_test_persistence_roundtrip_test_shipped_file_matches_builder",
-      "target": "pumpflow_persistence_read_json",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "parameter_type",
-      "confidence": "EXTRACTED",
-      "source_file": "pumpflow/persistence.py",
-      "source_location": "L162",
-      "weight": 1.0,
-      "source": "pumpflow_persistence_write_json",
-      "target": "pumpflow_persistence_py_path",
-      "confidence_score": 1.0
+      "source": "tests_test_schema_migration_test_migrate_idempotent_and_v2_shapes",
+      "target": "pumpflow_persistence_read_project"
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L402",
+      "source_location": "L405",
       "weight": 1.0,
       "source": "pumpflow_sample_data",
       "target": "pumpflow_sample_data_explore_project_doc",
@@ -33053,7 +34233,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L214",
+      "source_location": "L216",
       "weight": 1.0,
       "source": "pumpflow_sample_data",
       "target": "pumpflow_sample_data_sample_project_doc",
@@ -33063,7 +34243,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0,
       "source": "pumpflow_sample_data",
       "target": "pumpflow_sample_data_test_rows",
@@ -33095,7 +34275,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L448",
+      "source_location": "L451",
       "weight": 1.0,
       "source": "pumpflow_sample_data_explore_project_doc",
       "target": "pumpflow_sample_data_test_rows",
@@ -33105,9 +34285,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L196",
+      "source_location": "L198",
       "weight": 1.0,
-      "source": "pumpflow_sample_data_rationale_196",
+      "source": "pumpflow_sample_data_rationale_198",
       "target": "pumpflow_sample_data_test_rows",
       "confidence_score": 1.0
     },
@@ -33116,7 +34296,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L259",
+      "source_location": "L261",
       "weight": 1.0,
       "source": "pumpflow_sample_data_sample_project_doc",
       "target": "pumpflow_sample_data_test_rows",
@@ -33126,9 +34306,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L215",
+      "source_location": "L217",
       "weight": 1.0,
-      "source": "pumpflow_sample_data_rationale_215",
+      "source": "pumpflow_sample_data_rationale_217",
       "target": "pumpflow_sample_data_sample_project_doc",
       "confidence_score": 1.0
     },
@@ -33159,7 +34339,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_persistence_roundtrip.py",
-      "source_location": "L40",
+      "source_location": "L39",
       "weight": 1.0,
       "source": "tests_test_persistence_roundtrip_test_builder_shape",
       "target": "pumpflow_sample_data_sample_project_doc",
@@ -33192,7 +34372,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_persistence_roundtrip.py",
-      "source_location": "L36",
+      "source_location": "L35",
       "weight": 1.0,
       "source": "tests_test_persistence_roundtrip_test_shipped_file_matches_builder",
       "target": "pumpflow_sample_data_sample_project_doc",
@@ -33202,10 +34382,735 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/sample_data.py",
-      "source_location": "L403",
+      "source_location": "L406",
       "weight": 1.0,
-      "source": "pumpflow_sample_data_rationale_403",
+      "source": "pumpflow_sample_data_rationale_406",
       "target": "pumpflow_sample_data_explore_project_doc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_atm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L332",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_decode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L116",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_disp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L324",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_encode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_fixed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L82",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_fmt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L58",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_norm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_pint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L98",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_pressure_runtime_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L191",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_pressures",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_same_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L242",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_testrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L340",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_upgrade_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L170",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_settings_codec_ylim",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec",
+      "target": "pumpflow_units",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_1",
+      "target": "pumpflow_settings_codec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "pumpflow_settings_codec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_convert",
+      "target": "pumpflow_settings_codec_norm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_59",
+      "target": "pumpflow_settings_codec_norm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_same_unit",
+      "target": "pumpflow_settings_codec_norm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_convert",
+      "target": "pumpflow_settings_codec_same_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressure_runtime_unit",
+      "target": "pumpflow_settings_codec_same_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp_dec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L166",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_fixed_dec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_dec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_75",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L278",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows_dec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L187",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_ylim_dec",
+      "target": "pumpflow_settings_codec_convert",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L132",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp_enc",
+      "target": "pumpflow_settings_codec_fmt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_enc",
+      "target": "pumpflow_settings_codec_fmt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_83",
+      "target": "pumpflow_settings_codec_fmt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L253",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows_enc",
+      "target": "pumpflow_settings_codec_fmt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp_dec",
+      "target": "pumpflow_settings_codec_pint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L132",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp_enc",
+      "target": "pumpflow_settings_codec_pint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_88",
+      "target": "pumpflow_settings_codec_pint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L220",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_dec",
+      "target": "pumpflow_settings_codec_pressure_runtime_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L99",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_99",
+      "target": "pumpflow_settings_codec_pressure_runtime_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L272",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows_dec",
+      "target": "pumpflow_settings_codec_pressure_runtime_unit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L225",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_dec",
+      "target": "pumpflow_settings_codec_atm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L282",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows_dec",
+      "target": "pumpflow_settings_codec_atm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L134",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp",
+      "target": "pumpflow_settings_codec_disp_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp",
+      "target": "pumpflow_settings_codec_disp_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_disp",
+      "target": "pumpflow_settings_codec_disp_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_117",
+      "target": "pumpflow_settings_codec_disp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L163",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_fixed",
+      "target": "pumpflow_settings_codec_fixed_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L157",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_fixed",
+      "target": "pumpflow_settings_codec_fixed_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_fixed",
+      "target": "pumpflow_settings_codec_fixed_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L149",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_149",
+      "target": "pumpflow_settings_codec_fixed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L171",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_171",
+      "target": "pumpflow_settings_codec_ylim",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L184",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_ylim",
+      "target": "pumpflow_settings_codec_ylim_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L179",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_ylim",
+      "target": "pumpflow_settings_codec_ylim_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L176",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_ylim",
+      "target": "pumpflow_settings_codec_ylim_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L216",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures",
+      "target": "pumpflow_settings_codec_pressures_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures",
+      "target": "pumpflow_settings_codec_pressures_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures",
+      "target": "pumpflow_settings_codec_pressures_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures",
+      "target": "pumpflow_settings_codec_pressures_present",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L192",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_192",
+      "target": "pumpflow_settings_codec_pressures",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L217",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_dec",
+      "target": "pumpflow_settings_codec_pressures_present",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L207",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_pressures_enc",
+      "target": "pumpflow_settings_codec_pressures_present",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L243",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_243",
+      "target": "pumpflow_settings_codec_testrows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L266",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows",
+      "target": "pumpflow_settings_codec_testrows_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L250",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows",
+      "target": "pumpflow_settings_codec_testrows_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L247",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_testrows",
+      "target": "pumpflow_settings_codec_testrows_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L351",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_upgrade_v1",
+      "target": "pumpflow_settings_codec_testrows_fill_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L328",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_encode",
+      "target": "pumpflow_settings_codec_testrows_enc",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L336",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_decode",
+      "target": "pumpflow_settings_codec_testrows_dec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L325",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_325",
+      "target": "pumpflow_settings_codec_encode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L333",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_333",
+      "target": "pumpflow_settings_codec_decode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/settings_codec.py",
+      "source_location": "L341",
+      "weight": 1.0,
+      "source": "pumpflow_settings_codec_rationale_341",
+      "target": "pumpflow_settings_codec_upgrade_v1",
       "confidence_score": 1.0
     },
     {
@@ -33949,7 +35854,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L174",
+      "source_location": "L205",
       "weight": 1.0,
       "source": "pumpflow_units",
       "target": "pumpflow_units_convert_display",
@@ -33959,10 +35864,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L203",
+      "source_location": "L234",
       "weight": 1.0,
       "source": "pumpflow_units",
       "target": "pumpflow_units_convert_viscosity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/units.py",
+      "source_location": "L128",
+      "weight": 1.0,
+      "source": "pumpflow_units",
+      "target": "pumpflow_units_label_for",
       "confidence_score": 1.0
     },
     {
@@ -33989,7 +35904,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L190",
+      "source_location": "L221",
       "weight": 1.0,
       "source": "pumpflow_units",
       "target": "pumpflow_units_to_cst",
@@ -33999,7 +35914,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L162",
+      "source_location": "L193",
       "weight": 1.0,
       "source": "pumpflow_units",
       "target": "pumpflow_units_to_standard",
@@ -34009,7 +35924,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L128",
+      "source_location": "L159",
       "weight": 1.0,
       "source": "pumpflow_units",
       "target": "pumpflow_units_unitprefs",
@@ -34022,6 +35937,17 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "pumpflow_units_rationale_1",
+      "target": "pumpflow_units",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "submodule_import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
       "target": "pumpflow_units",
       "confidence_score": 1.0
     },
@@ -34040,7 +35966,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L143",
+      "source_location": "L174",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs_default_unit",
       "target": "pumpflow_units_canonical_unit",
@@ -34061,7 +35987,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L186",
+      "source_location": "L217",
       "weight": 1.0,
       "source": "pumpflow_units_convert_display",
       "target": "pumpflow_units_pint_str",
@@ -34072,7 +35998,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L171",
+      "source_location": "L202",
       "weight": 1.0,
       "source": "pumpflow_units_to_standard",
       "target": "pumpflow_units_pint_str",
@@ -34085,6 +36011,16 @@
       "source_location": "L129",
       "weight": 1.0,
       "source": "pumpflow_units_rationale_129",
+      "target": "pumpflow_units_label_for",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "pumpflow/units.py",
+      "source_location": "L160",
+      "weight": 1.0,
+      "source": "pumpflow_units_rationale_160",
       "target": "pumpflow_units_unitprefs",
       "confidence_score": 1.0
     },
@@ -34092,7 +36028,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L142",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs",
       "target": "pumpflow_units_unitprefs_default_unit",
@@ -34102,7 +36038,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L136",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs",
       "target": "pumpflow_units_unitprefs_init",
@@ -34112,7 +36048,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L148",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs",
       "target": "pumpflow_units_unitprefs_load",
@@ -34122,7 +36058,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L139",
+      "source_location": "L170",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs",
       "target": "pumpflow_units_unitprefs_set_preset",
@@ -34132,7 +36068,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L145",
+      "source_location": "L176",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs",
       "target": "pumpflow_units_unitprefs_to_dict",
@@ -34143,7 +36079,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L150",
+      "source_location": "L181",
       "weight": 1.0,
       "source": "pumpflow_units_unitprefs_load",
       "target": "pumpflow_units_unitprefs_set_preset",
@@ -34153,9 +36089,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L165",
+      "source_location": "L196",
       "weight": 1.0,
-      "source": "pumpflow_units_rationale_165",
+      "source": "pumpflow_units_rationale_196",
       "target": "pumpflow_units_to_standard",
       "confidence_score": 1.0
     },
@@ -34164,7 +36100,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L170",
+      "source_location": "L201",
       "weight": 1.0,
       "source": "pumpflow_units_to_standard",
       "target": "pumpflow_units_to_cst",
@@ -34175,7 +36111,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L185",
+      "source_location": "L216",
       "weight": 1.0,
       "source": "pumpflow_units_convert_display",
       "target": "pumpflow_units_convert_viscosity",
@@ -34185,9 +36121,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L181",
+      "source_location": "L212",
       "weight": 1.0,
-      "source": "pumpflow_units_rationale_181",
+      "source": "pumpflow_units_rationale_212",
       "target": "pumpflow_units_convert_display",
       "confidence_score": 1.0
     },
@@ -34195,9 +36131,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "pumpflow/units.py",
-      "source_location": "L191",
+      "source_location": "L222",
       "weight": 1.0,
-      "source": "pumpflow_units_rationale_191",
+      "source": "pumpflow_units_rationale_222",
       "target": "pumpflow_units_to_cst",
       "confidence_score": 1.0
     },
@@ -34968,7 +36904,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_persistence_roundtrip.py",
-      "source_location": "L39",
+      "source_location": "L38",
       "weight": 1.0,
       "source": "tests_test_persistence_roundtrip",
       "target": "tests_test_persistence_roundtrip_test_builder_shape",
@@ -35514,6 +37450,281 @@
       "weight": 1.0,
       "source": "tests_test_report_formats_rationale_1",
       "target": "tests_test_report_formats",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L355",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_expected",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L346",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_qapp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L359",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_scene",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L366",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_summary",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L161",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_codec_fixed_point_on_shipped_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_codec_roundtrip_defaults",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L211",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_codec_roundtrip_ylim_lists_and_us_units",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L254",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_decode_display_unit_kept_when_known",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L265",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_decode_fixed_unit_fields_are_converted",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L259",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_decode_unknown_display_unit_goes_canonical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L135",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_fixtures_present",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L168",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_float_magnitudes_not_perturbed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L246",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_label_for",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L140",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_migrate_idempotent_and_v2_shapes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L178",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_missing_unit_key_is_canonical_not_preset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L225",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_passthrough_kinds_and_unknown_keys",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L397",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_scene_to_dict_is_v2_fixed_point",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L317",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_test_points_columns_convert_to_runtime_units",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L329",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_test_points_kgf_kept_and_absolute_reference",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L390",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_test_v1_fixture_loads_with_same_results",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L284",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration",
+      "target": "tests_test_schema_migration_tp_stored",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_rationale_1",
+      "target": "tests_test_schema_migration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L318",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_test_points_columns_convert_to_runtime_units",
+      "target": "tests_test_schema_migration_tp_stored",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L330",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_test_points_kgf_kept_and_absolute_reference",
+      "target": "tests_test_schema_migration_tp_stored",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L398",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_scene_to_dict_is_v2_fixed_point",
+      "target": "tests_test_schema_migration_scene",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L391",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_v1_fixture_loads_with_same_results",
+      "target": "tests_test_schema_migration_scene",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_schema_migration.py",
+      "source_location": "L393",
+      "weight": 1.0,
+      "source": "tests_test_schema_migration_test_v1_fixture_loads_with_same_results",
+      "target": "tests_test_schema_migration_summary",
       "confidence_score": 1.0
     },
     {
@@ -42398,5 +44609,5 @@
       "source_file": "pumpflow/docs/data_formats.md"
     }
   ],
-  "built_at_commit": "e4e7102d14f114510de6bcfa6a7f4a2abb6eebb9"
+  "built_at_commit": "0cb08fe2a40fdde9e80882d50036fdcbf0ff0c55"
 }

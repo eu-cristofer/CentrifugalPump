@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from pumpflow.persistence import read_json
+from pumpflow.persistence import read_json, read_project
 from pumpflow.sample_data import sample_project_doc
 
 SAMPLE = Path(__file__).resolve().parent.parent / "examples" / "sample_project.pumpflow"
@@ -30,14 +30,14 @@ def test_shipped_file_exists():
 
 
 def test_shipped_file_matches_builder():
-    # Regenerate with: python -c "from pumpflow.sample_data import sample_project_doc;
-    #   from pumpflow.persistence import write_json;
-    #   write_json('examples/sample_project.pumpflow', sample_project_doc())"
+    # Regenerate with the scene (schema v2):
+    #   scene.load_dict(sample_project_doc()); write_json(path, scene.to_dict())
     assert read_json(SAMPLE) == sample_project_doc()
 
 
 def test_builder_shape():
     doc = sample_project_doc()
+    assert doc["meta"] == {"unit_preset": "SI", "schema_version": 2}
     kinds = [n["kind"] for n in doc["nodes"]]
     assert kinds == [
         "rated_point", "test_points", "correction", "curve_fit",
@@ -49,7 +49,7 @@ def test_builder_shape():
     for e in doc["edges"]:
         assert e["src_node"] in ids and e["dst_node"] in ids
     rated = next(n for n in doc["nodes"] if n["kind"] == "rated_point")
-    assert rated["settings"]["npsha"] == 0.0
+    assert rated["settings"]["npsha"] == {"value": 0.0, "unit": "m"}
 
 
 # --------------------------------------------------------------------------- #
@@ -126,12 +126,12 @@ def b34004_scene(qapp):
     from pumpflow.nodes.registry import make_node
 
     scene = GraphScene(make_node)
-    scene.load_dict(read_json(B34004))
+    scene.load_dict(read_project(B34004))
     return scene
 
 
 def test_b34004_roundtrip_and_wiring(b34004_scene):
-    doc = read_json(B34004)
+    doc = read_project(B34004)  # migrated to v2 if the shipped file is still v1
     out = b34004_scene.to_dict()
     assert out["nodes"] == doc["nodes"] and out["edges"] == doc["edges"]
     assert len(b34004_scene.edges) == len(doc["edges"])

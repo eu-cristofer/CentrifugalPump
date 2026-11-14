@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "unit_preset": "SI",
+    "schema_version": 2
+  },
   "nodes": [
     {
       "id": "rated",
@@ -7,18 +11,45 @@
       "y": -40.0,
       "settings": {
         "tag": "P-1001",
+        "service": "",
         "standard": "API610 (12a ed.) / ISO 13709",
-        "q": 400.0,
-        "head": 100.0,
-        "n": 1480.0,
-        "power": 148.0,
-        "eff": 73.0,
-        "head_shutoff": 130.0,
+        "q": {
+          "value": 400.0,
+          "unit": "m**3/h"
+        },
+        "head": {
+          "value": 100.0,
+          "unit": "m"
+        },
+        "n": {
+          "value": 1480.0,
+          "unit": "rpm"
+        },
+        "power": {
+          "value": 148.0,
+          "unit": "kW"
+        },
+        "eff": {
+          "value": 73.0,
+          "unit": "percent"
+        },
+        "head_shutoff": {
+          "value": 130.0,
+          "unit": "m"
+        },
+        "npsha": {
+          "value": 0.0,
+          "unit": "m"
+        },
         "dens_rel": 1.0,
-        "visc": 1.0,
-        "unit": "bar",
+        "dens_unit": "kg/m³",
+        "visc": {
+          "value": 1.0,
+          "unit": "cSt"
+        },
         "parallel": false,
-        "fluid_name": "Water (service)"
+        "fluid_name": "Water (service)",
+        "fluid_choice": ""
       }
     },
     {
@@ -28,7 +59,7 @@
       "y": 220.0,
       "settings": {
         "pump_tag": "P-1001A",
-        "unit": "bar",
+        "fluid_choice": "",
         "rows": [
           {
             "q": 160.0,
@@ -42,7 +73,7 @@
           },
           {
             "q": 240.0,
-            "p_suc": 1.50,
+            "p_suc": 1.5,
             "p_dis": 13.16,
             "temp_c": 20.0,
             "n": 1480.0,
@@ -52,7 +83,7 @@
           },
           {
             "q": 320.0,
-            "p_suc": 1.50,
+            "p_suc": 1.5,
             "p_dis": 12.33,
             "temp_c": 20.2,
             "n": 1479.0,
@@ -63,7 +94,7 @@
           {
             "q": 400.0,
             "p_suc": 1.51,
-            "p_dis": 11.30,
+            "p_dis": 11.3,
             "temp_c": 20.0,
             "n": 1480.0,
             "power": 147.0,
@@ -72,8 +103,8 @@
           },
           {
             "q": 480.0,
-            "p_suc": 1.50,
-            "p_dis": 10.00,
+            "p_suc": 1.5,
+            "p_dis": 10.0,
             "temp_c": 20.5,
             "n": 1481.0,
             "power": 174.0,
@@ -90,7 +121,18 @@
             "head": null,
             "eff": null
           }
-        ]
+        ],
+        "columns": {
+          "q": "m**3/h",
+          "p_suc": "bar",
+          "p_dis": "bar",
+          "temp_c": "degC",
+          "n": "rpm",
+          "power": "kW",
+          "head": "m",
+          "eff": "percent"
+        },
+        "pressure_ref": "g"
       }
     },
     {
@@ -100,11 +142,15 @@
       "y": 90.0,
       "settings": {
         "lock_to_rated": true,
-        "target_speed": 1480.0,
+        "target_speed": {
+          "value": 1480.0,
+          "unit": "rpm"
+        },
         "apply_speed": true,
         "apply_density": true,
         "apply_viscosity": false,
-        "degree": 3
+        "degree": 3,
+        "fluid_choice": ""
       }
     },
     {
@@ -115,7 +161,8 @@
       "settings": {
         "degree": 3,
         "spline": true,
-        "resolution": 160
+        "resolution": 160,
+        "show_preview": true
       }
     },
     {
@@ -163,16 +210,71 @@
     }
   ],
   "edges": [
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "corr_a",  "dst_port": "RatedPoint"},
-    {"src_node": "test_a", "src_port": "TestPointSet",    "dst_node": "corr_a",  "dst_port": "TestPointSet"},
-    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "plot_a",  "dst_port": "FittedModel"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "plot_a",  "dst_port": "RatedPoint"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "check_a", "dst_port": "FittedModel"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "check_a", "dst_port": "RatedPoint"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "report",  "dst_port": "RatedPoint"},
-    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "report",  "dst_port": "branch"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "report",  "dst_port": "branch"},
-    {"src_node": "check_a","src_port": "ComplianceResult","dst_node": "report",  "dst_port": "branch"}
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "corr_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "test_a",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_a",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_a",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "plot_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "plot_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "check_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "check_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "report",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "check_a",
+      "src_port": "ComplianceResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    }
   ]
 }

@@ -12,7 +12,7 @@ As a showcase, B-34004A is re-entered in the vendor's native units with no hand 
 - `pumpflow/units.py`:
   - `UNIT_OPTIONS` gains these dimensions, canonical unit first:
     - `pressure`: bar, kgf/cm², psi, kPa, MPa, mH₂O. The gauge/absolute reference is a separate toggle stored with the value, e.g. `"unit": "psi", "ref": "g"`.
-    - `speed`: rpm, Hz.
+    - `speed`: rpm, revolution/second (Pint has no `rev`; use `revolution/second` or `turn/s`). **Do not offer `Hz`:** Pint treats Hz as 1/s and rpm as rev/min with 1 rev = 2π rad, so `Q_(1,"Hz").to("rpm")` is 9.55, not 60. This was found in S2b. If a "Hz" label is wanted, map it to the Pint string `revolution/second`.
     - `length`: mm, in, m.
     - `npsh`: m, ft.
     - `efficiency`: %, fraction.

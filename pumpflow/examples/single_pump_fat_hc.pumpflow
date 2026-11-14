@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "unit_preset": "SI",
+    "schema_version": 2
+  },
   "nodes": [
     {
       "id": "rated",
@@ -7,18 +11,45 @@
       "y": -40.0,
       "settings": {
         "tag": "B-2351105",
+        "service": "",
         "standard": "API610 (12a ed.) / ISO 13709 + N-553",
-        "q": 833.0,
-        "head": 73.0,
-        "n": 1750.0,
-        "power": 252.0,
-        "eff": 61.0,
-        "head_shutoff": 117.0,
+        "q": {
+          "value": 833.0,
+          "unit": "m**3/h"
+        },
+        "head": {
+          "value": 73.0,
+          "unit": "m"
+        },
+        "n": {
+          "value": 1750.0,
+          "unit": "rpm"
+        },
+        "power": {
+          "value": 252.0,
+          "unit": "kW"
+        },
+        "eff": {
+          "value": 61.0,
+          "unit": "percent"
+        },
+        "head_shutoff": {
+          "value": 117.0,
+          "unit": "m"
+        },
+        "npsha": {
+          "value": 0.0,
+          "unit": "m"
+        },
         "dens_rel": 0.736,
-        "visc": 0.567,
-        "unit": "bar",
+        "dens_unit": "kg/m³",
+        "visc": {
+          "value": 0.567,
+          "unit": "cSt"
+        },
         "parallel": false,
-        "fluid_name": "Rated fluid"
+        "fluid_name": "Rated fluid",
+        "fluid_choice": ""
       }
     },
     {
@@ -28,7 +59,7 @@
       "y": 220.0,
       "settings": {
         "pump_tag": "B-2351105A",
-        "unit": "bar",
+        "fluid_choice": "",
         "rows": [
           {
             "q": 300.0,
@@ -90,7 +121,18 @@
             "head": null,
             "eff": null
           }
-        ]
+        ],
+        "columns": {
+          "q": "m**3/h",
+          "p_suc": "bar",
+          "p_dis": "bar",
+          "temp_c": "degC",
+          "n": "rpm",
+          "power": "kW",
+          "head": "m",
+          "eff": "percent"
+        },
+        "pressure_ref": "g"
       }
     },
     {
@@ -100,11 +142,15 @@
       "y": 90.0,
       "settings": {
         "lock_to_rated": true,
-        "target_speed": 1750.0,
+        "target_speed": {
+          "value": 1750.0,
+          "unit": "rpm"
+        },
         "apply_speed": true,
         "apply_density": true,
         "apply_viscosity": false,
-        "degree": 3
+        "degree": 3,
+        "fluid_choice": ""
       }
     },
     {
@@ -115,7 +161,8 @@
       "settings": {
         "degree": 3,
         "spline": true,
-        "resolution": 160
+        "resolution": 160,
+        "show_preview": true
       }
     },
     {
@@ -163,16 +210,71 @@
     }
   ],
   "edges": [
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "corr_a",  "dst_port": "RatedPoint"},
-    {"src_node": "test_a", "src_port": "TestPointSet",    "dst_node": "corr_a",  "dst_port": "TestPointSet"},
-    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "plot_a",  "dst_port": "FittedModel"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "plot_a",  "dst_port": "RatedPoint"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "check_a", "dst_port": "FittedModel"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "check_a", "dst_port": "RatedPoint"},
-    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "report",  "dst_port": "RatedPoint"},
-    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "report",  "dst_port": "branch"},
-    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "report",  "dst_port": "branch"},
-    {"src_node": "check_a","src_port": "ComplianceResult","dst_node": "report",  "dst_port": "branch"}
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "corr_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "test_a",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_a",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_a",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "plot_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "plot_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "check_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "check_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "report",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "check_a",
+      "src_port": "ComplianceResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    }
   ]
 }

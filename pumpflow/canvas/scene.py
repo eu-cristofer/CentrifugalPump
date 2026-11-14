@@ -26,7 +26,7 @@ from . import theme
 from .edge_item import EdgeItem
 from .node_item import NodeItem
 from .port_item import PortItem
-from .. import units
+from .. import persistence, settings_codec, units
 
 
 class GraphScene(QGraphicsScene):
@@ -169,18 +169,28 @@ class GraphScene(QGraphicsScene):
 
     # ------------------------------------------------------ serialization
     def to_dict(self) -> dict:
+        """Serialize the canvas as a schema-v2 project document.
+
+        Node runtime settings are translated to the on-disk shape by
+        :func:`pumpflow.settings_codec.encode` (``{"value", "unit"}`` quantities).
+        """
         return {
-            # Project-level display preference (the active unit preset). Plain
-            # magnitudes still live on each node; this only chooses how fresh
-            # fields are labelled (units.PREFS — multi-unit philosophy).
-            "meta": units.PREFS.to_dict(),
+            # Project-level display preference (the active unit preset) plus the
+            # schema version. Plain magnitudes + units live on each node; the
+            # preset only chooses how fresh fields are labelled (units.PREFS).
+            "meta": {
+                **units.PREFS.to_dict(),
+                "schema_version": persistence.SCHEMA_VERSION,
+            },
             "nodes": [
                 {
                     "id": n.logic.node_id,
                     "kind": n.logic.kind,
                     "x": n.pos().x(),
                     "y": n.pos().y(),
-                    "settings": n.logic.serialize_settings(),
+                    "settings": settings_codec.encode(
+                        n.logic.kind, n.logic.serialize_settings()
+                    ),
                 }
                 for n in self.nodes
             ],
@@ -197,6 +207,8 @@ class GraphScene(QGraphicsScene):
         }
 
     def load_dict(self, doc: dict) -> None:
+        """Rebuild the canvas from a project document (v1 is migrated to v2)."""
+        doc = persistence.migrate(doc)
         # Restore the unit preset *before* nodes are built so their
         # default_settings seed fresh fields in the project's display units.
         # An empty/new project (no "meta") resets to the SI default.
@@ -210,7 +222,7 @@ class GraphScene(QGraphicsScene):
                 nd["kind"],
                 QPointF(nd.get("x", 0), nd.get("y", 0)),
                 node_id=nd.get("id"),
-                settings=nd.get("settings"),
+                settings=settings_codec.decode(nd["kind"], nd.get("settings") or {}),
             )
         for ed in doc.get("edges", []):
             up = self.node_by_id(ed["src_node"])

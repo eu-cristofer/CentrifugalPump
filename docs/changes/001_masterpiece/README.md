@@ -48,10 +48,10 @@ Each run MUST:
 ## Tracker
 
 - [x] [Sprint 1 — Library quantity spine](sprint-1.md) — done 2026-11-14
-- [ ] [Sprint 2 — Signals carry Quantities + `.pumpflow` schema v2](sprint-2.md)
+- [x] [Sprint 2 — Signals carry Quantities + `.pumpflow` schema v2](sprint-2.md) — done 2026-11-14
   - Split per the spec's overrun clause:
     - [x] 2a — signals carry Quantities, binding unit-free — done 2026-11-14
-    - [ ] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate`
+    - [x] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate` — done 2026-11-14
 - [ ] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md)
 - [ ] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md)
 - [ ] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md)
@@ -78,3 +78,7 @@ Each run MUST:
   - the binding has no unit literals for signal fields (`_PA_PER`, `pressure_to_pa`, `row_head_m`, `row_efficiency_pct` removed; replaced by `row_head`, `row_efficiency`, `head_from_pressures`);
   - all 9 shipped projects evaluate **bit-identically** (states, statuses, every compliance number), and the exchange JSON is unchanged.
 - S2a: fixed the Compliance dialog crashing when no rated point is wired, which happens on a blank branch. A new test opens every node dialog.
+- S2b: `.pumpflow` **schema v2**. Every quantity is stored as `{"value", "unit"}` (Pint strings), and the Test Points table stores per-column units plus a pressure reference.
+- S2b: old v1 files migrate automatically on open. Missing `*_unit` keys now take the canonical unit, never the active preset, which fixes a latent gpm/m³/h mix-up, and the stale rated `"unit"` key is dropped.
+- S2b: the shipped examples and the B-34004A reference were re-saved as v2 with bit-identical results. Your own `examples/user/*` v1 files are untouched and still evaluate identically.
+- S2b: found that Pint's `Hz` is 1/s while rpm is rev/min with 2π rad per rev. Speed units must use `revolution/second`, never `Hz`; this is noted in sprint 3.

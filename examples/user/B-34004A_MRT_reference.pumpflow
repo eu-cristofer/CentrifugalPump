@@ -1,6 +1,7 @@
 {
   "meta": {
-    "unit_preset": "SI"
+    "unit_preset": "SI",
+    "schema_version": 2
   },
   "nodes": [
     {
@@ -11,12 +12,18 @@
       "settings": {
         "source": "manual",
         "name": "Wash water (rated)",
-        "temp": 53.0,
-        "temp_unit": "°C",
-        "dens": 999.0,
-        "dens_unit": "kg/m³",
-        "visc": 0.52,
-        "visc_unit": "cSt"
+        "temp": {
+          "value": 53.0,
+          "unit": "°C"
+        },
+        "dens": {
+          "value": 999.0,
+          "unit": "kg/m**3"
+        },
+        "visc": {
+          "value": 0.52,
+          "unit": "cSt"
+        }
       }
     },
     {
@@ -28,20 +35,40 @@
         "tag": "B-34004",
         "service": "Wash water",
         "standard": "API 610 8th + N-553C + API 682 3rd",
-        "q": 9.8,
-        "q_unit": "m³/h",
-        "head": 333.8,
-        "head_unit": "m",
-        "n": 10212.0,
-        "power": 26.9,
-        "power_unit": "kW",
-        "eff": 32.7,
-        "head_shutoff": 357.37,
-        "npsha": 2.4,
+        "q": {
+          "value": 9.8,
+          "unit": "m**3/h"
+        },
+        "head": {
+          "value": 333.8,
+          "unit": "m"
+        },
+        "n": {
+          "value": 10212.0,
+          "unit": "rpm"
+        },
+        "power": {
+          "value": 26.9,
+          "unit": "kW"
+        },
+        "eff": {
+          "value": 32.7,
+          "unit": "percent"
+        },
+        "head_shutoff": {
+          "value": 357.37,
+          "unit": "m"
+        },
+        "npsha": {
+          "value": 2.4,
+          "unit": "m"
+        },
         "dens_rel": 0.999,
         "dens_unit": "kg/m³",
-        "visc": 0.52,
-        "visc_unit": "cSt",
+        "visc": {
+          "value": 0.52,
+          "unit": "cSt"
+        },
         "parallel": false,
         "fluid_name": "Rated fluid",
         "fluid_choice": ""
@@ -54,7 +81,6 @@
       "y": 160.0,
       "settings": {
         "pump_tag": "B-34004A",
-        "unit": "bar",
         "fluid_choice": "",
         "rows": [
           {
@@ -117,7 +143,18 @@
             "head": null,
             "eff": null
           }
-        ]
+        ],
+        "columns": {
+          "q": "m**3/h",
+          "p_suc": "bar",
+          "p_dis": "bar",
+          "temp_c": "degC",
+          "n": "rpm",
+          "power": "kW",
+          "head": "m",
+          "eff": "percent"
+        },
+        "pressure_ref": "g"
       }
     },
     {
@@ -127,7 +164,10 @@
       "y": 160.0,
       "settings": {
         "lock_to_rated": true,
-        "target_speed": 10212.0,
+        "target_speed": {
+          "value": 10212.0,
+          "unit": "rpm"
+        },
         "apply_speed": true,
         "apply_density": true,
         "apply_viscosity": false,
@@ -177,7 +217,6 @@
       "y": 520.0,
       "settings": {
         "pump_tag": "B-34004B",
-        "unit": "bar",
         "fluid_choice": "",
         "rows": [
           {
@@ -240,7 +279,18 @@
             "head": null,
             "eff": null
           }
-        ]
+        ],
+        "columns": {
+          "q": "m**3/h",
+          "p_suc": "bar",
+          "p_dis": "bar",
+          "temp_c": "degC",
+          "n": "rpm",
+          "power": "kW",
+          "head": "m",
+          "eff": "percent"
+        },
+        "pressure_ref": "g"
       }
     },
     {
@@ -250,7 +300,10 @@
       "y": 520.0,
       "settings": {
         "lock_to_rated": true,
-        "target_speed": 10212.0,
+        "target_speed": {
+          "value": 10212.0,
+          "unit": "rpm"
+        },
         "apply_speed": true,
         "apply_density": true,
         "apply_viscosity": false,

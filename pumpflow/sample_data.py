@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from .persistence import testset_from_json, testset_pressure_unit
+from .persistence import migrate, testset_from_json, testset_pressure_unit
 
 # UI_SPEC §6.2 shape — note the mixed comma/dot decimals on purpose.
 SINGLE_PUMP_JSON = {
@@ -181,15 +181,17 @@ EXPLORE_POINTS: List[Dict] = [
 # A complete single-pump FAT pipeline expressed in the project-file shape that
 # ``canvas/scene.py`` ``to_dict`` / ``load_dict`` round-trips:
 #
-#     {"nodes": [{id, kind, x, y, settings}], "edges": [{src_node, src_port,
-#                                                        dst_node, dst_port}]}
+#     {"meta": {...}, "nodes": [{id, kind, x, y, settings}],
+#      "edges": [{src_node, src_port, dst_node, dst_port}]}
 #
-# The node settings below are the *full* default settings of each node kind
-# (see the corresponding ``default_settings`` in ``pumpflow/nodes/*.py``), so
-# the document is a fixed point of ``to_dict(load_dict(doc))`` — loading then
-# re-serializing yields the same dict.  Keep this builder Qt-free: it is the
-# single source for ``examples/sample_project.pumpflow`` and for the headless
-# regeneration in the round-trip test.
+# The node settings below are the *full* default (runtime, schema-v1 shaped)
+# settings of each node kind (see the corresponding ``default_settings`` in
+# ``pumpflow/nodes/*.py``).  The builders return ``persistence.migrate(v1)``, i.e.
+# the schema-v2 document, which is a fixed point of
+# ``to_dict(load_dict(doc))`` — loading then re-serializing yields the same dict.
+# Keep this builder Qt-free: it is the single source for
+# ``examples/sample_project.pumpflow`` and for the headless regeneration in the
+# round-trip test.
 
 
 def _test_rows() -> List[dict]:
@@ -212,7 +214,7 @@ def _test_rows() -> List[dict]:
 
 
 def sample_project_doc() -> Dict:
-    """Return the canonical single-pump ``.pumpflow`` document (Qt-free).
+    """Return the canonical single-pump ``.pumpflow`` document (Qt-free, schema v2).
 
     Pipeline (left → right): Rated Point + Test Points → Speed Correction →
     Curve Fit → {Performance Plot, Compliance Check} → Report Export.
@@ -395,12 +397,13 @@ def sample_project_doc() -> Dict:
         },
     ]
     # Project-level display preference (units.PREFS). The shipped examples use
-    # the SI default; mirrors GraphScene.to_dict so each file is a fixed point.
-    return {"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges}
+    # the SI default; migrate() upgrades the settings above to schema v2 and adds
+    # meta.schema_version, mirroring GraphScene.to_dict so each file is a fixed point.
+    return migrate({"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges})
 
 
 def explore_project_doc() -> Dict:
-    """Return the interactive-exploration ``.pumpflow`` document (Qt-free).
+    """Return the interactive-exploration ``.pumpflow`` document (Qt-free, schema v2).
 
     Pipeline: Rated Point + Test Points → Speed Correction → Curve Fit, with the
     measured set, the fitted model, the rated point and two ad-hoc Point markers
@@ -543,5 +546,5 @@ def explore_project_doc() -> Dict:
         },
     ]
     # Project-level display preference (units.PREFS). The shipped examples use
-    # the SI default; mirrors GraphScene.to_dict so each file is a fixed point.
-    return {"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges}
+    # the SI default; migrate() upgrades the settings above to schema v2.
+    return migrate({"meta": {"unit_preset": "SI"}, "nodes": nodes, "edges": edges})
