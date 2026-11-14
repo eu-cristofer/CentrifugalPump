@@ -16,6 +16,7 @@ Functions
 Classes
 -------
 - Fluid: Represents a fluid and its properties.
+- Water: Liquid water at a temperature (density, viscosity, vapour pressure).
 
 Notes
 -----
@@ -37,6 +38,7 @@ print(water.viscosity)      # Output: 1 cP
 water.thermal_conductivity = Q_(0.6, "W/(m*K)")
 print(water.thermal_conductivity)  # Output: 0.6 W/(m*K)
 """
+import math
 from typing import Dict
 from .unit_conversion import extract_context, Q_, quantity_factory
 
@@ -121,6 +123,10 @@ class Water(Fluid):
     valid approximately 0–100 °C at 1 atm). At 4 °C the result peaks near
     999.97 kg/m³; at 34 °C it is approximately 994.4 kg/m³.
 
+    Viscosity and vapour pressure are read-only *properties* computed from the
+    temperature on demand (not instance attributes), so ``Fluid.__eq__`` and the
+    report property tables, which use ``__dict__``, are unaffected.
+
     Parameters
     ----------
     temperature : Q_
@@ -131,6 +137,12 @@ class Water(Fluid):
     ----------
     temperature : Q_
         Water temperature normalised to kelvin (standard unit for temperature).
+    dynamic_viscosity : Q_
+        (property) Dynamic viscosity in cP.
+    kinematic_viscosity : Q_
+        (property) Kinematic viscosity in cSt.
+    vapour_pressure : Q_
+        (property) Saturation pressure in kPa (absolute).
 
     Examples
     --------
@@ -142,6 +154,10 @@ class Water(Fluid):
     >>> w2 = Water(Q_(293.15, "K"))
     >>> round(w2.density.magnitude, 2)
     998.2
+    >>> round(w.kinematic_viscosity.magnitude, 1)
+    1.0
+    >>> round(Water(Q_(100, "degC")).vapour_pressure.magnitude, 2)
+    101.42
     """
 
     _RHO_COEFFS = (
@@ -152,6 +168,22 @@ class Water(Fluid):
         -3.821216e-7, # T^4
     )
 
+    # IAPWS-IF97 Region 4 (saturation line) coefficients n1..n10.
+    _IF97_N = (
+        0.11670521452767e4,
+        -0.72421316703206e6,
+        -0.17073846940092e2,
+        0.12020824702470e5,
+        -0.32325550322333e7,
+        0.14915108613530e2,
+        -0.48232657361591e4,
+        0.40511340542057e6,
+        -0.23855557567849,
+        0.65017534844798e3,
+    )
+    _T_TRIPLE_K = 273.15
+    _T_CRITICAL_K = 647.096
+
     def __init__(self, temperature: Q_) -> None:
         if not isinstance(temperature, Q_):
             raise ValueError("A valid pint.Quantity is required for temperature.")
@@ -159,3 +191,67 @@ class Water(Fluid):
         rho = sum(c * t_c ** i for i, c in enumerate(self._RHO_COEFFS))
         super().__init__(name="Water", density=Q_(rho, "kg/m**3"))
         self.temperature = quantity_factory(temperature, context="default")
+
+    @property
+    def dynamic_viscosity(self) -> Q_:
+        """
+        Dynamic viscosity of liquid water, in cP.
+
+        Andrade-style exponential fit (Kestin et al.),
+        ``mu = 2.414e-5 * 10**(247.8 / (T - 140))`` Pa·s with ``T`` in kelvin,
+        for liquid water over the engineering range.
+
+        Examples
+        --------
+        >>> round(Water(Q_(20, "degC")).dynamic_viscosity.magnitude, 1)
+        1.0
+        """
+        t_k = float(self.temperature.to("K").magnitude)
+        mu_pa_s = 2.414e-5 * 10.0 ** (247.8 / (t_k - 140.0))
+        return Q_(mu_pa_s * 1000.0, "cP")
+
+    @property
+    def kinematic_viscosity(self) -> Q_:
+        """
+        Kinematic viscosity of liquid water (dynamic viscosity / density), in cSt.
+
+        Examples
+        --------
+        >>> round(Water(Q_(20, "degC")).kinematic_viscosity.magnitude, 1)
+        1.0
+        """
+        return (self.dynamic_viscosity / self.density).to("cSt")
+
+    @property
+    def vapour_pressure(self) -> Q_:
+        """
+        Saturation (vapour) pressure of water, absolute, in kPa.
+
+        Source: IAPWS-IF97, Eq. 30 (Region 4 saturation pressure),
+        valid 273.15 K to 647.096 K.
+
+        Raises
+        ------
+        ValueError
+            If the temperature is outside 273.15-647.096 K.
+
+        Examples
+        --------
+        >>> round(Water(Q_(100, "degC")).vapour_pressure.magnitude, 2)
+        101.42
+        >>> round(Water(Q_(20, "degC")).vapour_pressure.magnitude, 1)
+        2.3
+        """
+        t_k = float(self.temperature.to("K").magnitude)
+        if not (self._T_TRIPLE_K - 1e-9 <= t_k <= self._T_CRITICAL_K + 1e-9):
+            raise ValueError(
+                "Vapour pressure is valid for 273.15 K to 647.096 K; "
+                f"got {t_k:.2f} K."
+            )
+        n = self._IF97_N
+        theta = t_k + n[8] / (t_k - n[9])
+        a = theta**2 + n[0] * theta + n[1]
+        b = n[2] * theta**2 + n[3] * theta + n[4]
+        c = n[5] * theta**2 + n[6] * theta + n[7]
+        p_mpa = (2.0 * c / (-b + math.sqrt(b * b - 4.0 * a * c))) ** 4
+        return Q_(p_mpa * 1000.0, "kPa")

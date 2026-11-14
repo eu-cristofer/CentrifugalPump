@@ -20,7 +20,8 @@ Functions
 
 Constants
 ---------
-- STANDARD_UNITS: A dictionary defining the standard units for various physical quantities.
+- STANDARD_UNITS: A dictionary defining the standard units for various physical quantities
+  (including ``kinematic_viscosity`` -> ``cSt``).
 
 Dependencies
 ------------
@@ -74,6 +75,7 @@ STANDARD_UNITS: Dict[str, Dict[str, str]] = {
     "dynamic_viscosity": {"default": "cP"},
     "efficiency": {"default": "%"},
     "energy": {"default": "joule"},
+    "kinematic_viscosity": {"default": "cSt"},
     "length": {"default": "meter"},
     "mass": {"default": "kilogram"},
     "power": {"default": "kW"},

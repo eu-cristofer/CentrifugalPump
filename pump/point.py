@@ -13,6 +13,7 @@ Classes
 """
 
 import numpy as np
+from .constants import G
 from .utilities.unit_conversion import extract_context, Q_, quantity_factory
 from .utilities.fluid import Fluid
 
@@ -96,7 +97,7 @@ class DesignPoint(BasePoint):
     73
     """
     # Gravity constant
-    g = Q_(9.81, "m/s**2")
+    g = G
 
     def __init__(
         self, fluid: Fluid, capacity: Q_, differential_head: Q_, **kwargs: dict[str, Q_]
@@ -310,7 +311,7 @@ class TestPoint(BasePoint):
     # when it is imported into the test suite (name starts with "Test").
     __test__ = False
 
-    g = Q_(9.81, "m/s**2")
+    g = G
 
     @property
     def pressure_head(self) -> Q_:

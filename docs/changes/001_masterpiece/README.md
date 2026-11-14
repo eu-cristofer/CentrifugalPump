@@ -47,7 +47,7 @@ Each run MUST:
 
 ## Tracker
 
-- [ ] [Sprint 1 — Library quantity spine](sprint-1.md)
+- [x] [Sprint 1 — Library quantity spine](sprint-1.md) — done 2026-11-14
 - [ ] [Sprint 2 — Signals carry Quantities + `.pumpflow` schema v2](sprint-2.md)
 - [ ] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md)
 - [ ] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md)
@@ -65,3 +65,8 @@ Each run MUST:
 ## Changelog
 
 - Registered project 001_masterpiece (14 sprints) on `feat/masterpiece`.
+- S1: `pump.constants` (`G` = 9.80665 m/s², `P_ATM`) replaces every literal 9.81. Derived heads rise by +0.034 %: B-34004A predicted H at 9.80 m³/h is 339.43 → **339.54 m**, while P (24.61 kW) and η (36.80 %) are unchanged and the verdict is still APPROVED.
+- S1: kinematic viscosity (cSt) is a standard unit, so the binding no longer needs warning suppression.
+- S1: `pump.Pressure` adds gauge/absolute semantics: differences carry no reference, and mixing references is an error.
+- S1: `pump.quantity_io` provides `{"value", "unit"}` JSON round-trips.
+- S1: `Water` gains `dynamic_viscosity`, `kinematic_viscosity` and `vapour_pressure` (IAPWS-IF97 Eq. 30). The water helpers in `pumpflow` now delegate to the library.
