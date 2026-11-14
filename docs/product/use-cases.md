@@ -72,6 +72,24 @@
   structure and tables.
 - **v1.1 follow-on:** implement PDF / HTML / JSON exporters.
 
+### UC-11 — Mechanical running test acceptance ✅
+- **Actor:** FAT witness / inspector (primary). **Trigger:** the mechanical run
+  (typically 4 h at rated flow) is being logged every 15 min.
+- **Input:** a time-stamped log of channels in any unit (flow, ΔP, power,
+  filtered/unfiltered vibration, bearing/oil temperatures, lube-oil and seal
+  pressures), each tagged with a role.
+- **Output:** per-channel min/max/last vs limit, temperature-stabilisation
+  check, duration check, overall verdict (PASSED / FAILED / PASSED (not fully
+  assessed)), trend plot, and a "Mechanical running test" report section.
+- **Supported by:** `pump.mechanical_run` (`MechanicalRunLog`,
+  `MechanicalRunChecker`, `plot_mechanical_run`), limits in
+  `pump/standards/api610.toml` (`mechanical_run`, unverified seeds), the
+  `mechanical_run` workbench node.
+- **Pinned by:** `tests/test_mechanical_run.py` (incl. the B-34004A 4 h record),
+  `tests/test_mechanical_run_gui.py`.
+- **Open:** vibration / stabilisation limits must be confirmed by the owner
+  (shipped `verified = false`).
+
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
 | UC | Title | Why deferred |

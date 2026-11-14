@@ -30,11 +30,17 @@ from .report import (
     API_PARAGRAPH,
     EQUIPMENT_TEXT,
     INTRO_PARAGRAPHS,
+    MECHANICAL_RUN_KEY,
+    MECHANICAL_RUN_TITLE,
     SUMMARY_COLUMNS,
     TEST_DATA_DESCRIPTION,
     TEST_SUMMARY_DESCRIPTION,
     TESTS_DEVELOPMENT_TEXT,
     LocalizationHelper,
+    mechanical_run_duration_sentence,
+    mechanical_run_notes,
+    mechanical_run_table,
+    mechanical_run_verdict,
     standard_sentence,
     unverified_sentence,
 )
@@ -230,6 +236,10 @@ class LatexReportGenerator:
             out.append(self._test_table(entry.get("test_data") or {}))
             for key in [k for k in entry if "Curve" in k]:
                 out.append(self._figure(key, entry[key], pump_tag, fig_dir, fig_rel))
+            if MECHANICAL_RUN_KEY in entry:
+                out.append(
+                    self._mechanical_run(entry[MECHANICAL_RUN_KEY], pump_tag, fig_dir, fig_rel)
+                )
 
         out.append(r"\end{document}")
         return "\n".join(out) + "\n"
@@ -332,6 +342,41 @@ class LatexReportGenerator:
                 r"\end{tabular}}\end{center}",
             ]
         )
+
+    def _mechanical_run(self, entry, pump_tag, fig_dir: Path, fig_rel: str) -> str:
+        """Mechanical running test section (UC-11); empty without a result."""
+        result = (entry or {}).get("result")
+        if result is None:
+            return ""
+        _ = self._
+        header, rows = mechanical_run_table(_, result)
+        head = " & ".join(r"\textbf{%s}" % latex_escape(h) for h in header) + r" \\"
+        body = [" & ".join(latex_escape(c) for c in row) + r" \\" for row in rows]
+        parts = [
+            r"\subsubsection*{%s}" % latex_escape(_(MECHANICAL_RUN_TITLE)),
+            latex_escape(mechanical_run_duration_sentence(_, result)) + "\n",
+            r"\textbf{%s:} %s"
+            % (
+                latex_escape(_("Overall verdict")),
+                latex_escape(mechanical_run_verdict(_, result)),
+            )
+            + "\n",
+            r"\begin{center}\begin{tabular}{lccccc}",
+            r"\toprule",
+            head,
+            r"\midrule",
+            *body,
+            r"\bottomrule",
+            r"\end{tabular}\end{center}",
+        ]
+        plot = (entry or {}).get("plot")
+        if plot is not None:
+            parts.append(
+                self._figure(MECHANICAL_RUN_TITLE, plot, pump_tag, fig_dir, fig_rel)
+            )
+        for note in mechanical_run_notes(_, result):
+            parts.append(latex_escape(note) + "\n")
+        return "\n".join(parts)
 
     def _figure(self, title, chart, pump_tag, fig_dir: Path, fig_rel: str) -> str:
         safe = "".join(ch if ch.isalnum() or ch in "-." else "_" for ch in pump_tag)

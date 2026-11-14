@@ -1,8 +1,9 @@
 # API 610 / ISO 13709 acceptance criteria, one table per edition.
 #
 # IMPORTANT: every value below is a SEED copied from the pre-Sprint-5 code
-# defaults.  No edition has been checked against the standard text, so every
-# edition carries verified = false.  Do not flip a flag to true without a
+# defaults (performance tolerances) or from reference records (mechanical run).
+# No edition has been checked against the standard text, so every edition
+# carries verified = false.  Do not flip a flag to true without a
 # clause-level source.
 
 standard = "api610"
@@ -25,6 +26,19 @@ shutoff_bands = [
   { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
 ]
 
+[editions."8".mechanical_run]
+min_duration = "4 h"
+source = "seed: B-34004A Sundyne mechanical run record (4 h) — confirm against API 610 mechanical running test clause; vibration: seed from reference notebook pump_api610_performance 1.ipynb (POR values) — confirm against API 610 vibration limits table for the pump type"
+verified = false
+
+[[editions."8".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."8".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
 [editions."10"]
 label = "API 610 10th edition"
 source = "seed: pre-S5 code defaults — confirm against API 610 10th edition performance tolerance table"
@@ -41,6 +55,19 @@ shutoff_bands = [
   { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
   { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
 ]
+
+[editions."10".mechanical_run]
+min_duration = "4 h"
+source = "seed: B-34004A Sundyne mechanical run record (4 h) — confirm against API 610 mechanical running test clause; vibration: seed from reference notebook pump_api610_performance 1.ipynb (POR values) — confirm against API 610 vibration limits table for the pump type"
+verified = false
+
+[[editions."10".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."10".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
 
 [editions."11"]
 label = "API 610 11th edition"
@@ -59,6 +86,19 @@ shutoff_bands = [
   { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
 ]
 
+[editions."11".mechanical_run]
+min_duration = "4 h"
+source = "seed: B-34004A Sundyne mechanical run record (4 h) — confirm against API 610 mechanical running test clause; vibration: seed from reference notebook pump_api610_performance 1.ipynb (POR values) — confirm against API 610 vibration limits table for the pump type"
+verified = false
+
+[[editions."11".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."11".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
 [editions."12"]
 label = "API 610 12th edition"
 source = "seed: pre-S5 code defaults — confirm against API 610 12th edition performance tolerance table"
@@ -75,3 +115,16 @@ shutoff_bands = [
   { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
   { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
 ]
+
+[editions."12".mechanical_run]
+min_duration = "4 h"
+source = "seed: B-34004A Sundyne mechanical run record (4 h) — confirm against API 610 mechanical running test clause; vibration: seed from reference notebook pump_api610_performance 1.ipynb (POR values) — confirm against API 610 vibration limits table for the pump type"
+verified = false
+
+[[editions."12".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."12".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"

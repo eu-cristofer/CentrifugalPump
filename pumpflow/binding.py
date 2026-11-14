@@ -22,6 +22,7 @@ Polynomial fit + predictions            ``PerformanceCurve.fitter.*_coeffs`` / `
 Built-in matplotlib curve               ``PerformanceCurve.plot_performance_curve(...)``
 Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve, criteria=)``
 Acceptance criteria (edition / client)  ``pump.acceptance.AcceptanceCriteria.load(key, client)``
+Mechanical run verdict + trend plot     ``pump.mechanical_run.MechanicalRunChecker`` / ``plot_mechanical_run``
 Units everywhere                        ``pump.Q_`` + ``quantity_factory`` (STANDARD_UNITS)
 ======================================  ====================================================
 """
@@ -60,6 +61,8 @@ from .signals import (
     FittedModel,
     ComplianceResult,
     ParameterCheck,
+    MechanicalRunSet,
+    MechanicalRunResultSignal,
 )
 
 
@@ -643,6 +646,74 @@ def _mag(q) -> Optional[float]:
 
 
 # ---------------------------------------------------------------------------
+# Mechanical run  (sprint 6 / UC-11)
+# ---------------------------------------------------------------------------
+
+
+def check_mechanical_run(
+    run_set: MechanicalRunSet,
+    rated: Optional[RatedPoint] = None,
+    overrides: Optional[dict] = None,
+) -> MechanicalRunResultSignal:
+    """Check a mechanical-run log against the acceptance criteria.
+
+    The criteria come from ``criteria_for(rated).mechanical_run`` when a rated
+    point is wired, else from the library default.  ``overrides`` (user-entered
+    limits, all Quantities) are merged on top::
+
+        {"min_duration": Q_, "role_max": {role: Q_},
+         "stabilisation": {role: (delta Q_, window Q_)}}
+
+    (a ``{"delta": Q_, "window": Q_}`` dict is accepted instead of the tuple).
+    Any override marks the criteria as unverified.
+    """
+    from pump.mechanical_run import (
+        MechanicalRunChecker,
+        MechanicalRunCriteria,
+        plot_mechanical_run,
+    )
+
+    full = criteria_for(rated) if rated is not None else AcceptanceCriteria.default()
+    base = full.mechanical_run
+    label = criteria_label(full)
+    ov = overrides or {}
+
+    min_duration = ov.get("min_duration")
+    if min_duration is None:
+        min_duration = base.min_duration
+    role_max = dict(base.role_max or {})
+    role_max.update(ov.get("role_max") or {})
+    stabilisation = dict(base.stabilisation or {})
+    for role, spec in (ov.get("stabilisation") or {}).items():
+        if isinstance(spec, dict):
+            spec = (spec["delta"], spec["window"])
+        stabilisation[role] = (spec[0], spec[1])
+
+    overridden = bool(
+        ov.get("min_duration") is not None
+        or ov.get("role_max")
+        or ov.get("stabilisation")
+    )
+    source = getattr(base, "source", "") or ""
+    if overridden:
+        source = (source + " | " if source else "") + "user overrides in the node"
+    criteria = MechanicalRunCriteria(
+        min_duration=min_duration,
+        role_max=role_max,
+        stabilisation=stabilisation,
+        source=source,
+        verified=False if overridden else bool(getattr(base, "verified", False)),
+    )
+    result = MechanicalRunChecker(run_set.log, criteria).check()
+    return MechanicalRunResultSignal(
+        pump_tag=run_set.pump_tag,
+        result=result,
+        criteria_label=label,
+        plot_png=plot_mechanical_run(run_set.log, criteria),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Report image  (UI_SPEC §5.5 / §5.7)
 # ---------------------------------------------------------------------------
 
@@ -685,6 +756,11 @@ def assemble_report_data(
 
     A branch whose test set carried bench geometry adds a
     ``"Test bench geometry (<pump_tag>)"`` line to the equipment description.
+
+    A branch with a mechanical-run result adds a ``"Mechanical Run"`` entry
+    (``{"result", "plot"}``) under its tag.  A tag with *only* a mechanical run
+    (no fitted curve) still gets an entry, which then lacks ``test_summary`` /
+    ``test_data``.
     """
     equipment = equipment or {}
     design_point = make_design_point(rated)
@@ -700,20 +776,22 @@ def assemble_report_data(
             equipment_description[f"Test bench geometry ({b.pump_tag})"] = (
                 format_geometry(geometry)
             )
-        if b.fitted is None:
-            continue
-        entry = {
-            "test_summary": report_summary_for(b.fitted, rated),
-            "test_data": b.fitted.curve.test_data,
-        }
-        if b.compliance is not None:
-            entry["verdict"] = bool(b.compliance.overall_pass)
-        png = b.plot_png
-        if png is None and b.corrected is not None:
-            png = build_report_png(b.corrected, rated)
-        if png is not None:
-            entry["Performance Curve"] = png
-        test_data[b.pump_tag] = entry
+        entry = {}
+        if b.fitted is not None:
+            entry["test_summary"] = report_summary_for(b.fitted, rated)
+            entry["test_data"] = b.fitted.curve.test_data
+            if b.compliance is not None:
+                entry["verdict"] = bool(b.compliance.overall_pass)
+            png = b.plot_png
+            if png is None and b.corrected is not None:
+                png = build_report_png(b.corrected, rated)
+            if png is not None:
+                entry["Performance Curve"] = png
+        mech = getattr(b, "mechanical", None)
+        if mech is not None:
+            entry["Mechanical Run"] = {"result": mech.result, "plot": mech.plot_png}
+        if entry:
+            test_data[b.pump_tag] = entry
 
     return {
         "equipment_description": equipment_description,
@@ -816,6 +894,10 @@ def export_reports(
             for value in entry.values():
                 if isinstance(value, io.BytesIO):
                     value.seek(0)
+                elif isinstance(value, dict):  # e.g. "Mechanical Run": {"plot": ...}
+                    for inner in value.values():
+                        if isinstance(inner, io.BytesIO):
+                            inner.seek(0)
         try:
             paths[fmt] = str(writers[fmt](str(folder / f"{stem}.{fmt}")))
         except Exception as exc:  # collected, reported by the caller

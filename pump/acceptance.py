@@ -35,11 +35,12 @@ Examples
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
+from .mechanical_run import MechanicalRunCriteria
 from .utilities.unit_conversion import Q_
 
 __all__ = ["AcceptanceCriteria", "deviation"]
@@ -56,6 +57,9 @@ _PARTS = {
     "parallel_shutoff_min_ratio": "parallel-operation shut-off ratio",
     "shutoff_extrapolation_q_fraction": "shut-off extrapolation threshold",
 }
+
+# The ``mechanical_run`` sub-table is merged key by key (not replaced wholesale).
+_MR_PART = "mechanical running test limits"
 
 _DEFAULT_KEY = "api610:12"
 
@@ -146,6 +150,8 @@ class AcceptanceCriteria:
         shut-off head is considered extrapolated.
     unverified : tuple of str
         Human-readable names of the parts not verified against the standard.
+    mechanical_run : MechanicalRunCriteria
+        Mechanical running test limits (minimum duration, vibration limits).
     """
 
     key: str
@@ -161,6 +167,7 @@ class AcceptanceCriteria:
     parallel_shutoff_min_ratio: float
     shutoff_extrapolation_q_fraction: float
     unverified: tuple
+    mechanical_run: MechanicalRunCriteria = field(default_factory=MechanicalRunCriteria)
 
     # ------------------------------------------------------------ discovery
     @staticmethod
@@ -205,10 +212,12 @@ class AcceptanceCriteria:
             )
         base, _title = standards[norm]
         merged = {k: base[k] for k in _PARTS if k in base}
+        mr_table = dict(base["mechanical_run"]) if "mechanical_run" in base else None
         verified = bool(base.get("verified", False))
         source = base.get("source", "")
         client_label = None
         overlay_unverified = None
+        mr_overridden = False
 
         if client:
             overlays = _client_overlays()
@@ -223,6 +232,9 @@ class AcceptanceCriteria:
             for k in _PARTS:
                 if k in overlay:
                     merged[k] = overlay[k]
+            if "mechanical_run" in overlay:
+                mr_table = {**(mr_table or {}), **overlay["mechanical_run"]}
+                mr_overridden = overlay_verified
             verified = verified and overlay_verified
             if overlay.get("source"):
                 source = f"{source} | {client_label}: {overlay['source']}"
@@ -241,6 +253,10 @@ class AcceptanceCriteria:
             unverified += [
                 name for k, name in _PARTS.items() if k not in overridden_verified
             ]
+        if mr_table is not None and not (
+            mr_overridden or mr_table.get("verified", False)
+        ):
+            unverified.append(_MR_PART)
         if overlay_unverified:
             unverified.append(overlay_unverified)
 
@@ -260,6 +276,11 @@ class AcceptanceCriteria:
                 merged["shutoff_extrapolation_q_fraction"]
             ),
             unverified=tuple(unverified),
+            mechanical_run=(
+                MechanicalRunCriteria.from_table(mr_table)
+                if mr_table is not None
+                else MechanicalRunCriteria()
+            ),
         )
 
     @classmethod

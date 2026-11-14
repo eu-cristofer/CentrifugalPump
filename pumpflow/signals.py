@@ -341,6 +341,29 @@ class ComplianceResult:
 
 
 # ---------------------------------------------------------------------------
+# 5b. Mechanical run — produced by the Mechanical Run node  (sprint 6 / UC-11)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class MechanicalRunSet:
+    """A pump's mechanical-run log (time-stamped multi-channel readings)."""
+
+    pump_tag: str  # physical unit TAG (unique per branch)
+    log: Any  # pump.mechanical_run.MechanicalRunLog
+
+
+@dataclass(frozen=True)
+class MechanicalRunResultSignal:
+    """Verdict of a mechanical run against its criteria."""
+
+    pump_tag: str
+    result: Any  # pump.mechanical_run.MechanicalRunResult
+    criteria_label: str = ""
+    plot_png: Any = None  # io.BytesIO PNG | None
+
+
+# ---------------------------------------------------------------------------
 # 6. ReportBundle — assembled inside Report Export (UI_SPEC §5.7 / §3)
 # ---------------------------------------------------------------------------
 
@@ -355,6 +378,7 @@ class BranchBundle:
     compliance: Optional[ComplianceResult] = None
     plot_png: Any = None  # io.BytesIO PNG | None
     equipment: dict = field(default_factory=dict)  # per-pump key/value sub-table
+    mechanical: Optional[MechanicalRunResultSignal] = None  # sprint 6
 
 
 @dataclass(frozen=True)

@@ -174,3 +174,54 @@ msgstr "Acionador"
 
 msgid "Test bench"
 msgstr "Bancada de Teste"
+
+msgid "Mechanical running test"
+msgstr "Teste de funcionamento mecânico"
+
+msgid "Duration"
+msgstr "Duração"
+
+msgid "Channel"
+msgstr "Canal"
+
+msgid "Unit"
+msgstr "Unidade"
+
+msgid "Min"
+msgstr "Mín"
+
+msgid "Max"
+msgstr "Máx"
+
+msgid "Limit"
+msgstr "Limite"
+
+msgid "Status"
+msgstr "Situação"
+
+msgid "PASSED"
+msgstr "APROVADO"
+
+msgid "FAILED"
+msgstr "REPROVADO"
+
+msgid "PASSED (not fully assessed)"
+msgstr "APROVADO (avaliação incompleta)"
+
+msgid "not configured"
+msgstr "não configurado"
+
+msgid "PASS"
+msgstr "OK"
+
+msgid "FAIL"
+msgstr "FALHA"
+
+msgid "INFO"
+msgstr "INFO"
+
+msgid "Criteria source: {source}"
+msgstr "Fonte dos critérios: {source}"
+
+msgid "Mechanical running test limits not yet verified against the standard text."
+msgstr "Limites do teste de funcionamento mecânico ainda não verificados contra o texto da norma."

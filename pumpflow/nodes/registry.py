@@ -17,6 +17,7 @@ from .curve_fit import CurveFitNode
 from .explore_plot import ExploreChartNode
 from .fluid import FluidNode
 from .markdown_note import MarkdownNoteNode
+from .mechanical_run import MechanicalRunNode
 from .performance_plot import PerformancePlotNode
 from .point import PointNode
 from .rated_point import RatedPointInputNode
@@ -33,6 +34,7 @@ _CLASSES: List[Type[BaseNode]] = [
     PerformancePlotNode,
     ExploreChartNode,
     ComplianceCheckNode,
+    MechanicalRunNode,
     ReportExportNode,
     MarkdownNoteNode,
 ]

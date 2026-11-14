@@ -145,3 +145,80 @@ def test_export_reports_default_stem_is_localized(tmp_path, report_data):
         report_data, ["tex"], language="pt", out_dir=str(tmp_path)
     )
     assert "Relatório_B-34004_" in paths["tex"]
+
+
+# --------------------------------------------------------------------------- #
+# Mechanical running test section (UC-11)
+# --------------------------------------------------------------------------- #
+def _mechanical_run_entry():
+    from pump import (
+        Channel,
+        MechanicalRunChecker,
+        MechanicalRunCriteria,
+        MechanicalRunLog,
+        RunReading,
+        plot_mechanical_run,
+    )
+
+    times = ["00:00", "01:00", "02:00", "03:00", "04:00"]
+    log = MechanicalRunLog(
+        (Channel("Vib filtered", "vibration_filtered"),),
+        tuple(RunReading(t, {"Vib filtered": Q_(1.0, "mm/s")}) for t in times),
+    )
+    crit = MechanicalRunCriteria(
+        min_duration=Q_(4, "h"),
+        role_max={"vibration_filtered": Q_(2.0, "mm/s")},
+        source="unit test source",
+    )
+    return {
+        "result": MechanicalRunChecker(log, crit).check(),
+        "plot": plot_mechanical_run(log, crit),
+    }
+
+
+def _mr_only_data(report_data):
+    return {
+        "equipment_description": report_data["equipment_description"],
+        "design_point": report_data["design_point"],
+        "test_data": {TAG: {"Mechanical Run": _mechanical_run_entry()}},
+    }
+
+
+def test_tex_mechanical_run_section(tmp_path, report_data):
+    report_data["test_data"][TAG]["Mechanical Run"] = _mechanical_run_entry()
+    out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "mr.tex"))
+    tex = open(out, encoding="utf-8").read()
+    assert "Mechanical running test" in tex
+    assert "PASSED" in tex and "unit test source" in tex
+    assert tex.count(r"\begin{tabular}") == 3  # summary + data + mechanical run
+    assert len(list((tmp_path / "mr_figs").glob("*.png"))) == 2
+
+
+def test_tex_mechanical_run_only_entry_and_pt(tmp_path, report_data):
+    out = LatexReportGenerator("pt").generate_tex(
+        _mr_only_data(report_data), str(tmp_path / "mr.tex")
+    )
+    tex = open(out, encoding="utf-8").read()
+    assert "Teste de funcionamento mecânico" in tex and "APROVADO" in tex
+    assert len(list((tmp_path / "mr_figs").glob("*.png"))) == 1
+
+
+def test_docx_mechanical_run_section(tmp_path, report_data):
+    report_data["test_data"][TAG]["Mechanical Run"] = _mechanical_run_entry()
+    paths, errors = export_reports(
+        report_data, ["docx"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "Mechanical running test" in xml and "PASSED" in xml
+
+
+def test_docx_mechanical_run_only_entry(tmp_path, report_data):
+    paths, errors = export_reports(
+        _mr_only_data(report_data), ["docx"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "Mechanical running test" in xml and TAG in xml

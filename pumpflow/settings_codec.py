@@ -51,7 +51,16 @@ from pump.constants import P_ATM
 
 from . import units
 
-__all__ = ["FIELDS", "encode", "decode", "upgrade_v1", "parse_standard_text"]
+__all__ = [
+    "FIELDS",
+    "encode",
+    "decode",
+    "upgrade_v1",
+    "parse_standard_text",
+    "ROLE_DIMENSIONS",
+    "DURATION_LABELS",
+    "delta_pint",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -367,6 +376,140 @@ class TestRows:
         d["pressure_ref"] = ref
 
 
+# ---------------------------------------------------------------------------
+# Mechanical run (sprint 6)
+# ---------------------------------------------------------------------------
+
+#: Dimension (``units.UNIT_OPTIONS`` key) of the limits of each channel role.
+#: Roles without an entry (``other``) have no editable limits.
+ROLE_DIMENSIONS: Dict[str, str] = {
+    "vibration_filtered": "vibration_velocity",
+    "vibration_unfiltered": "vibration_velocity",
+    "bearing_temperature": "temperature",
+    "oil_temperature": "temperature",
+    "oil_pressure": "pressure",
+    "seal_pressure": "pressure",
+    "flow": "capacity",
+    "differential_pressure": "pressure",
+    "power": "power",
+}
+
+#: Duration display label -> Pint unit string.
+DURATION_LABELS: Dict[str, str] = {"h": "hour", "min": "minute"}
+_DURATION_BACK = {"hour": "h", "h": "h", "minute": "min", "min": "min"}
+
+_DELTA_TEMP = {"°C": "delta_degC", "°F": "delta_degF", "K": "kelvin"}
+_DELTA_TEMP_BACK = {v: k for k, v in _DELTA_TEMP.items()}
+
+
+def delta_pint(dimension: str, label: str) -> str:
+    """Pint unit of a *difference* in ``dimension`` shown in ``label``.
+
+    Temperatures use the Pint delta units (``delta_degC`` / ``delta_degF`` /
+    ``kelvin``); every other dimension uses its ordinary unit.
+    """
+    if dimension == "temperature":
+        return _DELTA_TEMP.get(label, label)
+    return units.pint_str(dimension, label)
+
+
+def _q_enc(q, dim: str, kind: str):
+    """Runtime ``{"value", "unit": label}`` -> on-disk ``{"value", "unit": pint}``."""
+    if not isinstance(q, dict):
+        return q
+    label = q["unit"]
+    if kind == "dur":
+        unit = DURATION_LABELS.get(label, label)
+    elif kind == "delta":
+        unit = (
+            delta_pint(dim, label) if dim == "temperature" else _disk_unit(dim, label)
+        )
+    else:
+        unit = _disk_unit(dim, label)
+    return {"value": q["value"], "unit": unit}
+
+
+def _q_dec(q, dim: str, kind: str):
+    """On-disk ``{"value", "unit"}`` -> runtime ``{"value", "unit": label}``."""
+    if not isinstance(q, dict):
+        return q
+    value, unit = q["value"], q["unit"]
+    if kind == "dur":
+        label = _DURATION_BACK.get(unit)
+        if label is None:
+            label = "min"
+            value = Q_(value, unit).to("minute").magnitude
+    elif kind == "delta" and dim == "temperature":
+        label = _DELTA_TEMP_BACK.get(unit)
+        if label is None:
+            label = "°C"
+            value = Q_(value, unit).to("delta_degC").magnitude
+    else:
+        label, convert = _label_or_canonical(dim, unit)
+        if convert:
+            value = _convert(value, unit, _pint(dim, label))
+    return {"value": value, "unit": label}
+
+
+@dataclass(frozen=True)
+class RunLog:
+    """Mechanical-run settings: channel units and criteria overrides.
+
+    ``columns`` entries carry a display label at runtime and a Pint string on
+    disk; rows are stored in the column units on both sides (only converted
+    when a stored unit has no display label).  ``overrides`` quantities are
+    ``{"value", "unit"}`` on both sides, with labels <-> Pint strings.
+    """
+
+    def fill_v1(self, d: dict) -> None:
+        return None
+
+    @staticmethod
+    def _overrides(ov, fn) -> None:
+        if not isinstance(ov, dict):
+            return
+        if ov.get("min_duration") is not None:
+            ov["min_duration"] = fn(ov["min_duration"], "duration", "dur")
+        for role, q in list((ov.get("role_max") or {}).items()):
+            dim = ROLE_DIMENSIONS.get(role)
+            if dim:
+                ov["role_max"][role] = fn(q, dim, "q")
+        for role, st in (ov.get("stabilisation") or {}).items():
+            dim = ROLE_DIMENSIONS.get(role)
+            if not dim or not isinstance(st, dict):
+                continue
+            if "delta" in st:
+                st["delta"] = fn(st["delta"], dim, "delta")
+            if "window" in st:
+                st["window"] = fn(st["window"], "duration", "dur")
+
+    def enc(self, d: dict) -> None:
+        for c in d.get("columns") or []:
+            if isinstance(c, dict) and c.get("dimension") in units.UNIT_OPTIONS:
+                c["unit"] = _disk_unit(c["dimension"], c["unit"])
+        self._overrides(d.get("overrides"), _q_enc)
+
+    def dec(self, d: dict) -> None:
+        cols = d.get("columns")
+        if isinstance(cols, list):
+            rows = d.get("rows") or []
+            for c in cols:
+                dim = c.get("dimension") if isinstance(c, dict) else None
+                if dim not in units.UNIT_OPTIONS:
+                    continue
+                stored = c["unit"]
+                label, convert = _label_or_canonical(dim, stored)
+                if convert:
+                    for r in rows:
+                        vals = r.get("values") or {}
+                        if vals.get(c["name"]) is not None:
+                            vals[c["name"]] = _convert(
+                                vals[c["name"]], stored, _pint(dim, label)
+                            )
+                c["unit"] = label
+        self._overrides(d.get("overrides"), _q_dec)
+
+
 FIELDS: Dict[str, tuple] = {
     "rated_point": (
         Disp("q", "capacity", "q_unit"),
@@ -404,6 +547,7 @@ FIELDS: Dict[str, tuple] = {
         OptDisp("suction_z", "length", "suction_z_unit"),
         OptDisp("discharge_z", "length", "discharge_z_unit"),
     ),
+    "mechanical_run": (RunLog(),),
 }
 
 # Stale v1 keys removed by upgrade_v1 (the old exchange-style rated "unit").

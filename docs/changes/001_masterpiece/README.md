@@ -56,7 +56,8 @@ Each run MUST:
 - [x] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md) — done 2026-11-14
 - [x] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md) — done 2026-11-14
   BLOCKED-PARTIAL: tolerance values unverified. API 610 8/10/11/12 are seeded with the pre-S5 code values and N-553 is an empty overlay, all `verified = false`, until the owner confirms them from the standard text.
-- [ ] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md)
+- [x] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md) — done 2026-11-14
+  BLOCKED-PARTIAL: mechanical-run limits unverified. The 4 h duration seed and the notebook vibration seeds (2.0 / 3.0 mm/s) are `verified = false`, and stabilisation is unconfigured.
 - [ ] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md)
 - [ ] [Sprint 8 — UC-05 NPSH margin](sprint-8.md)
 - [ ] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md)
@@ -116,3 +117,16 @@ Each run MUST:
   - the ignored `acceptable_limits` argument now warns.
 - S5: the report states the selected edition instead of a hard-coded "12th issue" and lists the unverified criteria, in en and pt.
 - S5: every shipped project's verdicts and limits are unchanged.
+- S6: **UC-11 mechanical running test**. `pump.mechanical_run` adds:
+  - a time-stamped log of quantities with per-channel roles and units;
+  - a checker covering limits per role, temperature stabilisation over a window, minimum duration, and a PASSED / FAILED / "PASSED (not fully assessed)" verdict;
+  - a trend plot.
+- S6: limit seeds and sources live in `api610.toml` (all unverified):
+  - 4 h duration, from the B-34004A record;
+  - filtered vibration 2.0 mm/s and unfiltered 3.0 mm/s, from the reference notebook;
+  - no stabilisation seed.
+- S6: new **Mechanical Run** node. It has column/unit/role definitions, a readings grid with paste and unit headers, criteria overrides and a verdict. It feeds Report Export, and the "Mechanical running test" report section exists in en and pt.
+- S6: B-34004A's 4 h Sundyne run is loaded (17 readings), plus a blank B-34004B sheet; a blank sheet is invalid rather than reporting a verdict.
+  - Against the **unverified** notebook seed, A's unfiltered vibration of 0.16 in/s (4.06 mm/s) exceeds 3.0 mm/s, so the run shows **FAILED**.
+  - The owner must enter the real limits for this OH6 pump. The filtered vibration of 0.05 in/s passes.
+- S6: all other projects are unchanged.

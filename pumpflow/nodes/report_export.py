@@ -2,8 +2,9 @@
 nodes.report_export — Report Export  (UI_SPEC §5.7)
 
 Inputs: the shared ``RatedPoint`` + a **multi-connection** ``branch`` input that
-accepts ``CorrectedCurve`` / ``FittedModel`` / ``ComplianceResult`` from each
-pump.  Payloads are grouped by pump TAG into a :class:`ReportBundle`.
+accepts ``CorrectedCurve`` / ``FittedModel`` / ``ComplianceResult`` /
+``MechanicalRunResultSignal`` from each pump.  Payloads are grouped by pump TAG
+into a :class:`ReportBundle`.
 One branch → single-pump report; N branches → one consolidated report.
 
 Exports: ``.docx`` (via the library's ``ReportGenerator``), ``.tex`` and
@@ -27,7 +28,10 @@ from PySide6.QtWidgets import (
 
 from ..binding import REPORT_FORMATS, assemble_report_data, export_reports
 from ..persistence import write_json
-from ..signals import BranchBundle, ComplianceResult, CorrectedCurve, FittedModel, RatedPoint
+from ..signals import (
+    BranchBundle, ComplianceResult, CorrectedCurve, FittedModel,
+    MechanicalRunResultSignal, MechanicalRunSet, RatedPoint,
+)
 from .base import BaseNode, PortSpec
 from . import ui
 
@@ -56,7 +60,7 @@ class ReportExportNode(BaseNode):
         groups: Dict[str, dict] = {}
         for payload in self.all_of(inputs, "branch"):
             tag = getattr(payload, "pump_tag", None)
-            if tag is None:
+            if tag is None or isinstance(payload, MechanicalRunSet):
                 continue
             g = groups.setdefault(tag, {})
             if isinstance(payload, CorrectedCurve):
@@ -65,6 +69,8 @@ class ReportExportNode(BaseNode):
                 g["fitted"] = payload
             elif isinstance(payload, ComplianceResult):
                 g["compliance"] = payload
+            elif isinstance(payload, MechanicalRunResultSignal):
+                g["mechanical"] = payload
         branches = tuple(
             BranchBundle(
                 pump_tag=tag,
@@ -72,6 +78,7 @@ class ReportExportNode(BaseNode):
                 fitted=g.get("fitted"),
                 compliance=g.get("compliance"),
                 equipment=self.settings.get("equipment", {}),
+                mechanical=g.get("mechanical"),
             )
             for tag, g in groups.items()
         )
@@ -156,9 +163,12 @@ class ReportExportNode(BaseNode):
                 if b.compliance is not None:
                     verdict = "APPROVED ✓" if b.compliance.overall_pass else "REJECTED ✗"
                 has = "".join(
-                    m for m, ok in [("C", b.corrected), ("F", b.fitted), ("V", b.compliance)] if ok
+                    m for m, ok in [
+                        ("C", b.corrected), ("F", b.fitted), ("V", b.compliance),
+                        ("M", b.mechanical),
+                    ] if ok
                 )
-                lines.append(f"{b.pump_tag:<14} [{has:<3}]  {verdict}")
+                lines.append(f"{b.pump_tag:<14} [{has:<4}]  {verdict}")
             pumps_lbl.setText("\n".join(lines))
             banner.show_message(self.status, "ok" if self.state == "ok" else "info")
 
@@ -166,12 +176,15 @@ class ReportExportNode(BaseNode):
         # binding.export_reports so the GUI and the CLI behave identically.
         def run_export(formats):
             rated = getattr(self, "_rated", None)
-            branches = [b for b in getattr(self, "_branches", ()) if b.fitted is not None]
+            branches = [
+                b for b in getattr(self, "_branches", ())
+                if b.fitted is not None or b.mechanical is not None
+            ]
             if not rated or not branches:
                 QMessageBox.warning(
                     dlg, "Report Export",
                     "Connect the rated point and at least one complete branch "
-                    "(test points → correction → curve fit).",
+                    "(test points → correction → curve fit) or a mechanical run.",
                 )
                 return
             data = assemble_report_data(rated, branches, s["equipment"])
@@ -337,6 +350,13 @@ def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
             entry["corrected"] = {
                 key: [float(getattr(v, "magnitude", v)) for v in vals]
                 for key, vals in td.items()
+            }
+        if b.mechanical is not None:
+            res = b.mechanical.result
+            entry["mechanical_run"] = {
+                "passed": bool(getattr(res, "passed", False)),
+                "fully_assessed": bool(getattr(res, "fully_assessed", True)),
+                "criteria": b.mechanical.criteria_label,
             }
         doc["pumps"].append(entry)
     return doc

@@ -57,6 +57,15 @@ TEST_DATA_DESCRIPTION = (
 )
 SUMMARY_COLUMNS = ("Parameter", "Actual", "Minimum", "Maximum")
 
+# Mechanical running test section (UC-11), shared by docx and LaTeX.
+MECHANICAL_RUN_KEY = "Mechanical Run"
+MECHANICAL_RUN_TITLE = "Mechanical running test"
+MECHANICAL_RUN_COLUMNS = ("Channel", "Unit", "Min", "Max", "Limit", "Status")
+MECHANICAL_RUN_SOURCE = "Criteria source: {source}"
+MECHANICAL_RUN_UNVERIFIED_NOTE = (
+    "Mechanical running test limits not yet verified against the standard text."
+)
+
 
 def standard_sentence(translate: Callable[[str], str], acceptance: Optional[dict]) -> str:
     """Localized "computations performed in accordance with <standard>:" sentence."""
@@ -72,6 +81,67 @@ def unverified_sentence(
     if not items:
         return None
     return translate(UNVERIFIED_NOTE).format(items=", ".join(str(i) for i in items))
+
+
+def mechanical_run_verdict(translate: Callable[[str], str], result) -> str:
+    """Localized overall verdict of a mechanical run result."""
+    if not result.passed:
+        return translate("FAILED")
+    if result.fully_assessed:
+        return translate("PASSED")
+    return translate("PASSED (not fully assessed)")
+
+
+def mechanical_run_duration_sentence(translate: Callable[[str], str], result) -> str:
+    """``Duration: 4.00 h`` (plus the required minimum when configured)."""
+    text = f"{translate('Duration')}: {result.duration.to('h'):0.2f~P}"
+    if getattr(result, "min_duration", None) is not None:
+        text += f" (\u2265 {result.min_duration.to('h'):0.2f~P})"
+    return text
+
+
+def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
+    """``(header, rows)`` of strings for the per-channel table (never empty cells)."""
+    status_text = {
+        "pass": translate("PASS"),
+        "fail": translate("FAIL"),
+        "info": translate("INFO"),
+    }
+
+    def num(q):
+        return "-" if q is None else f"{q.magnitude:0.3g}"
+
+    header = [translate(c) for c in MECHANICAL_RUN_COLUMNS]
+    rows = []
+    for ch in result.channels:
+        if ch.limit is not None:
+            limit = f"\u2264 {num(ch.limit)}"
+        elif ch.stabilisation:
+            st = ch.stabilisation
+            limit = f"\u0394 \u2264 {st['allowed']:0.3g~P} / {st['window']:0.3g~P}"
+        else:
+            limit = translate("not configured")
+        rows.append(
+            [
+                ch.name or "-",
+                ch.unit or "-",
+                num(ch.min),
+                num(ch.max),
+                limit,
+                status_text.get(ch.status, ch.status),
+            ]
+        )
+    return header, rows
+
+
+def mechanical_run_notes(translate: Callable[[str], str], result) -> list:
+    """Criteria-source line and unverified note (empty list if nothing to say)."""
+    notes = []
+    if getattr(result, "source", ""):
+        notes.append(translate(MECHANICAL_RUN_SOURCE).format(source=result.source))
+    if not getattr(result, "verified", False):
+        notes.append(translate(MECHANICAL_RUN_UNVERIFIED_NOTE))
+    return notes
 
 
 def _parse_po(path) -> dict:
@@ -271,6 +341,9 @@ class ReportGenerator:
 
             for chart in matches:
                 self._add_chart(document, chart, test_data[chart])
+
+            if MECHANICAL_RUN_KEY in test_data:
+                self._add_mechanical_run(document, test_data[MECHANICAL_RUN_KEY])
 
         document.save(output_file)
         print(f"{self._('New document saved at')}: {output_file}")
@@ -509,3 +582,60 @@ class ReportGenerator:
                             width=width,
                             height=height)
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    def _add_mechanical_run(self, document, entry):
+        """
+        Add the mechanical running test section (UC-11).
+
+        Parameters
+        ----------
+        document : docx.Document
+            The Word document object to modify.
+        entry : dict
+            ``{"result": MechanicalRunResult, "plot": BytesIO}``.
+        """
+        result = (entry or {}).get("result")
+        if result is None:
+            return
+        table_font = "Consolas"
+        document.add_paragraph(self._(MECHANICAL_RUN_TITLE), style='Title_3')
+        document.add_paragraph(mechanical_run_duration_sentence(self._, result), style='Text_body')
+        document.add_paragraph(
+            f"{self._('Overall verdict')}: {mechanical_run_verdict(self._, result)}",
+            style='Text_body',
+        )
+
+        header, rows = mechanical_run_table(self._, result)
+        table = document.add_table(rows=len(rows) + 1, cols=len(header))
+        table.style = "Table Grid"
+        table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        width = Inches(1.0)
+        for col, name in enumerate(header):
+            cell = table.cell(0, col)
+            cell.text = name
+            cell.width = width
+            run = cell.paragraphs[0].runs[0]
+            run.bold = True
+            run.font.size = Pt(9)
+            run.font.name = table_font
+            if col != 0:
+                cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        for r, values in enumerate(rows, start=1):
+            for col, text in enumerate(values):
+                cell = table.cell(r, col)
+                cell.text = text
+                cell.width = width
+                run = cell.paragraphs[0].runs[0]
+                run.font.size = Pt(8)
+                run.font.name = table_font
+                if col != 0:
+                    cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        plot = (entry or {}).get("plot")
+        if isinstance(plot, io.BytesIO) or (isinstance(plot, str) and os.path.exists(plot)):
+            paragraph = document.add_paragraph()
+            paragraph.add_run().add_picture(plot, width=Inches(6))
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        for note in mechanical_run_notes(self._, result):
+            document.add_paragraph(note, style='Text_body')

@@ -105,3 +105,54 @@ msgstr "The computations in this section were performed in accordance with {stan
 
 msgid "Acceptance criteria not yet verified against the standard text: {items}."
 msgstr "Acceptance criteria not yet verified against the standard text: {items}."
+
+msgid "Mechanical running test"
+msgstr "Mechanical running test"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Channel"
+msgstr "Channel"
+
+msgid "Unit"
+msgstr "Unit"
+
+msgid "Min"
+msgstr "Min"
+
+msgid "Max"
+msgstr "Max"
+
+msgid "Limit"
+msgstr "Limit"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "PASSED"
+msgstr "PASSED"
+
+msgid "FAILED"
+msgstr "FAILED"
+
+msgid "PASSED (not fully assessed)"
+msgstr "PASSED (not fully assessed)"
+
+msgid "not configured"
+msgstr "not configured"
+
+msgid "PASS"
+msgstr "PASS"
+
+msgid "FAIL"
+msgstr "FAIL"
+
+msgid "INFO"
+msgstr "INFO"
+
+msgid "Criteria source: {source}"
+msgstr "Criteria source: {source}"
+
+msgid "Mechanical running test limits not yet verified against the standard text."
+msgstr "Mechanical running test limits not yet verified against the standard text."
