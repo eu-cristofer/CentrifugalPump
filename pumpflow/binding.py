@@ -4,8 +4,8 @@ binding
 
 The single place where the UI calls **into** the ``pump`` library (UI_SPEC §4).
 Nothing here re-implements physics the library already provides; it only adapts
-the flat signal payloads (:mod:`pumpflow.signals`) to the library's constructors
-and reads results back out.
+the signal payloads (:mod:`pumpflow.signals`, which carry Pint quantities) to the
+library's constructors and reads results back out.
 
 Binding table (UI_SPEC §4)
 --------------------------
@@ -35,6 +35,7 @@ import numpy as np
 # --- pump library imports (the library is the source of truth) --------------
 from pump import (
     Q_,
+    Pressure,
     Fluid,
     Water,
     DesignPoint,
@@ -42,7 +43,7 @@ from pump import (
     PerformanceCurve,
     PerformanceChecker,
 )
-from pump.constants import G as _G
+from pump.constants import G
 
 from .mathx import NaturalCubicSpline, r_squared
 from .numfmt import parse_decimal
@@ -55,16 +56,6 @@ from .signals import (
     ComplianceResult,
     ParameterCheck,
 )
-
-G = float(_G.to("m/s**2").magnitude)  # m/s²
-
-# Pressure unit → Pascal
-_PA_PER = {
-    "bar": 1.0e5,
-    "kgf/cm**2": 98066.5,
-    "kgf/cm2": 98066.5,
-    "kgf/cm²": 98066.5,
-}
 
 
 class BindingError(Exception):
@@ -80,8 +71,8 @@ def make_rated_fluid(rated: RatedPoint) -> Fluid:
     """Construct the rated ``Fluid`` from the rated point."""
     return Fluid(
         name=rated.fluid_name or "Rated fluid",
-        density=Q_(rated.density_kgm3, "kg/m**3"),
-        viscosity=Q_(rated.viscosity_cst, "cSt"),
+        density=rated.density,
+        viscosity=rated.viscosity,
     )
 
 
@@ -109,12 +100,12 @@ def water_kinematic_viscosity_cst(temp_c: float) -> float:
 
 def make_fluid(spec: FluidSpec) -> Fluid:
     """Construct a ``pump.Fluid`` (or ``Water``) from a Fluid-node spec (UC-00)."""
-    if spec.source == "water" and spec.temp_c is not None:
-        return Water(Q_(spec.temp_c, "degC"))
+    if spec.source == "water" and spec.temperature is not None:
+        return Water(spec.temperature)
     return Fluid(
         name=spec.name or "Service fluid",
-        density=Q_(spec.density_kgm3, "kg/m**3"),
-        viscosity=Q_(spec.viscosity_cst, "cSt"),
+        density=spec.density,
+        viscosity=spec.viscosity,
     )
 
 
@@ -122,16 +113,16 @@ def make_design_point(rated: RatedPoint, fluid: Optional[Fluid] = None) -> Desig
     """Construct the shared ``DesignPoint`` (UI_SPEC §4)."""
     fluid = fluid or make_rated_fluid(rated)
     kwargs = {}
-    if rated.head_shutoff_m is not None:
-        kwargs["head_shutoff"] = Q_(rated.head_shutoff_m, "m")
-    if rated.npsha_m is not None:
-        kwargs["npsha"] = Q_(rated.npsha_m, "m")
-    if rated.power_kw is not None:
-        kwargs["breaking_power"] = Q_(rated.power_kw, "kW")
+    if rated.head_shutoff is not None:
+        kwargs["head_shutoff"] = rated.head_shutoff
+    if rated.npsha is not None:
+        kwargs["npsha"] = rated.npsha
+    if rated.power is not None:
+        kwargs["breaking_power"] = rated.power
     return DesignPoint(
         fluid=fluid,
-        capacity=Q_(rated.q_m3h, "m**3/h"),
-        differential_head=Q_(rated.head_m, "m"),
+        capacity=rated.q,
+        differential_head=rated.head,
         **kwargs,
     )
 
@@ -141,50 +132,33 @@ def make_design_point(rated: RatedPoint, fluid: Optional[Fluid] = None) -> Desig
 # ---------------------------------------------------------------------------
 
 
-def pressure_to_pa(value: float, unit: str) -> float:
-    return float(value) * _PA_PER.get(unit, 1.0e5)
-
-
-def row_head_m(row, pressure_unit: str, density_kgm3: Optional[float] = None) -> float:
+def row_head(row, density: Optional[Q_] = None) -> Q_:
     """
     Read-only ``Head`` column for the Test Points grid (UI_SPEC §5.2):
-    ``Head = (P_dis − P_suc) / (ρ·g)``.  ``ρ`` is water at ``T_water`` by default,
-    or ``density_kgm3`` when a Fluid node overrides the test fluid (UC-00).
-    An explicit measured/overridden head on the row wins.
+    ``Head = (P_dis − P_suc) / (ρ·g)`` in metres.  ``ρ`` is water at ``T_water``
+    by default, or ``density`` when a Fluid node overrides the test fluid
+    (UC-00).  An explicit measured/overridden head on the row wins.
     """
-    if row.head_m is not None:
-        return float(row.head_m)
-    rho = (
-        density_kgm3
-        if density_kgm3 is not None
-        else Water(Q_(row.temp_c, "degC")).density.magnitude
-    )
-    dp_pa = pressure_to_pa(row.p_discharge, pressure_unit) - pressure_to_pa(
-        row.p_suction, pressure_unit
-    )
-    return dp_pa / (rho * G)
+    if row.head is not None:
+        return row.head.to("m")
+    rho = density if density is not None else Water(row.temperature).density
+    return ((row.p_discharge - row.p_suction) / (rho * G)).to("m")
 
 
-def row_efficiency_pct(
-    row, head_m: float, density_kgm3: Optional[float] = None
-) -> Optional[float]:
-    """η = hydraulic / breaking.  ``ρ`` is water at ``T_water`` by default, or
-    ``density_kgm3`` when a Fluid node overrides the test fluid (UC-00)."""
-    if row.efficiency_pct is not None:
-        return float(row.efficiency_pct)
-    if not row.power_kw:
+def row_efficiency(row, head: Q_, density: Optional[Q_] = None) -> Optional[Q_]:
+    """η = hydraulic / breaking, in percent.  ``ρ`` is water at ``T_water`` by
+    default, or ``density`` when a Fluid node overrides the test fluid (UC-00)."""
+    if row.efficiency is not None:
+        return row.efficiency.to("percent")
+    if row.power.magnitude <= 0:
         return None
-    rho = (
-        density_kgm3
-        if density_kgm3 is not None
-        else Water(Q_(row.temp_c, "degC")).density.magnitude
-    )
-    q_m3s = row.q_m3h / 3600.0
-    hydraulic_w = rho * q_m3s * G * head_m
-    breaking_w = row.power_kw * 1000.0
-    if breaking_w <= 0:
-        return None
-    return hydraulic_w / breaking_w * 100.0
+    rho = density if density is not None else Water(row.temperature).density
+    return (rho * row.q * G * head / row.power).to("percent")
+
+
+def head_from_pressures(p_suction: Pressure, p_discharge: Pressure, density: Q_) -> Q_:
+    """Head in metres from a pressure pair and a constant density (Point node)."""
+    return ((p_discharge - p_suction) / (density * G)).to("m")
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +169,7 @@ def row_efficiency_pct(
 def correct_curve(
     rated: RatedPoint,
     tps: TestPointSet,
-    target_speed_rpm: Optional[float] = None,
+    target_speed: Optional[Q_] = None,
     apply_speed: bool = True,
     apply_density: bool = True,
     degree: int = 3,
@@ -214,47 +188,45 @@ def correct_curve(
     if not ok:
         raise BindingError(msg)
 
-    target = float(
-        target_speed_rpm if target_speed_rpm is not None else rated.speed_rpm
-    )
+    target = target_speed if target_speed is not None else rated.speed
 
     # One shared test fluid (the library requires a single fluid per curve).
     # Per-row head/efficiency are computed with the test density and pinned onto
     # the points, so the shared fluid is only a label here.  A connected Fluid
     # node overrides the test density (constant); otherwise water at T_water.
-    test_rho = tps.test_density_kgm3
+    test_rho = tps.test_density
     if test_rho is not None:
-        test_fluid = Fluid(name="Test fluid", density=Q_(test_rho, "kg/m**3"))
+        test_fluid = Fluid(name="Test fluid", density=test_rho)
     else:
-        mean_temp = fmean(r.temp_c for r in tps.rows)
+        mean_temp = fmean(r.temperature.to("degC").magnitude for r in tps.rows)
         test_fluid = Water(Q_(mean_temp, "degC"))
 
     points = []
     before_after = []
     for r in tps.rows:
-        head = row_head_m(r, tps.pressure_unit, test_rho)
-        eff = row_efficiency_pct(r, head, test_rho)
+        head = row_head(r, test_rho)
+        eff = row_efficiency(r, head, test_rho)
         kwargs = {
-            "_head": Q_(head, "m"),
-            "breaking_power": Q_(r.power_kw, "kW"),
+            "_head": head,
+            "breaking_power": r.power,
         }
         if eff is not None:
-            kwargs["_efficiency"] = Q_(eff, "percent")
+            kwargs["_efficiency"] = eff
         points.append(
             TestPoint(
                 fluid=test_fluid,
-                capacity=Q_(r.q_m3h, "m**3/h"),
-                speed_of_rotation=Q_(r.speed_rpm, "rpm"),
+                capacity=r.q,
+                speed_of_rotation=r.speed,
                 **kwargs,
             )
         )
         before_after.append(
             {
-                "q": r.q_m3h,
-                "head": head,
-                "power": r.power_kw,
-                "eff": eff,
-                "speed": r.speed_rpm,
+                "q": float(r.q.to("m**3/h").magnitude),
+                "head": float(head.to("m").magnitude),
+                "power": float(r.power.to("kW").magnitude),
+                "eff": float(eff.to("percent").magnitude) if eff is not None else None,
+                "speed": float(r.speed.to("rpm").magnitude),
             }
         )
 
@@ -266,7 +238,7 @@ def correct_curve(
     # 1) affinity-law speed correction
     if apply_speed:
         try:
-            curve = curve.to_speed(Q_(target, "rpm"))
+            curve = curve.to_speed(target)
         except AttributeError as exc:
             raise BindingError(str(exc)) from exc
 
@@ -304,7 +276,7 @@ def correct_curve(
         pump_tag=tps.pump_tag,
         curve=curve,
         fluid=fluid_used,
-        target_speed_rpm=target,
+        target_speed=target,
         before_after=merged,
     )
 
@@ -380,7 +352,12 @@ def fit_model(
 
 def default_tolerances(rated: RatedPoint) -> dict:
     """Library-default tolerances exposed as editable fields (UI_SPEC §5.6)."""
-    h = rated.head_shutoff_m if rated.head_shutoff_m is not None else rated.head_m
+    head_m = float(rated.head.to("m").magnitude)
+    h = (
+        float(rated.head_shutoff.to("m").magnitude)
+        if rated.head_shutoff is not None
+        else head_m
+    )
     if h <= 75:
         shutoff = 0.10
     elif h <= 300:
@@ -413,16 +390,18 @@ def check_compliance(
         abs(tol[k] - lib_defaults[k]) > 1e-9 for k in lib_defaults if k in tol
     )
 
-    rated_q = Q_(rated.q_m3h, "m**3/h")
+    rated_q = rated.q
+    rated_head = float(rated.head.to("m").magnitude)
+    rated_power = float(rated.power.to("kW").magnitude)
     params = []
 
     # --- Head:  |δ| ≤ tol -----------------------------------------------------
     pred_head = float(fitted.curve.predict_head(rated_q).to("m").magnitude)
-    dev_head = _deviation(rated.head_m, pred_head)
+    dev_head = _deviation(rated_head, pred_head)
     params.append(
         ParameterCheck(
             name="Head",
-            actual=rated.head_m,
+            actual=rated_head,
             predicted=pred_head,
             minimum=_mag(checker.minimum_head),
             maximum=_mag(checker.maximum_head),
@@ -434,11 +413,11 @@ def check_compliance(
 
     # --- Power:  δ ≤ tol ------------------------------------------------------
     pred_power = float(fitted.curve.predict_breaking_power(rated_q).to("kW").magnitude)
-    dev_power = _deviation(rated.power_kw, pred_power)
+    dev_power = _deviation(rated_power, pred_power)
     params.append(
         ParameterCheck(
             name="Power",
-            actual=rated.power_kw,
+            actual=rated_power,
             predicted=pred_power,
             minimum=None,
             maximum=_mag(getattr(checker, "maximum_breaking_power", None)),
@@ -449,15 +428,16 @@ def check_compliance(
     )
 
     # --- Efficiency:  δ ≥ −tol -----------------------------------------------
-    if rated.efficiency_pct is not None:
+    if rated.efficiency is not None:
+        rated_eff = float(rated.efficiency.to("percent").magnitude)
         pred_eff = float(
             fitted.curve.predict_efficiency(rated_q).to("percent").magnitude
         )
-        dev_eff = _deviation(rated.efficiency_pct, pred_eff)
+        dev_eff = _deviation(rated_eff, pred_eff)
         params.append(
             ParameterCheck(
                 name="Efficiency",
-                actual=rated.efficiency_pct,
+                actual=rated_eff,
                 predicted=pred_eff,
                 minimum=None,
                 maximum=None,
@@ -468,13 +448,14 @@ def check_compliance(
         )
 
     # --- Shutoff Head:  |δ| ≤ tol --------------------------------------------
-    if rated.head_shutoff_m is not None:
+    if rated.head_shutoff is not None:
+        rated_so = float(rated.head_shutoff.to("m").magnitude)
         pred_so = float(fitted.curve.predict_head(Q_(0, "m**3/h")).to("m").magnitude)
-        dev_so = _deviation(rated.head_shutoff_m, pred_so)
+        dev_so = _deviation(rated_so, pred_so)
         params.append(
             ParameterCheck(
                 name="Shutoff Head",
-                actual=rated.head_shutoff_m,
+                actual=rated_so,
                 predicted=pred_so,
                 minimum=_mag(getattr(checker, "minimum_head_shutoff", None)),
                 maximum=_mag(getattr(checker, "maximum_head_shutoff", None)),
@@ -521,7 +502,7 @@ def build_report_png(
     """Reuse the library's matplotlib plot for the report image (BytesIO PNG)."""
     ylims = ylims or {}
     return corrected.curve.plot_performance_curve(
-        capacity=Q_(rated.q_m3h, "m**3/h"),
+        capacity=rated.q,
         return_io=True,
         head_ylim=ylims.get("head"),
         power_ylim=ylims.get("power"),

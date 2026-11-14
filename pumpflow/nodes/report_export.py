@@ -300,17 +300,23 @@ class ReportExportNode(BaseNode):
         return f"{folder.rstrip('/')}/{name}"
 
 
+def _mag(q, unit):
+    """Float magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``)."""
+    return None if q is None else float(q.to(unit).magnitude)
+
+
 def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
     """Richer §7 bundle: shared rated + per-pump corrected data + verdict."""
     doc = {
         "service_tag": rated.tag,
         "standard": rated.standard,
-        "unit": rated.pressure_unit,
+        "unit": "bar",
         "rated": {
-            "q_m3h": rated.q_m3h, "head_m": rated.head_m, "n_rpm": rated.speed_rpm,
-            "power_kw": rated.power_kw, "eff_pct": rated.efficiency_pct,
-            "dens_rel": rated.density_rel, "visc_nom_cst": rated.viscosity_cst,
-            "head_shutoff": rated.head_shutoff_m, "npsha_m": rated.npsha_m,
+            "q_m3h": _mag(rated.q, "m**3/h"), "head_m": _mag(rated.head, "m"),
+            "n_rpm": _mag(rated.speed, "rpm"),
+            "power_kw": _mag(rated.power, "kW"), "eff_pct": _mag(rated.efficiency, "percent"),
+            "dens_rel": rated.density_rel, "visc_nom_cst": _mag(rated.viscosity, "cSt"),
+            "head_shutoff": _mag(rated.head_shutoff, "m"), "npsha_m": _mag(rated.npsha, "m"),
         },
         "equipment": {k: v for k, v in (equipment or {}).items() if v},
         "pumps": [],

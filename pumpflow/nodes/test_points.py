@@ -24,9 +24,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..binding import row_efficiency_pct, row_head_m
+from pump import Q_, Pressure
+
+from ..binding import row_efficiency, row_head
 from ..numfmt import fmt, parse_decimal
-from ..persistence import testset_from_json
+from ..persistence import testset_from_json, testset_pressure_unit
 from ..sample_data import SINGLE_PUMP_JSON
 from ..signals import TestPointSet, TestRow
 from .base import BaseNode, PortSpec
@@ -38,6 +40,51 @@ _UNITS = ["m³/h", "", "", "°C", "rpm", "kW", "m", "%"]
 _EDITABLE = {0, 1, 2, 3, 4, 5}
 _KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power"]
 _DEFAULT_LABEL = "Water at T_water"
+
+
+def _row_from_dict(r: dict, unit: str) -> TestRow:
+    """Wrap one v1 settings row (plain floats) into a ``TestRow`` of Quantities.
+
+    ``unit`` is the table's pressure unit (``"bar"`` or ``"kgf/cm**2"``).  Blank
+    cells become 0.0 (temperature: 25 °C), exactly as before.
+    """
+    head = r.get("head")
+    eff = r.get("eff")
+    return TestRow(
+        q=Q_(float(r.get("q") or 0.0), "m**3/h"),
+        p_suction=Pressure(Q_(float(r.get("p_suc") or 0.0), unit), "g"),
+        p_discharge=Pressure(Q_(float(r.get("p_dis") or 0.0), unit), "g"),
+        temperature=Q_(float(r.get("temp_c") or 25.0), "degC"),
+        speed=Q_(float(r.get("n") or 0.0), "rpm"),
+        power=Q_(float(r.get("power") or 0.0), "kW"),
+        head=None if head is None else Q_(float(head), "m"),
+        efficiency=None if eff is None else Q_(float(eff), "percent"),
+    )
+
+
+def testset_settings(tps: TestPointSet):
+    """Flatten a ``TestPointSet`` to the v1 node-settings ``(unit, rows)``.
+
+    The pressure unit comes from :func:`persistence.testset_pressure_unit`.
+    """
+    unit = testset_pressure_unit(tps)
+    rows = []
+    for r in tps.rows:
+        rows.append(
+            {
+                "q": r.q.to("m**3/h").magnitude,
+                "p_suc": r.p_suction.value.to(unit).magnitude,
+                "p_dis": r.p_discharge.value.to(unit).magnitude,
+                "temp_c": r.temperature.to("degC").magnitude,
+                "n": r.speed.to("rpm").magnitude,
+                "power": r.power.to("kW").magnitude,
+                "head": None if r.head is None else r.head.to("m").magnitude,
+                "eff": None
+                if r.efficiency is None
+                else r.efficiency.to("percent").magnitude,
+            }
+        )
+    return unit, rows
 
 
 class TestPointsTableNode(BaseNode):
@@ -53,59 +100,39 @@ class TestPointsTableNode(BaseNode):
 
     def default_settings(self) -> Dict:
         tps = testset_from_json(SINGLE_PUMP_JSON)
+        unit, rows = testset_settings(tps)
         return {
             "pump_tag": tps.pump_tag,
-            "unit": tps.pressure_unit,
+            "unit": unit,
             "fluid_choice": "",  # ""=first wired (default), "__default__"=water, or a name
-            "rows": [
-                {
-                    "q": r.q_m3h,
-                    "p_suc": r.p_suction,
-                    "p_dis": r.p_discharge,
-                    "temp_c": r.temp_c,
-                    "n": r.speed_rpm,
-                    "power": r.power_kw,
-                    "head": r.head_m,
-                    "eff": r.efficiency_pct,
-                }
-                for r in tps.rows
-            ],
+            "rows": rows,
         }
 
     # -- payload -----------------------------------------------------------
-    def to_signal(self, test_density_kgm3=None) -> TestPointSet:
+    def to_signal(self, test_density=None) -> TestPointSet:
         s = self.settings
-        rows = []
-        for r in s["rows"]:
-            rows.append(
-                TestRow(
-                    q_m3h=float(r.get("q") or 0.0),
-                    p_suction=float(r.get("p_suc") or 0.0),
-                    p_discharge=float(r.get("p_dis") or 0.0),
-                    temp_c=float(r.get("temp_c") or 25.0),
-                    speed_rpm=float(r.get("n") or 0.0),
-                    power_kw=float(r.get("power") or 0.0),
-                    head_m=r.get("head"),
-                    efficiency_pct=r.get("eff"),
-                )
-            )
+        unit = str(s["unit"])
+        rows = [_row_from_dict(r, unit) for r in s["rows"]]
         return TestPointSet(
             pump_tag=str(s["pump_tag"]).strip(),
             rows=tuple(rows),
-            pressure_unit=str(s["unit"]),
-            test_density_kgm3=test_density_kgm3,
+            test_density=test_density,
         )
 
     def compute(self, inputs) -> Dict[str, object]:
         self._fluids = self.all_of(inputs, "FluidSpec")
         chosen = resolve_fluid(self._fluids, self.settings.get("fluid_choice"))
-        self._test_density = chosen.density_kgm3 if chosen is not None else None
+        self._test_density = chosen.density if chosen is not None else None
         tps = self.to_signal(self._test_density)
         ok, msg = tps.is_valid()
         if not ok:
             return self.emit_nothing(msg, "invalid")
         shutoff = "" if tps.has_shutoff() else " · no shut-off pt"
-        fl = f" · {chosen.name} {self._test_density:.0f} kg/m³" if chosen else ""
+        fl = (
+            f" · {chosen.name} {self._test_density.to('kg/m**3').magnitude:.0f} kg/m³"
+            if chosen
+            else ""
+        )
         self.status = f"{tps.pump_tag} · {len(tps.rows)} points{shutoff}{fl}"
         self.state = "ok"
         return {"TestPointSet": tps}
@@ -148,7 +175,8 @@ class TestPointsTableNode(BaseNode):
             if ok and test_rho is not None:
                 banner.show_message(
                     f"Test fluid overridden by connected Fluid node "
-                    f"({test_rho:.0f} kg/m³) — Head/η use it; T_water is informational.",
+                    f"({test_rho.to('kg/m**3').magnitude:.0f} kg/m³) — Head/η use it; "
+                    f"T_water is informational.",
                     "info",
                 )
             elif ok and not self.to_signal().has_shutoff():
@@ -162,20 +190,13 @@ class TestPointsTableNode(BaseNode):
 
         def refresh_computed(row_idx: int):
             r = s["rows"][row_idx]
-            tr = TestRow(
-                q_m3h=float(r.get("q") or 0.0),
-                p_suction=float(r.get("p_suc") or 0.0),
-                p_discharge=float(r.get("p_dis") or 0.0),
-                temp_c=float(r.get("temp_c") or 25.0),
-                speed_rpm=float(r.get("n") or 0.0),
-                power_kw=float(r.get("power") or 0.0),
-                head_m=r.get("head"),
-                efficiency_pct=r.get("eff"),
-            )
+            tr = _row_from_dict(r, s["unit"])
             test_rho = getattr(self, "_test_density", None)
             try:
-                head = row_head_m(tr, s["unit"], test_rho)
-                eff = row_efficiency_pct(tr, head, test_rho)
+                head_q = row_head(tr, test_rho)
+                eff_q = row_efficiency(tr, head_q, test_rho)
+                head = head_q.to("m").magnitude
+                eff = None if eff_q is None else eff_q.to("percent").magnitude
             except Exception:
                 head, eff = 0.0, None
             _set_ro(table, row_idx, 6, fmt(head, 2))
@@ -219,7 +240,7 @@ class TestPointsTableNode(BaseNode):
         def on_pick():
             s["fluid_choice"] = fluid_pick.currentData()
             chosen = resolve_fluid(getattr(self, "_fluids", []), s["fluid_choice"])
-            self._test_density = chosen.density_kgm3 if chosen is not None else None
+            self._test_density = chosen.density if chosen is not None else None
             fill()  # re-derive Head/η with the new density
             recompute_status()
 

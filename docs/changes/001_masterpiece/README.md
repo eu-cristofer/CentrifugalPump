@@ -49,6 +49,9 @@ Each run MUST:
 
 - [x] [Sprint 1 — Library quantity spine](sprint-1.md) — done 2026-11-14
 - [ ] [Sprint 2 — Signals carry Quantities + `.pumpflow` schema v2](sprint-2.md)
+  - Split per the spec's overrun clause:
+    - [x] 2a — signals carry Quantities, binding unit-free — done 2026-11-14
+    - [ ] 2b — `.pumpflow` schema v2 (`{"value","unit"}`) + `persistence.migrate`
 - [ ] [Sprint 3 — Unit choice on every GUI numeric field](sprint-3.md)
 - [ ] [Sprint 4 — Complete head (pressure + velocity + elevation)](sprint-4.md)
 - [ ] [Sprint 5 — Edition-aware acceptance engine](sprint-5.md)
@@ -70,3 +73,8 @@ Each run MUST:
 - S1: `pump.Pressure` adds gauge/absolute semantics: differences carry no reference, and mixing references is an error.
 - S1: `pump.quantity_io` provides `{"value", "unit"}` JSON round-trips.
 - S1: `Water` gains `dynamic_viscosity`, `kinematic_viscosity` and `vapour_pressure` (IAPWS-IF97 Eq. 30). The water helpers in `pumpflow` now delegate to the library.
+- S2a: every signal payload now carries Pint quantities, and test-row pressures are `pump.Pressure`:
+  - affected: `RatedPoint`, `FluidSpec`, `TestRow`, `TestPointSet`, `PointSample`, `CorrectedCurve.target_speed`;
+  - the binding has no unit literals for signal fields (`_PA_PER`, `pressure_to_pa`, `row_head_m`, `row_efficiency_pct` removed; replaced by `row_head`, `row_efficiency`, `head_from_pressures`);
+  - all 9 shipped projects evaluate **bit-identically** (states, statuses, every compliance number), and the exchange JSON is unchanged.
+- S2a: fixed the Compliance dialog crashing when no rated point is wired, which happens on a blank branch. A new test opens every node dialog.

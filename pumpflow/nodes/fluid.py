@@ -9,7 +9,8 @@ nominal viscosity).  Emits a ``FluidSpec`` signal.
 Wired into Speed / Affinity Correction, Rated Point, Test Points or Point it
 overrides the fluid those nodes use — see UC-00 in ``docs/product/use-cases.md``.
 All physics goes through :mod:`pumpflow.binding` (``make_fluid`` /
-``water_density_kgm3``); this node never touches ``pump`` directly.
+``water_density_kgm3``) and ``pump.Water``; the emitted ``FluidSpec`` carries
+Pint Quantities.
 
 Inputs are unit-aware (``ui.UnitField``): temperature in °C/K/°F, density in
 kg/m³ or g/cm³, viscosity in cSt/cP — all normalised back to the library's
@@ -23,6 +24,8 @@ from typing import Dict
 import numpy as np
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+from pump import Q_, Water
 
 from ..binding import (
     water_density_kgm3,
@@ -68,12 +71,14 @@ class FluidNode(BaseNode):
         if s.get("source") == "water":
             temp_c = self._temp_c()
             name = str(s.get("name") or "").strip() or f"Water @ {temp_c:g} °C"
+            temperature = Q_(temp_c, "degC")
+            water = Water(temperature)
             return FluidSpec(
                 name=name,
                 source="water",
-                density_kgm3=water_density_kgm3(temp_c),
-                viscosity_cst=water_kinematic_viscosity_cst(temp_c),
-                temp_c=temp_c,
+                density=water.density,
+                viscosity=water.kinematic_viscosity,
+                temperature=temperature,
             )
         dens_kgm3 = units.to_standard(
             float(s["dens"]), "density", s.get("dens_unit") or "kg/m³"
@@ -82,11 +87,14 @@ class FluidNode(BaseNode):
         return FluidSpec(
             name=str(s.get("name") or "").strip() or "Service fluid",
             source="manual",
-            density_kgm3=dens_kgm3,
-            viscosity_cst=units.to_standard(
-                float(s["visc"]), "viscosity", s.get("visc_unit") or "cSt", dens_rel
+            density=Q_(dens_kgm3, "kg/m**3"),
+            viscosity=Q_(
+                units.to_standard(
+                    float(s["visc"]), "viscosity", s.get("visc_unit") or "cSt", dens_rel
+                ),
+                "cSt",
             ),
-            temp_c=None,
+            temperature=None,
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -94,14 +102,16 @@ class FluidNode(BaseNode):
         ok, msg = spec.is_valid()
         if not ok:
             return self.emit_nothing(msg, "invalid")
+        density_kgm3 = spec.density.to("kg/m**3").magnitude
+        viscosity_cst = spec.viscosity.to("cSt").magnitude
         if spec.source == "water":
             self.status = (
-                f"{spec.name} · {spec.density_kgm3:.1f} kg/m³"
-                f" · {spec.viscosity_cst:.3f} cSt"
+                f"{spec.name} · {density_kgm3:.1f} kg/m³"
+                f" · {viscosity_cst:.3f} cSt"
             )
         else:
             self.status = (
-                f"{spec.name} · SG {spec.density_rel:g} · {spec.viscosity_cst:g} cSt"
+                f"{spec.name} · SG {spec.density_rel:g} · {viscosity_cst:g} cSt"
             )
         self.state = "ok"
         return {"FluidSpec": spec}

@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
     QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem,
 )
 
+from pump import Q_
+
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
 from ..style import ui_font
@@ -147,8 +149,10 @@ class ComplianceCheckNode(BaseNode):
 
 
 class _Fallback:
-    head_m = 73.0
-    head_shutoff_m = 117.0
+    """Stand-in rated point for the tolerance dialog before a RatedPoint is wired."""
+
+    head = Q_(73.0, "m")
+    head_shutoff = Q_(117.0, "m")
 
 
 def _append_param(table: QTableWidget, p) -> None:

@@ -11,8 +11,8 @@ quantities directly, so it is a lightweight marker rather than a measurement to
 correct.
 
 Q/H/P accept any display unit via the reusable ``ui.UnitField`` widget; the
-emitted ``PointSample`` is always normalised to m³/h/m/kW, so the marker lands
-in the same physical spot regardless of the units typed.
+emitted ``PointSample`` carries Pint Quantities normalised to m³/h/m/kW, so the
+marker lands in the same physical spot regardless of the units typed.
 """
 
 from __future__ import annotations
@@ -21,8 +21,10 @@ from typing import Dict
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from pump import Q_, Pressure
+
 from .. import units
-from ..binding import G, pressure_to_pa
+from ..binding import head_from_pressures
 from ..signals import PointSample
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
@@ -68,41 +70,45 @@ class PointNode(BaseNode):
             return None
         s = self.settings
         unit = s.get("p_unit") or "bar"
-        dp_pa = pressure_to_pa(float(s.get("p_dis") or 0.0), unit) - pressure_to_pa(
-            float(s.get("p_suc") or 0.0), unit
-        )
-        return dp_pa / (fluid_density * G)
+        p_suc = Pressure(Q_(float(s.get("p_suc") or 0.0), unit), "g")
+        p_dis = Pressure(Q_(float(s.get("p_dis") or 0.0), unit), "g")
+        return head_from_pressures(p_suc, p_dis, fluid_density)
 
     def to_signal(self, fluid_density=None) -> PointSample:
         s = self.settings
         if s.get("mode") == "pressures":
-            head_m = self._head_from_pressures(fluid_density)
+            head = self._head_from_pressures(fluid_density)
         else:
-            head_m = _std_opt(s.get("head"), "head", s.get("head_unit") or "m")
+            head = _std_opt(s.get("head"), "head", s.get("head_unit") or "m", "m")
+        eff = _opt(s.get("eff"))
         return PointSample(
             label=str(s.get("label", "Point")).strip() or "Point",
-            q_m3h=units.to_standard(
-                float(s.get("q") or 0.0), "capacity", s.get("q_unit") or "m³/h"
+            q=Q_(
+                units.to_standard(
+                    float(s.get("q") or 0.0), "capacity", s.get("q_unit") or "m³/h"
+                ),
+                "m**3/h",
             ),
-            head_m=head_m,
-            power_kw=_std_opt(s.get("power"), "power", s.get("power_unit") or "kW"),
-            efficiency_pct=_opt(s.get("eff")),
+            head=head,
+            power=_std_opt(s.get("power"), "power", s.get("power_unit") or "kW", "kW"),
+            efficiency=None if eff is None else Q_(eff, "percent"),
         )
 
     def compute(self, inputs) -> Dict[str, object]:
         self._fluids = self.all_of(inputs, "FluidSpec")
         chosen = resolve_fluid(self._fluids, self.settings.get("fluid_choice"))
-        self._fluid_density = chosen.density_kgm3 if chosen is not None else None
+        self._fluid_density = chosen.density if chosen is not None else None
         pt = self.to_signal(self._fluid_density)
-        if pt.q_m3h < 0:
+        q_m3h = pt.q.to("m**3/h").magnitude
+        if q_m3h < 0:
             return self.emit_nothing("Capacity Q must be ≥ 0 m³/h.", "invalid")
         if self.settings.get("mode") == "pressures" and chosen is None:
             return self.emit_nothing(
                 "Connect/select a Fluid node to derive head from pressures.", "invalid"
             )
-        bits = [f"Q={pt.q_m3h:g}"]
-        if pt.head_m is not None:
-            bits.append(f"H={pt.head_m:g}")
+        bits = [f"Q={q_m3h:g}"]
+        if pt.head is not None:
+            bits.append(f"H={pt.head.to('m').magnitude:g}")
         fl = f" · {chosen.name}" if chosen is not None else ""
         self.status = f"{pt.label} · " + " · ".join(bits) + fl
         self.state = "ok"
@@ -237,7 +243,8 @@ def _opt(v):
     return f if f > 0 else None
 
 
-def _std_opt(value, dimension: str, unit: str):
-    """``_opt`` then normalise to the standard unit — ``None`` stays ``None``."""
+def _std_opt(value, dimension: str, unit: str, out_unit: str):
+    """``_opt``, normalise to the standard unit and wrap as a Quantity in
+    ``out_unit`` — ``None`` stays ``None``."""
     v = _opt(value)
-    return None if v is None else units.to_standard(v, dimension, unit)
+    return None if v is None else Q_(units.to_standard(v, dimension, unit), out_unit)

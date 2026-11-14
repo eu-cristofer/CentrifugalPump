@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from .persistence import testset_from_json
+from .persistence import testset_from_json, testset_pressure_unit
 
 # UI_SPEC §6.2 shape — note the mixed comma/dot decimals on purpose.
 SINGLE_PUMP_JSON = {
@@ -195,16 +195,17 @@ EXPLORE_POINTS: List[Dict] = [
 def _test_rows() -> List[dict]:
     """The §6.2 measured rows, normalized to the test-points node settings shape."""
     tps = testset_from_json(SINGLE_PUMP_JSON)
+    unit = testset_pressure_unit(tps)
     return [
         {
-            "q": r.q_m3h,
-            "p_suc": r.p_suction,
-            "p_dis": r.p_discharge,
-            "temp_c": r.temp_c,
-            "n": r.speed_rpm,
-            "power": r.power_kw,
-            "head": r.head_m,
-            "eff": r.efficiency_pct,
+            "q": r.q.to("m**3/h").magnitude,
+            "p_suc": r.p_suction.value.to(unit).magnitude,
+            "p_dis": r.p_discharge.value.to(unit).magnitude,
+            "temp_c": r.temperature.to("degC").magnitude,
+            "n": r.speed.to("rpm").magnitude,
+            "power": r.power.to("kW").magnitude,
+            "head": None if r.head is None else r.head.to("m").magnitude,
+            "eff": None if r.efficiency is None else r.efficiency.to("percent").magnitude,
         }
         for r in tps.rows
     ]
@@ -253,7 +254,7 @@ def sample_project_doc() -> Dict:
             "y": 220.0,
             "settings": {
                 "pump_tag": tps.pump_tag,
-                "unit": tps.pressure_unit,
+                "unit": testset_pressure_unit(tps),
                 "fluid_choice": "",
                 "rows": _test_rows(),
             },
@@ -442,7 +443,7 @@ def explore_project_doc() -> Dict:
             "y": 140.0,
             "settings": {
                 "pump_tag": tps.pump_tag,
-                "unit": tps.pressure_unit,
+                "unit": testset_pressure_unit(tps),
                 "fluid_choice": "",
                 "rows": _test_rows(),
             },

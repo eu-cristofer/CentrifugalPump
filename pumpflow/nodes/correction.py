@@ -12,6 +12,8 @@ from typing import Dict
 
 from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetItem
 
+from pump import Q_
+
 from ..binding import BindingError, correct_curve, make_fluid
 from ..numfmt import fmt
 from ..signals import RatedPoint, TestPointSet
@@ -71,16 +73,18 @@ class SpeedCorrectionNode(BaseNode):
             # Forced speed correction: no rated point → manual target speed.
             # Density correction needs a target fluid, so it runs only when a
             # Fluid node is connected.
-            target = float(s["target_speed"])
+            target = Q_(float(s["target_speed"]), "rpm")
             apply_density = s["apply_density"] and override_fluid is not None
         else:
-            target = rated.speed_rpm if s["lock_to_rated"] else float(s["target_speed"])
+            target = (
+                rated.speed if s["lock_to_rated"] else Q_(float(s["target_speed"]), "rpm")
+            )
             apply_density = s["apply_density"]
         try:
             corrected = correct_curve(
                 rated,
                 tps,
-                target_speed_rpm=target,
+                target_speed=target,
                 apply_speed=s["apply_speed"],
                 apply_density=apply_density,
                 degree=int(s["degree"]),
@@ -93,7 +97,8 @@ class SpeedCorrectionNode(BaseNode):
         mode = "" if rated is not None else " · forced"
         fl = " · fluid✓" if override_fluid is not None else ""
         self.status = (
-            f"{corrected.pump_tag} · {len(tps.rows)} pts · → {target:g} rpm{mode}{fl}"
+            f"{corrected.pump_tag} · {len(tps.rows)} pts · "
+            f"→ {target.to('rpm').magnitude:g} rpm{mode}{fl}"
         )
         self.state = "ok"
         return {"CorrectedCurve": corrected}

@@ -9,7 +9,8 @@ Unit selection for Q, H, P, and viscosity is handled by the reusable
 ``ui.UnitField`` widget, backed by the central :mod:`pumpflow.units` registry —
 the single place that knows which display units are offered and how they map to
 the library's canonical units.  ``to_signal`` always normalises Q/H/P to
-m³/h/m/kW (and viscosity to cSt) so every downstream node sees standard units.
+m³/h/m/kW (and viscosity to cSt) and wraps them as Pint Quantities so every
+downstream node sees standard units.
 A fresh node opens in whatever display units the active project preset selects.
 """
 
@@ -18,6 +19,8 @@ from __future__ import annotations
 from typing import Dict
 
 from PySide6.QtWidgets import QLabel
+
+from pump import Q_
 
 from .. import units
 from ..binding import water_density_kgm3
@@ -77,31 +80,41 @@ class RatedPointInputNode(BaseNode):
         viscosity_cst = units.to_standard(
             float(s["visc"]), "viscosity", s.get("visc_unit") or "cSt", dens_rel
         )
+        density = Q_(dens_rel * 1000.0, "kg/m**3")
+        viscosity = Q_(viscosity_cst, "cSt")
         fluid_name = str(s.get("fluid_name", "Rated fluid"))
         # A connected Fluid node overrides the rated fluid (UC-00).
         if override is not None:
-            dens_rel = override.density_rel
-            viscosity_cst = override.viscosity_cst
+            density = override.density
+            viscosity = override.viscosity
             fluid_name = override.name
+        eff = _opt(s.get("eff"))
+        head_shutoff = _opt(s.get("head_shutoff"))
+        npsha = _opt(s.get("npsha"))
         return RatedPoint(
             tag=str(s["tag"]).strip(),
             service=str(s.get("service", "")),
             standard=str(s["standard"]),
-            q_m3h=units.to_standard(
-                float(s["q"]), "capacity", s.get("q_unit") or "m³/h"
+            q=Q_(
+                units.to_standard(float(s["q"]), "capacity", s.get("q_unit") or "m³/h"),
+                "m**3/h",
             ),
-            head_m=units.to_standard(
-                float(s["head"]), "head", s.get("head_unit") or "m"
+            head=Q_(
+                units.to_standard(float(s["head"]), "head", s.get("head_unit") or "m"),
+                "m",
             ),
-            speed_rpm=float(s["n"]),
-            power_kw=units.to_standard(
-                float(s["power"]), "power", s.get("power_unit") or "kW"
+            speed=Q_(float(s["n"]), "rpm"),
+            power=Q_(
+                units.to_standard(
+                    float(s["power"]), "power", s.get("power_unit") or "kW"
+                ),
+                "kW",
             ),
-            efficiency_pct=_opt(s.get("eff")),
-            head_shutoff_m=_opt(s.get("head_shutoff")),
-            npsha_m=_opt(s.get("npsha")),
-            density_rel=dens_rel,
-            viscosity_cst=viscosity_cst,
+            efficiency=None if eff is None else Q_(eff, "percent"),
+            head_shutoff=None if head_shutoff is None else Q_(head_shutoff, "m"),
+            npsha=None if npsha is None else Q_(npsha, "m"),
+            density=density,
+            viscosity=viscosity,
             parallel_operation=bool(s["parallel"]),
             fluid_name=fluid_name,
         )
@@ -121,7 +134,7 @@ class RatedPointInputNode(BaseNode):
         self.status = (
             f"{rated.tag} · {float(s['q']):g} {s.get('q_unit', 'm³/h')}"
             f" · {float(s['head']):g} {s.get('head_unit', 'm')}"
-            f" · {rated.speed_rpm:g} rpm{par}{fl}"
+            f" · {rated.speed.to('rpm').magnitude:g} rpm{par}{fl}"
         )
         self.state = "ok"
         return {"RatedPoint": rated}
@@ -295,7 +308,9 @@ class RatedPointInputNode(BaseNode):
         def refresh_density_labels(override) -> None:
             if override is not None:
                 density_rel_display.setText(f"{override.density_rel:.6f}")
-                density_kgm3_display.setText(f"{override.density_kgm3:.3f}")
+                density_kgm3_display.setText(
+                    f"{override.density.to('kg/m**3').magnitude:.3f}"
+                )
                 water_equivalent_display.setText("From connected Fluid node")
                 return
             density_kgm3 = float(s["dens_rel"]) * 1000.0

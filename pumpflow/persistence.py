@@ -7,7 +7,8 @@ Two on-disk formats (UI_SPEC §6):
 - **Data-exchange JSON** (§6.2) — the simple ``{unit, rated, points}`` file the
   Rated Point Input and Test Points Table widgets round-trip.  The importer
   accepts the locale-style comma-decimal strings; the exporter emits the same
-  shape so existing files stay interoperable.
+  shape so existing files stay interoperable.  Floats ↔ Pint quantities are
+  converted here, at the JSON edge.
 - **Project file** (``.pumpflow``, §6.1) — the *whole* canvas: node positions,
   links and every widget's settings.  Generic read/write lives here; the scene
   builds/consumes the document (it owns the node graph).
@@ -19,32 +20,50 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from pump import Q_, Pressure
+
 from .numfmt import parse_decimal
 from .signals import RatedPoint, TestPointSet, TestRow
-
 
 # ---------------------------------------------------------------------------
 # Data-exchange JSON  (UI_SPEC §6.2)
 # ---------------------------------------------------------------------------
 
 
+def _opt(value, unit: str):
+    """``Q_(value, unit)`` or ``None`` (floats ↔ Quantities at the JSON edge)."""
+    return None if value is None else Q_(value, unit)
+
+
+def _mag(q, unit: str):
+    """Plain magnitude of an optional Quantity in ``unit`` (``None`` stays)."""
+    return None if q is None else q.to(unit).magnitude
+
+
+def testset_pressure_unit(tps: Optional[TestPointSet]) -> str:
+    """Exchange pressure unit of a test set: its rows' unit, else ``"bar"``."""
+    if tps is not None and tps.rows:
+        if tps.rows[0].p_suction.value.units == Q_(1, "kgf/cm**2").units:
+            return "kgf/cm**2"
+    return "bar"
+
+
 def rated_from_json(doc: dict) -> RatedPoint:
     """Build a :class:`RatedPoint` from a §6.2 document (comma-decimals ok)."""
-    unit = _normalize_unit(doc.get("unit", "bar"))
     r = doc.get("rated", {})
     return RatedPoint(
         tag=str(r.get("tag", "")).strip(),
         service=str(r.get("service", "")),
         standard=str(r.get("standard", "API610 (12a ed.) / ISO 13709 + N-553")),
-        q_m3h=parse_decimal(r.get("q_m3h"), 0.0),
-        head_m=parse_decimal(r.get("head_m"), 0.0),
-        speed_rpm=parse_decimal(r.get("n_rpm"), 0.0),
-        power_kw=parse_decimal(r.get("power_kw"), 0.0),
-        efficiency_pct=parse_decimal(r.get("eff_pct"), None),
-        head_shutoff_m=parse_decimal(r.get("head_shutoff"), None),
-        npsha_m=parse_decimal(r.get("npsha_m"), None),
-        density_rel=parse_decimal(r.get("dens_rel"), 1.0),
-        viscosity_cst=parse_decimal(r.get("visc_nom_cst"), 1.0),
+        q=Q_(parse_decimal(r.get("q_m3h"), 0.0), "m**3/h"),
+        head=Q_(parse_decimal(r.get("head_m"), 0.0), "m"),
+        speed=Q_(parse_decimal(r.get("n_rpm"), 0.0), "rpm"),
+        power=Q_(parse_decimal(r.get("power_kw"), 0.0), "kW"),
+        efficiency=_opt(parse_decimal(r.get("eff_pct"), None), "percent"),
+        head_shutoff=_opt(parse_decimal(r.get("head_shutoff"), None), "m"),
+        npsha=_opt(parse_decimal(r.get("npsha_m"), None), "m"),
+        density=Q_(parse_decimal(r.get("dens_rel"), 1.0) * 1000.0, "kg/m**3"),
+        viscosity=Q_(parse_decimal(r.get("visc_nom_cst"), 1.0), "cSt"),
         parallel_operation=bool(r.get("parallel", False)),
         fluid_name=str(r.get("fluid_name", "Rated fluid")),
     )
@@ -58,36 +77,37 @@ def testset_from_json(doc: dict, pump_tag: Optional[str] = None) -> TestPointSet
     for p in doc.get("points", []):
         rows.append(
             TestRow(
-                q_m3h=parse_decimal(p.get("q"), 0.0),
-                p_suction=parse_decimal(p.get("p_suc"), 0.0),
-                p_discharge=parse_decimal(p.get("p_dis"), 0.0),
-                temp_c=parse_decimal(p.get("temp_c"), 25.0),
-                speed_rpm=parse_decimal(p.get("n_rpm"), 0.0),
-                power_kw=parse_decimal(p.get("power"), 0.0),
-                head_m=parse_decimal(p.get("head"), None),
-                efficiency_pct=parse_decimal(p.get("eff"), None),
+                q=Q_(parse_decimal(p.get("q"), 0.0), "m**3/h"),
+                p_suction=Pressure(Q_(parse_decimal(p.get("p_suc"), 0.0), unit), "g"),
+                p_discharge=Pressure(Q_(parse_decimal(p.get("p_dis"), 0.0), unit), "g"),
+                temperature=Q_(parse_decimal(p.get("temp_c"), 25.0), "degC"),
+                speed=Q_(parse_decimal(p.get("n_rpm"), 0.0), "rpm"),
+                power=Q_(parse_decimal(p.get("power"), 0.0), "kW"),
+                head=_opt(parse_decimal(p.get("head"), None), "m"),
+                efficiency=_opt(parse_decimal(p.get("eff"), None), "percent"),
             )
         )
-    return TestPointSet(pump_tag=str(tag).strip(), rows=tuple(rows), pressure_unit=unit)
+    return TestPointSet(pump_tag=str(tag).strip(), rows=tuple(rows))
 
 
 def json_from_signals(rated: RatedPoint, tps: Optional[TestPointSet] = None) -> dict:
     """Export back to the §6.2 shape (exporter mirrors importer)."""
+    unit = testset_pressure_unit(tps)
     doc = {
-        "unit": rated.pressure_unit,
+        "unit": unit,
         "rated": {
             "tag": rated.tag,
             "service": rated.service,
             "standard": rated.standard,
-            "q_m3h": _num(rated.q_m3h),
-            "head_m": _num(rated.head_m),
-            "n_rpm": _num(rated.speed_rpm),
-            "power_kw": _num(rated.power_kw),
-            "eff_pct": _num(rated.efficiency_pct),
+            "q_m3h": _num(_mag(rated.q, "m**3/h")),
+            "head_m": _num(_mag(rated.head, "m")),
+            "n_rpm": _num(_mag(rated.speed, "rpm")),
+            "power_kw": _num(_mag(rated.power, "kW")),
+            "eff_pct": _num(_mag(rated.efficiency, "percent")),
             "dens_rel": _num(rated.density_rel),
-            "visc_nom_cst": _num(rated.viscosity_cst),
-            "head_shutoff": _num(rated.head_shutoff_m),
-            "npsha_m": _num(rated.npsha_m),
+            "visc_nom_cst": _num(_mag(rated.viscosity, "cSt")),
+            "head_shutoff": _num(_mag(rated.head_shutoff, "m")),
+            "npsha_m": _num(_mag(rated.npsha, "m")),
             "parallel": rated.parallel_operation,
         },
     }
@@ -95,14 +115,18 @@ def json_from_signals(rated: RatedPoint, tps: Optional[TestPointSet] = None) -> 
         doc["pump_tag"] = tps.pump_tag
         doc["points"] = [
             {
-                "q": _num(r.q_m3h),
-                "p_suc": _num(r.p_suction),
-                "p_dis": _num(r.p_discharge),
-                "temp_c": _num(r.temp_c),
-                "power": _num(r.power_kw),
-                "n_rpm": _num(r.speed_rpm),
-                **({"head": _num(r.head_m)} if r.head_m is not None else {}),
-                **({"eff": _num(r.efficiency_pct)} if r.efficiency_pct is not None else {}),
+                "q": _num(_mag(r.q, "m**3/h")),
+                "p_suc": _num(_mag(r.p_suction.value, unit)),
+                "p_dis": _num(_mag(r.p_discharge.value, unit)),
+                "temp_c": _num(_mag(r.temperature, "degC")),
+                "power": _num(_mag(r.power, "kW")),
+                "n_rpm": _num(_mag(r.speed, "rpm")),
+                **({"head": _num(_mag(r.head, "m"))} if r.head is not None else {}),
+                **(
+                    {"eff": _num(_mag(r.efficiency, "percent"))}
+                    if r.efficiency is not None
+                    else {}
+                ),
             }
             for r in tps.rows
         ]

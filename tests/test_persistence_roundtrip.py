@@ -94,17 +94,29 @@ B34004 = SAMPLE.parent / "user" / "B-34004A_MRT_reference.pumpflow"
 def test_blank_test_rows_are_invalid_not_crashing():
     """A template row with no N / P / ΔP must be rejected by validation; before
     the fix it reached the Correction node and raised ``float division by zero``."""
+    from pump import Q_, Pressure
     from pumpflow.signals import TestPointSet, TestRow
 
-    good = TestRow(q_m3h=5, p_suction=0, p_discharge=30, temp_c=50, speed_rpm=10301, power_kw=20)
-    blank = TestRow(q_m3h=5, p_suction=0, p_discharge=0, temp_c=25, speed_rpm=0, power_kw=0)
+    def row(p_suc, p_dis, n, power, **kw):
+        return TestRow(
+            q=Q_(5, "m**3/h"),
+            p_suction=Pressure(Q_(p_suc, "bar"), "g"),
+            p_discharge=Pressure(Q_(p_dis, "bar"), "g"),
+            temperature=Q_(50, "degC"),
+            speed=Q_(n, "rpm"),
+            power=Q_(power, "kW"),
+            **kw,
+        )
+
+    good = row(0, 30, 10301, 20)
+    blank = row(0, 0, 0, 0)
     assert TestPointSet("A", (good,) * 3).is_valid() == (True, "")
     ok, msg = TestPointSet("B", (good, good, blank)).is_valid()
     assert not ok and "Row 3" in msg
-    no_dp = TestRow(q_m3h=5, p_suction=1, p_discharge=1, temp_c=50, speed_rpm=10301, power_kw=20)
+    no_dp = row(1, 1, 10301, 20)
     assert not TestPointSet("B", (good, good, no_dp)).is_valid()[0]
     # an explicit head override makes equal pressures acceptable
-    pinned = TestRow(5, 1, 1, 50, 10301, 20, head_m=300.0)
+    pinned = row(1, 1, 10301, 20, head=Q_(300.0, "m"))
     assert TestPointSet("B", (good, good, pinned)).is_valid()[0]
 
 
@@ -148,3 +160,32 @@ def test_b34004_cli_exports(qapp, tmp_path):
     assert rc == 0
     assert (tmp_path / "R.docx").is_file() and (tmp_path / "R.tex").is_file()
     assert "B-34004A" in (tmp_path / "R.tex").read_text(encoding="utf-8")
+
+
+def test_every_node_dialog_opens(qapp, b34004_scene):
+    """Open every node's property dialog: on the B-34004 project (branch B has
+    no fitted model, so its Compliance node has no rated input) and on a fresh
+    default instance of every registered node kind. A dialog that touches a
+    renamed signal field fails here instead of in front of the user."""
+    from PySide6.QtCore import QPointF
+    from PySide6.QtWidgets import QMessageBox
+
+    from pumpflow.canvas.scene import GraphScene
+    from pumpflow.nodes.registry import NODE_KINDS, make_node
+
+    def _silence(*_a, **_k):
+        return None
+
+    for name in ("information", "warning", "critical"):
+        setattr(QMessageBox, name, staticmethod(_silence))
+
+    fresh = GraphScene(make_node)
+    for kind in NODE_KINDS:
+        fresh.add_node(kind[0] if isinstance(kind, tuple) else kind, QPointF(0, 0))
+    fresh.evaluate()
+    for scene in (b34004_scene, fresh):
+        for item in scene.nodes:
+            assert item.logic.state != "error", (item.logic.kind, item.logic.status)
+            dlg = item.logic.create_dialog(None, scene.evaluate)
+            if dlg is not None:
+                dlg.close()

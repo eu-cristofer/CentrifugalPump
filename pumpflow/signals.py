@@ -33,6 +33,8 @@ from typing import Any, Optional
 
 import numpy as np
 
+from pump import Q_, Pressure
+
 # ---------------------------------------------------------------------------
 # 1. RatedPoint  — produced by Rated Point Input  (UI_SPEC §5.1)
 # ---------------------------------------------------------------------------
@@ -45,20 +47,20 @@ class RatedPoint:
     tag: str  # service / datasheet TAG (shared)
     standard: str  # e.g. "API610 (12a ed.) / ISO 13709 + N-553"
 
-    q_m3h: float  # rated capacity            [m³/h]
-    head_m: float  # rated differential head   [m]
-    speed_rpm: float  # rated speed               [rpm]
-    power_kw: float  # rated breaking power      [kW]
+    q: Q_  # rated capacity            (m³/h, any compatible unit)
+    head: Q_  # rated differential head   (m)
+    speed: Q_  # rated speed               (rpm)
+    power: Q_  # rated breaking power      (kW)
 
-    efficiency_pct: Optional[float] = None  # rated efficiency        [%]
-    head_shutoff_m: Optional[float] = None  # rated shut-off head     [m]
-    npsha_m: Optional[float] = None  # rated NPSHa                [m]
+    efficiency: Optional[Q_] = None  # rated efficiency        (percent)
+    head_shutoff: Optional[Q_] = None  # rated shut-off head     (m)
+    npsha: Optional[Q_] = None  # rated NPSHa                (m)
 
-    # Rated fluid: relative density is the user-facing field; absolute density is
-    # kept in sync (rel * 1000 kg/m³).  Nominal viscosity is informational until
+    # Rated fluid: absolute density is the stored quantity; ``density_rel`` (SG)
+    # is the user-facing derived form.  Nominal viscosity is informational until
     # the viscosity correction lands in the library.
-    density_rel: float = 1.0  # relative density (SG)     [-]
-    viscosity_cst: float = 1.0  # nominal viscosity         [cSt]
+    density: Q_ = Q_(1000.0, "kg/m**3")  # rated density
+    viscosity: Q_ = Q_(1.0, "cSt")  # nominal kinematic viscosity
 
     parallel_operation: bool = False
 
@@ -66,24 +68,19 @@ class RatedPoint:
     service: str = ""  # human-readable service description
 
     @property
-    def density_kgm3(self) -> float:
-        """Absolute rated density, kept in sync with the relative density."""
-        return self.density_rel * 1000.0
-
-    @property
-    def pressure_unit(self) -> str:
-        """Rated-point exports use bar; test points still carry their own pressure unit."""
-        return "bar"
+    def density_rel(self) -> float:
+        """Relative density (SG) — the user-facing density form."""
+        return float(self.density.to("kg/m**3").magnitude) / 1000.0
 
     def is_valid(self) -> tuple[bool, str]:
         """UI_SPEC §5.1 validation: Q ≥ 0, H > 0, N > 0, P > 0."""
-        if self.q_m3h < 0:
+        if self.q.to("m**3/h").magnitude < 0:
             return False, "Capacity Q must be ≥ 0 m³/h."
-        if not self.head_m > 0:
+        if not self.head.to("m").magnitude > 0:
             return False, "Differential head H must be > 0 m."
-        if not self.speed_rpm > 0:
+        if not self.speed.to("rpm").magnitude > 0:
             return False, "Rated speed N must be > 0 rpm."
-        if not self.power_kw > 0:
+        if not self.power.to("kW").magnitude > 0:
             return False, "Rated power P must be > 0 kW."
         if not self.density_rel > 0:
             return False, "Relative density must be > 0."
@@ -103,25 +100,25 @@ class FluidSpec:
 
     When wired into Speed / Affinity Correction it overrides the fluid the curve
     is corrected *to* (``PerformanceCurve.to_fluid``).  ``source`` is ``"water"``
-    (density derived from ``temp_c`` via ``pump.Water``) or ``"manual"``
-    (``density_kgm3`` entered directly, as relative density × 1000).
+    (density derived from ``temperature`` via ``pump.Water``) or ``"manual"``
+    (``density`` entered directly, as relative density × 1000).
     """
 
     name: str
     source: str = "manual"  # "manual" | "water"
-    density_kgm3: float = 1000.0  # resolved absolute density   [kg/m³]
-    viscosity_cst: float = 1.0  # nominal kinematic viscosity [cSt]
-    temp_c: Optional[float] = None  # water temperature, when source == "water" [°C]
+    density: Q_ = Q_(1000.0, "kg/m**3")  # resolved absolute density
+    viscosity: Q_ = Q_(1.0, "cSt")  # nominal kinematic viscosity
+    temperature: Optional[Q_] = None  # water temperature, when source == "water"
 
     @property
     def density_rel(self) -> float:
         """Relative density (SG) — the user-facing density form."""
-        return self.density_kgm3 / 1000.0
+        return float(self.density.to("kg/m**3").magnitude) / 1000.0
 
     def is_valid(self) -> tuple[bool, str]:
         if not self.name.strip():
             return False, "Fluid name is required."
-        if not self.density_kgm3 > 0:
+        if not self.density.to("kg/m**3").magnitude > 0:
             return False, "Density must be > 0 kg/m³."
         return True, ""
 
@@ -135,28 +132,33 @@ class FluidSpec:
 class TestRow:
     """One raw measured row of a FAT performance test."""
 
-    q_m3h: float  # measured capacity            [m³/h]
-    p_suction: float  # suction pressure             [pressure_unit]
-    p_discharge: float  # discharge pressure           [pressure_unit]
-    temp_c: float  # test-water temperature       [°C]
-    speed_rpm: float  # measured speed               [rpm]
-    power_kw: float  # measured breaking power      [kW]
-    head_m: Optional[float] = None  # optional measured/overridden head [m]
-    efficiency_pct: Optional[float] = None  # optional measured efficiency    [%]
+    # Domain class, not a pytest test class (name starts with "Test").
+    __test__ = False
+
+    q: Q_  # measured capacity            (m³/h)
+    p_suction: Pressure  # suction pressure (carries its own unit)
+    p_discharge: Pressure  # discharge pressure (carries its own unit)
+    temperature: Q_  # test-water temperature       (°C)
+    speed: Q_  # measured speed               (rpm)
+    power: Q_  # measured breaking power      (kW)
+    head: Optional[Q_] = None  # optional measured/overridden head (m)
+    efficiency: Optional[Q_] = None  # optional measured efficiency    (percent)
 
 
 @dataclass(frozen=True)
 class TestPointSet:
     """A physical pump's raw measured rows (the source for one branch)."""
 
+    # Domain class, not a pytest test class (name starts with "Test").
+    __test__ = False
+
     pump_tag: str  # physical unit TAG (unique per branch)
     rows: tuple[TestRow, ...] = ()
-    pressure_unit: str = "bar"  # "kgf/cm**2" | "bar"
-    # Test-fluid density override (kg/m³) from a connected Fluid node.  When set,
+    # Test-fluid density override from a connected Fluid node.  When set,
     # Head/η are derived with this constant density instead of per-row water at
-    # T_water.  Runtime-only — set by the node from its FluidSpec input, never
-    # persisted (the table stores only its own rows).
-    test_density_kgm3: Optional[float] = None
+    # the row temperature.  Runtime-only — set by the node from its FluidSpec
+    # input, never persisted (the table stores only its own rows).
+    test_density: Optional[Q_] = None
 
     def is_valid(self) -> tuple[bool, str]:
         """UI_SPEC §5.2: at least 3 points for a degree-3 fit."""
@@ -171,17 +173,17 @@ class TestPointSet:
         # day) must be rejected here, not crash downstream: N=0 divides by zero
         # in the affinity ratio and an empty ΔP yields a zero head.
         for i, r in enumerate(self.rows, start=1):
-            if not r.speed_rpm or r.speed_rpm <= 0:
+            if r.speed.magnitude <= 0:
                 return False, f"Row {i}: speed N is missing."
-            if not r.power_kw or r.power_kw <= 0:
+            if r.power.magnitude <= 0:
                 return False, f"Row {i}: power P is missing."
-            if r.head_m is None and r.p_discharge == r.p_suction:
+            if r.head is None and (r.p_discharge - r.p_suction).magnitude == 0:
                 return False, f"Row {i}: P_dis equals P_suc (no head)."
         return True, ""
 
     def has_shutoff(self) -> bool:
         """Warn if a shut-off point (Q≈0) is missing (UI_SPEC §5.2)."""
-        return any(r.q_m3h < 0.1 for r in self.rows)
+        return any(r.q < Q_(0.1, "m**3/h") for r in self.rows)
 
 
 # ---------------------------------------------------------------------------
@@ -200,10 +202,10 @@ class PointSample:
     """
 
     label: str  # marker label
-    q_m3h: float  # capacity                  [m³/h]
-    head_m: Optional[float] = None  # head                      [m]
-    power_kw: Optional[float] = None  # breaking power            [kW]
-    efficiency_pct: Optional[float] = None  # efficiency                [%]
+    q: Q_  # capacity                  (m³/h)
+    head: Optional[Q_] = None  # head                      (m)
+    power: Optional[Q_] = None  # breaking power            (kW)
+    efficiency: Optional[Q_] = None  # efficiency                (percent)
     pump_tag: str = ""  # optional grouping / colour key
 
 
@@ -219,8 +221,10 @@ class CorrectedCurve:
     pump_tag: str
     curve: Any  # pump.PerformanceCurve
     fluid: Any  # pump.Fluid actually used (rated fluid)
-    target_speed_rpm: float
-    # before/after rows for the correction table (mirrors the notebook print-out)
+    target_speed: Q_
+    # before/after rows for the correction table (mirrors the notebook print-out).
+    # A display table: plain floats in m³/h, m, kW, % and rpm (the one documented
+    # exception to "signals carry Quantities").
     before_after: tuple[dict, ...] = ()
 
 

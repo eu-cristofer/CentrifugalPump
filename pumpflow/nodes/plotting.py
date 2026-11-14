@@ -58,7 +58,7 @@ def build_figure(
         axes = [axes]
 
     xs = np.linspace(float(caps.min()), float(caps.max()), resolution) if caps.size else np.array([])
-    rated_q = float(rated.q_m3h) if rated is not None else None
+    rated_q = float(rated.q.to("m**3/h").magnitude) if rated is not None else None
 
     def draw(ax, ydata, coeffs, spline, color, label, unit):
         if show_points and ydata.size:

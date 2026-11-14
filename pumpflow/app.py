@@ -29,6 +29,7 @@ from .canvas.scene import GraphScene
 from .canvas.view import GraphView
 from .nodes import make_node
 from .nodes.registry import NODE_KINDS
+from .nodes.test_points import testset_settings
 from .persistence import (
     json_from_signals,
     rated_from_json,
@@ -534,41 +535,30 @@ class MainWindow(QMainWindow):
                     "standard": rated.standard,
                     # Imported values are standard magnitudes — label them with the
                     # canonical display units so the dialog shows them correctly.
-                    "q": rated.q_m3h,
+                    "q": rated.q.to("m**3/h").magnitude,
                     "q_unit": "m³/h",
-                    "head": rated.head_m,
+                    "head": rated.head.to("m").magnitude,
                     "head_unit": "m",
-                    "n": rated.speed_rpm,
-                    "power": rated.power_kw,
+                    "n": rated.speed.to("rpm").magnitude,
+                    "power": rated.power.to("kW").magnitude,
                     "power_unit": "kW",
-                    "eff": rated.efficiency_pct or 0,
-                    "head_shutoff": rated.head_shutoff_m or 0,
-                    "npsha": rated.npsha_m or 0,
+                    "eff": _mag_or(rated.efficiency, "percent", 0),
+                    "head_shutoff": _mag_or(rated.head_shutoff, "m", 0),
+                    "npsha": _mag_or(rated.npsha, "m", 0),
                     "dens_rel": rated.density_rel,
                     "dens_unit": "kg/m³",
-                    "visc": rated.viscosity_cst,
+                    "visc": rated.viscosity.to("cSt").magnitude,
                     "visc_unit": "cSt",
                     "parallel": rated.parallel_operation,
                 }
             )
         if test_node:
+            unit, rows = testset_settings(tps)
             test_node.logic.settings.update(
                 {
                     "pump_tag": tps.pump_tag,
-                    "unit": tps.pressure_unit,
-                    "rows": [
-                        {
-                            "q": r.q_m3h,
-                            "p_suc": r.p_suction,
-                            "p_dis": r.p_discharge,
-                            "temp_c": r.temp_c,
-                            "n": r.speed_rpm,
-                            "power": r.power_kw,
-                            "head": r.head_m,
-                            "eff": r.efficiency_pct,
-                        }
-                        for r in tps.rows
-                    ],
+                    "unit": unit,
+                    "rows": rows,
                 }
             )
         self.scene.evaluate()
@@ -601,6 +591,11 @@ def _d(value):
     from .numfmt import parse_decimal
 
     return parse_decimal(value, None)
+
+
+def _mag_or(q, unit: str, default):
+    """Magnitude of an optional Quantity in ``unit``, or ``default`` when ``None``."""
+    return default if q is None else q.to(unit).magnitude
 
 
 def run() -> int:

@@ -9,7 +9,8 @@ branches, and poke at the curves.
 
 It re-implements **no** physics — measured rows are reduced to Q/H/η via the
 existing :mod:`pumpflow.binding` helpers, and fitted curves are merely *sampled*
-(``np.polyval`` / spline ``sample``) for drawing.
+(``np.polyval`` / spline ``sample``) for drawing.  Signal Quantities are
+converted to plain floats at the drawing edge only.
 
 Inputs (all optional, all fan-in):
   - ``Points``         — :class:`PointSample` overlays (Point nodes)
@@ -26,12 +27,17 @@ from typing import Dict, List
 import numpy as np
 from PySide6.QtCore import Qt
 
-from ..binding import row_efficiency_pct, row_head_m
+from ..binding import row_efficiency, row_head
 from .base import BaseNode, PortSpec
 from . import ui
 
 # A small, colour-blind-friendly cycle keyed per dataset/branch.
 _PALETTE = ["#2f6fb0", "#b4413c", "#2e7d5b", "#8a5a9e", "#c98a1b", "#3b8a8a"]
+
+
+def _mag(q, unit):
+    """Magnitude of an optional Quantity in ``unit`` (``None`` stays ``None``)."""
+    return None if q is None else float(q.to(unit).magnitude)
 
 
 class ExploreChartNode(BaseNode):
@@ -190,7 +196,11 @@ class ExploreChartNode(BaseNode):
         cmin = min((s[0] for s in spans), default=0.0)
         cmax = max((s[1] for s in spans), default=100.0)
         rated = getattr(self, "_rated", None)
-        default_q = rated.q_m3h if rated is not None else (cmin + cmax) / 2.0
+        default_q = (
+            float(rated.q.to("m**3/h").magnitude)
+            if rated is not None
+            else (cmin + cmax) / 2.0
+        )
 
         # dashed Q-marker on every pane (moves with the spin)
         qlines = []
@@ -313,14 +323,14 @@ class ExploreChartNode(BaseNode):
         for i, tps in enumerate(getattr(self, "_testsets", [])):
             color = _PALETTE[i % len(_PALETTE)]
             q, h, p, e = [], [], [], []
-            test_rho = getattr(tps, "test_density_kgm3", None)
+            test_rho = getattr(tps, "test_density", None)
             for r in tps.rows:
-                head = row_head_m(r, tps.pressure_unit, test_rho)
-                q.append(r.q_m3h)
-                h.append(head)
-                p.append(r.power_kw)
-                eff = row_efficiency_pct(r, head, test_rho)
-                e.append(eff if eff is not None else np.nan)
+                head = row_head(r, test_rho)
+                q.append(r.q.to("m**3/h").magnitude)
+                h.append(head.to("m").magnitude)
+                p.append(r.power.to("kW").magnitude)
+                eff = row_efficiency(r, head, test_rho)
+                e.append(eff.to("percent").magnitude if eff is not None else np.nan)
             self._scatter(pg, p_h, q, h, color, "o", f"{tps.pump_tag} data")
             self._scatter(pg, p_p, q, p, color, "o", None)
             self._scatter(pg, p_e, q, e, color, "o", None)
@@ -338,16 +348,17 @@ class ExploreChartNode(BaseNode):
             h = [r["head"] for r in rows]
             p = [r["power"] if r["power"] is not None else np.nan for r in rows]
             e = [r["eff"] if r["eff"] is not None else np.nan for r in rows]
-            name = f"{cc.pump_tag} @ {cc.target_speed_rpm:g} rpm"
+            name = f"{cc.pump_tag} @ {cc.target_speed.to('rpm').magnitude:g} rpm"
             self._scatter(pg, p_h, q, h, color, "t", name)
             self._scatter(pg, p_p, q, p, color, "t", None)
             self._scatter(pg, p_e, q, e, color, "t", None)
 
         # ad-hoc Point markers (drawn large + labelled)
         for pt in getattr(self, "_points", []):
-            self._marker(pg, p_h, pt.q_m3h, pt.head_m, pt.label)
-            self._marker(pg, p_p, pt.q_m3h, pt.power_kw, None)
-            self._marker(pg, p_e, pt.q_m3h, pt.efficiency_pct, None)
+            pq = _mag(pt.q, "m**3/h")
+            self._marker(pg, p_h, pq, _mag(pt.head, "m"), pt.label)
+            self._marker(pg, p_p, pq, _mag(pt.power, "kW"), None)
+            self._marker(pg, p_e, pq, _mag(pt.efficiency, "percent"), None)
 
         # rated-capacity crosshair on every pane
         rated = getattr(self, "_rated", None)
@@ -355,7 +366,7 @@ class ExploreChartNode(BaseNode):
             for ax in (p_h, p_p, p_e):
                 ax.addItem(
                     pg.InfiniteLine(
-                        pos=rated.q_m3h,
+                        pos=rated.q.to("m**3/h").magnitude,
                         angle=90,
                         pen=pg.mkPen("#33414f", style=Qt.DashLine, width=1),
                     )
