@@ -58,7 +58,7 @@ Each run MUST:
   BLOCKED-PARTIAL: tolerance values unverified. API 610 8/10/11/12 are seeded with the pre-S5 code values and N-553 is an empty overlay, all `verified = false`, until the owner confirms them from the standard text.
 - [x] [Sprint 6 — UC-11 Mechanical run acceptance](sprint-6.md) — done 2026-11-14
   BLOCKED-PARTIAL: mechanical-run limits unverified. The 4 h duration seed and the notebook vibration seeds (2.0 / 3.0 mm/s) are `verified = false`, and stabilisation is unconfigured.
-- [ ] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md)
+- [x] [Sprint 7 — UC-08 Compare pumps (twin A vs B)](sprint-7.md) — done 2026-11-14
 - [ ] [Sprint 8 — UC-05 NPSH margin](sprint-8.md)
 - [ ] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md)
 - [ ] [Sprint 10 — UC-07 Impeller trim](sprint-10.md)
@@ -139,3 +139,6 @@ Each run MUST:
   - Against the **unverified** notebook seed, A's unfiltered vibration of 0.16 in/s (4.06 mm/s) exceeds 3.0 mm/s, so the run shows **FAILED**.
   - The owner must enter the real limits for this OH6 pump. The filtered vibration of 0.05 in/s passes.
 - S6: all other projects are unchanged.
+- S7: **UC-08 compare pumps**. `pump.compare` adds `compare_curves` (H, P and η per tag at chosen Q, with Δ% against the first, reference curve) and `plot_comparison` (overlay of H, P and η).
+- S7: any report with two or more fitted pumps (e.g. twin A vs B) gains a "Comparison" section in en and pt. The Explorer readout shows Δ% against the first model.
+- S7: no separate compare node; the Explorer and the report cover the use case. All projects are unchanged.

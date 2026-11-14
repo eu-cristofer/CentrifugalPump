@@ -222,3 +222,87 @@ def test_docx_mechanical_run_only_entry(tmp_path, report_data):
     with zipfile.ZipFile(paths["docx"]) as z:
         xml = z.read("word/document.xml").decode("utf-8")
     assert "Mechanical running test" in xml and TAG in xml
+
+
+# --------------------------------------------------------------------------- #
+# Pump comparison section (UC-08)
+# --------------------------------------------------------------------------- #
+TAG_B = "B-34004B"
+
+
+def _scaled_curve(water, head_scale):
+    from pump import PerformanceCurve, TestPoint
+
+    rows = [(0, 117, 180), (300, 110, 210), (600, 95, 240), (833, 73, 252), (1000, 55, 260)]
+    points = [
+        TestPoint(
+            fluid=water,
+            capacity=Q_(q, "m**3/h"),
+            speed_of_rotation=Q_(1750, "rpm"),
+            _head=Q_(h * head_scale, "m"),
+            breaking_power=Q_(p, "kW"),
+        )
+        for q, h, p in rows
+    ]
+    return PerformanceCurve(water, points, polynomial_degree=3)
+
+
+@pytest.fixture
+def two_pump_data(report_data, curve, water, design_point):
+    from pump import compare_curves, plot_comparison
+
+    curve_b = _scaled_curve(water, 1.05)
+    at = [Q_(833, "m**3/h")]
+    report_data["test_data"][TAG_B] = {
+        "test_summary": PerformanceChecker(design_point, curve_b).report_summary,
+        "test_data": curve_b.test_data,
+        "Performance Curve": curve_b.plot_performance_curve(
+            capacity=at[0], return_io=True
+        ),
+        "verdict": True,
+    }
+    curves = {TAG: curve, TAG_B: curve_b}
+    report_data["comparison"] = {
+        "table": compare_curves(curves, at),
+        "plot": plot_comparison(curves, rated_q=at[0]),
+        "at": at,
+    }
+    return report_data
+
+
+def test_tex_comparison_section(tmp_path, two_pump_data):
+    out = LatexReportGenerator().generate_tex(two_pump_data, str(tmp_path / "cmp.tex"))
+    tex = open(out, encoding="utf-8").read()
+    assert "Comparison" in tex and "Reference" in tex
+    assert TAG in tex and TAG_B in tex
+    assert tex.index("Comparison") > tex.index(TAG_B)  # after the per-tag sections
+
+
+def test_tex_comparison_section_pt(tmp_path, two_pump_data):
+    out = LatexReportGenerator("pt").generate_tex(
+        two_pump_data, str(tmp_path / "cmp.tex")
+    )
+    tex = open(out, encoding="utf-8").read()
+    assert "Comparação" in tex and "Referência" in tex
+
+
+def test_docx_comparison_section(tmp_path, two_pump_data):
+    paths, errors = export_reports(
+        two_pump_data, ["docx"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "Comparison" in xml and TAG in xml and TAG_B in xml
+
+
+def test_no_comparison_heading_without_comparison(tmp_path, report_data):
+    out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "n.tex"))
+    assert "Comparison" not in open(out, encoding="utf-8").read()
+    paths, errors = export_reports(
+        report_data, ["docx"], language="en", out_dir=str(tmp_path), stem="N"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "Comparison" not in xml

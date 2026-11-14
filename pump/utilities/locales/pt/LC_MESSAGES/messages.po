@@ -225,3 +225,12 @@ msgstr "Fonte dos critérios: {source}"
 
 msgid "Mechanical running test limits not yet verified against the standard text."
 msgstr "Limites do teste de funcionamento mecânico ainda não verificados contra o texto da norma."
+
+msgid "Comparison"
+msgstr "Comparação"
+
+msgid "Reference"
+msgstr "Referência"
+
+msgid "Δ vs reference"
+msgstr "Δ vs referência"

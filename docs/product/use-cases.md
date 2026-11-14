@@ -101,7 +101,6 @@
 | UC-04 | Find operating point | Blocked by UC-03. |
 | UC-05 | Check NPSH margin | No NPSH module. |
 | UC-07 | Evaluate impeller trim | Diameter affinity branch not implemented. |
-| UC-08 | Compare pumps | `plot_performance_curve` plots a single curve only. |
 
 ## Out of scope
 

@@ -1,5 +1,6 @@
 import gettext
 import locale
+import math
 from typing import Callable, Optional
 from docx import Document
 from docx.shared import Inches, Pt
@@ -64,6 +65,20 @@ MECHANICAL_RUN_COLUMNS = ("Channel", "Unit", "Min", "Max", "Limit", "Status")
 MECHANICAL_RUN_SOURCE = "Criteria source: {source}"
 MECHANICAL_RUN_UNVERIFIED_NOTE = (
     "Mechanical running test limits not yet verified against the standard text."
+)
+
+# Pump comparison section (UC-08), shared by docx and LaTeX.
+COMPARISON_KEY = "comparison"
+COMPARISON_TITLE = "Comparison"
+COMPARISON_COLUMNS = (
+    "Q [m\u00b3/h]",
+    "Tag",
+    "H [m]",
+    "P [kW]",
+    "\u03b7 [%]",
+    "\u0394H [%]",
+    "\u0394P [%]",
+    "\u0394\u03b7 [%]",
 )
 
 
@@ -142,6 +157,46 @@ def mechanical_run_notes(translate: Callable[[str], str], result) -> list:
     if not getattr(result, "verified", False):
         notes.append(translate(MECHANICAL_RUN_UNVERIFIED_NOTE))
     return notes
+
+
+def comparison_sentence(translate: Callable[[str], str], comparison: dict) -> str:
+    """``Reference: <tag>. Δ vs reference: (x - ref) / ref, in %.``"""
+    ref = comparison["table"].tags[0]
+    return (
+        f"{translate('Reference')}: {ref}. "
+        f"{translate('\u0394 vs reference')}: (x - ref) / ref, in %."
+    )
+
+
+def comparison_table(translate: Callable[[str], str], comparison: dict) -> tuple:
+    """``(header, rows)`` of strings: one line per (capacity, tag), deltas vs reference."""
+    table = comparison["table"]
+
+    def pct(value) -> str:
+        if value is None or (isinstance(value, float) and math.isnan(value)):
+            return "-"
+        return f"{value * 100.0:+0.2f}"
+
+    header = list(COMPARISON_COLUMNS)
+    rows = []
+    for row in table.rows:
+        q = f"{float(row.q.to('m**3/h').magnitude):0.1f}"
+        for tag in table.tags:
+            vals = row.values[tag]
+            d = row.deltas.get(tag)
+            rows.append(
+                [
+                    q,
+                    tag,
+                    f"{vals['head'].magnitude:0.2f}",
+                    f"{vals['power'].magnitude:0.2f}",
+                    f"{vals['efficiency'].magnitude:0.2f}",
+                    pct(d["head"]) if d else "-",
+                    pct(d["power"]) if d else "-",
+                    pct(d["efficiency"]) if d else "-",
+                ]
+            )
+    return header, rows
 
 
 def _parse_po(path) -> dict:
@@ -344,6 +399,9 @@ class ReportGenerator:
 
             if MECHANICAL_RUN_KEY in test_data:
                 self._add_mechanical_run(document, test_data[MECHANICAL_RUN_KEY])
+
+        if report_data.get(COMPARISON_KEY):
+            self._add_comparison(document, report_data[COMPARISON_KEY])
 
         document.save(output_file)
         print(f"{self._('New document saved at')}: {output_file}")
@@ -639,3 +697,52 @@ class ReportGenerator:
 
         for note in mechanical_run_notes(self._, result):
             document.add_paragraph(note, style='Text_body')
+
+    def _add_comparison(self, document, comparison):
+        """
+        Add the pump comparison section (UC-08).
+
+        Parameters
+        ----------
+        document : docx.Document
+            The Word document object to modify.
+        comparison : dict
+            ``{"table": ComparisonTable, "plot": BytesIO, "at": [...]}``.
+        """
+        if not comparison or comparison.get("table") is None:
+            return
+        table_font = "Consolas"
+        document.add_paragraph(self._(COMPARISON_TITLE), style='Title_2')
+        document.add_paragraph(comparison_sentence(self._, comparison), style='Text_body')
+
+        header, rows = comparison_table(self._, comparison)
+        table = document.add_table(rows=len(rows) + 1, cols=len(header))
+        table.style = "Table Grid"
+        table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        width = Inches(0.9)
+        for col, name in enumerate(header):
+            cell = table.cell(0, col)
+            cell.text = name
+            cell.width = width
+            run = cell.paragraphs[0].runs[0]
+            run.bold = True
+            run.font.size = Pt(9)
+            run.font.name = table_font
+            cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        for r, values in enumerate(rows, start=1):
+            for col, text in enumerate(values):
+                cell = table.cell(r, col)
+                cell.text = text
+                cell.width = width
+                run = cell.paragraphs[0].runs[0]
+                run.font.size = Pt(8)
+                run.font.name = table_font
+                cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        plot = comparison.get("plot")
+        if isinstance(plot, io.BytesIO):
+            plot.seek(0)
+        if isinstance(plot, io.BytesIO) or (isinstance(plot, str) and os.path.exists(plot)):
+            paragraph = document.add_paragraph()
+            paragraph.add_run().add_picture(plot, width=Inches(6))
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER

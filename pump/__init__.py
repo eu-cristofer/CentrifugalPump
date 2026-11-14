@@ -12,6 +12,7 @@ Submodules
 - quantity_io: JSON (de)serialisation of Pint quantities.
 - acceptance: Edition-aware acceptance criteria (tolerance tables).
 - mechanical_run: Mechanical running test log, checker and trend plot.
+- compare: Side-by-side comparison of several performance curves.
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
@@ -27,6 +28,7 @@ from . import (
     mechanical_run,
     acceptance,
     performance_curve,
+    compare,
 )
 from .utilities import *
 from .constants import *
@@ -34,13 +36,15 @@ from .point import *
 from .mechanical_run import *
 from .acceptance import *
 from .performance_curve import *
+from .compare import *
 
 __all__ = list(
     set(utilities.__all__) |
     set(constants.__all__) |
-    {"constants", "quantity_io", "acceptance", "mechanical_run"} |
+    {"constants", "quantity_io", "acceptance", "mechanical_run", "compare"} |
     set(point.__all__) |
     set(mechanical_run.__all__) |
     set(acceptance.__all__) |
-    set(performance_curve.__all__)
+    set(performance_curve.__all__) |
+    set(compare.__all__)
 )

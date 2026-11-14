@@ -44,6 +44,8 @@ from pump import (
     TestPoint,
     PerformanceCurve,
     PerformanceChecker,
+    compare_curves,
+    plot_comparison,
 )
 from pump.acceptance import AcceptanceCriteria
 from pump.acceptance import deviation as acceptance_deviation
@@ -745,6 +747,31 @@ def report_summary_for(fitted: FittedModel, rated: RatedPoint) -> dict:
     ).report_summary
 
 
+def comparison_for(bundles, rated: RatedPoint) -> Optional[dict]:
+    """
+    Twin-pump comparison (UC-08) of the branches that carry a fitted curve.
+
+    Returns ``None`` when fewer than two bundles have a ``fitted`` model (or the
+    curves cannot be compared, e.g. no efficiency data); otherwise
+    ``{"table": ComparisonTable, "plot": BytesIO, "at": [rated.q]}``.  The first
+    fitted bundle is the reference.  Deterministic: evaluated at the rated
+    capacity only.
+    """
+    fitted = [b for b in bundles if getattr(b, "fitted", None) is not None]
+    if len(fitted) < 2:
+        return None
+    curves = {b.pump_tag: b.fitted.curve for b in fitted}
+    if len(curves) < 2:
+        return None
+    at = [rated.q]
+    try:
+        table = compare_curves(curves, at)
+        plot = plot_comparison(curves, rated_q=rated.q)
+    except Exception:
+        return None
+    return {"table": table, "plot": plot, "at": at}
+
+
 def assemble_report_data(
     rated: RatedPoint, bundles, equipment: Optional[dict] = None
 ) -> dict:
@@ -761,6 +788,9 @@ def assemble_report_data(
     (``{"result", "plot"}``) under its tag.  A tag with *only* a mechanical run
     (no fitted curve) still gets an entry, which then lacks ``test_summary`` /
     ``test_data``.
+
+    With two or more fitted branches a top-level ``"comparison"`` entry
+    (``{"table", "plot", "at"}``, see :func:`comparison_for`) is added.
     """
     equipment = equipment or {}
     design_point = make_design_point(rated)
@@ -793,7 +823,7 @@ def assemble_report_data(
         if entry:
             test_data[b.pump_tag] = entry
 
-    return {
+    report_data = {
         "equipment_description": equipment_description,
         "design_point": design_point,
         "test_data": test_data,
@@ -803,6 +833,10 @@ def assemble_report_data(
             "unverified": list(criteria.unverified),
         },
     }
+    comparison = comparison_for(bundles, rated)
+    if comparison is not None:
+        report_data["comparison"] = comparison
+    return report_data
 
 
 def generate_docx(
@@ -898,6 +932,9 @@ def export_reports(
                     for inner in value.values():
                         if isinstance(inner, io.BytesIO):
                             inner.seek(0)
+        comparison_plot = (report_data.get("comparison") or {}).get("plot")
+        if isinstance(comparison_plot, io.BytesIO):
+            comparison_plot.seek(0)
         try:
             paths[fmt] = str(writers[fmt](str(folder / f"{stem}.{fmt}")))
         except Exception as exc:  # collected, reported by the caller

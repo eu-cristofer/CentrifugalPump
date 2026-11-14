@@ -43,6 +43,13 @@ def _mag(q, unit):
     return None if q is None else float(q.to(unit).magnitude)
 
 
+def _rel_delta(value, ref) -> str:
+    """``(value - ref) / ref`` as a signed percent string; ``—`` when undefined."""
+    if value is None or ref is None or ref == 0:
+        return "—"
+    return f"{(value - ref) / ref * 100.0:+.1f}"
+
+
 def _axis_scale(dimension: str):
     """``(scale, display_unit)`` mapping canonical axis values to the preset's
     display unit.  All plotted dimensions are linear, so a factor suffices."""
@@ -190,7 +197,9 @@ class ExploreChartNode(BaseNode):
     def _build_readout(self, pg, dlg, panes):
         """A capacity field (any capacity unit) + a table of the values each
         fitted polynomial regression predicts at that Q (one row per wired Curve
-        Fit), with a dashed Q-marker on all three panes."""
+        Fit), with a dashed Q-marker on all three panes.  The Δ columns give each
+        model's relative deviation from the first model (``—`` for the first
+        model itself, so a single model shows ``—`` throughout)."""
         from PySide6.QtWidgets import (
             QHeaderView,
             QLabel,
@@ -254,9 +263,18 @@ class ExploreChartNode(BaseNode):
         cl.addWidget(qfield.row("Readout flow Q"))
         lay.addWidget(ctrl)
 
-        table = QTableWidget(0, 5)
+        table = QTableWidget(0, 8)
         table.setHorizontalHeaderLabels(
-            ["Curve", "Q [m³/h]", "Head [m]", "Power [kW]", "η [%]"]
+            [
+                "Curve",
+                "Q [m³/h]",
+                "Head [m]",
+                "Power [kW]",
+                "η [%]",
+                "ΔH [%]",
+                "ΔP [%]",
+                "Δη [%]",
+            ]
         )
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setObjectName("ReadGrid")
@@ -279,8 +297,9 @@ class ExploreChartNode(BaseNode):
                 item = QTableWidgetItem("Wire a Curve Fit to read regression values")
                 item.setForeground(QColor("#8a96a3"))
                 table.setItem(0, 0, item)
-                table.setSpan(0, 0, 1, 5)
+                table.setSpan(0, 0, 1, table.columnCount())
                 return
+            ref = (None, None, None)
             for i, m in enumerate(models):
                 color = _PALETTE[i % len(_PALETTE)]
                 head = (
@@ -298,6 +317,15 @@ class ExploreChartNode(BaseNode):
                     if m.efficiency_coeffs is not None and len(m.efficiency_coeffs)
                     else None
                 )
+                if i == 0:
+                    ref = (head, power, eff)
+                    deltas = ["—", "—", "—"]
+                else:
+                    deltas = [
+                        _rel_delta(head, ref[0]),
+                        _rel_delta(power, ref[1]),
+                        _rel_delta(eff, ref[2]),
+                    ]
                 r = table.rowCount()
                 table.insertRow(r)
                 cells = [
@@ -306,6 +334,7 @@ class ExploreChartNode(BaseNode):
                     fmt(head) if head is not None else "—",
                     fmt(power) if power is not None else "—",
                     fmt(eff, 1) if eff is not None else "—",
+                    *deltas,
                 ]
                 for c, v in enumerate(cells):
                     cell = QTableWidgetItem(str(v))

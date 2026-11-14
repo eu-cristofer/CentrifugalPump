@@ -28,6 +28,8 @@ from typing import Optional
 
 from .report import (
     API_PARAGRAPH,
+    COMPARISON_KEY,
+    COMPARISON_TITLE,
     EQUIPMENT_TEXT,
     INTRO_PARAGRAPHS,
     MECHANICAL_RUN_KEY,
@@ -37,6 +39,8 @@ from .report import (
     TEST_SUMMARY_DESCRIPTION,
     TESTS_DEVELOPMENT_TEXT,
     LocalizationHelper,
+    comparison_sentence,
+    comparison_table,
     mechanical_run_duration_sentence,
     mechanical_run_notes,
     mechanical_run_table,
@@ -241,6 +245,9 @@ class LatexReportGenerator:
                     self._mechanical_run(entry[MECHANICAL_RUN_KEY], pump_tag, fig_dir, fig_rel)
                 )
 
+        if report_data.get(COMPARISON_KEY):
+            out.append(self._comparison(report_data[COMPARISON_KEY], fig_dir, fig_rel))
+
         out.append(r"\end{document}")
         return "\n".join(out) + "\n"
 
@@ -376,6 +383,37 @@ class LatexReportGenerator:
             )
         for note in mechanical_run_notes(_, result):
             parts.append(latex_escape(note) + "\n")
+        return "\n".join(parts)
+
+    def _comparison(self, comparison, fig_dir: Path, fig_rel: str) -> str:
+        """Pump comparison section (UC-08); empty without a table."""
+        if not comparison or comparison.get("table") is None:
+            return ""
+        _ = self._
+        table = comparison["table"]
+        header, rows = comparison_table(_, comparison)
+        head = " & ".join(r"\textbf{%s}" % latex_escape(h) for h in header) + r" \\"
+        body = [" & ".join(latex_escape(c) for c in row) + r" \\" for row in rows]
+        parts = [
+            r"\clearpage",
+            r"\subsection{%s}" % latex_escape(_(COMPARISON_TITLE)),
+            latex_escape(comparison_sentence(_, comparison)) + "\n",
+            r"\begin{center}\resizebox{\linewidth}{!}{%",
+            r"\begin{tabular}{cl%s}" % ("c" * (len(header) - 2)),
+            r"\toprule",
+            head,
+            r"\midrule",
+            *body,
+            r"\bottomrule",
+            r"\end{tabular}}\end{center}",
+        ]
+        plot = comparison.get("plot")
+        if plot is not None:
+            parts.append(
+                self._figure(
+                    COMPARISON_TITLE, plot, " / ".join(table.tags), fig_dir, fig_rel
+                )
+            )
         return "\n".join(parts)
 
     def _figure(self, title, chart, pump_tag, fig_dir: Path, fig_rel: str) -> str:
