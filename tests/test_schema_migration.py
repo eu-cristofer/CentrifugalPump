@@ -418,11 +418,43 @@ def _summary(scene):
     return out
 
 
+def _assert_same_results(got, want, where=""):
+    """Exact on structure, strings and booleans; numbers (stored as ``repr``
+    strings) to 1e-9 relative.  NumPy's least-squares fit differs in the last
+    floating-point digits between platforms (e.g. macOS vs Linux BLAS), so a
+    bit-exact repr comparison is not portable; anything beyond rounding noise
+    still fails."""
+    if isinstance(want, dict):
+        assert isinstance(got, dict) and set(got) == set(want), where
+        for k in want:
+            _assert_same_results(got[k], want[k], f"{where}/{k}")
+    elif isinstance(want, list):
+        assert isinstance(got, list) and len(got) == len(want), where
+        for i, (g, w) in enumerate(zip(got, want)):
+            _assert_same_results(g, w, f"{where}[{i}]")
+    elif isinstance(want, str) and isinstance(got, str) and want != got:
+        try:
+            gv, wv = float(got), float(want)
+        except ValueError:
+            raise AssertionError(f"{where}: {got!r} != {want!r}")
+        assert gv == pytest.approx(wv, rel=1e-9, abs=1e-12), where
+    else:
+        assert got == want, f"{where}: {got!r} != {want!r}"
+
+
 @pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
 def test_v1_fixture_loads_with_same_results(qapp, expected, path):
     scene = _scene()
     scene.load_dict(read_json(path))  # raw v1: load_dict migrates
-    assert _summary(scene) == expected[path.name]
+    _assert_same_results(_summary(scene), expected[path.name], path.name)
+
+
+def test_result_comparison_tolerates_only_rounding_noise():
+    _assert_same_results(["339.54398712910313"], ["339.5439871291028"])
+    with pytest.raises(AssertionError):
+        _assert_same_results(["339.55"], ["339.5439871291028"])
+    with pytest.raises(AssertionError):
+        _assert_same_results(["APPROVED"], ["REJECTED"])
 
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)

@@ -3,11 +3,17 @@
 Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is complete (14/14 sprints, `Status: ready to archive`) on branch `feat/masterpiece`. This file lists what remains, in priority order. Tick items as they are done.
 
 ## 1. Ship it
-- [ ] Push `feat/masterpiece` and open a PR to `main`, so the CI workflow (`.github/workflows/ci.yml`) runs for the first time.
+- [x] Push `feat/masterpiece` — done 2026-11-15. First CI run: 581 passed, 4 failed, all in one fixture test that compared floats digit for digit; Linux and macOS BLAS differ at about 1e-16. That test now compares numbers to 1e-9 relative and everything else exactly.
+- [ ] Open a PR to `main`.
 - [ ] Fix whatever CI reports. `mypy` and the Sphinx build have **never run** (neither tool was installed locally); both are non-blocking jobs until fixed:
   - `pip install -e ".[dev,docs]"`, then `mypy pump --ignore-missing-imports`, then fix the findings;
+  - first CI run: **68 mypy errors in 10 files**. The most frequent kinds are Optional[str] used as a Path, numpy return types annotated as returning None, and dynamic `DesignPoint` attributes (`differential_head`) invisible to mypy;
   - make the mypy step blocking (remove `continue-on-error`);
-  - `sphinx-build -b html docs docs/_build/html -W`: fix the warnings, then make the docs job blocking. The new modules (npsh, viscosity, trim, catalogue, system curve, …) may need adding to `docs/api/pump.rst`.
+  - `sphinx-build -b html docs docs/_build/html -W`: the first CI run failed on two problems:
+    - duplicate object descriptions for the `Water.dynamic_viscosity` / `kinematic_viscosity` / `vapour_pressure` properties (documented both in the class "Attributes" section and as properties);
+    - docutils "Unknown target name: q" in the `pump.catalogue.Candidate` docstring (`q_…` is read as a reference; escape the trailing underscore or use double backticks).
+
+    Fix them, then make the docs job blocking. The new modules (npsh, viscosity, trim, catalogue, system curve, …) may need adding to `docs/api/pump.rst`.
 - [ ] Archive the project: `/sprint-loop archive 001_masterpiece`.
 
 ## 2. Before / at the B-34004B witness test (owner)
