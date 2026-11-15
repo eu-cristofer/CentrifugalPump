@@ -223,7 +223,9 @@ def test_every_edition_has_seeded_unverified_mechanical_run(key):
         3.0
     )
     assert mr.stabilisation == {}  # never seeded
-    assert mr.verified is False and "seed" in mr.source
+    # Researched values (secondary source, 2026-11-15) — still not the standard text
+    # 8/10/11: researched (secondary source, 2026-11-15); 12: still a seed
+    assert mr.verified is False and ("Amarinth" in mr.source or "seed" in mr.source)
     assert "mechanical running test limits" in crit.unverified
 
 

@@ -72,7 +72,8 @@ def test_reset_restores_criteria_defaults(scene):
     dlg = node.create_dialog(None, lambda: None)
     assert dlg is not None
     base = default_tolerances(rated)
-    assert base["head"] == pytest.approx(0.03)
+    # B-34004A: API 610 8th ed. (inferred from 10th), rated head 333.8 m > 300 m -> ±2 %
+    assert base["head"] == pytest.approx(0.02)
     assert node.settings["tolerances"] == {"head": 0.2}  # opening does not reset
     node.settings["tolerances"] = {}
     assert not node.settings["tolerances"]

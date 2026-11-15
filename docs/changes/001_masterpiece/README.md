@@ -71,12 +71,20 @@ Each run MUST:
 
 ## Open items needing owner input
 
-- **B-34004A mechanical-run verdict depends on vibration limits.**
-  - Against the placeholder 3.0 mm/s seed limit, B-34004A's unfiltered vibration of 0.16 in/s (4.06 mm/s) reads as **FAILED**.
-  - That limit came from the reference notebook and isn't confirmed for this OH6 pump.
-  - The API 610 vibration limits supplied by the owner will decide the real verdict.
-  - Enter them in `pump/standards/api610.toml` (`mechanical_run` roles, `verified = true`, with the clause as `source`) or as overrides in the Mechanical Run node.
-- **Performance tolerances (S5).** The API 610 8th-edition and N-553 head, shut-off, power and efficiency tolerances are unverified seeds.
+Researched 2026-11-15. The main secondary source is the Amarinth technical bulletin MP2606-100 rev A, "Testing procedures API 610 10th and 11th". Values are stored in `pump/standards/api610.toml`, still `verified = false` because the standard text itself was not consulted.
+
+- **Performance tolerances.**
+  - Head: 11th edition ±3 % in every band; 10th edition +5/−2 % (0–150 m), +3/−2 % (151–300 m), ±2 % (> 300 m).
+  - Shut-off: ±10/8/5 %. Power: +4 %. Both are corroborated.
+  - The **8th edition is inferred from the 10th**, because no public 8th-edition text was found. B-34004A (333.8 m) therefore gets **±2 %** on head. Its predicted +1.72 % passes, but tightly, which is worth confirming with the 8th-edition table at the witness test.
+- **Mechanical run.**
+  - 4 h at rated flow, with oil-temperature stabilisation: confirmed by the source.
+  - Horizontal-pump vibration (preferred region, **mm/s RMS**): overall 3.0, discrete 2.0 (allowable region 3.9 / 2.6). These match the earlier seeds.
+  - **Open:**
+    - B-34004A's unfiltered reading of 0.16 in/s is 4.06 mm/s if it is RMS (FAILED), but 2.87 mm/s if Sundyne's "IN/SEC" is peak (inside 3.0). Ask Sundyne which it is.
+    - API 610's allowance for pumps above 3600 rpm / 300 kW per stage (this pump runs at 10 300 rpm) was not found and is not applied.
+- **HI 9.6.7 viscosity correction.** Resolved for sprint 9: the equations come from a secondary source and are independently validated (see sprint-9.md).
+- **NPSH margin rule.** No public API 610 / N-553 margin value was found, so it is still "not configured". (API 610 itself gives the NPSHr test a 0 % positive tolerance: the tested NPSH3 must not exceed the quoted value.)
 
 ## Changelog
 
