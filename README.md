@@ -135,5 +135,5 @@ Acceptance values (API 610 tolerances, vibration, POR) are data in
 unverified criteria are labelled as provisional.
 
 **Status:** delivered by project
-[001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints).
+[001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints). Next steps: [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
 

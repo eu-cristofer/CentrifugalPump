@@ -71,6 +71,8 @@ Each run MUST:
 - [x] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md) — done 2026-11-15
   Not verified locally: `mypy pump` (mypy is not installed; it is a non-blocking CI step) and `sphinx-build -W` (Sphinx is not installed; a non-blocking CI job). CI is committed but not pushed, so it has never run.
 
+**What to do next:** see [../NEXT_STEPS.md](../NEXT_STEPS.md).
+
 ## Open items needing owner input
 
 Researched 2026-11-15. The main secondary source is the Amarinth technical bulletin MP2606-100 rev A, "Testing procedures API 610 10th and 11th". Values are stored in `pump/standards/api610.toml`, still `verified = false` because the standard text itself was not consulted.
