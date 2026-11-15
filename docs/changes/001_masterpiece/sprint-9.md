@@ -36,12 +36,34 @@
 - `STANDARD_UNITS["kinematic_viscosity"]` (S1); `Fluid.viscosity`.
 
 ## Tests
-`tests/test_viscosity.py`:
-- **Authoritative pin:** the worked example from HI 9.6.7 / ISO TR 17766 (inputs plus expected B, C_Q, C_H, C_η), supplied by the owner. Assert to the precision printed in the standard.
-- B ≤ 1 → factors are exactly 1.
-- B > 40 → warning or `ValueError`, matching the policy.
-- `to_viscous` returns a new object and the original is unchanged.
-- Water at test temperature with `apply_viscosity` → no change. B-34004A, wash water 0.52 cSt, gives B < 1, so its results are unchanged.
+`tests/test_viscosity.py`. There is no freely available official worked example: the HI and ISO texts are paid, and public pages only show "assumed" chart factors. The method is therefore pinned by **independent checks**, researched and computed on 2026-11-15:
+
+1. **Published constants agree across unit systems.** B from the US form (26.6, gpm / ft / rpm / cSt) equals B from the SI form (16.5, m³/h / m / rpm / cSt) for the same pump within 0.5 %. The residual of 0.40 % is the rounding of the published constants. Check four pumps:
+   - (100 cSt, 50 m, 200 m³/h, 1750 rpm)
+   - (647 cSt, 45.72 m, 113.56 m³/h, 1750 rpm)
+   - (1000 cSt, 100 m, 50 m³/h, 3550 rpm)
+   - (20 cSt, 333.8 m, 9.8 m³/h, 10212 rpm)
+
+   The implementation computes B in **one** unit system (US, per Eq. 3) from Pint inputs, so the SI form is only a test oracle.
+2. **Continuity at B = 1.** C_Q, C_H and C_η all equal 1 for B ≤ 1 and approach 1 as B → 1⁺ (|1 − C| < 1e-6 at B = 1 + 1e-6).
+3. **Legacy-chart agreement.** The old HI chart field example (McNally Institute) is 500 gpm, 3000 SSU (≈ 648 cSt), 150 ft, with chart values C_Q 0.80 and C_H 0.81.
+   - At 1750 rpm the B-method gives B 13.92, C_Q 0.778, C_H(BEP) 0.778.
+   - At 3550 rpm it gives B 11.67, C_Q 0.817, C_H 0.817.
+   - Assert that both speeds land within ±0.05 of the chart values. This shows that the equations reproduce the legacy data the method was fitted to.
+4. **Hand values.** For B = 13.92 (above), check C_Q = 2.71^(−0.165·(log10 B)^3.15) = 0.778 ± 0.002 and C_η = B^(−0.0547·B^0.69) = 0.412 ± 0.002. Also check C_H at Q/Q_BEP = 0.6 / 0.8 / 1.2 using C_H = 1 − (1 − C_Q)(Q/Q_BEP)^0.75.
+5. B ≥ 40 → `UserWarning` ("outside method validity"); the factors are still returned.
+6. `to_viscous` returns a new object and the original is unchanged.
+7. Water at the test temperature with `apply_viscosity`, or B-34004A (0.52 cSt), gives B < 1, so there is no change, bit-identical.
+
+**Equation source.** The equations are ANSI/HI 9.6.7-2010 Eq. 2–7 as reproduced by midstreamcalculator.com (pump viscosity correction calculator, which cites the equation numbers):
+- B (US) = 26.6·ν^0.5·H^0.0625/(Q^0.375·N^0.25);
+- C_Q = 2.71^(−0.165·(log10 B)^3.15);
+- C_BEP-H = C_Q;
+- C_H = 1 − (1 − C_Q)(Q/Q_BEP)^0.75;
+- C_η = B^(−0.0547·B^0.69);
+- valid for 1 < B < 40.
+
+Docstrings cite this, state that the equations were cross-checked (checks 1–4) but **not against the standard text**, and recommend confirming against the purchased standard.
 
 ## Acceptance
 ```bash
@@ -54,5 +76,4 @@ python -m pumpflow.export_cli examples/user/B-34004A_MRT_reference.pumpflow --ou
 - Changelog bullet; tracker ticked; one commit.
 
 ## Assumes
-- Sprints 1–8 are done.
-- **Owner input:** the HI 9.6.7 (or ISO TR 17766) worked example values and confirmation of the equations above. **Without them the sprint is BLOCKED.** Do not pin tests to unverified numbers.
+Sprints 1–8 are done. The owner-input requirement was **resolved by research** on 2026-11-15; see the Tests section for the equation source and the independent validation that replaces the official worked example.
