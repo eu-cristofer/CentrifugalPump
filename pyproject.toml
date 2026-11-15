@@ -23,7 +23,10 @@ dependencies = [
 dev = [
     "black",
     "build",
-    "pytest"
+    "pytest",
+    "nbclient",
+    "ipykernel",
+    "nbformat"
 ]
 gui = [
     "PySide6",
@@ -58,3 +61,6 @@ pumpflow = ["examples/*.pumpflow"]
 # library tests, while ensuring every docstring example stays runnable.
 testpaths = ["tests", "pump"]
 addopts = "-ra -q --doctest-modules"
+markers = [
+    "slow: executes the use_cases notebooks (select with `pytest -m slow`; they also run by default)",
+]

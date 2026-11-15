@@ -50,7 +50,7 @@ from PySide6.QtWidgets import (
 
 from pump import Pressure, Q_
 
-from .. import units
+from .. import explain, units
 from ..binding import check_npsh_set, npsha_from_suction
 from ..numfmt import parse_decimal
 from ..signals import NPSHSet
@@ -353,6 +353,7 @@ class NPSHNode(BaseNode):
             step=0.1,
             decimals=3,
         )
+        npsha_f.spin.setToolTip(explain.tooltip("npsha"))  # UC-10
         direct_panel = QWidget()
         dv = QVBoxLayout(direct_panel)
         dv.setContentsMargins(0, 0, 0, 0)

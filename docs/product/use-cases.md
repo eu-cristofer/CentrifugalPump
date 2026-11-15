@@ -140,5 +140,16 @@
 
 ## Out of scope
 
-### UC-10 — Learn pump fundamentals 🟡
-Interactive educational diagrams. Low repo evidence of demand; revisit in v1.2+.
+### UC-10 — Learn pump fundamentals ✅
+Educational mode, delivered as documentation plus in-context help rather than interactive diagrams.
+- **Concept pages:** `docs/concepts/` explains the physics behind each node (affinity laws,
+  head components, NPSH, viscosity correction, acceptance tolerances and the `verified` flag,
+  system curve, mechanical run), each with formulas, units, assumptions and links to the
+  notebook and the API.
+- **Worked notebooks:** one executable notebook per use case in `use_cases/`
+  (UC-00 to UC-11 plus the HI 9.6.7 viscosity example), each ending in assertions and executed
+  in CI by `tests/test_notebooks.py`.
+- **Formula tooltips:** the single `pumpflow/explain.py` dictionary (`FORMULAS`, `tooltip`)
+  holds the governing formula of the head components, affinity laws, η, NPSHa, the B parameter
+  and the operating point, shown in context in the workbench.
+- **Pinned by:** `tests/test_notebooks.py`, `tests/test_explain.py`.

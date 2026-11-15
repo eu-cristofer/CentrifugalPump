@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
 
 from pump import Q_, Pressure
 
-from .. import units
+from .. import explain, units
 from ..binding import row_efficiency, row_head, row_head_components
 from ..numfmt import fmt, parse_decimal
 from ..persistence import testset_from_json, testset_pressure_unit
@@ -311,6 +311,9 @@ class TestPointsTableNode(BaseNode):
 
         def update_headers():
             table.setHorizontalHeaderLabels([header_text(i) for i in range(len(_NAMES))])
+            head_item = table.horizontalHeaderItem(_NAMES.index("Head"))
+            if head_item is not None:  # formula tooltip (UC-10)
+                head_item.setToolTip(explain.tooltip("head"))
 
         update_headers()
 

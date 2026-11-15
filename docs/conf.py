@@ -57,7 +57,8 @@ napoleon_use_rtype = False
 always_document_param_types = False
 
 # -- MyST (Markdown) ---------------------------------------------------------
-myst_enable_extensions = ["colon_fence", "deflist"]
+# dollarmath: the concept pages (docs/concepts/) write formulas as $...$ / $$...$$.
+myst_enable_extensions = ["colon_fence", "deflist", "dollarmath"]
 myst_heading_anchors = 3
 # Render the existing ```mermaid fenced blocks via sphinxcontrib-mermaid.
 myst_fence_as_directive = ["mermaid"]

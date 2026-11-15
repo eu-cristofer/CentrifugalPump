@@ -16,6 +16,18 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    overview
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Concepts
+
+   concepts/affinity
+   concepts/head-components
+   concepts/npsh
+   concepts/viscosity
+   concepts/acceptance-tolerances
+   concepts/system-curve
+   concepts/mechanical-run
+
+.. toctree::
    :maxdepth: 2
    :caption: API reference
 

@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetIte
 
 from pump import Q_
 
-from .. import units
+from .. import explain, units
 from ..binding import BindingError, correct_curve, make_fluid
 from ..numfmt import fmt
 from ..signals import RatedPoint, TestPointSet
@@ -164,6 +164,7 @@ class SpeedCorrectionNode(BaseNode):
             "Factors apply only for 1 < B < 40; B <= 1 leaves the curve unchanged."
         )
         visc_info = QLabel("—")
+        visc_info.setToolTip(explain.tooltip("viscosity_b"))  # UC-10
         visc_info.setWordWrap(True)
         degree = ui.int_spin(int(s["degree"]), 2, 5, None)
 
