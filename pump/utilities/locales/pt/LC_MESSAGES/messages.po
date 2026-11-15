@@ -258,3 +258,48 @@ msgstr "Razão"
 
 msgid "Viscosity correction (HI 9.6.7)"
 msgstr "Correção de viscosidade (HI 9.6.7)"
+
+msgid "Project"
+msgstr "Projeto"
+
+msgid "Client"
+msgstr "Cliente"
+
+msgid "Location"
+msgstr "Local"
+
+msgid "Test date"
+msgstr "Data do teste"
+
+msgid "Revision"
+msgstr "Revisão"
+
+msgid "Standard"
+msgstr "Norma"
+
+msgid "Deviations and open points"
+msgstr "Desvios e pendências"
+
+msgid "Signatures"
+msgstr "Assinaturas"
+
+msgid "Role"
+msgstr "Função"
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Signature"
+msgstr "Assinatura"
+
+msgid "Date"
+msgstr "Data"
+
+msgid "Vendor"
+msgstr "Fornecedor"
+
+msgid "Inspector"
+msgstr "Inspetor"
+
+msgid "Client witness"
+msgstr "Testemunha do cliente"

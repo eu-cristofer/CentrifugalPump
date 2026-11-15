@@ -11,7 +11,7 @@ FAT workbench:
 
 See [MOTIVATION.md](MOTIVATION.md) for the why and the decisions.
 
-Status: active · Branch: `feat/masterpiece` · Baseline commit: `2e1983a`
+Status: ready to archive · Branch: `feat/masterpiece` · Baseline commit: `2e1983a`
 
 # 001_masterpiece — Loop Protocol
 
@@ -68,7 +68,8 @@ Each run MUST:
 - [x] [Sprint 12 — UC-01 Pump selection](sprint-12.md) — done 2026-11-15
 - [x] [Sprint 13 — UC-10 Educational mode + worked notebooks](sprint-13.md) — done 2026-11-15
   Note: the `sphinx-build -W` acceptance step was NOT run, because Sphinx is not installed in this environment. Run `pip install -e ".[docs]"` and then the build.
-- [ ] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md)
+- [x] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md) — done 2026-11-15
+  Not verified locally: `mypy pump` (mypy is not installed; it is a non-blocking CI step) and `sphinx-build -W` (Sphinx is not installed; a non-blocking CI job). CI is committed but not pushed, so it has never run.
 
 ## Open items needing owner input
 
@@ -187,3 +188,13 @@ Researched 2026-11-15. The main secondary source is the Amarinth technical bulle
   - All 12 execute green under `tests/test_notebooks.py` (marked slow).
 - S13: concept pages in `docs/concepts/`: affinity, head components, NPSH, viscosity, acceptance tolerances, system curve, mechanical run. They are linked from the Sphinx index, with `dollarmath` enabled.
 - S13: `pumpflow/explain.py` adds formula tooltips on the Test Points Head column, the viscosity B readout and the NPSHa field. UC-10 is ✅.
+- S14: **report polish**.
+  - New content: a cover block (project, client, location, test date, revision, standard), a "Deviations and open points" section (unverified criteria plus Markdown notes marked "Include in report") and a signature block (Vendor / Inspector / Client witness).
+  - It is consistent across Word, LaTeX/PDF and a new **self-contained HTML** export (charts embedded), in en and pt. "Export all" writes all four formats.
+- S14: robustness fix: user text with symbols pdflatex cannot typeset (▸, →, ✓, CJK, …) no longer aborts the PDF. Symbols are mapped, and anything else shows as `[U+XXXX]`.
+- S14: **CI** (`.github/workflows/ci.yml`):
+  - blocking: pytest (Qt offscreen, Python 3.12/3.13) and black on the black-clean set;
+  - non-blocking: mypy, a LaTeX PDF job and a Sphinx job.
+- S14: docs: a README "Capabilities" table, UI_SPEC §10 (new nodes, schema v2), the multi-unit philosophy extended, **ADR-0011** (schema v2), and every UC ✅ in the registry.
+- S14: B-34004A carries a report cover and its open points, updated to the 2026-11-15 research.
+- Known limitation: notes included in the report are printed as raw Markdown, not rendered.

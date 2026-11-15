@@ -13,8 +13,8 @@
 | Priority | Use cases | Rationale |
 |---|---|---|
 | **Must ship (MVP)** | UC-00, UC-02, UC-06 (library), UC-09 | What the codebase already does or nearly does — the primary value to the FAT engineer. UC-00 is the units/fluids foundation the other three stand on. |
-| **Defer to v1.1** | UC-01, UC-03, UC-04, UC-05, UC-07, UC-08 | All depend on new library work (selection catalogue, system curve, NPSH, impeller-trim branch, comparison plotting). |
-| **Out of scope** | UC-10 (educational mode) | Low repo evidence of demand; thin layer over concept docs in v1.2+. |
+| **Delivered after the MVP** | UC-01, UC-03, UC-04, UC-05, UC-07, UC-08, UC-11 | Library work (selection catalogue, system curve, NPSH, impeller trim, comparison, mechanical run) delivered by the 001_masterpiece project. |
+| **Educational layer** | UC-10 (educational mode) | Delivered as concept pages, worked notebooks and in-context formula tooltips. |
 
 ## MVP use cases
 
@@ -62,15 +62,20 @@
   original by `< 1e-6` at corresponding Q.
 - **Pinned by:** `tests/test_affinity.py` (Sprint S2).
 
-### UC-09 — Generate report 🟡
+### UC-09 — Generate report ✅
 - **Actor:** FAT engineer (primary). **Trigger:** test complete, deliverable due.
 - **Input:** a `PerformanceChecker.report_summary`-style structure.
-- **Output:** `.docx` **today**; `.pdf` / `.html` / `.json` **planned**.
-- **Status:** `.docx` works (`pump.utilities.report.ReportGenerator`); other formats
-  are not yet wired to a backend.
+- **Output:** one consolidated report in `.docx`, `.tex`, `.pdf` and a self-contained
+  `.html`, in English and Portuguese: cover page, equipment, rated data, performance per
+  unit, comparison, NPSH, mechanical run, viscosity factors, deviations and open points,
+  and a signature block.
+- **Supported by:** `pump.utilities.report.ReportGenerator`,
+  `pump.utilities.report_latex.LatexReportGenerator`, `pumpflow.binding.export_reports`,
+  the Report Export node and `python -m pumpflow.export_cli`.
 - **Acceptance:** round-tripping an existing example reproduces the same data
-  structure and tables.
-- **v1.1 follow-on:** implement PDF / HTML / JSON exporters.
+  structure and tables; every section heading appears in all formats when its data is
+  present and is absent otherwise.
+- **Pinned by:** `tests/test_report_formats.py`.
 
 ### UC-11 — Mechanical running test acceptance ✅
 - **Actor:** FAT witness / inspector (primary). **Trigger:** the mechanical run
@@ -133,12 +138,15 @@
   or slowed to 10 140 rpm (Q/Q_BEP 0.96, in POR).
 - **Pinned by:** `tests/test_selection.py`, `tests/test_selection_gui.py`.
 
-## Deferred to v1.1 (library gaps — recorded, not built in this plan)
+### UC-08 — Compare pumps ✅
+- **Input:** two or more fitted pumps (e.g. twin A vs B) sharing a rated point.
+- **Output:** H, P and η per tag at chosen Q with Δ% against the first (reference)
+  curve, an overlay plot, and a "Comparison" report section.
+- **Supported by:** `pump.compare` (`compare_curves`, `plot_comparison`), the Explorer
+  Δ% readout and the Report Export node.
+- **Pinned by:** `tests/test_compare.py`.
 
-| UC | Title | Why deferred |
-|----|-------|--------------|
-
-## Out of scope
+## Educational layer
 
 ### UC-10 — Learn pump fundamentals ✅
 Educational mode, delivered as documentation plus in-context help rather than interactive diagrams.

@@ -30,10 +30,11 @@ rather than editing history.
 | [0003](0003-correct-python-version-floor.md) | Correct the Python version floor metadata | 🔴 Critical | `Proposed` |
 | [0004](0004-refactor-performancecurve-god-class.md) | Refactor `PerformanceCurve`: split plotting from computation | 🟠 High | `Proposed` |
 | [0005](0005-consolidate-point-hierarchy.md) | Consolidate the `Point` hierarchy & remove broken code | 🟠 High | `Proposed` |
+| [0011](0011-schema-v2-value-unit-persistence.md) | Schema v2: value + unit persistence | 🟠 High | `Accepted` |
 | [0006](0006-replace-hasattr-duck-typing.md) | Replace `hasattr` duck-typing with an explicit schema | 🟡 Medium | `Proposed` |
 | [0007](0007-remove-acl-private-state-leak.md) | Remove the ACL leak: private-attribute pinning in `binding` | 🟡 Medium | `Proposed` |
 | [0008](0008-separate-node-logic-from-qt-dialogs.md) | Separate node logic from Qt dialogs | 🟡 Medium | `Proposed` |
-| [0009](0009-promote-mathx-into-pump-library.md) | Promote `mathx` into the `pump` library | 🟢 Low | `Proposed` |
+| [0009](0009-promote-mathx-into-pump-library.md) | Promote `mathx` into the `pump` library | 🟢 Low | `Accepted` |
 | [0010](0010-align-versioning-and-declare-deps.md) | Align versioning & declare GUI dependencies | 🟢 Low | `Proposed` |
 
 ## Suggested sequencing
@@ -54,4 +55,3 @@ flowchart LR
     A0009["0009 promote mathx"] --> A0007
     A0001 --> A0008["0008 node SRP"]
     A0010["0010 versioning"]
-```

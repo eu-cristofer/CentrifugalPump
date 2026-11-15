@@ -325,6 +325,17 @@ def sample_project_doc() -> Dict:
                         "Test bench",
                     ]
                 },
+                # Report cover / signature block (sprint 14): empty by default.
+                "project": "",
+                "client": "",
+                "location": "",
+                "test_date": "",
+                "revision": "",
+                "signatories": [
+                    {"role": "Vendor", "name": ""},
+                    {"role": "Inspector", "name": ""},
+                    {"role": "Client witness", "name": ""},
+                ],
             },
         },
     ]

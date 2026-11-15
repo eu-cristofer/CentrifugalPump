@@ -989,8 +989,67 @@ def comparison_for(bundles, rated: RatedPoint) -> Optional[dict]:
     return {"table": table, "plot": plot, "at": at}
 
 
+DEFAULT_SIGNATORY_ROLES = ("Vendor", "Inspector", "Client witness")
+
+
+def cover_from_settings(
+    settings: Optional[dict], standard: Optional[str] = None
+) -> dict:
+    """Report-cover dict from the Report Export node settings.
+
+    ``{"project", "client", "location", "test_date", "revision", "standard",
+    "signatories": [{"role", "name"}, ...]}`` -- all plain strings.  The standard
+    falls back to ``standard`` (the acceptance label) when the settings carry
+    none; without signatories the three default roles (Vendor / Inspector /
+    Client witness, blank names) are used.
+    """
+    s = settings or {}
+
+    def text(key: str) -> str:
+        return str(s.get(key) or "").strip()
+
+    cover = {
+        key: text(key)
+        for key in ("project", "client", "location", "test_date", "revision")
+    }
+    cover["standard"] = text("standard") or (standard or "")
+    signatories = []
+    for row in s.get("signatories") or []:
+        if isinstance(row, dict):
+            signatories.append(
+                {
+                    "role": str(row.get("role") or "").strip(),
+                    "name": str(row.get("name") or "").strip(),
+                }
+            )
+    if not signatories:
+        signatories = [{"role": role, "name": ""} for role in DEFAULT_SIGNATORY_ROLES]
+    cover["signatories"] = signatories
+    return cover
+
+
+def open_points_from_notes(notes) -> list:
+    """Open-point blocks from Markdown Note settings tagged ``"report": true``.
+
+    ``notes`` is an iterable of note-node settings dicts; each tagged note with a
+    non-blank body contributes its body as ONE block (a string).
+    """
+    points = []
+    for note in notes or ():
+        if not note or not note.get("report"):
+            continue
+        body = str(note.get("body") or "").strip()
+        if body:
+            points.append(body)
+    return points
+
+
 def assemble_report_data(
-    rated: RatedPoint, bundles, equipment: Optional[dict] = None
+    rated: RatedPoint,
+    bundles,
+    equipment: Optional[dict] = None,
+    settings: Optional[dict] = None,
+    notes=None,
 ) -> dict:
     """
     Build the ``report_data`` dict exactly as ``ReportGenerator.generate_report``
@@ -1016,6 +1075,13 @@ def assemble_report_data(
 
     With two or more fitted branches a top-level ``"comparison"`` entry
     (``{"table", "plot", "at"}``, see :func:`comparison_for`) is added.
+
+    ``settings`` (the Report Export node settings) adds the top-level ``"cover"``
+    entry (:func:`cover_from_settings`: project, client, location, test date,
+    revision, signatories; the standard defaults to the acceptance label).
+    ``notes`` (an iterable of Markdown Note settings dicts) adds the top-level
+    ``"open_points"`` list from the notes tagged ``"report": true``
+    (:func:`open_points_from_notes`).  Without them neither key is present.
     """
     equipment = equipment or {}
     design_point = make_design_point(rated)
@@ -1073,6 +1139,13 @@ def assemble_report_data(
     comparison = comparison_for(bundles, rated)
     if comparison is not None:
         report_data["comparison"] = comparison
+    if settings is not None:
+        report_data["cover"] = cover_from_settings(
+            settings, report_data["acceptance"]["label"]
+        )
+    open_points = open_points_from_notes(notes)
+    if open_points:
+        report_data["open_points"] = open_points
     return report_data
 
 
@@ -1113,7 +1186,18 @@ def generate_pdf(
     )
 
 
-REPORT_FORMATS = ("docx", "tex", "pdf")
+def generate_html(
+    report_data: dict, language: str = "en", output_file: Optional[str] = None
+) -> str:
+    """Write the report as ONE self-contained ``.html`` (charts as data URIs)."""
+    from pump.utilities.report_html import HtmlReportGenerator
+
+    return HtmlReportGenerator(language=language).generate_html(
+        report_data, output_file
+    )
+
+
+REPORT_FORMATS = ("docx", "tex", "pdf", "html")
 
 
 def export_reports(
@@ -1151,6 +1235,9 @@ def export_reports(
             report_data, language=language, output_file=out
         ),
         "pdf": lambda out: generate_pdf(
+            report_data, language=language, output_file=out
+        ),
+        "html": lambda out: generate_html(
             report_data, language=language, output_file=out
         ),
     }

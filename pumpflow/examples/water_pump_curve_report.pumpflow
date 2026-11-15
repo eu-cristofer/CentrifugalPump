@@ -207,7 +207,26 @@
           "Type": "",
           "Driver": "",
           "Test bench": ""
-        }
+        },
+        "project": "",
+        "client": "",
+        "location": "",
+        "test_date": "",
+        "revision": "",
+        "signatories": [
+          {
+            "role": "Vendor",
+            "name": ""
+          },
+          {
+            "role": "Inspector",
+            "name": ""
+          },
+          {
+            "role": "Client witness",
+            "name": ""
+          }
+        ]
       }
     }
   ],

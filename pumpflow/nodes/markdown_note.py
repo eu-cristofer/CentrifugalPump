@@ -8,6 +8,10 @@ produces no signal — it only documents the pipeline.
 Minimal by design: the canvas card shows the note's title plus a one-line
 preview; the full Markdown is edited and rendered (via PySide6's built-in
 ``setMarkdown``) inside the property dialog.
+
+A note with ``settings["report"]`` set ("Include in report") is picked up by
+Report Export: its body becomes one block of the report's "Deviations and open
+points" section.
 """
 
 from __future__ import annotations
@@ -28,7 +32,7 @@ class MarkdownNoteNode(BaseNode):
     outputs = []
 
     def default_settings(self) -> Dict:
-        return {"title": "Note", "body": _DEFAULT_BODY}
+        return {"title": "Note", "body": _DEFAULT_BODY, "report": False}
 
     def compute(self, inputs) -> Dict[str, object]:
         # Reflect the note onto the canvas card: title + first non-empty line.
@@ -73,6 +77,16 @@ class MarkdownNoteNode(BaseNode):
             render()
             on_change()
 
+        def set_report():
+            s["report"] = include.isChecked()
+            on_change()
+
+        include = ui.checkbox(
+            "Include in report (Deviations and open points)",
+            bool(s.get("report", False)),
+            set_report,
+        )
+
         title.textChanged.connect(set_title)
         editor.textChanged.connect(set_body)
 
@@ -81,6 +95,7 @@ class MarkdownNoteNode(BaseNode):
         dlg.add(ui.hline())
         dlg.add(ui.section("Markdown"))
         dlg.add(editor)
+        dlg.add(include)
         dlg.add(ui.section("Preview"))
         dlg.add(preview)
         render()

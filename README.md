@@ -110,24 +110,30 @@ pip install build
 python -m build      # -> dist/*.tar.gz and dist/*.whl
 ```
 
-## Roadmap
+## Capabilities
 
-Current value targets the **FAT engineer** (see
-[audience](docs/product/audience.md) and
-[use-case registry](docs/product/use-cases.md)). Shipped MVP: performance
-verification (UC-02), VFD/affinity speed change (UC-06), `.docx` report generation
-(UC-09).
+Every use case has a worked, executable notebook (public `pump` API, Pint units,
+final assertions — all run in CI) and a workbench node:
 
-**Active project:** [001_masterpiece](docs/changes/001_masterpiece/README.md) — Pint end to end,
-every use case (UC-01…UC-11), edition-aware acceptance, mechanical run, CI. 14 sprints.
+| UC | What it does | Notebook | Workbench node(s) |
+|----|--------------|----------|-------------------|
+| UC-00 | Engineer's own units (Pint end to end, gauge/absolute, value+unit files) | [UC-00](use_cases/UC-00_utilities_demo.ipynb) | every input field |
+| UC-01 | Select a pump from a curve catalogue (speed / trim adaptation, POR) | [UC-01](use_cases/UC-01_selection.ipynb) | Selection |
+| UC-02 | Verify FAT performance vs API 610 (edition-aware tolerances) | [UC-02](use_cases/UC-02_performance_verification.ipynb) | Test Points → Correction → Curve Fit → Compliance |
+| UC-03/04 | System curve and operating point | [UC-03/04](use_cases/UC-03-04_system_operating_point.ipynb) | System Curve, Operating Point |
+| UC-05 | NPSH available / required and margin | [UC-05](use_cases/UC-05_npsh.ipynb) | NPSH |
+| UC-06 | Speed change (affinity) | [UC-06](use_cases/UC-06_affinity_speed_change.ipynb) | Correction |
+| UC-07 | Impeller trim | [UC-07](use_cases/UC-07_trim.ipynb) | Trim |
+| UC-08 | Compare pumps (twin A vs B) | [UC-08](use_cases/UC-08_compare.ipynb) | Explorer Δ, report "Comparison" |
+| UC-09 | Reports: Word, LaTeX, PDF, HTML (en/pt) | [UC-09](use_cases/UC-09_reports.ipynb) | Report Export, `python -m pumpflow.export_cli` |
+| UC-10 | Learn the fundamentals | [concepts](docs/concepts/) | formula tooltips |
+| UC-11 | Mechanical running test acceptance | [UC-11](use_cases/UC-11_mechanical_run.ipynb) | Mechanical Run |
+| — | Viscosity correction (HI 9.6.7) | [viscosity](use_cases/viscosity_HI967.ipynb) | Correction ("apply viscosity") |
 
-Planned (v1.1+):
+Acceptance values (API 610 tolerances, vibration, POR) are data in
+`pump/standards/api610.toml` with a `source` and a `verified` flag; verdicts on
+unverified criteria are labelled as provisional.
 
-1. ~~Viscosity correction~~ — done (HI 9.6.7, sprint 9 of 001_masterpiece)
-2. Report export to PDF / HTML / JSON (UC-09 follow-on; `.docx` works today)
-3. Library gaps: pump selection, system curve, operating point, NPSH margin,
-   impeller trim, multi-pump comparison (UC-01/03/04/05/07/08)
-4. Style guidelines (`black`) and type checking in CI
+**Status:** delivered by project
+[001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints).
 
-> ~~Add testing~~ — done: see [Testing](#testing) and
-> [ADR 0001](docs/adr/0001-establish-automated-test-harness.md).

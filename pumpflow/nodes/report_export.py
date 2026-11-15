@@ -9,10 +9,15 @@ One branch → single-pump report; N branches → one consolidated report.
 
 Exports: ``.docx`` (via the library's ``ReportGenerator``), ``.tex`` and
 ``.pdf`` (LaTeX, via ``LatexReportGenerator``; the PDF is compiled with
-latexmk/pdflatex), ``.json`` (reusable data file), and the per-pump plot
-``.png``.  "Export all" writes every format listed in ``settings["formats"]``
-(default: docx + tex + pdf).  The same export runs headless with
-``python -m pumpflow.export_cli``.
+latexmk/pdflatex), ``.html`` (one self-contained file), ``.json`` (reusable data
+file), and the per-pump plot ``.png``.  "Export all" writes every format listed
+in ``settings["formats"]`` (default: docx + tex + pdf + html).  The same export
+runs headless with ``python -m pumpflow.export_cli``.
+
+Cover page: ``project``, ``client``, ``location``, ``test_date``, ``revision``
+and the three ``signatories`` (Vendor / Inspector / Client witness, editable
+names) feed the report cover and signature block.  Markdown Note nodes tagged
+"Include in report" feed the "Deviations and open points" section.
 """
 
 from __future__ import annotations
@@ -26,7 +31,10 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
-from ..binding import REPORT_FORMATS, assemble_report_data, export_reports
+from ..binding import (
+    DEFAULT_SIGNATORY_ROLES, REPORT_FORMATS, assemble_report_data, export_reports,
+    open_points_from_notes,
+)
 from ..persistence import write_json
 from ..signals import (
     BranchBundle, ComplianceResult, CorrectedCurve, FittedModel,
@@ -37,6 +45,7 @@ from .base import BaseNode, PortSpec
 from . import ui
 
 _DEFAULT_EQUIP = ["Manufacturer", "Model", "Serial No.", "Type", "Driver", "Test bench"]
+_COVER_KEYS = ("project", "client", "location", "test_date", "revision")
 
 
 class ReportExportNode(BaseNode):
@@ -53,7 +62,37 @@ class ReportExportNode(BaseNode):
             "out_dir": "",
             "filename": "",
             "equipment": {k: "" for k in _DEFAULT_EQUIP},
+            "project": "",
+            "client": "",
+            "location": "",
+            "test_date": "",
+            "revision": "",
+            "signatories": [
+                {"role": role, "name": ""} for role in DEFAULT_SIGNATORY_ROLES
+            ],
         }
+
+    def _ensure_defaults(self) -> None:
+        """Fill the cover keys a project saved before sprint 14 does not carry."""
+        s = self.settings
+        for key in _COVER_KEYS:
+            s.setdefault(key, "")
+        if not isinstance(s.get("signatories"), list) or not s["signatories"]:
+            s["signatories"] = [
+                {"role": role, "name": ""} for role in DEFAULT_SIGNATORY_ROLES
+            ]
+
+    def report_notes(self) -> List[dict]:
+        """Settings of the Markdown Note nodes on the same canvas (may be empty)."""
+        item = getattr(self, "item", None)
+        scene = item.scene() if item is not None and hasattr(item, "scene") else None
+        if scene is None:
+            return []
+        return [
+            n.logic.settings
+            for n in getattr(scene, "nodes", [])
+            if n.logic.kind == "markdown_note"
+        ]
 
     # -- grouping ----------------------------------------------------------
     def _bundle(self, inputs):
@@ -89,6 +128,7 @@ class ReportExportNode(BaseNode):
         return rated, branches
 
     def compute(self, inputs) -> Dict[str, object]:
+        self._ensure_defaults()
         rated, branches = self._bundle(inputs)
         self._rated = rated
         self._branches = branches
@@ -107,6 +147,7 @@ class ReportExportNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        self._ensure_defaults()
         s = self.settings
         dlg = ui.PropertyDialog(
             parent, "Report Export",
@@ -136,6 +177,34 @@ class ReportExportNode(BaseNode):
 
         filename = ui.line_edit(s["filename"], None, self._default_filename())
         filename.textChanged.connect(lambda v: s.__setitem__("filename", v))
+
+        def cover_field(key, placeholder=""):
+            edit = ui.line_edit(s.get(key, ""), None, placeholder)
+            edit.textChanged.connect(lambda v, k=key: s.__setitem__(k, v))
+            return edit
+
+        project = cover_field("project", "project / contract")
+        client = cover_field("client", "client")
+        location = cover_field("location", "test location")
+        test_date = cover_field("test_date", "e.g. 2026-11-15")
+        revision = cover_field("revision", "e.g. R0")
+
+        sigs = s["signatories"]
+        signers = QTableWidget(len(sigs), 2)
+        signers.setHorizontalHeaderLabels(["Role", "Name"])
+        signers.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        signers.setObjectName("ReadGrid")
+        for i, row in enumerate(sigs):
+            role_item = QTableWidgetItem(str(row.get("role", "")))
+            role_item.setFlags(role_item.flags() & ~Qt.ItemIsEditable)
+            signers.setItem(i, 0, role_item)
+            signers.setItem(i, 1, QTableWidgetItem(str(row.get("name", ""))))
+
+        def on_signer(item):
+            if item.column() == 1 and 0 <= item.row() < len(sigs):
+                sigs[item.row()]["name"] = item.text()
+
+        signers.itemChanged.connect(on_signer)
 
         equip = QTableWidget(len(_DEFAULT_EQUIP), 2)
         equip.setHorizontalHeaderLabels(["Field", "Value"])
@@ -193,7 +262,10 @@ class ReportExportNode(BaseNode):
                     "or an NPSH result.",
                 )
                 return
-            data = assemble_report_data(rated, branches, s["equipment"])
+            data = assemble_report_data(
+                rated, branches, s["equipment"],
+                settings=s, notes=self.report_notes(),
+            )
             stem = self._resolve_output(s, "", rated)
             folder, _, name = stem.rpartition("/")
             paths, errors = export_reports(
@@ -216,6 +288,9 @@ class ReportExportNode(BaseNode):
 
         def export_pdf():
             run_export(["pdf"])
+
+        def export_html():
+            run_export(["html"])
 
         def export_all():
             run_export(list(s.get("formats") or REPORT_FORMATS))
@@ -248,10 +323,11 @@ class ReportExportNode(BaseNode):
                 n += 1
             QMessageBox.information(dlg, "Report Export", f"Exported {n} plot(s) to:\n{folder}")
 
-        btn_all = _btn("Export all (docx + tex + pdf)", export_all, primary=True)
+        btn_all = _btn("Export all (docx + tex + pdf + html)", export_all, primary=True)
         btn_docx = _btn("Export .docx", export_docx)
         btn_tex = _btn("Export .tex", export_tex)
         btn_pdf = _btn("Export .pdf", export_pdf)
+        btn_html = _btn("Export .html", export_html)
         btn_json = _btn("Export .json", export_json)
         btn_png = _btn("Export .png", export_png)
 
@@ -262,6 +338,7 @@ class ReportExportNode(BaseNode):
         bl.addWidget(btn_docx)
         bl.addWidget(btn_tex)
         bl.addWidget(btn_pdf)
+        bl.addWidget(btn_html)
         bl.addWidget(btn_json)
         bl.addWidget(btn_png)
         bl.addStretch(1)
@@ -287,13 +364,22 @@ class ReportExportNode(BaseNode):
         dlg.add(ui.row("Folder", dirrow))
         dlg.add(ui.row("Filename", filename))
         dlg.add(ui.hline())
+        dlg.add(ui.section("Cover page"))
+        dlg.add(ui.row("Project", project))
+        dlg.add(ui.row("Client", client))
+        dlg.add(ui.row("Location", location))
+        dlg.add(ui.row("Test date", test_date))
+        dlg.add(ui.row("Revision", revision))
+        dlg.add(ui.section("Signatories"))
+        dlg.add(signers)
+        dlg.add(ui.hline())
         dlg.add(ui.section("Equipment description (service-level)"))
         dlg.add(equip)
         dlg.add(btn_all)
         dlg.add(btnrow)
         dlg.add(banner)
         refresh_pumps()
-        dlg.resize(600, 720)
+        dlg.resize(600, 860)
         return dlg
 
     # -- helpers -----------------------------------------------------------
@@ -310,7 +396,7 @@ class ReportExportNode(BaseNode):
         name = (s.get("filename") or self._default_filename()).strip()
         # A filename typed with one extension must not leak into another format
         # ("rep.docx" exported as PDF would otherwise become "rep.docx.pdf").
-        for known in (".docx", ".tex", ".pdf", ".json"):
+        for known in (".docx", ".tex", ".pdf", ".html", ".json"):
             if name.lower().endswith(known):
                 name = name[: -len(known)]
                 break

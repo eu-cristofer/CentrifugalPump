@@ -1,15 +1,17 @@
 """
-Headless report export: ``.pumpflow`` project → Word / LaTeX / PDF.
+Headless report export: ``.pumpflow`` project → Word / LaTeX / PDF / HTML.
 
 Usage::
 
-    python -m pumpflow.export_cli PROJECT.pumpflow [--formats docx,tex,pdf]
+    python -m pumpflow.export_cli PROJECT.pumpflow [--formats docx,tex,pdf,html]
         [--lang en|pt] [--out DIR] [--stem NAME] [--template template.docx]
 
 Loads the project into a real (offscreen) canvas, evaluates the whole graph
 exactly as the GUI does, prints every node's status, and writes the report
-from the project's Report Export node. Exits with status 1 when a node is in
-error, no branch is reportable, or a requested format fails.
+from the project's Report Export node (cover fields, signatories and the
+Markdown notes tagged "Include in report" become the cover, the "Deviations
+and open points" section and the signature block). Exits with status 1 when a
+node is in error, no branch is reportable, or a requested format fails.
 """
 
 from __future__ import annotations
@@ -45,6 +47,11 @@ def report_inputs(scene):
     return rated, branches, item.logic.settings
 
 
+def report_notes(scene) -> list:
+    """Settings of every Markdown Note node (those tagged ``report`` feed the report)."""
+    return [n.logic.settings for n in scene.nodes if n.logic.kind == "markdown_note"]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="python -m pumpflow.export_cli",
@@ -55,7 +62,7 @@ def main(argv=None) -> int:
     ap.add_argument(
         "--formats",
         default=None,
-        help="comma list of docx,tex,pdf (default: the node's setting, else all)",
+        help="comma list of docx,tex,pdf,html (default: the node's setting, else all)",
     )
     ap.add_argument(
         "--lang", default=None, help="en or pt (default: the node's setting)"
@@ -102,7 +109,13 @@ def main(argv=None) -> int:
     if stem:
         stem = Path(stem).stem
 
-    data = assemble_report_data(rated, branches, s.get("equipment", {}))
+    data = assemble_report_data(
+        rated,
+        branches,
+        s.get("equipment", {}),
+        settings=s,
+        notes=report_notes(scene),
+    )
     paths, errors = export_reports(
         data,
         [f.strip() for f in formats if f.strip()],

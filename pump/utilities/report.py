@@ -1,6 +1,7 @@
 import gettext
 import locale
 import math
+import re
 from typing import Callable, Optional
 from docx import Document
 from docx.shared import Inches, Pt
@@ -89,6 +90,17 @@ COMPARISON_COLUMNS = (
     "Δη [%]",
 )
 
+# Cover page, deviations and signature block (sprint 14), shared by docx, LaTeX
+# and HTML.  ``report_data["cover"]`` and ``report_data["open_points"]`` are
+# optional: without them none of these blocks is rendered.
+COVER_KEY = "cover"
+OPEN_POINTS_KEY = "open_points"
+DEVIATIONS_TITLE = "Deviations and open points"
+SIGNATURES_TITLE = "Signatures"
+SIGNATURE_COLUMNS = ("Role", "Name", "Signature", "Date")
+SIGNATURE_ROLES = ("Vendor", "Inspector", "Client witness")
+SIGNATURE_BLANK = "_" * 16
+
 
 def standard_sentence(translate: Callable[[str], str], acceptance: Optional[dict]) -> str:
     """Localized "computations performed in accordance with <standard>:" sentence."""
@@ -104,6 +116,102 @@ def unverified_sentence(
     if not items:
         return None
     return translate(UNVERIFIED_NOTE).format(items=", ".join(str(i) for i in items))
+
+
+def cover_rows(translate: Callable[[str], str], report_data: dict) -> list:
+    """``[(label, value), ...]`` of the cover block; ``[]`` without a ``"cover"``.
+
+    Order: project, client, service/pump tag(s), standard + edition, test date,
+    location, revision.  Empty values are skipped.  The standard falls back to
+    the acceptance label when the cover does not carry one.
+    """
+    cover = report_data.get(COVER_KEY) or {}
+    if not cover:
+        return []
+    rows = []
+
+    def add(label, value):
+        value = "" if value is None else str(value).strip()
+        if value:
+            rows.append((label, value))
+
+    equipment = report_data.get("equipment_description") or {}
+    tags = []
+    for tag in [equipment.get("TAG"), *(report_data.get("test_data") or {})]:
+        if tag and str(tag) not in tags:
+            tags.append(str(tag))
+    standard = cover.get("standard") or (report_data.get("acceptance") or {}).get("label")
+
+    add(translate("Project"), cover.get("project"))
+    add(translate("Client"), cover.get("client"))
+    add(translate("TAG"), ", ".join(tags))
+    add(translate("Standard"), standard)
+    add(translate("Test date"), cover.get("test_date"))
+    add(translate("Location"), cover.get("location"))
+    add(translate("Revision"), cover.get("revision"))
+    return rows
+
+
+def open_point_paragraphs(text) -> list:
+    """Split a note body into paragraphs (blank-line separated); ``#`` marks dropped."""
+    paragraphs = []
+    for block in re.split(r"\n\s*\n", str(text).strip()):
+        lines = []
+        for line in block.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                stripped = stripped.lstrip("#").strip()
+            if stripped:
+                lines.append(stripped)
+        if lines:
+            paragraphs.append("\n".join(lines))
+    return paragraphs
+
+
+def deviation_items(translate: Callable[[str], str], report_data: dict) -> list:
+    """Paragraphs of the "Deviations and open points" section.
+
+    The unverified-criteria sentence (when the acceptance data lists any) plus the
+    open-point blocks.  Empty -- so no heading is written -- unless the report
+    carries a cover or open points.
+    """
+    open_points = list(report_data.get(OPEN_POINTS_KEY) or [])
+    if not (report_data.get(COVER_KEY) or open_points):
+        return []
+    items = []
+    note = unverified_sentence(translate, report_data.get("acceptance"))
+    if note:
+        items.append(note)
+    for text in open_points:
+        items.extend(open_point_paragraphs(text))
+    return items
+
+
+def signature_block(translate: Callable[[str], str], report_data: dict):
+    """``(header, rows)`` of the signature table, or ``None`` without a cover.
+
+    One row per signatory (default Vendor / Inspector / Client witness with blank
+    names); the Signature and Date cells are blank lines to sign on.
+    """
+    cover = report_data.get(COVER_KEY) or {}
+    if not cover:
+        return None
+    signatories = cover.get("signatories") or [
+        {"role": role, "name": ""} for role in SIGNATURE_ROLES
+    ]
+    header = [translate(c) for c in SIGNATURE_COLUMNS]
+    rows = []
+    for sig in signatories:
+        role = str(sig.get("role") or "")
+        rows.append(
+            [
+                translate(role) if role else "",
+                str(sig.get("name") or ""),
+                SIGNATURE_BLANK,
+                SIGNATURE_BLANK,
+            ]
+        )
+    return header, rows
 
 
 def viscosity_sentence(translate: Callable[[str], str], viscous: dict) -> str:
@@ -313,7 +421,7 @@ class LocalizationHelper:
     language : str, optional
         The language code to use for localization (default is 'en').
     locale_dir : str, optional
-        The directory where localization files are stored (default is 
+        The directory where localization files are stored (default is
         "pump/utilites/locales"). If changed, insert full path.
     """
     def __init__(self, language: str = 'en', locale_dir: Optional[str] = None) -> None:
@@ -360,7 +468,7 @@ class LocalizationHelper:
             return lang_translation.gettext
         except FileNotFoundError:
             return gettext.gettext  # Fallback to default gettext
-        
+
 
 class ReportGenerator:
     """
@@ -374,7 +482,7 @@ class ReportGenerator:
     language : str, optional
         The language for the report (default is 'en').
     locale_dir : str, optional
-        The directory containing localization files (default is 
+        The directory containing localization files (default is
         "pump/utilites/locales"). If changed, insert full path.
     template_dir : str, optional
         The directory containing report templates (default is "templates").
@@ -400,12 +508,12 @@ class ReportGenerator:
     def _get_template_path(self):
         """
         Retrieve the appropriate template file based on the selected language.
-        
+
         Returns
         -------
         str
             The full path to the template file.
-        
+
         Raises
         ------
         FileNotFoundError
@@ -429,7 +537,9 @@ class ReportGenerator:
         Parameters
         ----------
         report_data : dict
-            Dictionary containing all necessary report information.
+            Dictionary containing all necessary report information.  The optional
+            ``"cover"`` and ``"open_points"`` entries add a cover block, the
+            "Deviations and open points" section and a signature block.
         output_file : str, optional
             Path to save the generated report.
 
@@ -449,6 +559,7 @@ class ReportGenerator:
         template_path = self._get_template_path()
         document = Document(template_path)
 
+        self._add_cover(document, report_data)
         self._add_intro(document)
         self._add_equipment_description(document, report_data.get("equipment_description", {}))
         self._add_design_point(document, report_data.get("design_point", {}))
@@ -481,14 +592,97 @@ class ReportGenerator:
         if report_data.get(COMPARISON_KEY):
             self._add_comparison(document, report_data[COMPARISON_KEY])
 
+        self._add_deviations(document, report_data)
+        self._add_signatures(document, report_data)
+
         document.save(output_file)
         print(f"{self._('New document saved at')}: {output_file}")
         return output_file
 
+    def _add_cover(self, document, report_data):
+        """
+        Add the cover block (title + project / client / tags / standard / date /
+        location / revision) at the very start of the document.
+
+        Nothing is written without ``report_data["cover"]``.
+        """
+        rows = cover_rows(self._, report_data)
+        if not rows:
+            return
+        table_font = "Consolas"
+        width = Inches(2)
+        body = document.element.body
+        before = list(body)  # keeps the proxies alive so ids stay stable
+        known = {id(el) for el in before}
+        first = before[0]
+
+        title = document.add_paragraph(style='Text_body')
+        run = title.add_run(self._("Factory Acceptance Test Report"))
+        run.bold = True
+        run.font.size = Pt(20)
+        table = document.add_table(rows=len(rows), cols=2)
+        table.style = "Table Grid"
+        table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        for r, (label, value) in enumerate(rows):
+            left, right = table.cell(r, 0), table.cell(r, 1)
+            left.text, right.text = label, value
+            left.width = right.width = width
+            run_left = left.paragraphs[0].runs[0]
+            run_right = right.paragraphs[0].runs[0]
+            run_left.bold = True
+            run_left.font.size = Pt(9)
+            run_right.font.size = Pt(8)
+            run_left.font.name = table_font
+            run_right.font.name = table_font
+        document.add_page_break()
+
+        # python-docx appends; move the new block in front of the template body.
+        for element in [el for el in body if id(el) not in known]:
+            first.addprevious(element)
+
+    def _add_deviations(self, document, report_data):
+        """Add "Deviations and open points" (unverified criteria + open points)."""
+        items = deviation_items(self._, report_data)
+        if not items:
+            return
+        document.add_paragraph(self._(DEVIATIONS_TITLE), style='Title_2')
+        for item in items:
+            document.add_paragraph(item, style='Text_body')
+
+    def _add_signatures(self, document, report_data):
+        """Add the signature table (Role / Name / Signature / Date)."""
+        block = signature_block(self._, report_data)
+        if block is None:
+            return
+        header, rows = block
+        table_font = "Consolas"
+        document.add_paragraph(self._(SIGNATURES_TITLE), style='Title_2')
+        table = document.add_table(rows=len(rows) + 1, cols=len(header))
+        table.style = "Table Grid"
+        table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        width = Inches(1.5)
+        for col, name in enumerate(header):
+            cell = table.cell(0, col)
+            cell.text = name
+            cell.width = width
+            run = cell.paragraphs[0].runs[0]
+            run.bold = True
+            run.font.size = Pt(9)
+            run.font.name = table_font
+        for r, values in enumerate(rows, start=1):
+            for col, text in enumerate(values):
+                cell = table.cell(r, col)
+                cell.text = text
+                cell.width = width
+                runs = cell.paragraphs[0].runs
+                if runs:  # an empty name leaves the cell without runs
+                    runs[0].font.size = Pt(8)
+                    runs[0].font.name = table_font
+
     def _add_intro(self, document):
         """
         Add introductory section to the document.
-        
+
         Parameters
         ----------
         document : docx.Document
@@ -502,7 +696,7 @@ class ReportGenerator:
             "-X-X-X-"
         )
         document.add_paragraph(self._(TOC_note), style='Text_body')
-        
+
         # Note that the template already has an Title 1 called Introduction
         for paragraph in INTRO_PARAGRAPHS:
             document.add_paragraph(self._(paragraph)).style = 'Text_body'
@@ -513,7 +707,7 @@ class ReportGenerator:
     def _add_design_point(self, document, design_point):
         """
         Add design point section to the document.
-        
+
         Parameters
         ----------
         document : docx.Document
@@ -545,11 +739,11 @@ class ReportGenerator:
                 run_rigth.font.size = Pt(8)  # Set font size
                 run_left.font.name = table_font  # Use fixed-spacing font
                 run_rigth.font.name = table_font  # Use fixed-spacing font
-        
+
     def _add_equipment_description(self, document, equipment_description):
         """
         Add equipment description section to the document.
-        
+
         Parameters
         ----------
         document : docx.Document
@@ -583,7 +777,7 @@ class ReportGenerator:
     def _add_test_summary(self, document, test_summary, acceptance=None):
         """
         Add test summary section to the document.
-        
+
         Parameters
         ----------
         document : docx.Document
@@ -605,11 +799,11 @@ class ReportGenerator:
             table = document.add_table(rows=len(test_summary) + 1, cols=4)
             table.style = "Table Grid"
             table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            
+
             # Fill the first column with row names
             col_names = list(SUMMARY_COLUMNS)
-            
-            
+
+
             for col, name in enumerate(col_names):
                 cell = table.cell(0, col)
                 cell.text = self._(name)
@@ -652,7 +846,7 @@ class ReportGenerator:
     def _add_test_data(self, document, test_data):
         """
         Add test data section to the document.
-        
+
         Parameters
         ----------
         document : docx.Document
@@ -663,15 +857,15 @@ class ReportGenerator:
         table_font = "Consolas"
         if test_data:
             document.add_paragraph(" ", style='Text_body')
-            document.add_paragraph(self._(TEST_DATA_DESCRIPTION), style='Text_body')           
-            
+            document.add_paragraph(self._(TEST_DATA_DESCRIPTION), style='Text_body')
+
             table = document.add_table(rows=len(test_data["Capacity"]) + 1, cols=len(test_data))
             table.style = "Table Grid"
             table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             # Fill the first column with row names
             col_names = list(test_data.keys())
-            
+
             width = Inches(1.25)
             for col, name in enumerate(col_names):
                 upper_cell = table.cell(0, col)
@@ -691,12 +885,12 @@ class ReportGenerator:
                     run.font.size = Pt(8)  # Set font size
                     run.font.name = table_font  # Use fixed-spacing font
                     cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            
-                
+
+
     def _add_chart(self, document, chart_title, chart):
         """
         Add charts to the document.
-        
+
         Parameters
         ----------
         document : docx.Document

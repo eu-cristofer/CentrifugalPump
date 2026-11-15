@@ -60,3 +60,36 @@ Project files written before this feature have no `meta` block; loading one rese
 preset to the SI default. Nodes whose settings predate per-field units fall back to the
 canonical unit. The shipped examples and the persistence round-trip test
 ([tests/test_persistence_roundtrip.py](../tests/test_persistence_roundtrip.py)) cover this.
+
+## Pint end to end (001_masterpiece)
+
+Project [001_masterpiece](changes/001_masterpiece/README.md) extended the philosophy above
+from "normalise at the node boundary" to "a Pint quantity everywhere". The rules that now
+hold:
+
+- **Signals carry Quantities.** `RatedPoint`, `FluidSpec`, `TestRow`, `TestPointSet`,
+  `PointSample` and `CorrectedCurve.target_speed` hold Pint quantities, not floats with an
+  implied unit. `pumpflow/binding.py` has no unit literals for signal fields: it passes
+  quantities straight into the library constructors (`pump` never accepts a raw number).
+- **Gauge versus absolute pressure.** `pump.Pressure` carries a reference. A difference has
+  no reference, and mixing a gauge value with an absolute one is an error rather than a
+  silent offset. Pressure fields in the GUI show a **g/a** selector, and the Test Points
+  table stores the reference on disk. The g/a conversion is lossless (5 decimals).
+- **Schema v2 persistence.** A `.pumpflow` file stores `{"value", "unit"}` for every
+  quantity, so the file says what each number means whatever the active preset. Old v1
+  files are upgraded on open by a lossless, idempotent migrator (`persistence.migrate`);
+  results of every shipped project are bit-identical before and after. See
+  [ADR 0011](adr/0011-schema-v2-value-unit-persistence.md) and
+  [UI_SPEC §10.2](UI_SPEC.md).
+- **Per-column units.** The Test Points table has a unit per column. Changing a column's
+  unit converts the stored values (it does not just relabel them), and pasted data may carry
+  a header row such as `Q [gpm]` or `P_dis [psi g]`, so a datasheet can be entered exactly as
+  printed with no hand conversion.
+- **Hz versus revolution/second (a trap).** Pint's `Hz` is `1/s`, with no revolution in it,
+  whereas `rpm` is `revolution/minute` and one revolution is 2π rad. Converting a speed
+  through `Hz` is therefore off by 2π. Speed units must be written `revolution/second`,
+  never `Hz`.
+- **Compact on-disk unit spelling.** Units are always written in one compact Pint spelling,
+  so a migrated file and a freshly saved one are byte-identical. Missing `*_unit` keys in
+  old files take the canonical unit, never the active display preset (the latter was a
+  latent gpm versus m³/h mix-up).

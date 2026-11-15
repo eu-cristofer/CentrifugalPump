@@ -378,6 +378,25 @@
           "Driver": "WEG motor 37 kW @ 3557 rpm; gearbox 2.871",
           "Test bench": "Sundyne, Arvada CO"
         },
+        "project": "B-34004 A/B — FAT witness reference (twin unit A, Sundyne certified test)",
+        "client": "",
+        "location": "Sundyne, Arvada CO (USA)",
+        "test_date": "2011-12-13",
+        "revision": "0",
+        "signatories": [
+          {
+            "role": "Vendor",
+            "name": ""
+          },
+          {
+            "role": "Inspector",
+            "name": ""
+          },
+          {
+            "role": "Client witness",
+            "name": ""
+          }
+        ],
         "formats": [
           "docx",
           "tex",
@@ -392,7 +411,8 @@
       "y": 160.0,
       "settings": {
         "title": "B-34004 witness reference",
-        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, η, shut-off) — see head-tolerance note.\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance: default ±3 %; confirm API 610 8th / N-553 band for >300 m (±2 %?). A is ≈ +2 %.\n- SG: datasheet 0.999 vs Sundyne conversion 0.990 / 0.50 cSt.\n- Datasheet body says B-33004A/B (title B-34004A/B).\n- A: no inlet temperature recorded at the 120 % point (52.2 °C assumed).\n"
+        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, η, shut-off) — see head-tolerance note.\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance: API 610 8th edition is inferred from the 10th, which gives ±2 % for rated heads above 300 m. A predicts +1.72 %, which passes but is tight. Confirm against the 8th-edition table.\n- Unfiltered vibration of 0.16 in/s: is the Sundyne \"IN/SEC\" reading RMS (4.06 mm/s, above 3.0) or peak (2.87 mm/s RMS, inside 3.0)? Ask Sundyne. The API 610 allowance above 3600 rpm (this pump runs at 10 300 rpm) has not been applied.\n- NPSH margin rule: not configured (no API 610 / N-553 value found).\n- SG: the datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt.\n- The datasheet body says B-33004A/B (the title says B-34004A/B).\n- A: no inlet temperature was recorded at the 120 % point (52.2 °C assumed).\n",
+        "report": true
       }
     },
     {

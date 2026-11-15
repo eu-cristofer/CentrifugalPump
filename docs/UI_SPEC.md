@@ -408,3 +408,30 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
    and obtain a single `.docx` containing a separate *Test Data — `<TAG>`* section,
    plot and verdict for **each** pump — all sharing the one rated point and fluid,
    with the rated point entered only once.
+
+## 10. Nodes and persistence added by 001_masterpiece
+
+| Kind | Inputs | Outputs | Key settings |
+|------|--------|---------|--------------|
+| `mechanical_run` | RatedPoint (opt.) | MechanicalRunResult, MechanicalRunSet | channels (name, dimension, unit, role), 15-min readings, limit overrides |
+| `npsh` | RatedPoint (opt.) | NPSHResult | mode (NPSHr points / NPSHa calculator), per-column units, margin-rule overrides |
+| `trim` | FittedModel or CorrectedCurve, RatedPoint | CorrectedCurve | mode (target diameter / solve for rated duty), max trim % |
+| `system_curve` | Fluid (opt.) | SystemCurveSpec | mode (static + k / two points / pipe Darcy–Weisbach), units per field |
+| `operating_point` | FittedModel, SystemCurveSpec | OperatingPointResult | method (poly / spline) |
+| `selection` | — | RatedPoint (chosen candidate) | duty Q/H with units, catalogue folder |
+
+Comparison of pumps (UC-08) is not a node: the Explorer readout shows Δ % vs the
+first model and Report Export adds a "Comparison" section when ≥ 2 pumps are fitted.
+
+**Rated Point** gains: unit choice for every field, standard/edition and client
+overlay pickers (`standard_key`, `client`), impeller nominal/min/max diameters.
+**Test Points** gains: one unit per column with g/a pressure reference, header-row
+paste (`Q [gpm]`), optional test-bench geometry (pipe IDs, gauge elevations).
+
+**Persistence — schema v2** (ADR-0011): every quantity is stored as
+`{"value", "unit"}` (compact Pint spelling); `meta.schema_version = 2`;
+`persistence.migrate` upgrades v1 files losslessly on open (missing `*_unit` keys
+take the canonical unit, never the active preset); the Qt-free
+`pumpflow/settings_codec.py` translates runtime settings ↔ disk; unset optional
+quantities are omitted on disk.
+

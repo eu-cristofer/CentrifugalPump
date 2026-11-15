@@ -189,3 +189,48 @@ msgstr "Ratio"
 
 msgid "Viscosity correction (HI 9.6.7)"
 msgstr "Viscosity correction (HI 9.6.7)"
+
+msgid "Project"
+msgstr "Project"
+
+msgid "Client"
+msgstr "Client"
+
+msgid "Location"
+msgstr "Location"
+
+msgid "Test date"
+msgstr "Test date"
+
+msgid "Revision"
+msgstr "Revision"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Deviations and open points"
+msgstr "Deviations and open points"
+
+msgid "Signatures"
+msgstr "Signatures"
+
+msgid "Role"
+msgstr "Role"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Signature"
+msgstr "Signature"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Vendor"
+msgstr "Vendor"
+
+msgid "Inspector"
+msgstr "Inspector"
+
+msgid "Client witness"
+msgstr "Client witness"

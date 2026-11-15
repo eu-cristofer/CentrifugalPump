@@ -392,3 +392,231 @@ def test_docx_npsh_only_entry(tmp_path, report_data):
 def test_no_npsh_heading_without_npsh(tmp_path, report_data):
     out = LatexReportGenerator().generate_tex(report_data, str(tmp_path / "n.tex"))
     assert "NPSH required" not in open(out, encoding="utf-8").read()
+
+
+# --------------------------------------------------------------------------- #
+# Sprint 14: HTML export, cover page, deviations, signature block
+# --------------------------------------------------------------------------- #
+COVER = {
+    "project": "Pump Station 7",
+    "client": "ACME Oil",
+    "location": "Sao Paulo",
+    "test_date": "2026-11-15",
+    "revision": "R2",
+    "standard": "API 610 12th ed.",
+    "signatories": [
+        {"role": "Vendor", "name": "Ada Vendor"},
+        {"role": "Inspector", "name": "Ian Inspector"},
+        {"role": "Client witness", "name": "Cleo Client"},
+    ],
+}
+OPEN_POINT = "Re-test vibration at site.\n\nCheck seal flush plan."
+
+
+def _with_cover(data):
+    data = dict(data)
+    data["cover"] = dict(COVER)
+    data["open_points"] = [OPEN_POINT]
+    return data
+
+
+def _render_all(tmp_path, data, language="en"):
+    """``{"docx": xml, "tex": source, "html": source}`` of one export run."""
+    paths, errors = export_reports(
+        data, ["docx", "tex", "html"], language=language, out_dir=str(tmp_path), stem="S"
+    )
+    assert errors == {}
+    with zipfile.ZipFile(paths["docx"]) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    return {
+        "docx": xml,
+        "tex": open(paths["tex"], encoding="utf-8").read(),
+        "html": open(paths["html"], encoding="utf-8").read(),
+    }
+
+
+def test_report_formats_include_html():
+    from pumpflow.binding import REPORT_FORMATS
+
+    assert REPORT_FORMATS == ("docx", "tex", "pdf", "html")
+
+
+def test_html_export_is_one_self_contained_file(tmp_path, report_data):
+    paths, errors = export_reports(
+        report_data, ["html"], language="en", out_dir=str(tmp_path), stem="R"
+    )
+    assert errors == {}
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["R.html"]  # no _figs folder
+    html = open(paths["html"], encoding="utf-8").read()
+    assert html.startswith("<!DOCTYPE html>") and html.rstrip().endswith("</html>")
+    assert "data:image/png;base64," in html
+    assert html.count("<img ") == 1 and 'src="data:image/png;base64,' in html
+    assert "<style>" in html and 'rel="stylesheet"' not in html
+    for text in ("Equipment Description", f"Test Data - {TAG}", "Performance test summary."):
+        assert text in html
+    assert "Overall verdict" in html and "APPROVED" in html
+
+
+def test_html_escapes_user_strings(tmp_path, report_data):
+    report_data["equipment_description"]["Manufacturer"] = "Sundyne <b>&</b> Co"
+    paths, _ = export_reports(
+        report_data, ["html"], out_dir=str(tmp_path), stem="E"
+    )
+    html = open(paths["html"], encoding="utf-8").read()
+    assert "Sundyne &lt;b&gt;&amp;&lt;/b&gt; Co" in html
+    assert "<b>&</b>" not in html
+
+
+def test_html_pt_translation(tmp_path, report_data):
+    paths, _ = export_reports(
+        report_data, ["html"], language="pt", out_dir=str(tmp_path), stem="P"
+    )
+    html = open(paths["html"], encoding="utf-8").read()
+    assert '<html lang="pt-BR">' in html
+    assert "Descrição do Equipamento" in html and "APROVADO" in html
+
+
+def test_every_section_heading_in_all_formats(tmp_path, two_pump_data):
+    two_pump_data["test_data"][TAG]["Mechanical Run"] = _mechanical_run_entry()
+    two_pump_data["test_data"][TAG]["NPSH"] = _npsh_entry()
+    rendered = _render_all(tmp_path, _with_cover(two_pump_data))
+    headings = [
+        "Equipment Description",
+        "Design Point data:",
+        f"Test Data - {TAG}",
+        f"Test Data - {TAG_B}",
+        "Performance test summary.",
+        "Mechanical running test",
+        "NPSH",
+        "Comparison",
+        "Deviations and open points",
+        "Signatures",
+    ]
+    for fmt, text in rendered.items():
+        for heading in headings:
+            assert heading in text, f"{heading!r} missing from {fmt}"
+
+
+@pytest.mark.parametrize("language", ["en", "pt"])
+def test_cover_fields_rendered(tmp_path, report_data, language):
+    rendered = _render_all(tmp_path, _with_cover(report_data), language)
+    for fmt, text in rendered.items():
+        for value in ("Pump Station 7", "ACME Oil", "Sao Paulo", "2026-11-15", "R2"):
+            assert value in text, f"{value!r} missing from {fmt}"
+        assert "API 610 12th ed." in text and "B-34004" in text
+    labels = LocalizationHelper(language)._
+    for fmt, text in rendered.items():
+        for msgid in ("Project", "Client", "Location", "Test date", "Revision"):
+            assert labels(msgid) in text, f"{msgid!r} label missing from {fmt}"
+
+
+def test_cover_standard_falls_back_to_acceptance_label(tmp_path, report_data):
+    data = _with_cover(report_data)
+    data["cover"]["standard"] = ""
+    data["acceptance"] = {"label": "API 610 11th ed.", "verified": True, "unverified": []}
+    rendered = _render_all(tmp_path, data)
+    for fmt, text in rendered.items():
+        assert "API 610 11th ed." in text, fmt
+
+
+def test_signature_block_present_with_cover(tmp_path, report_data):
+    rendered = _render_all(tmp_path, _with_cover(report_data))
+    for fmt, text in rendered.items():
+        for value in ("Signatures", "Role", "Name", "Signature", "Date",
+                      "Vendor", "Ada Vendor", "Inspector", "Ian Inspector",
+                      "Client witness", "Cleo Client"):
+            assert value in text, f"{value!r} missing from {fmt}"
+
+
+def test_signature_block_default_roles_without_signatories(tmp_path, report_data):
+    data = _with_cover(report_data)
+    del data["cover"]["signatories"]
+    rendered = _render_all(tmp_path, data)
+    for fmt, text in rendered.items():
+        assert "Signatures" in text and "Client witness" in text, fmt
+
+
+def test_no_cover_means_no_signatures_or_deviations(tmp_path, report_data):
+    rendered = _render_all(tmp_path, report_data)
+    for fmt, text in rendered.items():
+        assert "Signatures" not in text, fmt
+        assert "Deviations and open points" not in text, fmt
+        assert "Pump Station 7" not in text, fmt
+
+
+def test_open_points_rendered(tmp_path, report_data):
+    rendered = _render_all(tmp_path, _with_cover(report_data))
+    for fmt, text in rendered.items():
+        assert "Re-test vibration at site." in text, fmt
+        assert "Check seal flush plan." in text, fmt
+
+
+def test_deviations_carry_unverified_sentence(tmp_path, report_data):
+    data = _with_cover(report_data)
+    data["acceptance"] = {
+        "label": "API 610 12th ed.",
+        "verified": False,
+        "unverified": ["head tolerance"],
+    }
+    rendered = _render_all(tmp_path, data)
+    for fmt, text in rendered.items():
+        assert text.count("not yet verified against the standard text: head tolerance") >= 2, fmt
+
+
+def test_open_points_without_cover_add_deviations_only(tmp_path, report_data):
+    report_data["open_points"] = ["Seal leak to be re-checked."]
+    rendered = _render_all(tmp_path, report_data)
+    for fmt, text in rendered.items():
+        assert "Deviations and open points" in text, fmt
+        assert "Seal leak to be re-checked." in text, fmt
+        assert "Signatures" not in text, fmt
+
+
+def test_new_headings_translated_to_portuguese():
+    _ = LocalizationHelper("pt")._
+    assert _("Signatures") == "Assinaturas"
+    assert _("Deviations and open points") == "Desvios e pendências"
+    assert _("Project") == "Projeto"
+    assert _("Client") == "Cliente"
+    assert _("Location") == "Local"
+    assert _("Test date") == "Data do teste"
+    assert _("Revision") == "Revisão"
+    assert _("Role") == "Função"
+    assert _("Name") == "Nome"
+    assert _("Signature") == "Assinatura"
+    assert _("Date") == "Data"
+    assert _("Vendor") == "Fornecedor"
+    assert _("Inspector") == "Inspetor"
+    assert _("Client witness") == "Testemunha do cliente"
+
+
+def test_signatures_heading_pt_in_every_format(tmp_path, report_data):
+    rendered = _render_all(tmp_path, _with_cover(report_data), "pt")
+    for fmt, text in rendered.items():
+        assert "Assinaturas" in text, fmt
+        assert "Desvios e pendências" in text, fmt
+
+
+def test_latex_nbsp_key_is_the_escape_sequence():
+    from pump.utilities.report_latex import _UNICODE
+
+    assert "\u00a0" in _UNICODE and _UNICODE["\u00a0"] == "~"
+
+
+def test_latex_escape_never_emits_untypesettable_unicode():
+    """Free text (e.g. a canvas note included in the report) must not abort the
+    PDF build: common symbols are mapped, anything else becomes [U+XXXX]."""
+    out = latex_escape("Export ▸ all → OK ✓ ação 汉")
+    assert "▸" not in out and "→" not in out and "✓" not in out
+    assert "ação" in out  # Latin text passes through (utf8 inputenc + T1)
+    assert "[U+6C49]" in out
+
+
+@pytest.mark.skipif(find_latex_engine() is None, reason="no TeX engine installed")
+def test_pdf_survives_symbols_in_free_text(tmp_path, report_data):
+    data = dict(report_data)
+    data["equipment_description"] = dict(
+        report_data["equipment_description"], Note="Report Export ▸ Export all → ✓ ⚠"
+    )
+    out = LatexReportGenerator("en").generate_pdf(data, str(tmp_path / "sym.pdf"))
+    assert open(out, "rb").read().startswith(b"%PDF")

@@ -30,12 +30,14 @@ from .report import (
     API_PARAGRAPH,
     COMPARISON_KEY,
     COMPARISON_TITLE,
+    DEVIATIONS_TITLE,
     EQUIPMENT_TEXT,
     INTRO_PARAGRAPHS,
     MECHANICAL_RUN_KEY,
     MECHANICAL_RUN_TITLE,
     NPSH_KEY,
     NPSH_TITLE,
+    SIGNATURES_TITLE,
     SUMMARY_COLUMNS,
     TEST_DATA_DESCRIPTION,
     TEST_SUMMARY_DESCRIPTION,
@@ -44,6 +46,8 @@ from .report import (
     LocalizationHelper,
     comparison_sentence,
     comparison_table,
+    cover_rows,
+    deviation_items,
     mechanical_run_duration_sentence,
     mechanical_run_notes,
     mechanical_run_table,
@@ -51,6 +55,7 @@ from .report import (
     npsh_points_table,
     npsh_summary_rows,
     performance_verdict,
+    signature_block,
     standard_sentence,
     unverified_sentence,
     viscosity_sentence,
@@ -93,13 +98,58 @@ _UNICODE = {
     "–": "--",
     "—": "---",
     "‑": "-",
-    " ": "~",  # no-break space (escape kept: a literal one is invisible)
+    "\u00a0": "~",  # no-break space (escape kept: a literal one is invisible)
 }
 
 
+# Symbols common in free text (notes, tags) that pdflatex cannot typeset.
+_SYMBOLS = {
+    "\u25b8": r"\ensuremath{\blacktriangleright}",  # ▸
+    "\u25b6": r"\ensuremath{\blacktriangleright}",  # ▶
+    "\u2192": r"\ensuremath{\rightarrow}",  # →
+    "\u2190": r"\ensuremath{\leftarrow}",  # ←
+    "\u2194": r"\ensuremath{\leftrightarrow}",  # ↔
+    "\u21d2": r"\ensuremath{\Rightarrow}",  # ⇒
+    "\u2022": r"\textbullet{}",  # •
+    "\u2026": r"\ldots{}",  # …
+    "\u2713": "OK",  # ✓
+    "\u2714": "OK",  # ✔
+    "\u2705": "OK",  # ✅
+    "\u2717": "X",  # ✗
+    "\u274c": "X",  # ❌
+    "\u26a0": "(!)",  # ⚠
+    "\u2032": "'",  # ′
+    "\u2033": "''",  # ″
+    "\u201c": "``",
+    "\u201d": "''",
+    "\u2018": "`",
+    "\u2019": "'",
+}
+
+
+def _latex_char(ch: str) -> str:
+    """One character for pdflatex: escaped, mapped, or a visible placeholder.
+
+    Characters declared via ``newunicodechar`` (``_UNICODE``) and Latin text pass
+    through; known symbols are mapped; anything else becomes ``[U+XXXX]`` so a
+    stray symbol in user text can never abort the PDF build.
+    """
+    if ch in _ESCAPES:
+        return _ESCAPES[ch]
+    if ch in _SYMBOLS:
+        return _SYMBOLS[ch]
+    if ch in _UNICODE or ord(ch) < 0x0250:
+        return ch
+    return f"[U+{ord(ch):04X}]"
+
+
 def latex_escape(text) -> str:
-    """Escape LaTeX special characters in ``text`` (converted with ``str``)."""
-    return "".join(_ESCAPES.get(ch, ch) for ch in str(text))
+    """Escape LaTeX special characters in ``text`` (converted with ``str``).
+
+    Also maps symbols pdflatex cannot typeset (arrows, check marks, …) and turns
+    any other unsupported character into a visible ``[U+XXXX]`` placeholder.
+    """
+    return "".join(_latex_char(ch) for ch in str(text))
 
 
 def _fmt(value) -> str:
@@ -204,6 +254,10 @@ class LatexReportGenerator:
         out.append(r"\author{}")
         out.append(r"\begin{document}")
         out.append(r"\maketitle")
+        cover = cover_rows(_, report_data)
+        if cover:
+            out.append(self._kv_table(cover))
+            out.append(r"\clearpage")
         out.append(r"\tableofcontents")
         out.append(r"\clearpage")
 
@@ -263,6 +317,29 @@ class LatexReportGenerator:
         if report_data.get(COMPARISON_KEY):
             out.append(self._comparison(report_data[COMPARISON_KEY], fig_dir, fig_rel))
 
+        items = deviation_items(_, report_data)
+        if items:
+            out.append(r"\section{%s}" % latex_escape(_(DEVIATIONS_TITLE)))
+            out += [latex_escape(i).replace("\n", "\\\\\n") + "\n" for i in items]
+
+        block = signature_block(_, report_data)
+        if block is not None:
+            header, rows = block
+            head = " & ".join(r"\textbf{%s}" % latex_escape(h) for h in header) + r" \\"
+            body = [
+                " & ".join(latex_escape(c) for c in row) + r" \\[1.6em]" for row in rows
+            ]
+            out += [
+                r"\section{%s}" % latex_escape(_(SIGNATURES_TITLE)),
+                r"\begin{center}\begin{tabular}{llll}",
+                r"\toprule",
+                head,
+                r"\midrule",
+                *body,
+                r"\bottomrule",
+                r"\end{tabular}\end{center}",
+            ]
+
         out.append(r"\end{document}")
         return "\n".join(out) + "\n"
 
@@ -281,6 +358,7 @@ class LatexReportGenerator:
                 r"\usepackage[margin=2.2cm]{geometry}",
                 r"\usepackage{booktabs,longtable,array,graphicx,float}",
                 r"\usepackage{newunicodechar}",
+                r"\usepackage{amssymb}",
                 r"\usepackage[hidelinks]{hyperref}",
                 r"\setlength{\parskip}{0.5em}",
                 r"\setlength{\parindent}{0pt}",
