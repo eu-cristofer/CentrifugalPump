@@ -20,6 +20,7 @@ from .utilities.unit_conversion import Q_, quantity_factory
 from .utilities.fluid import Fluid
 from .point import DesignPoint, TestPoint
 from .acceptance import AcceptanceCriteria
+from .viscosity import b_parameter, correction_factors
 from tabulate import tabulate
 import io
 
@@ -213,6 +214,8 @@ class PerformanceCurve:
                 raise ValueError("All TestPoints must have the same fluid.")
         self.points = sorted(points) # Sort by capacity
         self.fitter = PerformanceFitter(points, polynomial_degree=polynomial_degree)
+        # Set by ``to_viscous`` on the curve it returns: {"B", "C_Q", "C_H", "C_eta"}.
+        self.viscosity_correction: Optional[Dict[str, float]] = None
 
     def predict_metric(self, capacity, coeffs, unit) -> Q_:
         capacity_value = capacity.to("m**3/h").magnitude
@@ -280,6 +283,24 @@ class PerformanceCurve:
             "Efficiency": efficiency,
             "Head Shuttoff": shutoff_head
         }
+
+    def bep(self):
+        """
+        Best-efficiency point of the fitted curve.
+
+        The fitted efficiency polynomial is sampled densely over the tested
+        capacity range and the capacity of maximum efficiency is taken.
+
+        Returns
+        -------
+        tuple of Q_
+            ``(Q_bep, H_bep, eta_bep)`` in m³/h, m and percent.
+        """
+        caps = [p.capacity.to("m**3/h").magnitude for p in self.points]
+        q = np.linspace(min(caps), max(caps), 2001)
+        eff = np.polyval(self.fitter.efficiency_coeffs, q)
+        q_bep = Q_(float(q[int(np.argmax(eff))]), "m**3/h")
+        return q_bep, self.predict_head(q_bep), self.predict_efficiency(q_bep)
 
     def plot_performance_curve(self, chart_title=None, capacity:Q_=None, return_io=False,
                                head_ylim=None, power_ylim=None, efficiency_ylim=None):
@@ -550,6 +571,102 @@ class PerformanceCurve:
             new_points.append(new_point)
 
         return PerformanceCurve(new_fluid, new_points, polynomial_degree=self.polynomial_degree)
+
+    def to_viscous(self, new_fluid: Fluid, stages: int = 1) -> Self:
+        """
+        Create a new PerformanceCurve corrected from water to a viscous liquid
+        (HI 9.6.7 / ISO TR 17766, see :mod:`pump.viscosity`).
+
+        The equations are ANSI/HI 9.6.7-2010 Eq. 2-7 as reproduced by
+        midstreamcalculator.com; they were cross-checked independently but NOT
+        against the standard text.
+
+        The parameter B comes from the water best-efficiency point (:meth:`bep`)
+        and the speed of the curve.  Every point becomes ``Q * C_Q``,
+        ``H * C_H(Q / Q_BEP)`` and ``eta * C_eta``, and the breaking power is
+        recomputed from the viscous liquid density,
+        ``P = rho * g * Q_vis * H_vis / eta_vis``.  For ``B <= 1`` the result is
+        the same as :meth:`to_fluid` (density only).  The returned curve carries
+        ``viscosity_correction = {"B", "C_Q", "C_H", "C_eta"}`` (factors at the BEP).
+
+        Parameters
+        ----------
+        new_fluid : Fluid
+            Target liquid; must carry its density and a kinematic viscosity
+            (``kinematic_viscosity`` or ``viscosity``; a dynamic viscosity is
+            converted with the density).
+        stages : int, optional
+            Number of stages; HI uses the head *per stage* in B (default 1).
+
+        Returns
+        -------
+        PerformanceCurve
+            A new instance; ``self`` is not modified.
+
+        Raises
+        ------
+        ValueError
+            If the fluid has no viscosity or ``stages`` is not a positive integer.
+        AttributeError
+            If a point has no ``speed_of_rotation``.
+
+        Warns
+        -----
+        UserWarning
+            When B >= 40 (outside the method validity).
+        """
+        if int(stages) < 1:
+            raise ValueError("stages must be a positive integer.")
+        nu = _kinematic_viscosity(new_fluid)
+        speed = getattr(self.points[0], "speed_of_rotation", None)
+        if speed is None:
+            raise AttributeError(
+                f"TestPoint {self.points[0]} has no 'speed_of_rotation' attribute."
+            )
+        q_bep, h_bep, _eta_bep = self.bep()
+        b = b_parameter(nu, q_bep, h_bep / int(stages), speed)
+        c_q_bep, c_h_bep, c_eta_bep = correction_factors(b)  # warns once if B >= 40
+        info = {"B": b, "C_Q": c_q_bep, "C_H": c_h_bep, "C_eta": c_eta_bep}
+
+        if b <= 1.0:
+            curve = self.to_fluid(new_fluid)
+            curve.viscosity_correction = info
+            return curve
+
+        new_points = []
+        for p in self.points:
+            ratio = float((p.capacity / q_bep).to("dimensionless").magnitude)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                c_q, c_h, c_eta = correction_factors(b, ratio)
+
+            new_capacity = p.capacity * c_q
+            new_head = p.head * c_h
+            new_efficiency = p.efficiency * c_eta
+
+            new_attrs = {"_head": new_head, "_efficiency": new_efficiency}
+            if _dimensionless(new_efficiency) > 0.0:
+                new_attrs["breaking_power"] = quantity_factory(
+                    new_fluid.density * new_capacity * p.g * new_head / new_efficiency
+                )
+            elif hasattr(p, "breaking_power"):
+                # Zero efficiency (shut-off): no hydraulic power, scale by density.
+                new_attrs["breaking_power"] = quantity_factory(
+                    p.breaking_power * (new_fluid.density / p.fluid.density)
+                )
+
+            new_points.append(
+                TestPoint(
+                    fluid=new_fluid,
+                    capacity=new_capacity,
+                    speed_of_rotation=p.speed_of_rotation,
+                    **new_attrs
+                )
+            )
+
+        curve = PerformanceCurve(new_fluid, new_points, polynomial_degree=self.polynomial_degree)
+        curve.viscosity_correction = info
+        return curve
     
     @property
     def test_summary(self) -> str:
@@ -638,6 +755,26 @@ def _dimensionless(value) -> float:
     if hasattr(value, "to"):
         return float(value.to("dimensionless").magnitude)
     return float(value)
+
+
+def _kinematic_viscosity(fluid: Fluid) -> Q_:
+    """Kinematic viscosity (cSt) of ``fluid``.
+
+    Reads ``kinematic_viscosity`` (e.g. ``Water``) or ``viscosity``; a dynamic
+    viscosity is divided by the fluid density.
+    """
+    nu = getattr(fluid, "kinematic_viscosity", None)
+    if nu is None:
+        visc = getattr(fluid, "viscosity", None)
+        if visc is None:
+            raise ValueError(
+                "to_viscous needs a fluid carrying a (kinematic) viscosity."
+            )
+        if visc.check("[length] ** 2 / [time]"):
+            nu = visc
+        else:
+            nu = visc / fluid.density
+    return nu.to("cSt")
 
 
 class PerformanceChecker:

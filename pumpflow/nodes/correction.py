@@ -3,7 +3,8 @@ nodes.correction — Speed / Affinity Correction  (UI_SPEC §5.3)
 
 Inputs ``RatedPoint`` + ``TestPointSet`` → outputs ``CorrectedCurve``.
 Builds ``TestPoint``s from the raw rows, wraps them in a ``PerformanceCurve``,
-then ``.to_speed(rated N)`` (affinity laws) and ``.to_fluid(rated fluid)``.
+then ``.to_speed(rated N)`` (affinity laws) and ``.to_fluid(rated fluid)``
+(or ``.to_viscous(rated fluid)``, HI 9.6.7, when the viscosity correction is on).
 """
 
 from __future__ import annotations
@@ -96,6 +97,8 @@ class SpeedCorrectionNode(BaseNode):
                 apply_density=apply_density,
                 degree=int(s["degree"]),
                 target_fluid=override_fluid,
+                # Viscosity is folded into the fluid step, so it needs density on.
+                apply_viscosity=bool(s.get("apply_viscosity")) and bool(apply_density),
             )
         except BindingError as exc:
             return self.emit_nothing(str(exc), "invalid")
@@ -103,9 +106,12 @@ class SpeedCorrectionNode(BaseNode):
         self._last = corrected
         mode = "" if rated is not None else " · forced"
         fl = " · fluid✓" if override_fluid is not None else ""
+        visc = ""
+        if corrected.viscous and corrected.viscous["B"] > 1.0:
+            visc = f" · visc B={corrected.viscous['B']:.1f}"
         self.status = (
             f"{corrected.pump_tag} · {len(tps.rows)} pts · "
-            f"→ {target.to('rpm').magnitude:g} rpm{mode}{fl}"
+            f"→ {target.to('rpm').magnitude:g} rpm{mode}{fl}{visc}"
         )
         self.state = "ok"
         return {"CorrectedCurve": corrected}
@@ -151,12 +157,14 @@ class SpeedCorrectionNode(BaseNode):
             "Density (ρ_rated / ρ_test) correction", s["apply_density"], None
         )
         vi = ui.checkbox(
-            "Viscosity correction (nominal factors)", s["apply_viscosity"], None
+            "Viscosity correction (HI 9.6.7)", s["apply_viscosity"], None
         )
-        vi.setEnabled(False)
         vi.setToolTip(
-            "Viscosity correction is a library TODO — disabled until available."
+            "HI 9.6.7 / ISO TR 17766, applied with the density step. "
+            "Factors apply only for 1 < B < 40; B <= 1 leaves the curve unchanged."
         )
+        visc_info = QLabel("—")
+        visc_info.setWordWrap(True)
         degree = ui.int_spin(int(s["degree"]), 2, 5, None)
 
         fluids = getattr(self, "_fluids", [])
@@ -184,7 +192,9 @@ class SpeedCorrectionNode(BaseNode):
             set_target_enabled(not s["lock_to_rated"] or not has_rated)
             lock.setEnabled(has_rated)
             de.setEnabled(has_rated or has_fluid)
+            vi.setEnabled(bool(s["apply_density"]) and (has_rated or has_fluid))
             corrected = getattr(self, "_last", None) if self.state == "ok" else None
+            visc = getattr(corrected, "viscous", None) if corrected else None
             if self.state == "ok" and not has_rated and has_fluid:
                 msg, level = (
                     "No rated point — forced speed correction, density corrected "
@@ -208,7 +218,21 @@ class SpeedCorrectionNode(BaseNode):
                     "" if self.state == "ok" else self.status,
                     "info" if self.state in ("ok", "idle") else "error",
                 )
+            if visc and visc["B"] >= 40.0:
+                msg, level = (
+                    f"Viscosity parameter B = {visc['B']:.1f} is outside the "
+                    "HI 9.6.7 method validity (B < 40); factors are extrapolated.",
+                    "warn",
+                )
             banner.show_message(msg, level)
+            if visc:
+                note = "" if visc["B"] > 1.0 else "  (B ≤ 1: no correction)"
+                visc_info.setText(
+                    f"B = {visc['B']:.2f} · C_Q = {visc['C_Q']:.3f} · "
+                    f"C_H = {visc['C_H']:.3f} · C_η = {visc['C_eta']:.3f}{note}"
+                )
+            else:
+                visc_info.setText("—")
             table.setRowCount(0)
             if not corrected:
                 return
@@ -250,6 +274,9 @@ class SpeedCorrectionNode(BaseNode):
         de.toggled.connect(
             lambda v: (s.__setitem__("apply_density", bool(v)), refresh())
         )
+        vi.toggled.connect(
+            lambda v: (s.__setitem__("apply_viscosity", bool(v)), refresh())
+        )
         degree.valueChanged.connect(
             lambda v: (s.__setitem__("degree", int(v)), refresh())
         )
@@ -263,6 +290,7 @@ class SpeedCorrectionNode(BaseNode):
         dlg.add(ui.row("", sp))
         dlg.add(ui.row("", de))
         dlg.add(ui.row("", vi))
+        dlg.add(ui.row("HI 9.6.7 factors", visc_info))
         dlg.add(ui.row("Fit degree", degree))
         if fluids:
             dlg.add(ui.row("Correct to fluid", fluid_pick))

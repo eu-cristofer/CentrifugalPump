@@ -255,3 +255,6 @@ msgstr "Margem"
 
 msgid "Ratio"
 msgstr "Razão"
+
+msgid "Viscosity correction (HI 9.6.7)"
+msgstr "Correção de viscosidade (HI 9.6.7)"

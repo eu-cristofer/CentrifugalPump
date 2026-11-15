@@ -58,6 +58,10 @@ TEST_DATA_DESCRIPTION = (
 )
 SUMMARY_COLUMNS = ("Parameter", "Actual", "Minimum", "Maximum")
 
+# Viscosity correction note (HI 9.6.7), shared by docx and LaTeX.
+VISCOSITY_KEY = "viscous"
+VISCOSITY_TITLE = "Viscosity correction (HI 9.6.7)"
+
 # Mechanical running test section (UC-11), shared by docx and LaTeX.
 MECHANICAL_RUN_KEY = "Mechanical Run"
 MECHANICAL_RUN_TITLE = "Mechanical running test"
@@ -75,14 +79,14 @@ NPSH_TITLE = "NPSH"
 COMPARISON_KEY = "comparison"
 COMPARISON_TITLE = "Comparison"
 COMPARISON_COLUMNS = (
-    "Q [m\u00b3/h]",
+    "Q [m³/h]",
     "Tag",
     "H [m]",
     "P [kW]",
-    "\u03b7 [%]",
-    "\u0394H [%]",
-    "\u0394P [%]",
-    "\u0394\u03b7 [%]",
+    "η [%]",
+    "ΔH [%]",
+    "ΔP [%]",
+    "Δη [%]",
 )
 
 
@@ -100,6 +104,20 @@ def unverified_sentence(
     if not items:
         return None
     return translate(UNVERIFIED_NOTE).format(items=", ".join(str(i) for i in items))
+
+
+def viscosity_sentence(translate: Callable[[str], str], viscous: dict) -> str:
+    """``Viscosity correction (HI 9.6.7): B = ..., C_Q = ..., C_H = ..., C_η = ...``.
+
+    ``viscous`` is ``{"B", "C_Q", "C_H", "C_eta"}`` (factors at the BEP).
+    """
+    return (
+        f"{translate(VISCOSITY_TITLE)}: "
+        f"B = {viscous['B']:0.2f}, "
+        f"C_Q = {viscous['C_Q']:0.3f}, "
+        f"C_H = {viscous['C_H']:0.3f}, "
+        f"C_η = {viscous['C_eta']:0.3f}"
+    )
 
 
 def mechanical_run_verdict(translate: Callable[[str], str], result) -> str:
@@ -132,7 +150,7 @@ def mechanical_run_duration_sentence(translate: Callable[[str], str], result) ->
     """``Duration: 4.00 h`` (plus the required minimum when configured)."""
     text = f"{translate('Duration')}: {result.duration.to('h'):0.2f~P}"
     if getattr(result, "min_duration", None) is not None:
-        text += f" (\u2265 {result.min_duration.to('h'):0.2f~P})"
+        text += f" (≥ {result.min_duration.to('h'):0.2f~P})"
     return text
 
 
@@ -151,10 +169,10 @@ def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
     rows = []
     for ch in result.channels:
         if ch.limit is not None:
-            limit = f"\u2264 {num(ch.limit)}"
+            limit = f"≤ {num(ch.limit)}"
         elif ch.stabilisation:
             st = ch.stabilisation
-            limit = f"\u0394 \u2264 {st['allowed']:0.3g~P} / {st['window']:0.3g~P}"
+            limit = f"Δ ≤ {st['allowed']:0.3g~P} / {st['window']:0.3g~P}"
         else:
             limit = translate("not configured")
         rows.append(
@@ -217,7 +235,7 @@ def comparison_sentence(translate: Callable[[str], str], comparison: dict) -> st
     ref = comparison["table"].tags[0]
     return (
         f"{translate('Reference')}: {ref}. "
-        f"{translate('\u0394 vs reference')}: (x - ref) / ref, in %."
+        f"{translate('Δ vs reference')}: (x - ref) / ref, in %."
     )
 
 
@@ -441,6 +459,10 @@ class ReportGenerator:
                 verdict = performance_verdict(self._, test_data["verdict"], acceptance)
                 document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
+            if test_data.get(VISCOSITY_KEY):
+                document.add_paragraph(
+                    viscosity_sentence(self._, test_data[VISCOSITY_KEY]), style='Text_body'
+                )
             self._add_test_data(document, test_data.get("test_data", {}))
 
             # Adding  charts, if any.

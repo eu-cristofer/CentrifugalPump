@@ -278,6 +278,9 @@ class CorrectedCurve:
     before_after: tuple[dict, ...] = ()
     # Bench geometry the measured heads were derived with (for the report).
     geometry: Optional[BenchGeometry] = None
+    # HI 9.6.7 viscosity correction: {"B", "C_Q", "C_H", "C_eta"} (factors at the
+    # BEP), or ``None`` when the viscosity correction was not applied.
+    viscous: Optional[dict] = None
 
 
 # ---------------------------------------------------------------------------

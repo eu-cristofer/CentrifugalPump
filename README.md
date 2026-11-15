@@ -123,7 +123,7 @@ every use case (UC-01…UC-11), edition-aware acceptance, mechanical run, CI. 14
 
 Planned (v1.1+):
 
-1. Viscosity correction
+1. ~~Viscosity correction~~ — done (HI 9.6.7, sprint 9 of 001_masterpiece)
 2. Report export to PDF / HTML / JSON (UC-09 follow-on; `.docx` works today)
 3. Library gaps: pump selection, system curve, operating point, NPSH margin,
    impeller trim, multi-pump comparison (UC-01/03/04/05/07/08)

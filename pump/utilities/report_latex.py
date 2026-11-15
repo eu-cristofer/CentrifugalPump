@@ -40,6 +40,7 @@ from .report import (
     TEST_DATA_DESCRIPTION,
     TEST_SUMMARY_DESCRIPTION,
     TESTS_DEVELOPMENT_TEXT,
+    VISCOSITY_KEY,
     LocalizationHelper,
     comparison_sentence,
     comparison_table,
@@ -52,6 +53,7 @@ from .report import (
     performance_verdict,
     standard_sentence,
     unverified_sentence,
+    viscosity_sentence,
 )
 
 __all__ = ["LatexReportGenerator", "latex_escape", "find_latex_engine"]
@@ -91,7 +93,7 @@ _UNICODE = {
     "–": "--",
     "—": "---",
     "‑": "-",
-    "\u00a0": "~",  # no-break space (escape kept: a literal one is invisible)
+    " ": "~",  # no-break space (escape kept: a literal one is invisible)
 }
 
 
@@ -244,6 +246,10 @@ class LatexReportGenerator:
                     + "\n"
                 )
             out.append(self._summary(entry.get("test_summary") or {}, acceptance))
+            if entry.get(VISCOSITY_KEY):
+                out.append(
+                    latex_escape(viscosity_sentence(_, entry[VISCOSITY_KEY])) + "\n"
+                )
             out.append(self._test_table(entry.get("test_data") or {}))
             for key in [k for k in entry if "Curve" in k]:
                 out.append(self._figure(key, entry[key], pump_tag, fig_dir, fig_rel))

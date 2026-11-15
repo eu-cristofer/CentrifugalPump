@@ -18,6 +18,7 @@ Measured / corrected point              ``pump.TestPoint(fluid, capacity=, speed
 Collection of points                    ``pump.PerformanceCurve(fluid, points, polynomial_degree=3)``
 Affinity-law speed correction           ``PerformanceCurve.to_speed(Q_(N, "rpm"))``
 Density correction                      ``PerformanceCurve.to_fluid(rated_fluid)``
+Viscosity correction (HI 9.6.7)         ``PerformanceCurve.to_viscous(rated_fluid)``
 Polynomial fit + predictions            ``PerformanceCurve.fitter.*_coeffs`` / ``predict_*``
 Built-in matplotlib curve               ``PerformanceCurve.plot_performance_curve(...)``
 Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve, criteria=)``
@@ -57,6 +58,7 @@ from .numfmt import parse_decimal
 from .settings_codec import parse_standard_text
 from .signals import (
     RatedPoint,
+    FluidSpec,
     FluidSpec,
     BenchGeometry,
     TestPointSet,
@@ -251,6 +253,14 @@ def head_from_pressures(p_suction: Pressure, p_discharge: Pressure, density: Q_)
 # ---------------------------------------------------------------------------
 
 
+def _has_viscosity(fluid) -> bool:
+    """True when ``fluid`` carries a kinematic or dynamic viscosity."""
+    return any(
+        getattr(fluid, attr, None) is not None
+        for attr in ("kinematic_viscosity", "viscosity")
+    )
+
+
 def correct_curve(
     rated: RatedPoint,
     tps: TestPointSet,
@@ -259,6 +269,7 @@ def correct_curve(
     apply_density: bool = True,
     degree: int = 3,
     target_fluid: Optional[Fluid] = None,
+    apply_viscosity: bool = False,
 ) -> CorrectedCurve:
     """
     Build ``TestPoint``s from the raw rows, wrap them in a ``PerformanceCurve``,
@@ -268,6 +279,13 @@ def correct_curve(
     is wired in, the curve is corrected ``to_fluid`` *that* fluid instead of the
     rated fluid derived from ``rated`` (UC-00).  With it set, ``rated`` may be
     ``None`` (forced speed correction that still applies the density step).
+
+    The order is speed -> density -> viscosity.  With ``apply_viscosity`` (and a
+    target fluid carrying a viscosity) the fluid step uses
+    ``PerformanceCurve.to_viscous`` (HI 9.6.7) instead of ``to_fluid``; the
+    returned ``CorrectedCurve.viscous`` then holds ``{"B", "C_Q", "C_H",
+    "C_eta"}`` (factors at the BEP).  For ``B <= 1`` the corrected curve is
+    identical to the density-only result.
     """
     ok, msg = tps.is_valid()
     if not ok:
@@ -327,13 +345,23 @@ def correct_curve(
         except AttributeError as exc:
             raise BindingError(str(exc)) from exc
 
-    # 2) density / fluid correction to the rated fluid (or an override Fluid node)
+    # 2) density / fluid correction to the rated fluid (or an override Fluid node),
+    #    3) with the HI 9.6.7 viscosity correction folded into the fluid step
     fluid_used = test_fluid
+    viscous = None
     if apply_density:
         rated_fluid = (
             target_fluid if target_fluid is not None else make_rated_fluid(rated)
         )
-        curve = curve.to_fluid(rated_fluid)
+        if apply_viscosity and _has_viscosity(rated_fluid):
+            try:
+                curve = curve.to_viscous(rated_fluid)
+            except (ValueError, AttributeError) as exc:
+                raise BindingError(str(exc)) from exc
+            info = getattr(curve, "viscosity_correction", None)
+            viscous = dict(info) if info is not None else None
+        else:
+            curve = curve.to_fluid(rated_fluid)
         fluid_used = rated_fluid
 
     # after-correction values for the before/after table (capacity-sorted)
@@ -364,6 +392,7 @@ def correct_curve(
         target_speed=target,
         before_after=merged,
         geometry=tps.geometry,
+        viscous=viscous,
     )
 
 
@@ -893,6 +922,10 @@ def assemble_report_data(
     A branch whose test set carried bench geometry adds a
     ``"Test bench geometry (<pump_tag>)"`` line to the equipment description.
 
+    A branch whose corrected curve carries an HI 9.6.7 viscosity correction with
+    ``B > 1`` adds a ``"viscous"`` entry (``{"B", "C_Q", "C_H", "C_eta"}``) to its
+    fitted data.
+
     A branch with a mechanical-run result adds a ``"Mechanical Run"`` entry
     (``{"result", "plot"}``) under its tag.  A tag with *only* a mechanical run
     (no fitted curve) still gets an entry, which then lacks ``test_summary`` /
@@ -930,6 +963,9 @@ def assemble_report_data(
                 png = build_report_png(b.corrected, rated)
             if png is not None:
                 entry["Performance Curve"] = png
+            viscous = getattr(b.corrected, "viscous", None) if b.corrected else None
+            if viscous and viscous.get("B", 0.0) > 1.0:
+                entry["viscous"] = dict(viscous)
         mech = getattr(b, "mechanical", None)
         if mech is not None:
             entry["Mechanical Run"] = {"result": mech.result, "plot": mech.plot_png}
