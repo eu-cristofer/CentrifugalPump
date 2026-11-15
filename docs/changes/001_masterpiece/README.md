@@ -65,7 +65,7 @@ Each run MUST:
   Unblocked 2026-11-15. There is no free official worked example, so the equations (HI 9.6.7-2010 Eq. 2–7, secondary source) are validated by independent checks; see sprint-9.md.
 - [x] [Sprint 10 — UC-07 Impeller trim](sprint-10.md) — done 2026-11-15
 - [x] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md) — done 2026-11-15
-- [ ] [Sprint 12 — UC-01 Pump selection](sprint-12.md)
+- [x] [Sprint 12 — UC-01 Pump selection](sprint-12.md) — done 2026-11-15
 - [ ] [Sprint 13 — UC-10 Educational mode + worked notebooks](sprint-13.md)
 - [ ] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md)
 
@@ -176,3 +176,8 @@ Researched 2026-11-15. The main secondary source is the Amarinth technical bulle
 - S11: new **System Curve** and **Operating Point** nodes.
 - S11: ADR-0009 is accepted. `NaturalCubicSpline`, `r_squared` and `bisect_root` now live in `pump.fitting`, and `pumpflow.mathx` re-exports them. The spline is bit-identical (verified on 200 random datasets).
 - S11: overlaying the system curve on the Plot/Explorer was deferred. All projects are unchanged.
+- S12: **UC-01 pump selection**. `pump.catalogue` adds a `*.pumpcurve.json` format (value+unit) and ranks candidates for a duty: as-is, speed-adapted or trimmed by affinity.
+  - Ranking uses the preferred operating region (70–120 % BEP from a secondary source, unverified), then η at duty, then distance from BEP.
+  - Trims outside [d_min, d_max] are rejected with a reason.
+- S12: new **Selection** node; `examples/catalogue/` holds 3 curves built from the curated projects. For B-34004's duty it picks B-34004A at 127.1 mm, consistent with S10.
+- Fix (found by the S12 drafter): the S11 system-curve codec entry had been inserted into the wrong table, so its units were not saved. It now lives in `FIELDS`, with a regression test.

@@ -104,3 +104,20 @@ def test_dialogs_open(qapp, curve):
     for node in (sysnode, opnode):
         dlg = node.create_dialog(None, lambda: None)
         dlg.close()
+
+
+def test_system_curve_units_are_persisted():
+    """Regression: the system-curve codec entry must live in FIELDS (it was
+    misplaced in sprint 11, so units were silently dropped on save)."""
+    from pumpflow import settings_codec as codec
+
+    rt = {
+        "mode": "static_k",
+        "static": 10.0,
+        "static_unit": "ft",
+        "k": 0.001,
+        "exponent": 2.0,
+    }
+    v2 = codec.encode("system_curve", rt)
+    assert v2["static"] == {"value": 10.0, "unit": "ft"}
+    assert codec.decode("system_curve", v2) == rt

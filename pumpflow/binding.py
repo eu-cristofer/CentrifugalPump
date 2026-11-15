@@ -1258,3 +1258,133 @@ def solve_operating_point(
     return OperatingPointResult(
         pump_tag=fitted.pump_tag, point=point, system_name=spec.name
     )
+
+
+# ---------------------------------------------------------------------------
+# Pump selection  (UC-01, sprint 12)
+# ---------------------------------------------------------------------------
+from pump.catalogue import (  # noqa: E402
+    Candidate,
+    Catalogue,
+    CatalogueEntry,
+    SelectionResult,
+    save_entry,
+)
+
+
+def export_pumpcurve(fitted: FittedModel, rated: RatedPoint, path) -> str:
+    """Write a fitted curve as a catalogue file (``*.pumpcurve.json``).
+
+    The entry carries the fitted model's :class:`PerformanceCurve`, the speed of
+    its points (else the rated speed) and the rated point's datasheet impeller
+    diameters (nominal / minimum / maximum, when set).  ``path`` is a file path or
+    an existing folder (the file is then named after the pump tag).  Returns the
+    written path.
+    """
+    curve = fitted.curve
+    speed = (
+        getattr(curve.points[0], "speed_of_rotation", None) if curve.points else None
+    )
+    if speed is None:
+        speed = rated.speed
+    entry = CatalogueEntry(
+        name=str(fitted.pump_tag),
+        curve=curve,
+        speed=speed,
+        diameter=rated.impeller_diameter,
+        d_min=rated.impeller_diameter_min,
+        d_max=rated.impeller_diameter_max,
+    )
+    try:
+        return str(save_entry(entry, path))
+    except (OSError, ValueError) as exc:
+        raise BindingError(str(exc)) from exc
+
+
+def select_pumps(
+    folder,
+    duty_q: Q_,
+    duty_h: Q_,
+    fluid: Optional[Fluid] = None,
+    allow_speed: bool = True,
+    allow_trim: bool = True,
+    rated: Optional[RatedPoint] = None,
+):
+    """Rank the pumps of a catalogue folder for a duty.
+
+    Returns ``(catalogue, result)``: the loaded :class:`pump.catalogue.Catalogue`
+    (``load_errors`` lists unreadable files) and the ranked
+    :class:`pump.catalogue.SelectionResult` (a list of candidates; ``.reasons``
+    explains the refused ones).  The preferred-operating-region bounds come from
+    the criteria of ``rated`` when given, else the library default.
+    """
+    try:
+        catalogue = Catalogue.from_folder(folder)
+    except FileNotFoundError as exc:
+        raise BindingError(str(exc)) from exc
+    criteria = criteria_for(rated) if rated is not None else None
+    try:
+        result = catalogue.select(
+            duty_q,
+            duty_h,
+            fluid=fluid,
+            allow_speed=allow_speed,
+            allow_trim=allow_trim,
+            criteria=criteria,
+        )
+    except ValueError as exc:
+        raise BindingError(str(exc)) from exc
+    return catalogue, result
+
+
+def rated_from_candidate(
+    cand: Candidate,
+    duty_q: Q_,
+    duty_h: Q_,
+    template: Optional[RatedPoint] = None,
+) -> RatedPoint:
+    """A :class:`RatedPoint` for the duty served by ``cand`` ("send to canvas").
+
+    Speed is the adapted speed (speed candidates) else the entry's; the impeller
+    diameter is the trimmed one (trim candidates) else the entry's.  Power is the
+    curve's prediction at the duty, or ``ρ·g·Q·H / η`` when the curve has no
+    power data.  ``template`` supplies the service tag / standard / client.
+    """
+    fluid = cand.curve.fluid
+    eta = cand.eta_at_duty
+    power = cand.power_at_duty
+    if power is None:
+        frac = float(eta.to("percent").magnitude) / 100.0
+        if not frac > 0:
+            raise BindingError("Cannot derive the power: efficiency at duty <= 0.")
+        power = ((fluid.density * duty_q * G * duty_h).to("kW")) / frac
+    speed = cand.value if cand.adaptation == "speed" else cand.entry.speed
+    d_imp = cand.value if cand.adaptation == "trim" else cand.entry.diameter
+    try:
+        shutoff = cand.curve.predict_head(Q_(0.0, "m**3/h"))
+    except Exception:
+        shutoff = None
+    kwargs = {}
+    if template is not None:
+        kwargs = {
+            "standard": template.standard,
+            "standard_key": template.standard_key,
+            "client": template.client,
+        }
+    return RatedPoint(
+        tag=template.tag if template is not None else cand.entry.name,
+        standard=kwargs.pop("standard", "API610 / ISO 13709"),
+        q=duty_q,
+        head=duty_h,
+        speed=speed,
+        power=power,
+        efficiency=eta,
+        head_shutoff=shutoff,
+        density=fluid.density,
+        fluid_name=fluid.name,
+        service=f"Selected: {cand.label}",
+        impeller_diameter=d_imp,
+        impeller_diameter_max=cand.entry.d_max,
+        impeller_diameter_min=cand.entry.d_min,
+        **kwargs,
+    )

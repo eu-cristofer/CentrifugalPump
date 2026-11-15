@@ -41,13 +41,13 @@ import tomllib
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional
 
 from .mechanical_run import MechanicalRunCriteria
 from .npsh import NPSHCriteria
 from .utilities.unit_conversion import Q_
 
-__all__ = ["AcceptanceCriteria", "deviation"]
+__all__ = ["AcceptanceCriteria", "SelectionCriteria", "deviation"]
 
 _STD_DIR = Path(__file__).parent / "standards"
 _CLIENT_DIR = _STD_DIR / "clients"
@@ -68,6 +68,9 @@ _MR_PART = "mechanical running test limits"
 # The ``npsh`` sub-table is merged key by key as well.
 _NPSH_PART_UNCONFIGURED = "NPSH margin rule (not configured)"
 _NPSH_PART = "NPSH margin rule"
+
+# The ``selection`` sub-table (preferred operating region) is merged key by key too.
+_SELECTION_PART = "preferred operating region (pump selection)"
 
 _DEFAULT_KEY = "api610:12"
 
@@ -131,6 +134,57 @@ def _band_for(bands: tuple, rated_head) -> tuple:
 
 
 @dataclass(frozen=True)
+class SelectionCriteria:
+    """
+    Preferred operating region (POR) used by pump selection (UC-01).
+
+    Attributes
+    ----------
+    por_min, por_max : float or None
+        POR bounds as fractions of the best-efficiency flow (``Q / Q_BEP``).
+        ``None`` = not configured (no POR constraint).
+    source : str
+        Provenance of the bounds.
+    verified : bool
+        True only when checked against the standard text.
+
+    Examples
+    --------
+    >>> SelectionCriteria().configured
+    False
+    >>> SelectionCriteria.from_table({"por_min": 0.7, "por_max": 1.2}).configured
+    True
+    """
+
+    por_min: Optional[float] = None
+    por_max: Optional[float] = None
+    source: str = "not configured"
+    verified: bool = False
+
+    @property
+    def configured(self) -> bool:
+        """True when both bounds are set."""
+        return self.por_min is not None and self.por_max is not None
+
+    @classmethod
+    def from_table(cls, table: Optional[Mapping]) -> "SelectionCriteria":
+        """Build from a TOML ``selection`` table (missing bounds stay ``None``)."""
+        table = table or {}
+        por_min = table.get("por_min")
+        por_max = table.get("por_max")
+        por_min = float(por_min) if por_min is not None else None
+        por_max = float(por_max) if por_max is not None else None
+        if por_min is not None and por_max is not None and not por_min < por_max:
+            raise ValueError("selection: por_min must be smaller than por_max.")
+        return cls(
+            por_min=por_min,
+            por_max=por_max,
+            source=str(table.get("source", "not configured")),
+            verified=bool(table.get("verified", False)),
+        )
+
+
+@dataclass(frozen=True)
 class AcceptanceCriteria:
     """
     Tolerance tables for one standard edition, optionally overlaid by a client.
@@ -162,6 +216,8 @@ class AcceptanceCriteria:
         Mechanical running test limits (minimum duration, vibration limits).
     npsh : NPSHCriteria
         NPSH margin rule (shipped *not configured*: no limits).
+    selection : SelectionCriteria
+        Preferred operating region used by pump selection (unverified seed).
     """
 
     key: str
@@ -179,6 +235,7 @@ class AcceptanceCriteria:
     unverified: tuple
     mechanical_run: MechanicalRunCriteria = field(default_factory=MechanicalRunCriteria)
     npsh: NPSHCriteria = field(default_factory=NPSHCriteria)
+    selection: SelectionCriteria = field(default_factory=SelectionCriteria)
 
     # ------------------------------------------------------------ discovery
     @staticmethod
@@ -225,12 +282,14 @@ class AcceptanceCriteria:
         merged = {k: base[k] for k in _PARTS if k in base}
         mr_table = dict(base["mechanical_run"]) if "mechanical_run" in base else None
         npsh_table = dict(base["npsh"]) if "npsh" in base else None
+        sel_table = dict(base["selection"]) if "selection" in base else None
         verified = bool(base.get("verified", False))
         source = base.get("source", "")
         client_label = None
         overlay_unverified = None
         mr_overridden = False
         npsh_overridden = False
+        sel_overridden = False
 
         if client:
             overlays = _client_overlays()
@@ -251,6 +310,9 @@ class AcceptanceCriteria:
             if "npsh" in overlay:
                 npsh_table = {**(npsh_table or {}), **overlay["npsh"]}
                 npsh_overridden = overlay_verified
+            if "selection" in overlay:
+                sel_table = {**(sel_table or {}), **overlay["selection"]}
+                sel_overridden = overlay_verified
             verified = verified and overlay_verified
             if overlay.get("source"):
                 source = f"{source} | {client_label}: {overlay['source']}"
@@ -285,6 +347,10 @@ class AcceptanceCriteria:
             unverified.append(
                 _NPSH_PART if npsh_criteria.configured else _NPSH_PART_UNCONFIGURED
             )
+        if sel_table is not None and not (
+            sel_overridden or sel_table.get("verified", False)
+        ):
+            unverified.append(_SELECTION_PART)
         if overlay_unverified:
             unverified.append(overlay_unverified)
 
@@ -310,6 +376,11 @@ class AcceptanceCriteria:
                 else MechanicalRunCriteria()
             ),
             npsh=npsh_criteria,
+            selection=(
+                SelectionCriteria.from_table(sel_table)
+                if sel_table is not None
+                else SelectionCriteria()
+            ),
         )
 
     @classmethod

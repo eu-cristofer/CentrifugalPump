@@ -121,11 +121,22 @@
 - **Pinned by:** `tests/test_system_curve.py`, `tests/test_operating_point.py`.
 - **Not yet:** overlay of the system curve on the Performance Plot / Explorer.
 
+### UC-01 — Select a pump for given conditions ✅
+- **Input:** duty Q/H (any units) and a catalogue folder of `*.pumpcurve.json`
+  curves (exported from fitted test curves).
+- **Output:** ranked candidates, each as-is / speed-adapted / trimmed (affinity),
+  with η at duty, Q/Q_BEP, preferred-operating-region flag (70–120 % BEP,
+  secondary source, unverified) and trim margin; rejected entries with reasons.
+- **Supported by:** `pump.catalogue`, `pump.trim.affinity_intersection`,
+  `selection` node, `examples/catalogue/` (built by `build_catalogue.py`).
+- **Example:** for 9.8 m³/h at 333.8 m it selects B-34004A trimmed to 127.1 mm
+  or slowed to 10 140 rpm (Q/Q_BEP 0.96, in POR).
+- **Pinned by:** `tests/test_selection.py`, `tests/test_selection_gui.py`.
+
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
 | UC | Title | Why deferred |
 |----|-------|--------------|
-| UC-01 | Select a pump for given conditions | No pump catalogue in the library. |
 
 ## Out of scope
 

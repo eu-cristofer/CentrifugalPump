@@ -19,6 +19,7 @@ Submodules
 - fitting: Natural cubic spline, R² and bracketed bisection.
 - system_curve: System resistance curves (static + k·Q^n, pipe Darcy-Weisbach).
 - operating_point: Pump curve / system curve intersection.
+- catalogue: Pump catalogue (``*.pumpcurve.json``) and duty-based selection.
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
@@ -41,6 +42,7 @@ from . import (
     fitting,
     system_curve,
     operating_point,
+    catalogue,
 )
 from .utilities import *
 from .constants import *
@@ -55,12 +57,14 @@ from .trim import *
 from .fitting import *
 from .system_curve import *
 from .operating_point import OperatingPoint
+from .catalogue import Catalogue, CatalogueEntry, Candidate
 
 __all__ = list(
     set(utilities.__all__) |
     set(constants.__all__) |
     {"constants", "quantity_io", "acceptance", "mechanical_run", "npsh", "compare", "viscosity", "trim",
-     "fitting", "system_curve", "operating_point", "OperatingPoint"} |
+     "fitting", "system_curve", "operating_point", "OperatingPoint",
+     "catalogue", "Catalogue", "CatalogueEntry", "Candidate"} |
     set(point.__all__) |
     set(mechanical_run.__all__) |
     set(npsh.__all__) |

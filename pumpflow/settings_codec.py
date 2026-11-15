@@ -393,16 +393,6 @@ ROLE_DIMENSIONS: Dict[str, str] = {
     "flow": "capacity",
     "differential_pressure": "pressure",
     "power": "power",
-    "system_curve": (
-        Disp("static", "head", "static_unit"),
-        Disp("q1", "capacity", "q1_unit"),
-        Disp("h1", "head", "h1_unit"),
-        Disp("q2", "capacity", "q2_unit"),
-        Disp("h2", "head", "h2_unit"),
-        Disp("length", "length", "length_unit"),
-        Disp("diameter", "length", "diameter_unit"),
-        Disp("roughness", "length", "roughness_unit"),
-    ),
 }
 
 #: Duration display label -> Pint unit string.
@@ -608,6 +598,11 @@ FIELDS: Dict[str, tuple] = {
     ),
     "correction": (Disp("target_speed", "speed", "target_speed_unit"),),
     "trim": (Disp("d_target", "length", "d_target_unit"),),
+    # Pump selection (sprint 12): the duty point of the catalogue search.
+    "selection": (
+        Disp("duty_q", "capacity", "duty_q_unit"),
+        Disp("duty_h", "head", "duty_h_unit"),
+    ),
     "performance_plot": (
         YLimDisp("head_ylim", "head", "head_ylim_unit"),
         YLimDisp("power_ylim", "power", "power_ylim_unit"),
@@ -631,6 +626,16 @@ FIELDS: Dict[str, tuple] = {
         Disp("calc_temp", "temperature", "calc_temp_unit"),
         OptDisp("calc_id", "length", "calc_id_unit"),
         Disp("calc_z", "length", "calc_z_unit"),
+    ),
+    "system_curve": (
+        Disp("static", "head", "static_unit"),
+        Disp("q1", "capacity", "q1_unit"),
+        Disp("h1", "head", "h1_unit"),
+        Disp("q2", "capacity", "q2_unit"),
+        Disp("h2", "head", "h2_unit"),
+        Disp("length", "length", "length_unit"),
+        Disp("diameter", "length", "diameter_unit"),
+        Disp("roughness", "length", "roughness_unit"),
     ),
 }
 

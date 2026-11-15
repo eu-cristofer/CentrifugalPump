@@ -24,6 +24,7 @@ from .performance_plot import PerformancePlotNode
 from .point import PointNode
 from .rated_point import RatedPointInputNode
 from .report_export import ReportExportNode
+from .selection import SelectionNode
 from .system_curve import SystemCurveNode
 from .test_points import TestPointsTableNode
 from .trim import TrimNode
@@ -40,6 +41,7 @@ _CLASSES: List[Type[BaseNode]] = [
     ExploreChartNode,
     SystemCurveNode,
     OperatingPointNode,
+    SelectionNode,
     ComplianceCheckNode,
     MechanicalRunNode,
     NPSHNode,

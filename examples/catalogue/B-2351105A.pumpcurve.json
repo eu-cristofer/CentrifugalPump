@@ -1,0 +1,130 @@
+{
+  "format": "pumpcurve",
+  "version": 1,
+  "name": "B-2351105A",
+  "speed": {
+    "value": 1750.0,
+    "unit": "rpm"
+  },
+  "diameter": null,
+  "d_min": null,
+  "d_max": null,
+  "polynomial_degree": 3,
+  "fluid": {
+    "name": "Rated fluid",
+    "density": {
+      "value": 736.0,
+      "unit": "kg/m**3"
+    }
+  },
+  "points": [
+    {
+      "q": {
+        "value": 291.8287937743191,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 104.12265446582244,
+        "unit": "m"
+      },
+      "power": {
+        "value": 168.96726151692334,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 36.05510752688171,
+        "unit": "percent"
+      }
+    },
+    {
+      "q": {
+        "value": 486.1111111111111,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 94.6046848926461,
+        "unit": "m"
+      },
+      "power": {
+        "value": 183.64986925757864,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 50.20576131687243,
+        "unit": "percent"
+      }
+    },
+    {
+      "q": {
+        "value": 681.3125695216908,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 83.42128099059792,
+        "unit": "m"
+      },
+      "power": {
+        "value": 196.4821173532092,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 57.9957561728395,
+        "unit": "percent"
+      }
+    },
+    {
+      "q": {
+        "value": 834.9124513618676,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 74.33117836757559,
+        "unit": "m"
+      },
+      "power": {
+        "value": 203.50335218745903,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 61.14154055673683,
+        "unit": "percent"
+      }
+    },
+    {
+      "q": {
+        "value": 971.682398667407,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 58.59818708780468,
+        "unit": "m"
+      },
+      "power": {
+        "value": 209.21959045879774,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 54.56349206349205,
+        "unit": "percent"
+      }
+    },
+    {
+      "q": {
+        "value": 1069.4444444444443,
+        "unit": "m**3/h"
+      },
+      "head": {
+        "value": 45.36372185426064,
+        "unit": "m"
+      },
+      "power": {
+        "value": 212.21762669764644,
+        "unit": "kW"
+      },
+      "efficiency": {
+        "value": 45.83333333333334,
+        "unit": "percent"
+      }
+    }
+  ]
+}

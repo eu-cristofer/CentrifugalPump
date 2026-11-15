@@ -9,6 +9,10 @@
 # The [editions."N".npsh] tables are NOT-CONFIGURED placeholders: min_ratio and
 # min_margin are deliberately omitted so no NPSH margin verdict is ever issued
 # from an invented number.  Enter the client/API margin rule to activate it.
+#
+# The [editions."N".selection] tables hold the preferred operating region (POR) used
+# by pump selection, as fractions of the best-efficiency flow.  The 70-120 % band is
+# the value quoted by secondary sources, NOT checked against the standard text.
 
 standard = "api610"
 title = "API 610 / ISO 13709"
@@ -49,6 +53,12 @@ max = "3.0 mm/s"
 source = "not configured — enter the client/API margin rule"
 verified = false
 
+[editions."8".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 preferred operating region 70–120 % of BEP flow per secondary sources (inspection-for-industry.com; Amarinth white paper) — not checked against the standard text"
+verified = false
+
 [editions."10"]
 label = "API 610 10th edition"
 source = "head bands: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th' (10th: 0-150 m +5/-2 %, 151-300 m +3/-2 %, >300 m +/-2 %); shut-off 10/8/5 % and power +4 %: pre-S5 seeds corroborated by secondary sources; efficiency -3 %: seed. Not checked against the standard text."
@@ -85,6 +95,12 @@ max = "3.0 mm/s"
 source = "not configured — enter the client/API margin rule"
 verified = false
 
+[editions."10".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 preferred operating region 70–120 % of BEP flow per secondary sources (inspection-for-industry.com; Amarinth white paper) — not checked against the standard text"
+verified = false
+
 [editions."11"]
 label = "API 610 11th edition"
 source = "head +/-3 % all bands: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th'; shut-off 0-75/75-300/>300 m +/-10/8/5 % and power +4 %: corroborated by an API 610 11th-ed. test verifier and inspection lecture notes; efficiency -3 %: seed. Not checked against the standard text."
@@ -119,6 +135,12 @@ max = "3.0 mm/s"
 source = "not configured — enter the client/API margin rule"
 verified = false
 
+[editions."11".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 preferred operating region 70–120 % of BEP flow per secondary sources (inspection-for-industry.com; Amarinth white paper) — not checked against the standard text"
+verified = false
+
 [editions."12"]
 label = "API 610 12th edition"
 source = "seed: pre-S5 code defaults — confirm against API 610 12th edition performance tolerance table"
@@ -151,4 +173,10 @@ max = "3.0 mm/s"
 
 [editions."12".npsh]
 source = "not configured — enter the client/API margin rule"
+verified = false
+
+[editions."12".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 preferred operating region 70–120 % of BEP flow per secondary sources (inspection-for-industry.com; Amarinth white paper) — not checked against the standard text"
 verified = false
