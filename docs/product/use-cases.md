@@ -111,13 +111,21 @@
   125–131 mm) to hit its rated duty.
 - **Pinned by:** `tests/test_trim.py`, `tests/test_trim_gui.py`.
 
+### UC-03 / UC-04 — System curve and operating point ✅
+- **System curve:** static + k·Qⁿ (from k, or two points) or full Darcy–Weisbach
+  pipe friction (Swamee–Jain), any units.
+- **Operating point:** intersection with the fitted pump curve (polynomial or
+  spline) by bracketed bisection; flagged when outside the tested range.
+- **Supported by:** `pump.system_curve`, `pump.operating_point`, `pump.fitting`
+  (ADR-0009), `system_curve` / `operating_point` nodes.
+- **Pinned by:** `tests/test_system_curve.py`, `tests/test_operating_point.py`.
+- **Not yet:** overlay of the system curve on the Performance Plot / Explorer.
+
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
 | UC | Title | Why deferred |
 |----|-------|--------------|
 | UC-01 | Select a pump for given conditions | No pump catalogue in the library. |
-| UC-03 | Analyse system curve | No system-curve module. |
-| UC-04 | Find operating point | Blocked by UC-03. |
 
 ## Out of scope
 

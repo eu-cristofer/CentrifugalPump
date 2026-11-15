@@ -19,10 +19,12 @@ from .fluid import FluidNode
 from .markdown_note import MarkdownNoteNode
 from .mechanical_run import MechanicalRunNode
 from .npsh import NPSHNode
+from .operating_point import OperatingPointNode
 from .performance_plot import PerformancePlotNode
 from .point import PointNode
 from .rated_point import RatedPointInputNode
 from .report_export import ReportExportNode
+from .system_curve import SystemCurveNode
 from .test_points import TestPointsTableNode
 from .trim import TrimNode
 
@@ -36,6 +38,8 @@ _CLASSES: List[Type[BaseNode]] = [
     CurveFitNode,
     PerformancePlotNode,
     ExploreChartNode,
+    SystemCurveNode,
+    OperatingPointNode,
     ComplianceCheckNode,
     MechanicalRunNode,
     NPSHNode,

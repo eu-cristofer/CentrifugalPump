@@ -393,6 +393,16 @@ ROLE_DIMENSIONS: Dict[str, str] = {
     "flow": "capacity",
     "differential_pressure": "pressure",
     "power": "power",
+    "system_curve": (
+        Disp("static", "head", "static_unit"),
+        Disp("q1", "capacity", "q1_unit"),
+        Disp("h1", "head", "h1_unit"),
+        Disp("q2", "capacity", "q2_unit"),
+        Disp("h2", "head", "h2_unit"),
+        Disp("length", "length", "length_unit"),
+        Disp("diameter", "length", "diameter_unit"),
+        Disp("roughness", "length", "roughness_unit"),
+    ),
 }
 
 #: Duration display label -> Pint unit string.

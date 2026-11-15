@@ -16,6 +16,9 @@ Submodules
 - compare: Side-by-side comparison of several performance curves.
 - viscosity: HI 9.6.7 viscosity correction parameter and factors.
 - trim: Impeller trim (diameter affinity) helpers.
+- fitting: Natural cubic spline, R² and bracketed bisection.
+- system_curve: System resistance curves (static + k·Q^n, pipe Darcy-Weisbach).
+- operating_point: Pump curve / system curve intersection.
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
@@ -35,6 +38,9 @@ from . import (
     performance_curve,
     compare,
     trim,
+    fitting,
+    system_curve,
+    operating_point,
 )
 from .utilities import *
 from .constants import *
@@ -46,11 +52,15 @@ from .viscosity import *
 from .performance_curve import *
 from .compare import *
 from .trim import *
+from .fitting import *
+from .system_curve import *
+from .operating_point import OperatingPoint
 
 __all__ = list(
     set(utilities.__all__) |
     set(constants.__all__) |
-    {"constants", "quantity_io", "acceptance", "mechanical_run", "npsh", "compare", "viscosity", "trim"} |
+    {"constants", "quantity_io", "acceptance", "mechanical_run", "npsh", "compare", "viscosity", "trim",
+     "fitting", "system_curve", "operating_point", "OperatingPoint"} |
     set(point.__all__) |
     set(mechanical_run.__all__) |
     set(npsh.__all__) |
@@ -58,5 +68,7 @@ __all__ = list(
     set(viscosity.__all__) |
     set(performance_curve.__all__) |
     set(compare.__all__) |
-    set(trim.__all__)
+    set(trim.__all__) |
+    set(fitting.__all__) |
+    set(system_curve.__all__)
 )

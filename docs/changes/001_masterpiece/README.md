@@ -64,7 +64,7 @@ Each run MUST:
 - [x] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md) — done 2026-11-15
   Unblocked 2026-11-15. There is no free official worked example, so the equations (HI 9.6.7-2010 Eq. 2–7, secondary source) are validated by independent checks; see sprint-9.md.
 - [x] [Sprint 10 — UC-07 Impeller trim](sprint-10.md) — done 2026-11-15
-- [ ] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md)
+- [x] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md) — done 2026-11-15
 - [ ] [Sprint 12 — UC-01 Pump selection](sprint-12.md)
 - [ ] [Sprint 13 — UC-10 Educational mode + worked notebooks](sprint-13.md)
 - [ ] [Sprint 14 — Masterpiece polish: report, CI, docs](sprint-14.md)
@@ -172,3 +172,7 @@ Researched 2026-11-15. The main secondary source is the Amarinth technical bulle
 - S10: **UC-07 impeller trim**. `PerformanceCurve.to_diameter` uses diameter affinity and warns beyond 5 % trim; `pump.trim.diameter_for_duty` intersects the affinity parabola with the head fit (numpy only).
   - The Rated Point gains impeller nominal/min/max diameters, and there is a new **Trim** node (target diameter, or solve for rated duty).
   - B-34004A carries the datasheet diameters (128 / 125 / 131 mm). It needs **D = 127.1 mm (−0.7 %)** to hit its rated point exactly.
+- S11: **UC-03/UC-04**. `pump.system_curve` provides static + k·Qⁿ (from k or two points) and Darcy–Weisbach pipe friction (Swamee–Jain); `pump.operating_point` intersects it with the pump curve (poly or spline) and flags extrapolation.
+- S11: new **System Curve** and **Operating Point** nodes.
+- S11: ADR-0009 is accepted. `NaturalCubicSpline`, `r_squared` and `bisect_root` now live in `pump.fitting`, and `pumpflow.mathx` re-exports them. The spline is bit-identical (verified on 200 random datasets).
+- S11: overlaying the system curve on the Plot/Explorer was deferred. All projects are unchanged.

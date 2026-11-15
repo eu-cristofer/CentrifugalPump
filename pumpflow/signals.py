@@ -406,6 +406,32 @@ class NPSHResultSignal:
 
 
 # ---------------------------------------------------------------------------
+# 5d. System curve + operating point  (sprint 11 / UC-03, UC-04)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SystemCurveSpec:
+    """A named system resistance curve, produced by the System Curve node.
+
+    ``curve`` is a ``pump.SystemCurve`` or ``pump.PipeSystemCurve`` (anything
+    with ``head(q) -> Q_``).
+    """
+
+    name: str
+    curve: Any  # pump.SystemCurve | pump.PipeSystemCurve
+
+
+@dataclass(frozen=True)
+class OperatingPointResult:
+    """Intersection of a fitted pump curve with a system curve."""
+
+    pump_tag: str
+    point: Any  # pump.OperatingPoint
+    system_name: str = ""
+
+
+# ---------------------------------------------------------------------------
 # 6. ReportBundle — assembled inside Report Export (UI_SPEC §5.7 / §3)
 # ---------------------------------------------------------------------------
 

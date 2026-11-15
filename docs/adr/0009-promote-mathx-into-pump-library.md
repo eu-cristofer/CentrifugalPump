@@ -1,6 +1,6 @@
 # ADR 0009 — Promote `mathx` into the `pump` library
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Criticality:** 🟢 Low (numerical-fidelity risk: Medium)
 - **Date:** 2026-06-05
 - **Related:** [Architecture §4.9](../ARCHITECTURE.md#4-coupling-dependencies--risk-spots)

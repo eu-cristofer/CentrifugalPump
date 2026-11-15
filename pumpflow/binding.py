@@ -1177,3 +1177,84 @@ def export_reports(
         except Exception as exc:  # collected, reported by the caller
             errors[fmt] = f"{type(exc).__name__}: {exc}"
     return paths, errors
+
+
+# ---------------------------------------------------------------------------
+# System curve + operating point  (UC-03 / UC-04, sprint 11)
+# ---------------------------------------------------------------------------
+from pump import SystemCurve  # noqa: E402  (kept beside its only users)
+from pump.operating_point import operating_point  # noqa: E402
+
+from .signals import OperatingPointResult, SystemCurveSpec  # noqa: E402
+
+SYSTEM_CURVE_MODES = ("static_k", "two_points", "pipe")
+
+
+def make_system_curve(
+    mode: str,
+    *,
+    name: str = "System",
+    static_head: Optional[Q_] = None,
+    k: Optional[Q_] = None,
+    exponent: float = 2.0,
+    points=None,
+    length: Optional[Q_] = None,
+    diameter: Optional[Q_] = None,
+    roughness: Optional[Q_] = None,
+    minor_k_sum: float = 0.0,
+    fluid_spec: Optional[FluidSpec] = None,
+    q_ref: Optional[Q_] = None,
+) -> SystemCurveSpec:
+    """Build a :class:`SystemCurveSpec` from node-level quantities.
+
+    ``mode`` is ``"static_k"`` (needs ``static_head``, ``k``), ``"two_points"``
+    (needs ``points = ((q1, h1), (q2, h2))``) or ``"pipe"`` (needs
+    ``static_head``, ``length``, ``diameter``, ``roughness``; the fluid is
+    ``fluid_spec`` or water at 20 °C).
+    """
+    try:
+        if mode == "static_k":
+            curve = SystemCurve(static_head, k, exponent)
+        elif mode == "two_points":
+            p1, p2 = points
+            curve = SystemCurve.from_points(p1, p2, exponent)
+        elif mode == "pipe":
+            fluid = (
+                make_fluid(fluid_spec)
+                if fluid_spec is not None
+                else Water(Q_(20.0, "degC"))
+            )
+            curve = SystemCurve.from_pipe(
+                static_head,
+                length,
+                diameter,
+                roughness,
+                fluid,
+                minor_k_sum=minor_k_sum,
+                q_ref=q_ref,
+            )
+        else:
+            raise BindingError(f"Unknown system-curve mode: {mode!r}")
+    except BindingError:
+        raise
+    except (ValueError, TypeError) as exc:
+        raise BindingError(str(exc)) from exc
+    return SystemCurveSpec(name=(name or "System").strip() or "System", curve=curve)
+
+
+def solve_operating_point(
+    fitted: FittedModel,
+    spec: SystemCurveSpec,
+    method: str = "poly",
+    q_max_factor: float = 1.5,
+) -> OperatingPointResult:
+    """Operating point of a fitted pump curve on a system curve."""
+    try:
+        point = operating_point(
+            fitted.curve, spec.curve, method=method, q_max_factor=q_max_factor
+        )
+    except ValueError as exc:
+        raise BindingError(str(exc)) from exc
+    return OperatingPointResult(
+        pump_tag=fitted.pump_tag, point=point, system_name=spec.name
+    )
