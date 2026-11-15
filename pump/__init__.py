@@ -15,6 +15,7 @@ Submodules
 - npsh: NPSH available / NPSH3 / NPSHr curve / margin check.
 - compare: Side-by-side comparison of several performance curves.
 - viscosity: HI 9.6.7 viscosity correction parameter and factors.
+- trim: Impeller trim (diameter affinity) helpers.
 """
 
 __author__ = "Cristofer Antoni Souza Costa"
@@ -33,6 +34,7 @@ from . import (
     viscosity,
     performance_curve,
     compare,
+    trim,
 )
 from .utilities import *
 from .constants import *
@@ -43,16 +45,18 @@ from .acceptance import *
 from .viscosity import *
 from .performance_curve import *
 from .compare import *
+from .trim import *
 
 __all__ = list(
     set(utilities.__all__) |
     set(constants.__all__) |
-    {"constants", "quantity_io", "acceptance", "mechanical_run", "npsh", "compare", "viscosity"} |
+    {"constants", "quantity_io", "acceptance", "mechanical_run", "npsh", "compare", "viscosity", "trim"} |
     set(point.__all__) |
     set(mechanical_run.__all__) |
     set(npsh.__all__) |
     set(acceptance.__all__) |
     set(viscosity.__all__) |
     set(performance_curve.__all__) |
-    set(compare.__all__)
+    set(compare.__all__) |
+    set(trim.__all__)
 )

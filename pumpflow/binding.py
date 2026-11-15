@@ -19,6 +19,7 @@ Collection of points                    ``pump.PerformanceCurve(fluid, points, p
 Affinity-law speed correction           ``PerformanceCurve.to_speed(Q_(N, "rpm"))``
 Density correction                      ``PerformanceCurve.to_fluid(rated_fluid)``
 Viscosity correction (HI 9.6.7)         ``PerformanceCurve.to_viscous(rated_fluid)``
+Impeller trim (diameter affinity)       ``PerformanceCurve.to_diameter(d_new, d_ref)`` / ``pump.trim.diameter_for_duty``
 Polynomial fit + predictions            ``PerformanceCurve.fitter.*_coeffs`` / ``predict_*``
 Built-in matplotlib curve               ``PerformanceCurve.plot_performance_curve(...)``
 Tolerances & verdict tables             ``pump.PerformanceChecker(design_point, curve, criteria=)``
@@ -402,6 +403,84 @@ def _has_eff(point) -> bool:
         return True
     except Exception:
         return False
+
+
+# ---------------------------------------------------------------------------
+# Impeller trim  (sprint 10 / UC-07)
+# ---------------------------------------------------------------------------
+
+
+def _trim_row(point) -> dict:
+    """Display row (m³/h, m, kW, %) of one curve point."""
+    return {
+        "q": float(point.capacity.to("m**3/h").magnitude),
+        "head": float(point.head.to("m").magnitude),
+        "power": (
+            float(point.breaking_power.to("kW").magnitude)
+            if hasattr(point, "breaking_power")
+            else None
+        ),
+        "eff": (
+            float(point.efficiency.to("percent").magnitude) if _has_eff(point) else None
+        ),
+    }
+
+
+def trim_curve(
+    source,
+    d_new: Q_,
+    d_ref: Q_,
+    max_trim: float = 0.05,
+) -> CorrectedCurve:
+    """Impeller-trim a corrected curve or fitted model (``PerformanceCurve.to_diameter``).
+
+    ``source`` is a ``CorrectedCurve`` or a ``FittedModel`` (anything with a
+    ``curve`` and ``pump_tag``).  Pure diameter affinity (Q ∝ D, H ∝ D²,
+    P ∝ D³, η unchanged); the library warns beyond ``max_trim``.  The result is a
+    ``CorrectedCurve`` tagged ``"<pump_tag>@D=<d> mm"``.
+    """
+    base = source.curve
+    try:
+        trimmed = base.to_diameter(d_new, d_ref, max_trim=max_trim)
+    except (ValueError, AttributeError) as exc:
+        raise BindingError(str(exc)) from exc
+
+    speed = getattr(source, "target_speed", None)
+    if speed is None:
+        speed = getattr(base.points[0], "speed_of_rotation", None)
+    if speed is None:
+        speed = Q_(0.0, "rpm")
+    pairs = tuple(
+        {"measured": _trim_row(a), "corrected": _trim_row(b)}
+        for a, b in zip(base.points, trimmed.points)
+    )
+    d_mm = float(d_new.to("mm").magnitude)
+    return CorrectedCurve(
+        pump_tag=f"{source.pump_tag}@D={d_mm:.1f} mm",
+        curve=trimmed,
+        fluid=getattr(source, "fluid", None) or base.fluid,
+        target_speed=speed,
+        before_after=pairs,
+        geometry=getattr(source, "geometry", None),
+        viscous=getattr(source, "viscous", None),
+    )
+
+
+def diameter_for_rated(source, rated: RatedPoint) -> Q_:
+    """Diameter at which the curve passes through the rated duty (affinity parabola).
+
+    Thin adapter over ``pump.trim.diameter_for_duty`` using the rated Q, H and the
+    rated point's nominal impeller diameter as the reference.
+    """
+    from pump.trim import diameter_for_duty
+
+    d_ref = getattr(rated, "impeller_diameter", None)
+    if d_ref is None:
+        raise BindingError("The rated point has no impeller diameter (reference).")
+    try:
+        return diameter_for_duty(source.curve, rated.q, rated.head, d_ref)
+    except ValueError as exc:
+        raise BindingError(str(exc)) from exc
 
 
 # ---------------------------------------------------------------------------

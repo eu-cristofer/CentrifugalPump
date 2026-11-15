@@ -16,6 +16,10 @@ A fresh node opens in whatever display units the active project preset selects.
 The acceptance criteria are chosen with the "Standard / edition" and "Client
 overlay" combos (``standard_key`` / ``client``); when those settings are absent
 (older projects) they are derived from the free-text ``standard`` label.
+
+The optional datasheet impeller diameters (nominal / maximum / minimum, settings
+``d_imp`` / ``d_max`` / ``d_min`` + ``*_unit``) are lengths; ``None`` (shown as 0
+in the dialog) means unset and the signal then carries ``None``.
 """
 
 from __future__ import annotations
@@ -72,6 +76,7 @@ class RatedPointInputNode(BaseNode):
         eu = p.default_unit("efficiency")
         hsu = p.default_unit("head")
         npu = p.default_unit("npsh")
+        lu = p.default_unit("length")
         return {
             "tag": "B-2351105",
             "service": "",
@@ -97,6 +102,13 @@ class RatedPointInputNode(BaseNode):
             "parallel": False,
             "fluid_name": "Rated fluid",
             "fluid_choice": "",  # ""=first wired (default), "__default__"=Custom, or a name
+            # Optional datasheet impeller diameters (None = unset).
+            "d_imp": None,
+            "d_imp_unit": lu,
+            "d_max": None,
+            "d_max_unit": lu,
+            "d_min": None,
+            "d_min_unit": lu,
         }
 
     # -- payload -----------------------------------------------------------
@@ -166,6 +178,9 @@ class RatedPointInputNode(BaseNode):
             fluid_name=fluid_name,
             standard_key=standard_key,
             client=client or None,
+            impeller_diameter=_length_opt(s, "d_imp"),
+            impeller_diameter_max=_length_opt(s, "d_max"),
+            impeller_diameter_min=_length_opt(s, "d_min"),
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -268,6 +283,19 @@ class RatedPointInputNode(BaseNode):
             step=0.1,
             decimals=3,
         )
+        # Optional datasheet impeller diameters: 0 means "not set".
+        d_fields = {
+            key: ui.UnitField(
+                "length",
+                s.get(key) or 0,
+                s.get(f"{key}_unit"),
+                on_change=lambda: apply(),
+                hi=1e4,
+                step=0.5,
+                decimals=3,
+            )
+            for key in ("d_imp", "d_max", "d_min")
+        }
         density_field = ui.UnitField(
             "density",
             units.convert_display(
@@ -311,6 +339,10 @@ class RatedPointInputNode(BaseNode):
                 npsha_field.magnitude(),
                 npsha_field.unit_label(),
             )
+            for key, field in d_fields.items():
+                mag = field.magnitude()
+                s[key] = mag if mag > 0 else None
+                s[f"{key}_unit"] = field.unit_label()
             s["dens_unit"] = density_field.unit_label()
             s["visc"], s["visc_unit"] = visc_field.magnitude(), visc_field.unit_label()
 
@@ -459,6 +491,11 @@ class RatedPointInputNode(BaseNode):
         dlg.add(hso_field.row("Shut-off head"))
         dlg.add(npsha_field.row("NPSHa"))
         dlg.add(ui.hline())
+        dlg.add(ui.section("Impeller diameter (datasheet, 0 = not set)"))
+        dlg.add(d_fields["d_imp"].row("Nominal  D"))
+        dlg.add(d_fields["d_max"].row("Maximum  D"))
+        dlg.add(d_fields["d_min"].row("Minimum  D"))
+        dlg.add(ui.hline())
         dlg.add(ui.section("Rated fluid"))
         if fluids:
             dlg.add(ui.row("Fluid source", fluid_pick))
@@ -499,3 +536,12 @@ def _opt(v):
     except (TypeError, ValueError):
         return None
     return f if f > 0 else None
+
+
+def _length_opt(s: Dict, key: str):
+    """An optional length setting as a Quantity in mm (``None`` when unset/<= 0)."""
+    v = _opt(s.get(key))
+    if v is None:
+        return None
+    unit = s.get(f"{key}_unit") or "mm"
+    return Q_(v, units.pint_str("length", unit)).to("mm")

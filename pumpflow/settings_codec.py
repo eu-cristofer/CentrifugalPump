@@ -23,7 +23,8 @@ Invariants
 - Magnitudes are never perturbed when the unit does not change: values are
   passed through untouched and only converted with Pint when the stored unit
   has no display label (then the canonical display unit is used).
-- Optional quantities (:class:`OptDisp`, e.g. the test-bench geometry) are
+- Optional quantities (:class:`OptDisp`, e.g. the test-bench geometry or the
+  rated-point impeller diameters) are
   stored as ``null`` when unset, with no stray ``*_unit`` key; an unset value
   therefore decodes without a unit label (the dialog re-seeds its default).
 
@@ -578,6 +579,10 @@ FIELDS: Dict[str, tuple] = {
         Disp("eff", "efficiency", "eff_unit"),
         Disp("head_shutoff", "head", "head_shutoff_unit"),
         Disp("npsha", "npsh", "npsha_unit"),
+        # Optional datasheet impeller diameters (sprint 10): omitted when unset.
+        OptDisp("d_imp", "length", "d_imp_unit"),
+        OptDisp("d_max", "length", "d_max_unit"),
+        OptDisp("d_min", "length", "d_min_unit"),
     ),
     "fluid": (
         Disp("temp", "temperature", "temp_unit"),
@@ -592,6 +597,7 @@ FIELDS: Dict[str, tuple] = {
         Pressures(),
     ),
     "correction": (Disp("target_speed", "speed", "target_speed_unit"),),
+    "trim": (Disp("d_target", "length", "d_target_unit"),),
     "performance_plot": (
         YLimDisp("head_ylim", "head", "head_ylim_unit"),
         YLimDisp("power_ylim", "power", "power_ylim_unit"),

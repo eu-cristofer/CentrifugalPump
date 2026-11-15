@@ -189,3 +189,16 @@ def test_every_node_dialog_opens(qapp, b34004_scene):
             dlg = item.logic.create_dialog(None, scene.evaluate)
             if dlg is not None:
                 dlg.close()
+
+
+def test_b34004_diameter_for_rated_duty_within_datasheet_range(qapp, b34004_scene):
+    """Sprint 10: diameter that puts B-34004A on its rated point lies inside the
+    datasheet impeller range (I-FD-...-SWM-001 rev B: 125 / 128 / 131 mm)."""
+    from pumpflow.binding import diameter_for_rated
+
+    logic = {n.logic.node_id: n.logic for n in b34004_scene.nodes}
+    fitted = logic["fit_a"].outputs_cache["FittedModel"]
+    rated = logic["rated"].outputs_cache["RatedPoint"]
+    d = diameter_for_rated(fitted, rated).to("mm").magnitude
+    assert 125.0 <= d <= 131.0
+    assert d == pytest.approx(127.1, abs=0.2)

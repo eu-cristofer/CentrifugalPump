@@ -24,6 +24,7 @@ from .point import PointNode
 from .rated_point import RatedPointInputNode
 from .report_export import ReportExportNode
 from .test_points import TestPointsTableNode
+from .trim import TrimNode
 
 _CLASSES: List[Type[BaseNode]] = [
     RatedPointInputNode,
@@ -31,6 +32,7 @@ _CLASSES: List[Type[BaseNode]] = [
     TestPointsTableNode,
     PointNode,
     SpeedCorrectionNode,
+    TrimNode,
     CurveFitNode,
     PerformancePlotNode,
     ExploreChartNode,

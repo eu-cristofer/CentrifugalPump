@@ -512,10 +512,6 @@ class PerformanceCurve:
             new_attrs = {}
             new_attrs["_head"] = new_head
             new_attrs["_efficiency"] = p.efficiency
-            '''for attr_name, attr_value in p.__dict__.items():
-                if attr_name in ["capacity", "speed_of_rotation", "breaking_power"]:
-                    continue
-                new_attrs[attr_name] = attr_value'''
 
             # If we had a breaking_power before, include the scaled one
             if new_breaking_power is not None:
@@ -529,6 +525,84 @@ class PerformanceCurve:
                 **new_attrs
             )
             new_points.append(new_point)
+
+        return PerformanceCurve(self.fluid, new_points, polynomial_degree=self.polynomial_degree)
+
+    def to_diameter(self, d_new: Q_, d_ref: Q_, max_trim: float = 0.05) -> Self:
+        """
+        Create a new PerformanceCurve with all TestPoints scaled from the
+        impeller diameter ``d_ref`` to ``d_new`` (UC-07 impeller trim).
+
+        Uses the standard **diameter affinity approximation** (speed unchanged):
+          - Capacity scales with the diameter ratio: Q2 = Q1 * (D2 / D1)
+          - Head scales as (D2 / D1)^2.
+          - Power scales as (D2 / D1)^3.
+          - Efficiency is unchanged.
+
+        The approximation degrades for large trims, so a ``UserWarning`` is
+        issued when ``|1 - d_new / d_ref| > max_trim``.  HI-style trim
+        corrections are not applied.
+
+        Parameters
+        ----------
+        d_new : Q_
+            Target impeller diameter (a length, e.g. ``Q_(122, "mm")``).
+        d_ref : Q_
+            Impeller diameter this curve corresponds to.
+        max_trim : float, optional
+            Largest fractional diameter change before warning (default 0.05).
+
+        Returns
+        -------
+        PerformanceCurve
+            A new instance; ``self`` is not modified.
+
+        Raises
+        ------
+        ValueError
+            If a diameter is not a length Quantity or is not positive.
+
+        Warns
+        -----
+        UserWarning
+            When the diameter change exceeds ``max_trim``.
+        """
+        for name, d in (("d_new", d_new), ("d_ref", d_ref)):
+            if not hasattr(d, "to"):
+                raise ValueError(f"{name} must be a Pint length Quantity.")
+        d_new_mm = float(d_new.to("mm").magnitude)
+        d_ref_mm = float(d_ref.to("mm").magnitude)
+        if not (d_new_mm > 0.0 and d_ref_mm > 0.0):
+            raise ValueError("Impeller diameters must be > 0.")
+        ratio = d_new_mm / d_ref_mm
+
+        change = ratio - 1.0
+        if abs(change) > max_trim:
+            warnings.warn(
+                f"Impeller diameter change of {change:+.1%} exceeds max_trim "
+                f"({max_trim:.1%}); the diameter affinity approximation loses "
+                f"accuracy for large trims.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        new_points = []
+        for p in self.points:
+            new_attrs = {}
+            new_attrs["_head"] = p.head * ratio**2
+            new_attrs["_efficiency"] = p.efficiency
+            if hasattr(p, "breaking_power"):
+                new_attrs["breaking_power"] = p.breaking_power * ratio**3
+            if hasattr(p, "speed_of_rotation"):
+                new_attrs["speed_of_rotation"] = p.speed_of_rotation
+
+            new_points.append(
+                TestPoint(
+                    fluid=p.fluid,
+                    capacity=p.capacity * ratio,
+                    **new_attrs
+                )
+            )
 
         return PerformanceCurve(self.fluid, new_points, polynomial_degree=self.polynomial_degree)
 

@@ -63,7 +63,7 @@ Each run MUST:
   BLOCKED-PARTIAL: NPSH margin rule not configured. No ratio or margin is seeded, so the check reports "not configured" until the owner enters the N-553/API rule.
 - [x] [Sprint 9 — Viscosity correction (HI 9.6.7 / ISO TR 17766)](sprint-9.md) — done 2026-11-15
   Unblocked 2026-11-15. There is no free official worked example, so the equations (HI 9.6.7-2010 Eq. 2–7, secondary source) are validated by independent checks; see sprint-9.md.
-- [ ] [Sprint 10 — UC-07 Impeller trim](sprint-10.md)
+- [x] [Sprint 10 — UC-07 Impeller trim](sprint-10.md) — done 2026-11-15
 - [ ] [Sprint 11 — UC-03 System curve + UC-04 Operating point](sprint-11.md)
 - [ ] [Sprint 12 — UC-01 Pump selection](sprint-12.md)
 - [ ] [Sprint 13 — UC-10 Educational mode + worked notebooks](sprint-13.md)
@@ -169,3 +169,6 @@ Researched 2026-11-15. The main secondary source is the Amarinth technical bulle
   - The equations are HI 9.6.7-2010 Eq. 2–7 from a secondary source, validated independently: the US/SI constants agree, the factors are continuous at B = 1, and the method reproduces the legacy chart. They were not checked against the standard text.
 - S9: the Correction node's "apply viscosity" now works (speed → density → viscosity). It shows B and the factors, and the report adds a "Viscosity correction (HI 9.6.7)" line when B > 1.
 - S9: when B ≤ 1 (e.g. B-34004A wash water at 0.52 cSt) or viscosity is off, the results are bit-identical.
+- S10: **UC-07 impeller trim**. `PerformanceCurve.to_diameter` uses diameter affinity and warns beyond 5 % trim; `pump.trim.diameter_for_duty` intersects the affinity parabola with the head fit (numpy only).
+  - The Rated Point gains impeller nominal/min/max diameters, and there is a new **Trim** node (target diameter, or solve for rated duty).
+  - B-34004A carries the datasheet diameters (128 / 125 / 131 mm). It needs **D = 127.1 mm (−0.7 %)** to hit its rated point exactly.

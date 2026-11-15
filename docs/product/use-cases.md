@@ -102,6 +102,15 @@
   `npsh3_from_sweep`, `NPSHrCurve`, `check_npsh`, `plot_npsh`), `npsh` node.
 - **Pinned by:** `tests/test_npsh.py`, `tests/test_npsh_gui.py`.
 
+### UC-07 — Evaluate impeller trim ✅
+- **Method:** pure diameter affinity (Q∝D, H∝D², P∝D³, η unchanged), warning
+  beyond 5 % trim; HI-style large-trim corrections out of scope.
+- **Supported by:** `PerformanceCurve.to_diameter`, `pump.trim.diameter_for_duty`,
+  RatedPoint impeller diameters (nominal/min/max), `trim` node.
+- **Example:** B-34004A needs D = 127.1 mm (−0.7 % from 128 mm; datasheet range
+  125–131 mm) to hit its rated duty.
+- **Pinned by:** `tests/test_trim.py`, `tests/test_trim_gui.py`.
+
 ## Deferred to v1.1 (library gaps — recorded, not built in this plan)
 
 | UC | Title | Why deferred |
@@ -109,7 +118,6 @@
 | UC-01 | Select a pump for given conditions | No pump catalogue in the library. |
 | UC-03 | Analyse system curve | No system-curve module. |
 | UC-04 | Find operating point | Blocked by UC-03. |
-| UC-07 | Evaluate impeller trim | Diameter affinity branch not implemented. |
 
 ## Out of scope
 

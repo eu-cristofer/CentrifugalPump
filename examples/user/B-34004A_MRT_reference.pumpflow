@@ -72,6 +72,18 @@
         "parallel": false,
         "fluid_name": "Rated fluid",
         "fluid_choice": "",
+        "d_imp": {
+          "value": 128.0,
+          "unit": "mm"
+        },
+        "d_max": {
+          "value": 131.0,
+          "unit": "mm"
+        },
+        "d_min": {
+          "value": 125.0,
+          "unit": "mm"
+        },
         "standard_key": "api610:8",
         "client": "n553"
       }
@@ -1064,6 +1076,20 @@
           "min_margin": null
         }
       }
+    },
+    {
+      "id": "trim_a",
+      "kind": "trim",
+      "x": 560.0,
+      "y": 120.0,
+      "settings": {
+        "mode": "duty",
+        "d_target": {
+          "value": 128.0,
+          "unit": "mm"
+        },
+        "max_trim_pct": 5.0
+      }
     }
   ],
   "edges": [
@@ -1246,6 +1272,18 @@
       "src_port": "NPSHResult",
       "dst_node": "report",
       "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "trim_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "trim_a",
+      "dst_port": "RatedPoint"
     }
   ],
   "view": {

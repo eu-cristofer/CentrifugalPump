@@ -72,6 +72,11 @@ class RatedPoint:
     standard_key: str = "api610:12"  # AcceptanceCriteria key, e.g. "api610:8"
     client: Optional[str] = None  # client overlay key, e.g. "n553"
 
+    # Datasheet impeller diameters (sprint 10 / UC-07), lengths; ``None`` = unset.
+    impeller_diameter: Optional[Q_] = None  # nominal (reference for trimming)
+    impeller_diameter_max: Optional[Q_] = None  # maximum allowed
+    impeller_diameter_min: Optional[Q_] = None  # minimum allowed
+
     @property
     def density_rel(self) -> float:
         """Relative density (SG) — the user-facing density form."""
