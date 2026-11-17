@@ -463,10 +463,9 @@ class LocalizationHelper:
         except locale.Error:
             print("Warning: Unable to set locale, using default.")
 
-        if self.locale_dir:
-            locale_dir = self.locale_dir
-        else:
-            locale_dir = Path(__file__).parent / "locales"
+        locale_dir: Path = (
+            Path(self.locale_dir) if self.locale_dir else Path(__file__).parent / "locales"
+        )
 
         # Compiled catalogs (*.mo) are git-ignored, so a fresh checkout only has
         # the *.po sources. Without this fallback gettext silently returns the

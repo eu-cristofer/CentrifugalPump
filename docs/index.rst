@@ -72,6 +72,23 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    adr/README
    adr/0*
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Project records
+   :glob:
+
+   changes/NEXT_STEPS
+   changes/001_masterpiece/README
+   changes/001_masterpiece/MOTIVATION
+   changes/001_masterpiece/sprint-*
+   UI_SPEC
+   multi-unit-philosophy
+   THEMING
+   BUILD
+   DEV_JOURNEY
+   REMOVAL_MAP
+   reviews/*
+
 Indices and tables
 ==================
 

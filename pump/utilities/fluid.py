@@ -9,9 +9,9 @@ unit conversions and context extraction.
 
 Functions
 ---------
-- extract_context: Extracts context from a property key, aiding in unit validation.
-- Q_: A utility for creating quantities with units, typically used with the `pint` library.
-- quantity_factory: A factory function for converting and validating quantities with units.
+- ``extract_context``: Extracts context from a property key, aiding in unit validation.
+- ``Q_``: A utility for creating quantities with units, typically used with the `pint` library.
+- ``quantity_factory``: A factory function for converting and validating quantities with units.
 
 Classes
 -------
@@ -61,7 +61,7 @@ class Fluid:
     """
 
 
-    def __init__(self, name: str, density: Q_, **kwargs: Dict[str, Q_]) -> None:
+    def __init__(self, name: str, density: Q_, **kwargs: Q_) -> None:
         """
         Initializes a Fluid object with converted physical properties.
 
@@ -137,12 +137,9 @@ class Water(Fluid):
     ----------
     temperature : Q_
         Water temperature normalised to kelvin (standard unit for temperature).
-    dynamic_viscosity : Q_
-        (property) Dynamic viscosity in cP.
-    kinematic_viscosity : Q_
-        (property) Kinematic viscosity in cSt.
-    vapour_pressure : Q_
-        (property) Saturation pressure in kPa (absolute).
+
+    The read-only properties ``dynamic_viscosity`` (cP), ``kinematic_viscosity``
+    (cSt) and ``vapour_pressure`` (kPa absolute) are documented below.
 
     Examples
     --------

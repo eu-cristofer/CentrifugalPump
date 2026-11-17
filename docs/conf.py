@@ -53,6 +53,14 @@ autodoc_mock_imports = ["PySide6"]
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False
 napoleon_use_rtype = False
+# Docstrings write Pint quantities as ``Q_``; a bare word ending in "_" is an
+# RST reference, so map the alias to the real type.
+napoleon_preprocess_types = True
+# Render "Attributes" sections as :ivar: fields of the class: dataclass fields
+# are also documented by autodoc (undoc-members), and separate attribute
+# directives would describe them twice.
+napoleon_use_ivar = True
+napoleon_type_aliases = {"Q_": "pint.Quantity"}
 
 always_document_param_types = False
 

@@ -169,7 +169,10 @@ class SelectionCriteria:
 
     Attributes
     ----------
-    por_min, por_max : float or None
+    por_min : float or None
+        POR bounds as fractions of the best-efficiency flow (``Q / Q_BEP``).
+        ``None`` = not configured (no POR constraint).
+    por_max : float or None
         POR bounds as fractions of the best-efficiency flow (``Q / Q_BEP``).
         ``None`` = not configured (no POR constraint).
     source : str
@@ -222,13 +225,19 @@ class AcceptanceCriteria:
     ----------
     key : str
         ``"<standard>:<edition>"``, e.g. ``"api610:12"``.
-    label, source : str
-        Display label and provenance of the numbers.
+    label : str
+        Display label, e.g. "API 610 8th edition".
+    source : str
+        Provenance of the numbers (clause references).
     verified : bool
         True only if the base edition *and* the overlay (if any) are verified.
-    client, client_label : str or None
+    client : str or None
         Overlay id and display label.
-    head_bands, shutoff_bands : tuple of (max_rated_head, tol_minus, tol_plus)
+    client_label : str or None
+        Overlay id and display label.
+    head_bands : tuple of (max_rated_head, tol_minus, tol_plus)
+        Sorted by ``max_rated_head`` (a Pint quantity; may be infinite).
+    shutoff_bands : tuple of (max_rated_head, tol_minus, tol_plus)
         Sorted by ``max_rated_head`` (a Pint quantity; may be infinite).
     power_tol_plus : float
         Maximum allowed positive power deviation.
@@ -792,7 +801,7 @@ def evaluate_performance(
 
     # --- Shut-off head ------------------------------------------------------
     zero = Q_(0, "m**3/h")
-    q_floor = criteria.shutoff_extrapolation_q_fraction * rated_q
+    q_floor: Q_ = criteria.shutoff_extrapolation_q_fraction * rated_q
     points = getattr(curve, "points", ()) or ()
     extrapolated = bool(points) and not any(p.capacity < q_floor for p in points)
     rising = None

@@ -134,10 +134,10 @@ class HtmlReportGenerator:
         self, report_data: dict, output_file: Optional[str] = None
     ) -> str:
         """Write ``output_file`` (``.html``); charts are embedded, no extra files."""
-        output_file = Path(output_file or self._default_name(report_data, ".html"))
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        output_file.write_text(self._render(report_data), encoding="utf-8")
-        return str(output_file)
+        out = Path(output_file or self._default_name(report_data, ".html"))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(self._render(report_data), encoding="utf-8")
+        return str(out)
 
     # ------------------------------------------------------------- render
     def _default_name(self, report_data: dict, ext: str) -> str:

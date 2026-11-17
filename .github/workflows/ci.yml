@@ -80,8 +80,6 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    # non-blocking until the first mypy pass is fixed (mypy was not run during 001_masterpiece)
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -124,7 +122,6 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

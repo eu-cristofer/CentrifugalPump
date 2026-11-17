@@ -117,7 +117,10 @@ class CatalogueEntry:
         Speed the curve corresponds to.
     diameter : Q_ or None
         Impeller diameter the curve corresponds to (``None``: no trimming).
-    d_min, d_max : Q_ or None
+    d_min : Q_ or None
+        Allowed impeller diameter range.  ``d_max=None`` means "not larger than
+        ``diameter``".
+    d_max : Q_ or None
         Allowed impeller diameter range.  ``d_max=None`` means "not larger than
         ``diameter``".
     speed_range : tuple of (Q_, Q_) or None

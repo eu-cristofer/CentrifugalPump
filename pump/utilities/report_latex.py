@@ -191,12 +191,12 @@ class LatexReportGenerator:
     # ------------------------------------------------------------------ API
     def generate_tex(self, report_data: dict, output_file: Optional[str] = None) -> str:
         """Write ``output_file`` (``.tex``) plus a ``<stem>_figs/`` folder."""
-        output_file = Path(output_file or self._default_name(report_data, ".tex"))
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        fig_dir = output_file.parent / f"{output_file.stem}_figs"
+        out = Path(output_file or self._default_name(report_data, ".tex"))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        fig_dir = out.parent / f"{out.stem}_figs"
         source = self._render(report_data, fig_dir, fig_dir.name)
-        output_file.write_text(source, encoding="utf-8")
-        return str(output_file)
+        out.write_text(source, encoding="utf-8")
+        return str(out)
 
     def generate_pdf(
         self,
@@ -211,8 +211,8 @@ class LatexReportGenerator:
                 "No LaTeX engine found (latexmk/pdflatex). Install a TeX "
                 "distribution, or export the .tex and compile it elsewhere."
             )
-        output_file = Path(output_file or self._default_name(report_data, ".pdf"))
-        output_file.parent.mkdir(parents=True, exist_ok=True)
+        out = Path(output_file or self._default_name(report_data, ".pdf"))
+        out.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="pump_report_") as build:
             tex = Path(build) / "report.tex"
             self.generate_tex(report_data, str(tex))
@@ -231,8 +231,8 @@ class LatexReportGenerator:
                 log = Path(build) / "report.log"
                 tail = log.read_text(errors="replace") if log.is_file() else proc.stdout
                 raise RuntimeError("LaTeX compilation failed:\n" + tail[-3000:])
-            shutil.copyfile(pdf, output_file)
-        return str(output_file)
+            shutil.copyfile(pdf, out)
+        return str(out)
 
     # ------------------------------------------------------------- render
     def _default_name(self, report_data: dict, ext: str) -> str:

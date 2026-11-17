@@ -12,7 +12,7 @@ Classes
 - PerformanceFitter: Handles polynomial regression for performance metrics.
 """
 
-from typing import Optional, List, Dict, Self, Any
+from typing import Optional, List, Dict, Any
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,13 +42,13 @@ class PerformanceFitter:
     def __init__(self, points, polynomial_degree: int = 4) -> None:
         self.points = points
         self.polynomial_degree = polynomial_degree
-        self._capacities = None
-        self._heads = None
-        self._efficiencies = None
-        self._powers = None
-        self._head_coeffs = None
-        self._efficiency_coeffs = None
-        self._power_coeffs = None
+        self._capacities: Optional[np.ndarray] = None
+        self._heads: Optional[np.ndarray] = None
+        self._efficiencies: Optional[np.ndarray] = None
+        self._powers: Optional[np.ndarray] = None
+        self._head_coeffs: Optional[np.ndarray] = None
+        self._efficiency_coeffs: Optional[np.ndarray] = None
+        self._power_coeffs: Optional[np.ndarray] = None
     
     @property
     def capacities(self) -> np.ndarray:
@@ -302,7 +302,7 @@ class PerformanceCurve:
         q_bep = Q_(float(q[int(np.argmax(eff))]), "m**3/h")
         return q_bep, self.predict_head(q_bep), self.predict_efficiency(q_bep)
 
-    def plot_performance_curve(self, chart_title=None, capacity:Q_=None, return_io=False,
+    def plot_performance_curve(self, chart_title=None, capacity: Optional[Q_] = None, return_io=False,
                                head_ylim=None, power_ylim=None, efficiency_ylim=None):
         """
         Plots the pump performance curve with three subplots:
@@ -461,7 +461,7 @@ class PerformanceCurve:
 
         
 
-    def to_speed(self, new_speed: Q_) -> Self:
+    def to_speed(self, new_speed: Q_) -> "PerformanceCurve":
         """
         Create a new PerformanceCurve with all TestPoints scaled to `new_speed`.
 
@@ -509,7 +509,7 @@ class PerformanceCurve:
             )
 
             # Collect all other attributes except those we want to override
-            new_attrs = {}
+            new_attrs: Dict[str, Any] = {}
             new_attrs["_head"] = new_head
             new_attrs["_efficiency"] = p.efficiency
 
@@ -528,7 +528,7 @@ class PerformanceCurve:
 
         return PerformanceCurve(self.fluid, new_points, polynomial_degree=self.polynomial_degree)
 
-    def to_diameter(self, d_new: Q_, d_ref: Q_, max_trim: float = 0.05) -> Self:
+    def to_diameter(self, d_new: Q_, d_ref: Q_, max_trim: float = 0.05) -> "PerformanceCurve":
         """
         Create a new PerformanceCurve with all TestPoints scaled from the
         impeller diameter ``d_ref`` to ``d_new`` (UC-07 impeller trim).
@@ -588,7 +588,7 @@ class PerformanceCurve:
 
         new_points = []
         for p in self.points:
-            new_attrs = {}
+            new_attrs: Dict[str, Any] = {}
             new_attrs["_head"] = p.head * ratio**2
             new_attrs["_efficiency"] = p.efficiency
             if hasattr(p, "breaking_power"):
@@ -606,7 +606,7 @@ class PerformanceCurve:
 
         return PerformanceCurve(self.fluid, new_points, polynomial_degree=self.polynomial_degree)
 
-    def to_fluid(self, new_fluid: Fluid) -> Self:
+    def to_fluid(self, new_fluid: Fluid) -> "PerformanceCurve":
         """
         Create a new PerformanceCurve by assigning a new fluid to all TestPoints.
 
@@ -628,7 +628,7 @@ class PerformanceCurve:
         new_points = []
         for p in self.points:
             # Collect attributes except the fluid
-            new_attrs = {}
+            new_attrs: Dict[str, Any] = {}
             new_attrs["_head"] = p.head
             # If we had a efficiency before, include the scaled one
             if hasattr(p, "_efficiency"):
@@ -646,7 +646,7 @@ class PerformanceCurve:
 
         return PerformanceCurve(new_fluid, new_points, polynomial_degree=self.polynomial_degree)
 
-    def to_viscous(self, new_fluid: Fluid, stages: int = 1) -> Self:
+    def to_viscous(self, new_fluid: Fluid, stages: int = 1) -> "PerformanceCurve":
         """
         Create a new PerformanceCurve corrected from water to a viscous liquid
         (HI 9.6.7 / ISO TR 17766, see :mod:`pump.viscosity`).
@@ -965,7 +965,7 @@ class PerformanceChecker:
         True when no curve point lies below ``shutoff_extrapolation_q_fraction``
         of the rated capacity, i.e. the shut-off head is extrapolated.
         """
-        threshold = (
+        threshold: Q_ = (
             self.criteria.shutoff_extrapolation_q_fraction * self.design_point.capacity
         )
         return not any(point.capacity < threshold for point in self.curve)
@@ -1064,7 +1064,7 @@ class PerformanceChecker:
         """
         # A point counts as shut-off below the extrapolation threshold
         # (a fraction of the rated flow), whatever the capacity unit.
-        shutoff_q = (
+        shutoff_q: Q_ = (
             self.criteria.shutoff_extrapolation_q_fraction * self.design_point.capacity
         )
         results = []

@@ -123,8 +123,8 @@ def npsh_available(
     rho = fluid.density
     pressure_head = ((p_suction.absolute() - vapour_pressure) / (rho * G)).to("m")
     if suction_id is not None:
-        velocity = (q / (math.pi * suction_id**2 / 4)).to("m/s")
-        velocity_head = (velocity**2 / (2 * G)).to("m")
+        velocity: Q_ = (q / (math.pi * suction_id**2 / 4)).to("m/s")
+        velocity_head: Q_ = (velocity**2 / (2 * G)).to("m")
     else:
         velocity_head = Q_(0.0, "m")
     total = pressure_head + velocity_head + z_suction.to("m")
@@ -191,7 +191,9 @@ class NPSHrCurve:
 
     Parameters
     ----------
-    q, npshr : tuple of Q_
+    q : tuple of Q_
+        Capacities and the NPSHr measured at each.
+    npshr : tuple of Q_
         Capacities and the NPSHr measured at each.
     degree : int, optional
         Polynomial degree (default 2); reduced to ``n - 1`` for few points.
@@ -232,9 +234,8 @@ class NPSHrCurve:
     def __call__(self, q: Q_) -> Q_:
         """NPSHr (metres) at capacity ``q`` from the fitted polynomial."""
         x = q.to("m**3/h").magnitude
-        value = np.polyval(self._coefficients(), x)
-        if np.ndim(value) == 0:
-            value = float(value)
+        raw = np.polyval(self._coefficients(), x)
+        value = float(raw) if np.ndim(raw) == 0 else raw
         return Q_(value, "m")
 
     def at_rated(self, q_rated: Q_) -> Q_:
@@ -389,7 +390,7 @@ def check_npsh(
         checks.append(bool(m["margin"] >= criteria.min_margin))
     quoted_ok = None
     if npshr_quoted is not None and criteria.npshr_tol_plus is not None:
-        limit = npshr_quoted * (1.0 + criteria.npshr_tol_plus)
+        limit: Q_ = npshr_quoted * (1.0 + criteria.npshr_tol_plus)
         quoted_ok = bool(npshr <= limit * (1.0 + 1e-9))
         checks.append(quoted_ok)
     if not checks:

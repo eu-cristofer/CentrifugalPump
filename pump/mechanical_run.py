@@ -114,6 +114,8 @@ class MechanicalRunLog:
 
     channels: tuple
     readings: tuple
+    # Elapsed minutes per reading, computed in __post_init__ (not an input).
+    _elapsed_min: tuple = field(init=False, repr=False, compare=False, default=())
 
     def __post_init__(self):
         object.__setattr__(self, "channels", tuple(self.channels))
@@ -178,7 +180,10 @@ class MechanicalRunCriteria:
         Upper limit of the channel maximum, per role.
     stabilisation : mapping role -> (max change, window)
         e.g. ``(Q_(2, "delta_degF"), Q_(60, "min"))``; empty by default.
-    source, verified : provenance of the numbers.
+    source : str
+        Provenance of the numbers (clause references).
+    verified : bool
+        True only when the limits were checked against the standard text.
     """
 
     min_duration: Optional[Q_] = None

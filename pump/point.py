@@ -13,6 +13,7 @@ Classes
 """
 
 import warnings
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from .constants import G
@@ -63,7 +64,12 @@ class BasePoint:
     'Water'
     """
 
-    def __init__(self, fluid: Fluid, capacity: Q_, **kwargs: dict[str, Q_]) -> None:
+    if TYPE_CHECKING:
+        # Quantities passed as **kwargs (differential_head, breaking_power,
+        # speed_of_rotation, ...) become attributes at run time.
+        def __getattr__(self, name: str) -> Any: ...
+
+    def __init__(self, fluid: Fluid, capacity: Q_, **kwargs: Q_) -> None:
         self.fluid = fluid
         self.capacity = quantity_factory(capacity, context="default")
 
@@ -105,7 +111,7 @@ class DesignPoint(BasePoint):
     g = G
 
     def __init__(
-        self, fluid: Fluid, capacity: Q_, differential_head: Q_, **kwargs: dict[str, Q_]
+        self, fluid: Fluid, capacity: Q_, differential_head: Q_, **kwargs: Q_
     ) -> None:
         if "NPSH_available" in kwargs:
             warnings.warn(
@@ -476,7 +482,7 @@ class TestPoint(BasePoint):
         >>> round(tp.compute_head.to("m").magnitude, 1)
         51.1
         """
-        TDH = self.pressure_head + self.velocity_head + self.elevation_head
+        TDH: Any = self.pressure_head + self.velocity_head + self.elevation_head
         self._head = quantity_factory(TDH)
         return self._head
 
