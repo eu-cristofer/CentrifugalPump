@@ -228,3 +228,6 @@ graphify-out/**
 **/.env
 **/.env.*
 !**/.env.example
+
+# Licensed standards text (keep local, never publish)
+marker-output/
