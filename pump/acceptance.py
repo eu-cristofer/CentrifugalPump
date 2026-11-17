@@ -179,10 +179,10 @@ class VibrationCriteria:
     >>> v = VibrationCriteria.from_table({"oh_bb_overall": "3.0 mm/s",
     ...     "oh_bb_filtered": "2.0 mm/s", "vs_overall": "5.0 mm/s",
     ...     "vs_filtered": "3.4 mm/s"})
-    >>> v.limits("VS4")["overall"]
-    <Quantity(5.0, 'millimeter / second')>
-    >>> v.limits("OH6")["filtered"]
-    <Quantity(2.0, 'millimeter / second')>
+    >>> v.limits("VS4")["overall"].to("mm/s").magnitude
+    5.0
+    >>> v.limits("OH6")["filtered"].to("mm/s").magnitude
+    2.0
     """
 
     oh_bb: tuple = (None, None)  # (overall, filtered) Q_

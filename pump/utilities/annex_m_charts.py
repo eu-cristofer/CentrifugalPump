@@ -278,7 +278,7 @@ def plot_annex_m_curve(
         """Width of a text artist as a fraction of ``ax``'s width."""
         return text_artist.get_window_extent(renderer).width / ax.bbox.width
 
-    host = _host(fig, [0.15, 0.19, 0.70, 0.61], q_max)
+    host = _host(fig, (0.15, 0.19, 0.70, 0.61), q_max)
 
     # -- Y1 head (upper left) ---------------------------------------------- #
     h_fit = np.polyval(fitter.head_coeffs, qs)
@@ -500,7 +500,7 @@ def plot_annex_m_curve(
         va="top",
     )
     _arrow_x(host)
-    date_ax = fig.add_axes([0.69, 0.142, 0.16, 0.024])
+    date_ax = fig.add_axes((0.69, 0.142, 0.16, 0.024))
     date_ax.set_xticks([])
     date_ax.set_yticks([])
     for s in date_ax.spines.values():
@@ -508,7 +508,7 @@ def plot_annex_m_curve(
     date_ax.text(0.04, 0.5, _("Date") + f"  {date}", fontsize=7, va="center")
 
     # -- header block -------------------------------------------------------- #
-    head_ax = fig.add_axes([0.06, 0.825, 0.88, 0.155])
+    head_ax = fig.add_axes((0.06, 0.825, 0.88, 0.155))
     head_ax.set_xlim(0, 1)
     head_ax.set_ylim(0, 1)
     head_ax.axis("off")
@@ -678,7 +678,7 @@ def plot_test_points_vibration(
     rq = _m3h(rated_q)
     filtered = measure == "filtered"
 
-    series = {}
+    series: dict = {}
     for q, values in point_vibration or ():
         qv = _m3h(q)
         if qv < shutoff_fraction * rq:
@@ -695,7 +695,7 @@ def plot_test_points_vibration(
     _lo, q_max, _t = _nice_range([0.0, q_hi * 1.06], nbins=6)
 
     fig = Figure(figsize=(9.8, 6.2))
-    host = _host(fig, [0.09, 0.12, 0.55, 0.78], q_max)
+    host = _host(fig, (0.09, 0.12, 0.55, 0.78), q_max)
     host.grid(False, which="both")
     host.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
 
@@ -813,7 +813,7 @@ def plot_test_points_vibration(
                         [edge, edge], [basic, raised], color=_LIMIT, lw=0.8, ls=":"
                     )
                     drawn.append((a, b))
-            if drawn:
+            if drawn and raised is not None:
                 a, b = drawn[-1]
                 ax_v.text(
                     b, raised, f"  {raised:.1f}", color=_LIMIT, fontsize=7, va="center"
