@@ -38,7 +38,7 @@ seam. The two subsystems are deliberately different paradigms:
 | [`pumpflow/`](../pumpflow) | **Pipes-and-filters / reactive dataflow** (Orange3-inspired) on a **PySide6 MVC** shell | The workbench: a visual node graph where engineers wire widgets; typed signals flow downstream with topological recompute. Delegates *all* physics to `pump`. |
 
 The single most important design decision is the **Anti-Corruption Layer (ACL)**
-at [`pumpflow/binding.py`](../pumpflow/binding.py), documented in-source as *"the
+at [`pumpflow/binding/`](../pumpflow/binding/), documented in-source as *"the
 single place where the UI calls into the `pump` library."* The GUI never touches
 `pump` internals except through this module. This is textbook Ports-and-Adapters
 thinking applied at the package boundary, and it is the strongest structural
@@ -77,7 +77,7 @@ property in the codebase.
 | Layer | Module(s) | Responsibility |
 |---|---|---|
 | Wire protocol | [`signals.py`](../pumpflow/signals.py) | Immutable `@dataclass(frozen=True)` payloads passed between nodes |
-| Adapter (ACL) | [`binding.py`](../pumpflow/binding.py) | The **only** importer of `pump`; converts signals ↔ library objects |
+| Adapter (ACL) | [`binding/`](../pumpflow/binding/) | The **only** importer of `pump`; converts signals ↔ library objects |
 | Ported math | [`mathx.py`](../pumpflow/mathx.py) | `NaturalCubicSpline`, `water_density_kgm3` (not yet in `pump`) |
 | View (Qt) | [`canvas/`](../pumpflow/canvas) | `GraphScene` (reactive engine), `GraphView`, `NodeItem`/`PortItem`/`EdgeItem`, `theme` |
 | Filters | [`nodes/`](../pumpflow/nodes) | Seven `BaseNode` widgets: each a `compute()` (logic) + `create_dialog()` (Qt view) |
@@ -118,7 +118,7 @@ flowchart TB
         end
 
         SIG["signals.py<br/>frozen dataclasses (wire protocol)"]
-        BIND["binding.py<br/>◆ ANTI-CORRUPTION LAYER ◆"]
+        BIND["binding/<br/>◆ ANTI-CORRUPTION LAYER ◆"]
         MATHX["mathx.py<br/>spline · water density"]
         PERSIST["persistence.py<br/>.pumpflow · JSON"]
     end
@@ -197,7 +197,7 @@ into one consolidated report (the A/B two-pump case).
 
 ### 2.2 System boundaries & integration touchpoints
 
-- **`binding.py` is the only seam** between the two subsystems — a single
+- **`binding/` is the only seam** between the two subsystems — a single
   `from pump import ...` line. Everything physics-related crosses here.
 - **`ReportGenerator` and matplotlib** are the only components that write external
   artifacts (`.docx`, `.png`).

@@ -48,7 +48,7 @@ jobs:
           pump/constants.py
           pump/quantity_io.py
           pump/utilities/pressure.py
-          pumpflow/binding.py
+          pumpflow/binding/
           pumpflow/signals.py
           pumpflow/settings_codec.py
           pumpflow/export_cli.py

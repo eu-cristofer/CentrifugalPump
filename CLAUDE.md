@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The repo is **two stacked subsystems**:
 
 - **[`pump/`](pump/)**: the headless physics **library** (units, fluids, points, curves, acceptance, NPSH, mechanical run, system curve, selection, reporting). It is the source of truth for all physics and every verdict.
-- **[`pumpflow/`](pumpflow/)**: a **PySide6 visual workbench** (node canvas). It re-implements **no** physics; `pumpflow/binding.py` is the *only* place that calls into `pump`.
+- **[`pumpflow/`](pumpflow/)**: a **PySide6 visual workbench** (node canvas). It re-implements **no** physics; the `pumpflow/binding/` package is the *only* place that calls into `pump`.
 
 [`UI_SPEC.md`](UI_SPEC.md) is the authoritative spec for `pumpflow`; the code cites it as `UI_SPEC §N`.
 
@@ -70,7 +70,7 @@ docx from `pump/templates/template_{en,pt}.docx`, plus LaTeX/PDF and self-contai
 A thin reactive layer on PySide6 `QGraphicsView`:
 
 - **`signals.py`**: immutable dataclass payloads carrying Pint quantities (`RatedPoint`, `TestPointSet`, `CorrectedCurve`, `FittedModel`, `ComplianceResult`, `NPSHSet`, …).  Nodes emit fresh instances.
-- **`binding.py`**: the **only** adapter into `pump` (signals ↔ library objects, display floats).  It holds no physics or verdict logic.
+- **`binding/`**: the **only** adapter into `pump` (signals ↔ library objects, display floats), split by topic: `_common`, `curves`, `acceptance`, `reports`, `engineering`; `from pumpflow.binding import X` re-exports everything.  It holds no physics or verdict logic.
 - **`nodes/`**: 17 node kinds (`BaseNode` subclasses; `registry.py` maps `kind` → class).  `compute(inputs) -> {port: payload}` is the Qt-agnostic core; `create_dialog` builds the property window from helpers in `nodes/ui.py` (`UnitField`, `PressureField`, `BeforeAfterTable`, `info_button`, …).
 - **`canvas/`**: `GraphScene` (wiring, topological `evaluate()`, `to_dict`/`load_dict`).
 - **`persistence.py` + `settings_codec.py`**: `.pumpflow` **schema v2**, where every quantity is `{"value","unit"}` (ADR 0011), with a lossless v1 → v2 migration.  Optional fields use `OptDisp` and are **omitted when unset**, so older files re-save byte-identical.  Do not add always-present default keys to an existing node's settings: it breaks the round-trip tests.

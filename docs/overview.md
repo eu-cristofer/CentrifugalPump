@@ -62,7 +62,7 @@ to load a complete single-pump FAT pipeline.
 ```{mermaid}
 flowchart LR
     subgraph App["pumpflow/ — visual workbench (PySide6)"]
-        NODES["widget nodes"] --> BIND["binding.py (only bridge)"]
+        NODES["widget nodes"] --> BIND["binding/ (only bridge)"]
     end
     subgraph Lib["pump/ — engineering library"]
         BIND --> CURVE["PerformanceCurve + Checker"]

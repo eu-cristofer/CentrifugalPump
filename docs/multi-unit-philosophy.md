@@ -69,7 +69,7 @@ hold:
 
 - **Signals carry Quantities.** `RatedPoint`, `FluidSpec`, `TestRow`, `TestPointSet`,
   `PointSample` and `CorrectedCurve.target_speed` hold Pint quantities, not floats with an
-  implied unit. `pumpflow/binding.py` has no unit literals for signal fields: it passes
+  implied unit. `pumpflow/binding/` has no unit literals for signal fields: it passes
   quantities straight into the library constructors (`pump` never accepts a raw number).
 - **Gauge versus absolute pressure.** `pump.Pressure` carries a reference. A difference has
   no reference, and mixing a gauge value with an absolute one is an error rather than a

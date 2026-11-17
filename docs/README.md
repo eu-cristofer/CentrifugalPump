@@ -35,7 +35,7 @@ Mechanical Running Test trials. The repository is two stacked subsystems:
 ```mermaid
 flowchart LR
     subgraph App["pumpflow/ — visual workbench (PySide6)"]
-        NODES["7 widget nodes"] --> BIND["binding.py<br/>(only bridge)"]
+        NODES["7 widget nodes"] --> BIND["binding/<br/>(only bridge)"]
     end
     subgraph Lib["pump/ — engineering library"]
         BIND --> CURVE["PerformanceCurve<br/>+ Checker"]
