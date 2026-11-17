@@ -133,7 +133,11 @@ N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
 ## 7 · The mechanical run
 
 In the workbench the run is two nodes:
-- **MRT Log**: type or paste the 15-minute readings with their units and roles;
+- **MRT Log**: type or paste the 15-minute readings.  A new log records the witness
+  sheet: time, flow, vibration (overall and filtered) and oil temperature.  The unit of
+  each column is picked above it, as in Test Points, and picking another unit converts
+  the readings.  Add channels (ΔP, power, bearing temperatures...) if the test sheet has
+  them;
 - **MRT Check**: wire the log, the rated point and the fitted curve into it.  It gives
   the verdict, the per-channel table (min / max / last / limit) and the trend plot.
   Your own limits (overrides) go here and make the verdict provisional.

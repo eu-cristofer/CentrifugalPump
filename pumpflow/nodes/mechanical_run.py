@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -180,7 +181,22 @@ def _channel_rows(result) -> list:
 
 
 def _default_columns() -> List[dict]:
+    """The witness-sheet channels: flow, vibration (overall and filtered, both
+    limited by API 610) and oil temperature (stabilisation).  Time is the row
+    key.  More channels can be added in the dialog."""
     return [
+        {
+            "name": "Flow",
+            "dimension": "capacity",
+            "unit": units.PREFS.default_unit("capacity"),
+            "role": "flow",
+        },
+        {
+            "name": "Vib overall",
+            "dimension": "vibration_velocity",
+            "unit": "mm/s",
+            "role": "vibration_unfiltered",
+        },
         {
             "name": "Vib filtered",
             "dimension": "vibration_velocity",
@@ -188,13 +204,7 @@ def _default_columns() -> List[dict]:
             "role": "vibration_filtered",
         },
         {
-            "name": "Vib unfiltered",
-            "dimension": "vibration_velocity",
-            "unit": "mm/s",
-            "role": "vibration_unfiltered",
-        },
-        {
-            "name": "Sump",
+            "name": "Oil temperature",
             "dimension": "temperature",
             "unit": "°C",
             "role": "oil_temperature",
@@ -208,7 +218,12 @@ def _default_rows() -> List[dict]:
         rows.append(
             {
                 "time": f"{6 + i:02d}:00",
-                "values": {"Vib filtered": 1.0, "Vib unfiltered": 1.5, "Sump": 50.0},
+                "values": {
+                    "Flow": 100.0,
+                    "Vib overall": 1.5,
+                    "Vib filtered": 1.0,
+                    "Oil temperature": 50.0,
+                },
             }
         )
     return rows
@@ -274,14 +289,39 @@ class MechanicalRunNode(BaseNode):
         banner = ui.Banner()
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. B-34004A")
 
-        col_table = QTableWidget(0, 4)
+        col_table = QTableWidget(0, 3)
         col_table.setObjectName("RunColumns")
-        col_table.setHorizontalHeaderLabels(["Name", "Dimension", "Unit", "Role"])
+        col_table.setHorizontalHeaderLabels(["Name", "Dimension", "Role"])
         col_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         grid = QTableWidget(0, 1)
         grid.setObjectName("RunGrid")
+        grid.verticalHeader().setVisible(True)
+        grid.setMinimumHeight(380)
         grid.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # One unit combo above each channel column, as in Test Points: picking
+        # another unit converts that column's readings.
+        strip = ui.UnitHeaderStrip(grid)
+        unit_headers: List[ui.UnitColumnHeader] = []
+
+        def rebuild_unit_strip():
+            for h in unit_headers:
+                h.combo.setParent(None)
+                h.combo.deleteLater()
+            unit_headers.clear()
+            for j, c in enumerate(cols):
+                unit_headers.append(
+                    ui.UnitColumnHeader(
+                        grid,
+                        1 + j,
+                        c["dimension"],
+                        c["unit"],
+                        lambda _old, new, j=j: on_unit(j, new),
+                        strip=strip,
+                    )
+                )
+            strip.headers = list(unit_headers)
+            QTimer.singleShot(0, strip.sync)
 
         def recompute():
             on_change()
@@ -296,7 +336,15 @@ class MechanicalRunNode(BaseNode):
 
         def fill_grid():
             grid.blockSignals(True)
-            grid.setColumnCount(1 + len(cols))
+            if grid.columnCount() != 1 + len(cols) or len(unit_headers) != len(cols):
+                grid.setColumnCount(1 + len(cols))
+                rebuild_unit_strip()
+            else:
+                for h, c in zip(unit_headers, cols):
+                    if h.dimension != c["dimension"]:
+                        rebuild_unit_strip()
+                        break
+                    h.set_unit(c["unit"], notify=False)
             update_grid_headers()
             grid.setRowCount(len(s["rows"]))
             for i, r in enumerate(s["rows"]):
@@ -333,20 +381,15 @@ class MechanicalRunNode(BaseNode):
             for i, c in enumerate(cols):
                 col_table.setItem(i, 0, QTableWidgetItem(c["name"]))
                 dim = ui.combo([(d, d) for d in _DIMENSIONS], c["dimension"], None)
-                unit = ui.combo(units.options_for(c["dimension"]), c["unit"], None)
                 role = ui.combo([(r, r) for r in ROLES], c["role"], None)
                 dim.currentIndexChanged.connect(
                     lambda _=None, i=i, w=dim: on_dimension(i, w.currentData())
-                )
-                unit.currentIndexChanged.connect(
-                    lambda _=None, i=i, w=unit: on_unit(i, w.currentData())
                 )
                 role.currentIndexChanged.connect(
                     lambda _=None, i=i, w=role: on_role(i, w.currentData())
                 )
                 col_table.setCellWidget(i, 1, dim)
-                col_table.setCellWidget(i, 2, unit)
-                col_table.setCellWidget(i, 3, role)
+                col_table.setCellWidget(i, 2, role)
             col_table.blockSignals(False)
 
         def on_dimension(i, new):
@@ -354,6 +397,7 @@ class MechanicalRunNode(BaseNode):
                 return
             cols[i]["dimension"] = new
             cols[i]["unit"] = units.PREFS.default_unit(new)
+            rebuild_unit_strip()
             fill_grid()
             QTimer.singleShot(0, fill_cols)
             recompute()
@@ -539,12 +583,17 @@ class MechanicalRunNode(BaseNode):
 
         tag.textChanged.connect(lambda v: (s.__setitem__("pump_tag", v), recompute()))
 
+        # Readings first, units above each column (the Test Points layout);
+        # the channel definitions (name, dimension, role) below.
+        readings = QWidget()
+        rl = QVBoxLayout(readings)
+        rl.setContentsMargins(0, 0, 0, 0)
+        rl.setSpacing(2)
+        rl.addWidget(strip)
+        rl.addWidget(grid)
+
         dlg.add(ui.section("Pump identity"))
         dlg.add(ui.row("Pump TAG", tag))
-        dlg.add(ui.hline())
-        dlg.add(ui.section("Channels"))
-        dlg.add(toolbar([("＋ Channel", add_column), ("－ Channel", del_column)]))
-        dlg.add(col_table)
         dlg.add(ui.hline())
         dlg.add(ui.section("Readings"))
         dlg.add(
@@ -552,11 +601,16 @@ class MechanicalRunNode(BaseNode):
                 [("＋ Add row", add_row), ("－ Remove", del_rows), ("⎘ Paste", paste)]
             )
         )
-        dlg.add(grid)
+        dlg.add(readings)
         dlg.add(banner)
+        dlg.add(ui.hline())
+        dlg.add(ui.section("Channels (name, dimension, role)"))
+        dlg.add(toolbar([("＋ Channel", add_column), ("－ Channel", del_column)]))
+        dlg.add(col_table)
 
         fill_cols()
         fill_grid()
         recompute()
-        dlg.resize(820, 860)
+        dlg.resize(980, 860)
+        QTimer.singleShot(0, strip.sync)
         return dlg

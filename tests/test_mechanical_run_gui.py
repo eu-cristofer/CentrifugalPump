@@ -156,6 +156,14 @@ def test_default_log_emits_only_the_log(qapp):
     assert set(out) == {"MechanicalRunSet"}
     assert "readings" in node.status
     assert "overrides" not in node.settings
+    # the witness sheet: time (row key), flow, vibration overall / filtered,
+    # oil temperature
+    assert [(c["name"], c["role"]) for c in node.settings["columns"]] == [
+        ("Flow", "flow"),
+        ("Vib overall", "vibration_unfiltered"),
+        ("Vib filtered", "vibration_filtered"),
+        ("Oil temperature", "oil_temperature"),
+    ]
     assert [p.name for p in node.outputs] == ["MechanicalRunSet"]
     assert node.inputs == []
 
@@ -210,6 +218,45 @@ def test_dialog_opens(qapp):
     grid = dlg.findChild(QTableWidget, "RunGrid")
     assert grid.rowCount() == 17
     assert grid.columnCount() == 1 + len(_COLUMNS)
+    dlg.close()
+
+
+def test_log_units_sit_above_the_readings_and_convert(qapp):
+    """MRT Log follows the Test Points layout: one unit combo above each
+    channel column; picking another unit converts that column only."""
+    import pytest as _pytest
+    from PySide6.QtWidgets import QTableWidget
+
+    node = _node()
+    dlg = node.create_dialog(None, lambda: node.compute({}))
+    cols = dlg.findChild(QTableWidget, "RunColumns")
+    assert [cols.horizontalHeaderItem(c).text() for c in range(cols.columnCount())] == [
+        "Name",
+        "Dimension",
+        "Role",
+    ]
+    strip = next(
+        w for w in dlg.findChildren(object) if type(w).__name__ == "UnitHeaderStrip"
+    )
+    assert len(strip.headers) == len(_COLUMNS)
+    sump = next(
+        h
+        for h in strip.headers
+        if h.col == 1 + [c["name"] for c in _COLUMNS].index("Sump")
+    )
+    assert sump.combo.currentData() == "°F"
+    before = [r["values"]["Sump"] for r in node.settings["rows"]]
+    sump.combo.setCurrentIndex(sump.combo.findData("°C"))
+    after = [r["values"]["Sump"] for r in node.settings["rows"]]
+    assert after[0] == _pytest.approx((before[0] - 32) / 1.8)
+    assert (
+        next(c for c in node.settings["columns"] if c["name"] == "Sump")["unit"] == "°C"
+    )
+    grid = dlg.findChild(QTableWidget, "RunGrid")
+    titles = [grid.horizontalHeaderItem(c).text() for c in range(grid.columnCount())]
+    assert "Sump [°C]" in titles
+    # other columns untouched
+    assert node.settings["rows"][0]["values"]["Flow"] == 43.53
     dlg.close()
 
 
