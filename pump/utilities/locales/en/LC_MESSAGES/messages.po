@@ -240,3 +240,192 @@ msgstr "Inspector"
 
 msgid "Client witness"
 msgstr "Client witness"
+
+# Test data summary (API 610 Annex M / 8th App. T)
+msgid "Test data summary"
+msgstr ""
+
+msgid "edition"
+msgstr ""
+
+msgid "Annex M"
+msgstr ""
+
+msgid "Appendix T"
+msgstr ""
+
+msgid "Acceptance criteria"
+msgstr ""
+
+msgid "rated speed"
+msgstr ""
+
+msgid "Customer"
+msgstr ""
+
+msgid "Purchaser"
+msgstr ""
+
+msgid "Purchase order no."
+msgstr ""
+
+msgid "Item no."
+msgstr ""
+
+msgid "Pump serial no."
+msgstr ""
+
+msgid "Size and type"
+msgstr ""
+
+msgid "No. of stages"
+msgstr ""
+
+msgid "Curve no."
+msgstr ""
+
+msgid "Certified by (vendor representative)"
+msgstr ""
+
+msgid "Witnessed by (purchaser representative)"
+msgstr ""
+
+msgid "Overall hydraulic performance"
+msgstr ""
+
+msgid "Rated"
+msgstr ""
+
+msgid "Tested (at rated flow)"
+msgstr ""
+
+msgid "Deviation"
+msgstr ""
+
+msgid "Acceptance tolerance"
+msgstr ""
+
+msgid "Flow"
+msgstr ""
+
+msgid "Power"
+msgstr ""
+
+msgid "Efficiency"
+msgstr ""
+
+msgid "NPSH3"
+msgstr ""
+
+msgid "Shut-off head"
+msgstr ""
+
+msgid "Speed"
+msgstr ""
+
+msgid "extrapolated"
+msgstr ""
+
+msgid "Pump construction data"
+msgstr ""
+
+msgid "Stage 1"
+msgstr ""
+
+msgid "Series stages"
+msgstr ""
+
+msgid "Impeller diameter (mm)"
+msgstr ""
+
+msgid "Impeller pattern no."
+msgstr ""
+
+msgid "No. of vanes"
+msgstr ""
+
+msgid "Volute/diffuser pattern no."
+msgstr ""
+
+msgid "Blade tip clearance (%)"
+msgstr ""
+
+msgid "Mechanical performance"
+msgstr ""
+
+msgid "Maximum vibration levels recorded within specified flow region"
+msgstr ""
+
+msgid "Rated flow"
+msgstr ""
+
+msgid "Preferred operating region"
+msgstr ""
+
+msgid "Allowable operating region"
+msgstr ""
+
+msgid "Tested"
+msgstr ""
+
+msgid "Specified"
+msgstr ""
+
+msgid "Drive end"
+msgstr ""
+
+msgid "Non-drive end"
+msgstr ""
+
+msgid "Overall"
+msgstr ""
+
+msgid "Filtered"
+msgstr ""
+
+msgid "Shaft displacement"
+msgstr ""
+
+msgid "All probes (mechanical run)"
+msgstr ""
+
+msgid "Bearing temperatures"
+msgstr ""
+
+msgid "Ambient temperature"
+msgstr ""
+
+msgid "Oil sump / outlet temperature"
+msgstr ""
+
+msgid "Oil temperature rise"
+msgstr ""
+
+msgid "Maximum bearing temperature"
+msgstr ""
+
+msgid "Test curve"
+msgstr ""
+
+msgid "Rated point"
+msgstr ""
+
+msgid "Bearing-housing velocity, mm/s RMS. True-peak values are not used for acceptance."
+msgstr ""
+
+msgid "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow ({qlo:.2f}–{qhi:.2f} m³/h)."
+msgstr ""
+
+msgid "Allowable region: every tested point except shut-off (the vendor's allowable-region limits are not in the project); specified = preferred-region limit + 30 %."
+msgstr ""
+
+msgid "No vibration in the Test Points table: the rated-flow column is taken from the mechanical run."
+msgstr ""
+
+msgid "Blank fields are not recorded in the project: complete them by hand."
+msgstr ""
+
+msgid "Criteria not yet verified against the standard text: {items}."
+msgstr ""
+msgid "API 610 {ordinal} edition"
+msgstr ""

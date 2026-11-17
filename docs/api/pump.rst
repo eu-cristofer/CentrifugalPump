@@ -61,3 +61,5 @@ Reporting
 .. automodule:: pump.utilities.report_latex
 
 .. automodule:: pump.utilities.report_html
+
+.. automodule:: pump.utilities.test_summary

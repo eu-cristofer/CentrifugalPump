@@ -314,6 +314,8 @@ class FittedModel:
     efficiency_spline: Any = None
     r2: dict = field(default_factory=dict)  # {"head": .., "power": .., "eff": ..}
     test_speeds: tuple = ()  # measured pump speeds (Q_ rpm) before correction
+    # ((flow at rated speed Q_, {vibration key: Q_ mm/s}), ...) per test point
+    point_vibration: tuple = ()
 
 
 # ---------------------------------------------------------------------------

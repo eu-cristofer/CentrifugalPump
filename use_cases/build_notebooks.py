@@ -1776,6 +1776,23 @@ plt.xlabel("Q (m3/h)"); plt.ylabel("Head (m)"); plt.legend(); plt.grid(alpha=0.3
 plt.show()
 """),
         md(r"""
+## Exercise 9 · The test data summary's vibration columns
+
+`vibration_by_region` fills the summary's rated / preferred / allowable columns from the
+per-point RMS readings (rated = within 5 % of rated flow; preferred = 70-120 % of BEP;
+allowable = every point except shut-off, limit +30 %).
+"""),
+        code(r"""
+from pump.utilities.test_summary import vibration_by_region
+
+readings = [(0.0, None), (5.0, 2.8), (9.9, 2.1), (11.0, 2.6), (12.5, 3.4)]
+pts = [(Q_(q, "m**3/h"), {"vib_de": Q_(v, "mm/s")}) for q, v in readings if v]
+limits = {"overall": b34004.mechanical_run.role_max["vibration_unfiltered"],
+          "filtered": b34004.mechanical_run.role_max["vibration_filtered"]}
+(de,) = vibration_by_region(pts, Q_(10, "m**3/h"), Q_(10, "m**3/h"), limits)
+print("rated", de.rated, "| preferred", de.por, "| allowable", de.aor)
+"""),
+        md(r"""
 ## The whole verdict at once
 
 The workbench's Compliance node and `PerformanceChecker` use one engine,
@@ -1816,6 +1833,7 @@ print("no power column:"); show(partial)
 """),
         md("## Answers (asserted)"),
         code(r"""
+assert de.rated == (2.1, 3.0) and de.por == (2.6, 3.0) and de.aor == (3.4, 3.9)
 assert full.approved and full.row("Efficiency").status == "info"
 assert not partial.approved and partial.passed and partial.not_evaluated == ("Power",)
 

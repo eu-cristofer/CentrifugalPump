@@ -32,7 +32,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..binding import (
-    DEFAULT_SIGNATORY_ROLES, REPORT_FORMATS, assemble_report_data, export_reports,
+    DEFAULT_SIGNATORY_ROLES, REPORT_FORMATS, SUMMARY_FIELDS, SUMMARY_FORMATS,
+    assemble_report_data, export_reports, export_test_summary, test_data_summaries,
     open_points_from_notes,
 )
 from ..persistence import write_json
@@ -241,6 +242,60 @@ class ReportExportNode(BaseNode):
 
         equip.itemChanged.connect(on_equip)
 
+        # -- test data summary (API 610 Annex M / 8th App. T): optional fields,
+        # stored only when filled so older projects re-save unchanged.
+        summary_labels = {
+            "purchaser": ("Purchaser", "defaults to the client"),
+            "po_number": ("Purchase order no.", ""),
+            "item_number": ("Item no.", "defaults to the service TAG"),
+            "curve_number": ("Curve no.", ""),
+            "stages": ("No. of stages", "e.g. 1"),
+            "impeller_pattern": ("Impeller pattern no.", ""),
+            "vanes": ("No. of vanes", ""),
+            "volute_pattern": ("Volute/diffuser pattern no.", ""),
+            "blade_tip_clearance": ("Blade tip clearance (%)", ""),
+        }
+        summary_edits = {}
+        for key in SUMMARY_FIELDS:
+            edit = ui.line_edit(s.get(key, ""), None, summary_labels[key][1])
+
+            def store(v, k=key):
+                if v.strip():
+                    s[k] = v
+                else:
+                    s.pop(k, None)
+
+            edit.textChanged.connect(store)
+            summary_edits[key] = edit
+        ambient_chk = ui.checkbox(
+            "Ambient temperature recorded", s.get("ambient_temp") is not None
+        )
+        ambient = ui.UnitField(
+            "temperature",
+            float(s.get("ambient_temp") or 25.0),
+            s.get("ambient_temp_unit"),
+            on_change=lambda: on_ambient(),
+            lo=-60.0,
+            hi=200.0,
+            step=0.5,
+            decimals=1,
+        )
+
+        def on_ambient():
+            on = ambient_chk.isChecked()
+            ambient.spin.setEnabled(on)
+            ambient.combo.setEnabled(on)
+            if on:
+                s["ambient_temp"] = ambient.magnitude()
+                s["ambient_temp_unit"] = ambient.unit_label()
+            else:
+                s.pop("ambient_temp", None)
+                s.pop("ambient_temp_unit", None)
+
+        ambient_chk.toggled.connect(lambda _=None: on_ambient())
+        ambient.spin.setEnabled(ambient_chk.isChecked())
+        ambient.combo.setEnabled(ambient_chk.isChecked())
+
         def refresh_pumps():
             on_change()
             branches = getattr(self, "_branches", ())
@@ -313,6 +368,32 @@ class ReportExportNode(BaseNode):
         def export_all():
             run_export(list(s.get("formats") or REPORT_FORMATS))
 
+        def export_summary():
+            rated = getattr(self, "_rated", None)
+            branches = [b for b in getattr(self, "_branches", ()) if b.fitted is not None]
+            if not rated or not branches:
+                QMessageBox.warning(
+                    dlg, "Report Export",
+                    "The test data summary needs the rated point and at least one "
+                    "fitted branch (test points → correction → curve fit).",
+                )
+                return
+            from pump.utilities.report import LocalizationHelper
+
+            summaries = test_data_summaries(
+                rated, branches, s, LocalizationHelper(s["language"])._
+            )
+            stem = self._resolve_output(s, "", rated)
+            folder, _sep, name = stem.rpartition("/")
+            paths, errors = export_test_summary(
+                summaries, SUMMARY_FORMATS, language=s["language"],
+                out_dir=folder or ".", stem=f"{name}_test_summary",
+            )
+            lines = [f"Saved {fmt}: {path}" for fmt, path in paths.items()]
+            lines += [f"FAILED {fmt}: {msg}" for fmt, msg in errors.items()]
+            box = QMessageBox.warning if errors else QMessageBox.information
+            box(dlg, "Report Export", "\n".join(lines))
+
         def export_json():
             rated = getattr(self, "_rated", None)
             branches = getattr(self, "_branches", ())
@@ -348,6 +429,10 @@ class ReportExportNode(BaseNode):
         btn_html = _btn("Export .html", export_html)
         btn_json = _btn("Export .json", export_json)
         btn_png = _btn("Export .png", export_png)
+        btn_summary = _btn(
+            "Export test data summary (docx + tex + pdf + xlsx)", export_summary
+        )
+        btn_summary.setAccessibleName("ExportSummary")
 
         from PySide6.QtWidgets import QHBoxLayout, QWidget
         btnrow = QWidget()
@@ -394,8 +479,16 @@ class ReportExportNode(BaseNode):
         dlg.add(ui.hline())
         dlg.add(ui.section("Equipment description (service-level)"))
         dlg.add(equip)
+        dlg.add(ui.hline())
+        dlg.add(ui.section("Test data summary (API 610 Annex M / 8th ed. App. T)"))
+        for key in SUMMARY_FIELDS:
+            dlg.add(ui.row(summary_labels[key][0], summary_edits[key]))
+        dlg.add(ui.row("", ambient_chk))
+        dlg.add(ambient.row("Ambient temperature"))
+        dlg.add(ui.hline())
         dlg.add(btn_all)
         dlg.add(btnrow)
+        dlg.add(btn_summary)
         dlg.add(banner)
         refresh_pumps()
         dlg.resize(600, 860)

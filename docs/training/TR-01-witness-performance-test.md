@@ -129,7 +129,34 @@ N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
   and the oil rise at most 28 K; with ring-oil or splash lubrication, the sump is below
   82 °C and the rise at most 40 K above ambient.
 
-## 8 · Witness checklist
+## 8 · The test data summary (Annex M / 8th App. T)
+
+The 11th/12th editions give an example *test data summary* form in Annex M; the 8th
+edition has the same form as Appendix T.  It is the one-page record the vendor certifies
+and the purchaser's witness signs:
+- the header: customer, purchaser, order, item, serial, size and type, stages, curve no.,
+  test date, signatures;
+- overall hydraulic performance at rated flow (flow, head, power, NPSH3, shut-off head,
+  speed): rated, tested, deviation and acceptance tolerance;
+- pump construction data (impeller diameter, patterns, vanes, blade-tip clearance);
+- mechanical performance: maximum bearing-housing vibration (RMS) at rated flow and in the
+  preferred and allowable operating regions, tested vs specified;
+- bearing temperatures, and the test curve.
+
+In the workbench: *Report Export ▸ Export test data summary* writes it as Word, LaTeX,
+PDF and Excel, one page per pump; the CLI flag is `--summary`.  Values the project holds
+are filled in.  Blank fields are things the project does not know (order number, patterns,
+vanes, ambient temperature): write them in by hand rather than guess.
+
+To fill the three vibration columns, tick *Vibration columns* in the Test Points table and
+enter the RMS readings at each point (drive end / non-drive end, overall / filtered):
+- **rated flow** is the maximum over points within ±5 % of rated flow;
+- **preferred region** is 70-120 % of the BEP flow of the tested curve;
+- **allowable region** covers every point except shut-off, with the specified limit +30 %.
+
+Without per-point readings, the rated-flow column falls back to the mechanical run.
+
+## 9 · Witness checklist
 
 Before the test:
 - [ ] Edition, client spec revision, rated point and quoted NPSHr entered.
@@ -151,6 +178,7 @@ At the end:
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
 - [ ] Mechanical run: duration, stabilisation, vibration (Mechanical Run node).
 - [ ] Report exported (Word / PDF), open points listed, signatures if required.
+- [ ] Test data summary exported, blanks completed by hand, signed by vendor and witness.
 
 ---
 
@@ -173,6 +201,10 @@ Work them by hand from §2-§7, then check with the notebook.
 8. Parallel operation is specified.  The predicted shut-off head is **3 % below** the rated
    shut-off head (rated head 333.8 m), but the fitted curve droops: the head at 40 % of
    rated flow is higher than at Q = 0.  Pass?
+
+9. The BEP flow of the tested curve is 10 m³/h and rated flow is 10 m³/h.  DE overall
+   vibration (RMS): 2.8 mm/s at 5 m³/h, 2.1 at 9.9, 2.6 at 11.0 and 3.4 at 12.5 m³/h
+   (shut-off not measured).  Fill in the summary's three columns, tested vs specified.
 
 ## Answers
 
@@ -197,3 +229,6 @@ Work them by hand from §2-§7, then check with the notebook.
    tolerance is allowed only if the curve still rises to shut-off.  It does not, so it
    **fails**.  Parallel operation also needs a head rise of at least 10 % from rated to
    shut-off, so check that too.
+9. Rated flow (within ±5 %): **2.1 / 3.0**.  Preferred region (7-12 m³/h): **2.6 / 3.0**.
+   Allowable region (every point except shut-off): **3.4 / 3.9**.  The 12.5 m³/h point is
+   outside the preferred region, so it is judged against 3.0 × 1.3 = 3.9 mm/s.

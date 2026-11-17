@@ -309,3 +309,189 @@ msgstr "Inspetor"
 
 msgid "Client witness"
 msgstr "Testemunha do cliente"
+
+# Test data summary (API 610 Annex M / 8th App. T)
+msgid "Test data summary"
+msgstr "Resumo dos dados de teste"
+
+msgid "edition"
+msgstr "edição"
+
+msgid "Annex M"
+msgstr "Anexo M"
+
+msgid "Appendix T"
+msgstr "Apêndice T"
+
+msgid "Acceptance criteria"
+msgstr "Critérios de aceitação"
+
+msgid "rated speed"
+msgstr "rotação nominal"
+
+msgid "Customer"
+msgstr "Cliente"
+
+msgid "Purchaser"
+msgstr "Comprador"
+
+msgid "Purchase order no."
+msgstr "Nº do pedido de compra"
+
+msgid "Item no."
+msgstr "Nº do item"
+
+msgid "Pump serial no."
+msgstr "Nº de série da bomba"
+
+msgid "Size and type"
+msgstr "Tamanho e tipo"
+
+msgid "No. of stages"
+msgstr "Nº de estágios"
+
+msgid "Curve no."
+msgstr "Nº da curva"
+
+msgid "Certified by (vendor representative)"
+msgstr "Certificado por (representante do fornecedor)"
+
+msgid "Witnessed by (purchaser representative)"
+msgstr "Testemunhado por (representante do comprador)"
+
+msgid "Overall hydraulic performance"
+msgstr "Desempenho hidráulico global"
+
+msgid "Rated"
+msgstr "Nominal"
+
+msgid "Tested (at rated flow)"
+msgstr "Testado (na vazão nominal)"
+
+msgid "Deviation"
+msgstr "Desvio"
+
+msgid "Acceptance tolerance"
+msgstr "Tolerância de aceitação"
+
+msgid "Flow"
+msgstr "Vazão"
+
+msgid "Power"
+msgstr "Potência"
+
+msgid "NPSH3"
+msgstr "NPSH3"
+
+msgid "Shut-off head"
+msgstr "Altura em shut-off"
+
+msgid "Speed"
+msgstr "Rotação"
+
+msgid "extrapolated"
+msgstr "extrapolado"
+
+msgid "Pump construction data"
+msgstr "Dados construtivos da bomba"
+
+msgid "Stage 1"
+msgstr "Estágio 1"
+
+msgid "Series stages"
+msgstr "Estágios em série"
+
+msgid "Impeller diameter (mm)"
+msgstr "Diâmetro do impelidor (mm)"
+
+msgid "Impeller pattern no."
+msgstr "Nº do modelo do impelidor"
+
+msgid "No. of vanes"
+msgstr "Nº de pás"
+
+msgid "Volute/diffuser pattern no."
+msgstr "Nº do modelo da voluta/difusor"
+
+msgid "Blade tip clearance (%)"
+msgstr "Folga na ponta das pás (%)"
+
+msgid "Mechanical performance"
+msgstr "Desempenho mecânico"
+
+msgid "Maximum vibration levels recorded within specified flow region"
+msgstr "Níveis máximos de vibração registrados na faixa de vazão especificada"
+
+msgid "Rated flow"
+msgstr "Vazão nominal"
+
+msgid "Preferred operating region"
+msgstr "Região de operação preferencial"
+
+msgid "Allowable operating region"
+msgstr "Região de operação admissível"
+
+msgid "Tested"
+msgstr "Testado"
+
+msgid "Specified"
+msgstr "Especificado"
+
+msgid "Drive end"
+msgstr "Lado acoplado"
+
+msgid "Non-drive end"
+msgstr "Lado não acoplado"
+
+msgid "Overall"
+msgstr "Global"
+
+msgid "Filtered"
+msgstr "Filtrado"
+
+msgid "Shaft displacement"
+msgstr "Deslocamento do eixo"
+
+msgid "All probes (mechanical run)"
+msgstr "Todos os sensores (teste mecânico)"
+
+msgid "Bearing temperatures"
+msgstr "Temperaturas dos mancais"
+
+msgid "Ambient temperature"
+msgstr "Temperatura ambiente"
+
+msgid "Oil sump / outlet temperature"
+msgstr "Temperatura do óleo (cárter / saída)"
+
+msgid "Oil temperature rise"
+msgstr "Elevação de temperatura do óleo"
+
+msgid "Maximum bearing temperature"
+msgstr "Temperatura máxima de mancal"
+
+msgid "Test curve"
+msgstr "Curva de teste"
+
+msgid "Rated point"
+msgstr "Ponto nominal"
+
+msgid "Bearing-housing velocity, mm/s RMS. True-peak values are not used for acceptance."
+msgstr "Velocidade na caixa de mancal, mm/s RMS. Valores de pico verdadeiro não são usados para aceitação."
+
+msgid "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow ({qlo:.2f}–{qhi:.2f} m³/h)."
+msgstr "Região de operação preferencial: {lo:g}–{hi:g} % da vazão de BEP ({qlo:.2f}–{qhi:.2f} m³/h)."
+
+msgid "Allowable region: every tested point except shut-off (the vendor's allowable-region limits are not in the project); specified = preferred-region limit + 30 %."
+msgstr "Região admissível: todos os pontos testados exceto shut-off (os limites da região admissível do fornecedor não constam do projeto); especificado = limite da região preferencial + 30 %."
+
+msgid "No vibration in the Test Points table: the rated-flow column is taken from the mechanical run."
+msgstr "Sem vibração na tabela de pontos de teste: a coluna de vazão nominal vem do teste mecânico."
+
+msgid "Blank fields are not recorded in the project: complete them by hand."
+msgstr "Campos em branco não constam do projeto: preencha-os à mão."
+
+msgid "Criteria not yet verified against the standard text: {items}."
+msgstr "Critérios ainda não verificados contra o texto da norma: {items}."
+msgid "API 610 {ordinal} edition"
+msgstr "API 610 {number}ª edição"

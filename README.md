@@ -125,7 +125,7 @@ final assertions — all run in CI) and a workbench node:
 | UC-06 | Speed change (affinity) | [UC-06](use_cases/UC-06_affinity_speed_change.ipynb) | Correction |
 | UC-07 | Impeller trim | [UC-07](use_cases/UC-07_trim.ipynb) | Trim |
 | UC-08 | Compare pumps (twin A vs B) | [UC-08](use_cases/UC-08_compare.ipynb) | Explorer Δ, report "Comparison" |
-| UC-09 | Reports: Word, LaTeX, PDF, HTML (en/pt) | [UC-09](use_cases/UC-09_reports.ipynb) | Report Export, `python -m pumpflow.export_cli` |
+| UC-09 | Reports: Word, LaTeX, PDF, HTML (en/pt); API 610 test data summary (Annex M / 8th App. T) in Word, LaTeX, PDF, Excel | [UC-09](use_cases/UC-09_reports.ipynb) | Report Export, `python -m pumpflow.export_cli [--summary]` |
 | UC-10 | Learn the fundamentals | [concepts](docs/concepts/), [training](docs/training/) ([TR-01 exercises](use_cases/TR-01_witness_training.ipynb)) | formula tooltips, ⓘ help buttons |
 | UC-11 | Mechanical running test acceptance | [UC-11](use_cases/UC-11_mechanical_run.ipynb) | Mechanical Run |
 | — | Viscosity correction (HI 9.6.7) | [viscosity](use_cases/viscosity_HI967.ipynb) | Correction ("apply viscosity") |

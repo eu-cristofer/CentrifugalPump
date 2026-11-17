@@ -43,6 +43,9 @@ On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked aga
 - [x] C1: `CLAUDE.md` refreshed (2026-11-17).
 
 ## 4. Product follow-ups (candidate sprints for a 002 project)
+- [x] API 610 test data summary export (Annex M / 8th App. T): Word, LaTeX, PDF, Excel; Test Points vibration columns (2026-11-17).
+- [ ] Vendor allowable-operating-region limits (min continuous stable flow / max flow) on the Rated Point, so the summary's allowable column uses them instead of "every tested point except shut-off".
+- [ ] Shaft-displacement (proximity probe) readings for the summary's shaft rows.
 - [ ] Render Markdown notes in reports. They are printed raw today: pipes, asterisks.
 - [ ] Overlay the system curve and operating point on the Performance Plot and Explorer (deferred in S11).
 - [ ] GUI for the NPSH 3 % head-drop sweep (library-only today: `pump.npsh.npsh3_from_sweep`).

@@ -63,7 +63,7 @@ CI (`.github/workflows/ci.yml`): tests on Python 3.12 and 3.13 (blocking), black
 `system_curve.py` + `operating_point.py` (UC-03/04), `catalogue.py` (selection, UC-01), `compare.py` (A vs B, UC-08), `npsh.py` (UC-05), `mechanical_run.py` (UC-11).
 
 ### Reports ([pump/utilities/report.py](pump/utilities/report.py), `report_latex.py`, `report_html.py`)
-docx from `pump/templates/template_{en,pt}.docx`, plus LaTeX/PDF and self-contained HTML.  Shared helpers (cover, signatures, verdict sentences) live in `report.py`.  Strings come from gettext catalogs in `pump/utilities/locales/{en,pt}/LC_MESSAGES/messages.po`; compiled `.mo` files are git-ignored and a `.po` fallback parser is used.  Add every new string to **both** `.po` files.
+docx from `pump/templates/template_{en,pt}.docx`, plus LaTeX/PDF and self-contained HTML.  `pump/utilities/test_summary.py` writes the API 610 **test data summary** (Annex M / 8th App. T) as docx, tex, pdf and xlsx (`openpyxl` is the optional `[xlsx]` extra); its vibration columns come from the optional Test Points vibration columns.  Shared helpers (cover, signatures, verdict sentences) live in `report.py`.  Strings come from gettext catalogs in `pump/utilities/locales/{en,pt}/LC_MESSAGES/messages.po`; compiled `.mo` files are git-ignored and a `.po` fallback parser is used.  Add every new string to **both** `.po` files.
 
 ## Architecture: the `pumpflow` workbench
 

@@ -92,8 +92,20 @@ from .engineering import (
     select_pumps,
     rated_from_candidate,
 )
+from .summary import (
+    SUMMARY_FIELDS,
+    SUMMARY_FORMATS,
+    export_test_summary,
+    form_title,
+    test_data_summaries,
+)
 
 __all__ = [
+    "SUMMARY_FIELDS",
+    "SUMMARY_FORMATS",
+    "export_test_summary",
+    "form_title",
+    "test_data_summaries",
     "BindingError",
     "make_rated_fluid",
     "water_density_kgm3",

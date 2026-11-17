@@ -72,6 +72,12 @@ def main(argv=None) -> int:
     )
     ap.add_argument("--stem", default=None, help="file name without extension")
     ap.add_argument("--template", default=None, help="custom template_*.docx")
+    ap.add_argument(
+        "--summary",
+        action="store_true",
+        help="also write the API 610 test data summary (Annex M / 8th-ed. App. T) "
+        "as <stem>_test_summary.{docx,tex,pdf,xlsx}",
+    )
     args = ap.parse_args(argv)
 
     from .binding import REPORT_FORMATS, assemble_report_data, export_reports
@@ -128,6 +134,28 @@ def main(argv=None) -> int:
         print(f"  wrote {fmt:4s} {path}")
     for fmt, msg in errors.items():
         print(f"  FAILED {fmt}: {msg}", file=sys.stderr)
+
+    if args.summary:
+        from pump.utilities.report import LocalizationHelper
+
+        from .binding import SUMMARY_FORMATS, export_test_summary, test_data_summaries
+
+        summaries = test_data_summaries(
+            rated, reportable, s, LocalizationHelper(language)._
+        )
+        base = stem or Path(next(iter(paths.values()), "Report")).stem
+        s_paths, s_errors = export_test_summary(
+            summaries,
+            SUMMARY_FORMATS,
+            language=language,
+            out_dir=out_dir,
+            stem=f"{base}_test_summary",
+        )
+        for fmt, path in s_paths.items():
+            print(f"  wrote summary {fmt:4s} {path}")
+        for fmt, msg in s_errors.items():
+            print(f"  FAILED summary {fmt}: {msg}", file=sys.stderr)
+        errors = {**errors, **{f"summary-{k}": v for k, v in s_errors.items()}}
     return 1 if (errors or errors_in_graph) else 0
 
 

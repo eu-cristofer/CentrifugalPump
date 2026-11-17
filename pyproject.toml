@@ -20,6 +20,9 @@ dependencies = [
     "tabulate"
 ]
 [project.optional-dependencies]
+xlsx = [
+    "openpyxl",
+]
 dev = [
     "black",
     "build",
@@ -27,7 +30,8 @@ dev = [
     "nbclient",
     "ipykernel",
     "nbformat",
-    "mypy"
+    "mypy",
+    "openpyxl"
 ]
 gui = [
     "PySide6",

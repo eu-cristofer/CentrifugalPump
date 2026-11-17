@@ -408,4 +408,12 @@ def fit_model(
             for pair in (corrected.before_after or ())
             if pair.get("measured", {}).get("speed") is not None
         ),
+        point_vibration=tuple(
+            (
+                Q_(pair["corrected"]["q"], "m**3/h"),
+                {k: Q_(v, "mm/s") for k, v in pair["measured"]["vib"].items()},
+            )
+            for pair in (corrected.before_after or ())
+            if pair.get("measured", {}).get("vib")
+        ),
     )

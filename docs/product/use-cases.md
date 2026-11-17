@@ -68,7 +68,11 @@
 - **Output:** one consolidated report in `.docx`, `.tex`, `.pdf` and a self-contained
   `.html`, in English and Portuguese: cover page, equipment, rated data, performance per
   unit, comparison, NPSH, mechanical run, viscosity factors, deviations and open points,
-  and a signature block.
+  and a signature block.  Also the **API 610 test data summary** (Annex M of the
+  11th/12th editions, Appendix T of the 8th) per pump, in `.docx`, `.tex`, `.pdf` and
+  `.xlsx`, with vibration by flow region from the Test Points vibration columns
+  (`pump.utilities.test_summary`, `pumpflow.binding.test_data_summaries`,
+  `export_cli --summary`).
 - **Supported by:** `pump.utilities.report.ReportGenerator`,
   `pump.utilities.report_latex.LatexReportGenerator`, `pumpflow.binding.export_reports`,
   the Report Export node and `python -m pumpflow.export_cli`.
