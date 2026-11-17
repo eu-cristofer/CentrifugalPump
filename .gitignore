@@ -231,3 +231,4 @@ graphify-out/**
 
 # Licensed standards text (keep local, never publish)
 marker-output/
+pump/graphify-out/

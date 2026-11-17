@@ -48,7 +48,7 @@ On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked aga
 - [x] B2: a check that cannot be computed is "not evaluated", and the verdict reads NOT FULLY ASSESSED, never an approval.
 - [x] B3: shut-off rows are detected against a fraction of the rated flow, not `capacity.m < 0.1`.
 - [ ] B4: split `pumpflow/binding.py` (1 480 lines) into a package.
-- [ ] C1: refresh `CLAUDE.md` (stale: "no type checking", "±3 % hard-coded", `Point`, `mathx`, "seven nodes").
+- [x] C1: `CLAUDE.md` refreshed (2026-11-17).
 
 ## 4. Product follow-ups (candidate sprints for a 002 project)
 - [ ] Render Markdown notes in reports. They are printed raw today: pipes, asterisks.
