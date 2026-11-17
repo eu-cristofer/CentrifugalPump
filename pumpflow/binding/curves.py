@@ -209,6 +209,12 @@ def correct_curve(
                 "power": float(r.power.to("kW").magnitude),
                 "eff": float(eff.to("percent").magnitude) if eff is not None else None,
                 "speed": float(r.speed.to("rpm").magnitude),
+                # bearing-housing vibration (mm/s RMS) when recorded
+                "vib": {
+                    k: float(getattr(r, k).to("mm/s").magnitude)
+                    for k in ("vib_de", "vib_de_f", "vib_nde", "vib_nde_f")
+                    if getattr(r, k, None) is not None
+                },
             }
         )
 

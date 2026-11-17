@@ -479,6 +479,10 @@ class UnitHeaderStrip(QWidget):
         base = self.mapFromGlobal(tbl.mapToGlobal(QPoint(0, 0))).x()
         vw = vh.width() if vh.isVisible() else 0
         for h in self.headers:
+            if tbl.isColumnHidden(h.col):
+                h.combo.hide()
+                continue
+            h.combo.show()
             x = base + tbl.frameWidth() + vw + hh.sectionViewportPosition(h.col)
             w = sum(hh.sectionSize(c) for c in range(h.col, h.col + h.span))
             h.combo.setGeometry(x + 1, 2, max(w - 2, 20), 24)

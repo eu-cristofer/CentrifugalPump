@@ -331,6 +331,12 @@ class TestRows:
             # One spelling on disk for every column (compact Pint, as
             # quantity_io writes quantities), so encode(decode(v2)) == v2.
             out[key] = _disk_unit(dim, label)
+        # Optional vibration columns: written only when some row has a value,
+        # so a project without vibration data keeps its exact on-disk shape.
+        rows = d.get("rows") or []
+        for key, dim in units.VIBRATION_COLUMNS.items():
+            if any(isinstance(r, dict) and r.get(key) is not None for r in rows):
+                out[key] = _disk_unit(dim, cols.get(key, "mm/s"))
         d["columns"] = out
         d["pressure_ref"] = d.get("pressure_ref", "g")
 
@@ -359,6 +365,14 @@ class TestRows:
                 continue
             if stored is None:
                 labels[key] = units.canonical_unit(dim)
+                continue
+            label, convert = _label_or_canonical(dim, stored)
+            labels[key] = label
+            if convert:
+                src[key], dst[key] = stored, _pint(dim, label)
+        for key, dim in units.VIBRATION_COLUMNS.items():
+            stored = cols.get(key)
+            if stored is None:
                 continue
             label, convert = _label_or_canonical(dim, stored)
             labels[key] = label

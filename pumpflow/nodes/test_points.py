@@ -40,10 +40,18 @@ from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
 
-_NAMES = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
-_ALL_KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power", "head", "eff"]
-_KEYS = _ALL_KEYS[:6]  # editable columns
-_EDITABLE = {0, 1, 2, 3, 4, 5}
+_NAMES = [
+    "Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η",
+    "Vib DE", "Vib DE f", "Vib NDE", "Vib NDE f",
+]
+_ALL_KEYS = [
+    "q", "p_suc", "p_dis", "temp_c", "n", "power", "head", "eff",
+    "vib_de", "vib_de_f", "vib_nde", "vib_nde_f",
+]
+_KEYS = _ALL_KEYS[:6]  # hydraulic input columns (also the header-less paste order)
+_VIB_KEYS = _ALL_KEYS[8:]  # optional vibration columns (RMS), shown on demand
+_VIB_COLS = range(8, 12)
+_EDITABLE = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11}
 _PRESSURE_KEYS = ("p_suc", "p_dis")
 _DEFAULT_LABEL = "Water at T_water"
 
@@ -91,19 +99,23 @@ def geometry_from_settings(s: dict) -> Optional[BenchGeometry]:
 
 def canonical_columns(pressure_label: str = "bar") -> Dict[str, str]:
     """Exchange/canonical column units: m³/h · pressure · °C · rpm · kW · m · %."""
-    cols = {k: units.canonical_unit(dim) for k, dim in units.COLUMN_DIMENSIONS.items()}
+    cols = {
+        k: units.canonical_unit(dim) for k, dim in units.ALL_COLUMN_DIMENSIONS.items()
+    }
     cols["p_suc"] = cols["p_dis"] = pressure_label
+    for k in _VIB_KEYS:  # vibration is exchanged in mm/s (RMS)
+        cols[k] = "mm/s"
     return cols
 
 
 def default_columns(prefs=None) -> Dict[str, str]:
     """Column units of a fresh table: the active preset's display units."""
     prefs = prefs if prefs is not None else units.PREFS
-    return {k: prefs.default_unit(dim) for k, dim in units.COLUMN_DIMENSIONS.items()}
+    return {k: prefs.default_unit(dim) for k, dim in units.ALL_COLUMN_DIMENSIONS.items()}
 
 
 def _pint_of(columns: dict, key: str) -> str:
-    dim = units.COLUMN_DIMENSIONS[key]
+    dim = units.ALL_COLUMN_DIMENSIONS[key]
     return units.pint_str(dim, columns.get(key) or units.canonical_unit(dim))
 
 
@@ -135,6 +147,11 @@ def _row_from_dict(r: dict, columns: dict, pressure_ref: str = "g") -> TestRow:
         power=Q_(num("power"), _pint_of(cols, "power")),
         head=None if head is None else Q_(float(head), _pint_of(cols, "head")),
         efficiency=None if eff is None else Q_(float(eff), _pint_of(cols, "eff")),
+        **{
+            k: Q_(float(r[k]), _pint_of(cols, k))
+            for k in _VIB_KEYS
+            if r.get(k) is not None
+        },
     )
 
 
@@ -169,13 +186,18 @@ def testset_settings(tps: TestPointSet, columns: Optional[dict] = None) -> dict:
                 "eff": None
                 if r.efficiency is None
                 else r.efficiency.to("percent").magnitude,
+                **{
+                    k: getattr(r, k).to("mm/s").magnitude
+                    for k in _VIB_KEYS
+                    if getattr(r, k, None) is not None
+                },
             }
         )
     target = dict(base)
     if columns:
         target.update(columns)
-        for key, dim in units.COLUMN_DIMENSIONS.items():
-            if target[key] == base[key]:
+        for key, dim in units.ALL_COLUMN_DIMENSIONS.items():
+            if target.get(key, base[key]) == base[key]:
                 continue
             for row in rows:
                 if row.get(key) is not None:
@@ -274,7 +296,9 @@ class TestPointsTableNode(BaseNode):
         for k, v in default_geometry_settings().items():
             s.setdefault(k, v)
         cols = s["columns"]
-        dims = units.COLUMN_DIMENSIONS
+        for k in _VIB_KEYS:  # runtime labels for the optional vibration columns
+            cols.setdefault(k, units.PREFS.default_unit("vibration_velocity"))
+        dims = units.ALL_COLUMN_DIMENSIONS
 
         dlg = ui.PropertyDialog(
             parent,
@@ -367,7 +391,8 @@ class TestPointsTableNode(BaseNode):
             table.blockSignals(True)
             table.setRowCount(len(s["rows"]))
             for i, r in enumerate(s["rows"]):
-                for c, key in enumerate(_KEYS):
+                for c in sorted(_EDITABLE):
+                    key = _ALL_KEYS[c]
                     val = r.get(key)
                     item = QTableWidgetItem("" if val is None else f"{float(val):g}")
                     table.setItem(i, c, item)
@@ -379,7 +404,7 @@ class TestPointsTableNode(BaseNode):
             if col not in _EDITABLE or row >= len(s["rows"]):
                 return
             val = parse_decimal(item.text(), None)
-            s["rows"][row][_KEYS[col]] = val
+            s["rows"][row][_ALL_KEYS[col]] = val
             table.blockSignals(True)
             item.setText("" if val is None else f"{val:g}")
             refresh_computed(row)
@@ -491,9 +516,33 @@ class TestPointsTableNode(BaseNode):
             f.combo.setEnabled(geo_chk.isChecked())
             geo_fields[k] = f
 
+        # -- optional vibration columns (RMS), hidden unless wanted / present
+        def has_vibration() -> bool:
+            return any(r.get(k) is not None for r in s["rows"] for k in _VIB_KEYS)
+
+        vib_chk = ui.checkbox(
+            "Vibration columns (bearing housing, RMS: drive end / non-drive end, "
+            "overall / filtered)",
+            has_vibration(),
+        )
+        vib_chk.setObjectName("ShowVibration")
+        vib_chk.setToolTip(
+            "Record vibration at each test point for the test data summary "
+            "(API 610 Annex M / 8th App. T): rated flow, preferred and allowable "
+            "operating regions. Values must be RMS."
+        )
+
+        def show_vibration(on: bool) -> None:
+            for c in _VIB_COLS:
+                table.setColumnHidden(c, not on)
+            strip.sync()
+
+        vib_chk.toggled.connect(show_vibration)
+
         # toolbar
         def blank_row() -> dict:
-            return {k: None for k in _ALL_KEYS}
+            # hydraulic keys only: vibration keys appear when a value is typed
+            return {k: None for k in _ALL_KEYS[:8]}
 
         def add_row():
             s["rows"].append(blank_row())
@@ -580,6 +629,8 @@ class TestPointsTableNode(BaseNode):
                 new_rows.append(rd)
             if new_rows:
                 s["rows"] = new_rows
+                if any(k in _VIB_KEYS for k in col_keys):
+                    vib_chk.setChecked(True)
                 sync_header_widgets()
                 update_headers()
                 fill()
@@ -621,12 +672,14 @@ class TestPointsTableNode(BaseNode):
             dlg.add(geo_fields[k].row(geo_labels[k]))
         dlg.add(ui.hline())
         dlg.add(ui.section("Measured points"))
+        dlg.add(vib_chk)
         dlg.add(bar)
         dlg.add(grid)
         dlg.add(banner)
         fill()
         recompute_status()
-        dlg.resize(760, 700)
+        show_vibration(vib_chk.isChecked())
+        dlg.resize(980 if vib_chk.isChecked() else 760, 700)
         QTimer.singleShot(0, strip.sync)
         return dlg
 

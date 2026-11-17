@@ -153,6 +153,12 @@ class TestRow:
     power: Q_  # measured breaking power      (kW)
     head: Optional[Q_] = None  # optional measured/overridden head (m)
     efficiency: Optional[Q_] = None  # optional measured efficiency    (percent)
+    # Optional bearing-housing vibration velocity (RMS) at this point:
+    # drive end / non-drive end, overall / filtered.
+    vib_de: Optional[Q_] = None
+    vib_de_f: Optional[Q_] = None
+    vib_nde: Optional[Q_] = None
+    vib_nde_f: Optional[Q_] = None
 
 
 @dataclass(frozen=True)

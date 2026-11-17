@@ -174,6 +174,19 @@ COLUMN_DIMENSIONS: Dict[str, str] = {
     "eff": "efficiency",
 }
 
+# Optional Test Points vibration columns (bearing-housing velocity, RMS): drive
+# end / non-drive end, overall / filtered.  Kept out of COLUMN_DIMENSIONS so a
+# project without vibration data keeps its exact on-disk shape.
+VIBRATION_COLUMNS: Dict[str, str] = {
+    "vib_de": "vibration_velocity",
+    "vib_de_f": "vibration_velocity",
+    "vib_nde": "vibration_velocity",
+    "vib_nde_f": "vibration_velocity",
+}
+
+#: Every Test Points column key -> unit dimension.
+ALL_COLUMN_DIMENSIONS: Dict[str, str] = {**COLUMN_DIMENSIONS, **VIBRATION_COLUMNS}
+
 
 def canonical_unit(dimension: str) -> str:
     """The library's standard display label for a dimension (first option)."""
@@ -364,6 +377,16 @@ _HEADER_KEYS = {
     "η": "eff",
     "eta": "eff",
     "eff": "eff",
+    "vib_de": "vib_de",
+    "vib_de_f": "vib_de_f",
+    "vib_nde": "vib_nde",
+    "vib_nde_f": "vib_nde_f",
+    "vib_de_filtered": "vib_de_f",
+    "vib_nde_filtered": "vib_nde_f",
+    "de": "vib_de",
+    "de_f": "vib_de_f",
+    "nde": "vib_nde",
+    "nde_f": "vib_nde_f",
 }
 
 # Aliases are keyed by casefolded text.
@@ -439,6 +462,8 @@ def parse_unit_header(text: str) -> Tuple[str, Optional[str], Optional[str]]:
     ('temp_c', '°F', None)
     >>> parse_unit_header("Head")
     ('head', None, None)
+    >>> parse_unit_header("Vib DE [in/s]")
+    ('vib_de', 'in/s', None)
     """
     m = re.match(r"^\s*([^\[\]]+?)\s*(?:\[([^\]]*)\])?\s*$", str(text))
     if not m:
@@ -449,7 +474,7 @@ def parse_unit_header(text: str) -> Tuple[str, Optional[str], Optional[str]]:
     unit_text = (m.group(2) or "").strip()
     if not unit_text:
         return key, None, None
-    dimension = COLUMN_DIMENSIONS[key]
+    dimension = ALL_COLUMN_DIMENSIONS[key]
     ref: Optional[str] = None
     if dimension == "pressure":
         tokens = unit_text.split()
