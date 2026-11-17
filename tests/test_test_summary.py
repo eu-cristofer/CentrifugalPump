@@ -114,6 +114,8 @@ def test_b34004a_summary_values(qapp):
     assert overall.location == "Gearbox housing"
     assert overall.rated == (pytest.approx(3.76, abs=0.01), 3.0)
     assert s.curve_png and s.curve_png.startswith(b"\x89PNG")
+    # Figure M.4 style: test points + gearbox vibration against flow
+    assert s.extra["test_points_png"].startswith(b"\x89PNG")
 
 
 def test_point_vibration_fills_every_region(qapp, tmp_path):

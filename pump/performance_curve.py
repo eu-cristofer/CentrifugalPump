@@ -303,7 +303,9 @@ class PerformanceCurve:
         return q_bep, self.predict_head(q_bep), self.predict_efficiency(q_bep)
 
     def plot_performance_curve(self, chart_title=None, capacity: Optional[Q_] = None, return_io=False,
-                               head_ylim=None, power_ylim=None, efficiency_ylim=None):
+                               head_ylim=None, power_ylim=None, efficiency_ylim=None,
+                               npsh_curve=None, npsha: Optional[Q_] = None,
+                               npshr_quoted: Optional[Q_] = None, npsh_ylim=None):
         """
         Plots the pump performance curve with three subplots:
         - Head vs. Capacity (takes up more height)
@@ -324,6 +326,13 @@ class PerformanceCurve:
             Y-axis limits for the Power subplot, e.g. (150, 550).
         efficiency_ylim : tuple of (float, float), optional
             Y-axis limits for the Efficiency subplot, e.g. (0, 100).
+        npsh_curve : pump.npsh.NPSHrCurve, optional
+            NPSH3 test points.  When given (and power and efficiency are
+            present) a fourth subplot NPSHr vs. Capacity is drawn: the points,
+            their fit over the tested range only, ``npsha`` as a dash-dot line
+            and ``npshr_quoted`` (datasheet NPSHr) as a diamond at ``capacity``.
+        npsh_ylim : tuple of (float, float), optional
+            Y-axis limits for the NPSHr subplot.
         """
         capacities = self.fitter.capacities
         heads = self.fitter.heads
@@ -345,7 +354,13 @@ class PerformanceCurve:
                 fitted_efficiency = np.polyval(self.fitter.efficiency_coeffs, capacity_value)
 
         # Setup figure based on available data
-        if has_power and has_efficiency:
+        with_npsh = npsh_curve is not None and has_power and has_efficiency
+        if with_npsh:
+            fig, axes = plt.subplots(
+                4, 1, sharex=True, figsize=(8, 10),
+                gridspec_kw={'height_ratios': [5, 3, 4, 3]}
+            )
+        elif has_power and has_efficiency:
             fig, axes = plt.subplots(
                 3, 1, sharex=True, figsize=(8, 8), gridspec_kw={'height_ratios': [5, 3, 4]}
             )
@@ -439,6 +454,39 @@ class PerformanceCurve:
                 # Add tick labels
                 ax3.text(capacity_value, ax3.get_ylim()[0], f"{capacity_value:.1f}", verticalalignment='bottom', horizontalalignment='center', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
                 ax3.text(ax3.get_xlim()[0], fitted_efficiency, f"{fitted_efficiency:.1f}", verticalalignment='center', horizontalalignment='left', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
+
+        if with_npsh:
+            ax3.set_xlabel("")
+            ax4 = axes[3]
+            nq = np.array([q.to("m**3/h").magnitude for q in npsh_curve.q], dtype=float)
+            nv = np.array([v.to("m").magnitude for v in npsh_curve.npshr], dtype=float)
+            grid = np.linspace(nq.min(), nq.max(), 100)
+            fit = np.array([npsh_curve(Q_(x, "m**3/h")).to("m").magnitude for x in grid])
+            ax4.scatter(nq, nv, color="purple", label="NPSH3 Data", marker="o")
+            ax4.plot(grid, fit, "-", color="purple", label="NPSHr Fit")
+            if npsha is not None:
+                a = npsha.to("m").magnitude
+                ax4.axhline(a, color="darkorange", linestyle="-.", label=f"NPSHa {a:.2f} m")
+            if capacity is not None:
+                ax4.axvline(capacity_value, color="gray", linestyle="dashed")
+                if nq.min() <= capacity_value <= nq.max():
+                    at = npsh_curve(capacity).to("m").magnitude
+                    ax4.plot(capacity_value, at, "x", color="purple", markersize=10)
+                    ax4.text(ax4.get_xlim()[0], at, f"{at:.2f}", verticalalignment='center',
+                             horizontalalignment='left', fontsize=10,
+                             bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
+                if npshr_quoted is not None:
+                    ax4.plot(capacity_value, npshr_quoted.to("m").magnitude, "D",
+                             markerfacecolor="white", markeredgecolor="purple",
+                             markersize=7, label="Quoted NPSHr")
+            ax4.set_ylabel("NPSHr (m)")
+            ax4.set_xlabel("Capacity (m³/h)")
+            ax4.yaxis.set_label_position("right")
+            ax4.yaxis.tick_right()
+            ax4.grid()
+            ax4.legend(loc="center left")
+            if npsh_ylim is not None:
+                ax4.set_ylim(npsh_ylim)
 
         if head_ylim is not None:
             ax1.set_ylim(head_ylim)

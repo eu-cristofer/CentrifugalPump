@@ -246,17 +246,27 @@ double‑click‑to‑open property dialog.
   efficiency_coeffs`; spline ported from notebook (`NaturalCubicSpline`).
 
 ### 5.5 Performance Plot
-- **Inputs:** `FittedModel` (and `RatedPoint` for the marker).
+- **Inputs:** `FittedModel` (and `RatedPoint` for the marker; optional
+  `NPSHResult` from an NPSH node).
 - **Outputs:** optional `image/png` (BytesIO) for the report.
 - **Main area:** three stacked, shared‑x charts **Q×H (tallest), Q×P, Q×η**, each
   with: corrected data points (markers), polynomial curve, spline curve (dashed),
-  and a crosshair at the rated capacity with value labels.
-- **Controls:** per‑axis y‑limits, title, toggle polynomial/spline/points,
-  "Copy/Export PNG".
+  and a crosshair at the rated capacity with value labels.  With `NPSHResult`
+  wired, a fourth chart **Q×NPSHr**: NPSH3 test points, their fit over the tested
+  range, NPSHa as a dash‑dot line and the quoted NPSHr (◇) at rated flow.
+- **Interaction:** matplotlib toolbar (home, back/forward, pan, zoom, save) and a
+  hover cursor across every chart with a readout of Q, H, P, η and NPSHr from the
+  fits (tested range only).
+- **Controls:** per‑axis y‑limits (head, power, efficiency, NPSHr) with "auto":
+  while on auto the fields show the limits in use (calculated, or as zoomed),
+  so unticking auto starts from them; `npsh_ylim` is stored only when set.
+  Toggle polynomial/spline/points, "Export PNG".
 - **Binding:** prefer `PerformanceCurve.plot_performance_curve(capacity=rated_Q,
   return_io=True, head_ylim=, power_ylim=, efficiency_ylim=)` for the report image;
   the on‑canvas interactive version may overlay the spline that the library plot
-  lacks.
+  lacks.  When the branch carries an NPSH result, the report image adds the same NPSHr
+  chart (`plot_performance_curve(npsh_curve=, npsha=, npshr_quoted=)`).  The
+  B‑34004A reference project wires `npsh_a → plot_a` (and `npsh_b → plot_b`).
 
 ### 5.6 API 610 Compliance Check
 - **Inputs:** `FittedModel`, `RatedPoint`.

@@ -621,6 +621,8 @@ FIELDS: Dict[str, tuple] = {
         YLimDisp("head_ylim", "head", "head_ylim_unit"),
         YLimDisp("power_ylim", "power", "power_ylim_unit"),
         YLimDisp("eff_ylim", "efficiency", "eff_ylim_unit"),
+        # Optional (stored only when set): the NPSHr chart's limits.
+        YLimDisp("npsh_ylim", "npsh", "npsh_ylim_unit"),
     ),
     "test_points": (
         TestRows(),

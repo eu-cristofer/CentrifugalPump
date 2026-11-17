@@ -1339,6 +1339,18 @@
       "src_port": "RatedPoint",
       "dst_node": "test_b",
       "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "npsh_a",
+      "src_port": "NPSHResult",
+      "dst_node": "plot_a",
+      "dst_port": "NPSHResult"
+    },
+    {
+      "src_node": "npsh_b",
+      "src_port": "NPSHResult",
+      "dst_node": "plot_b",
+      "dst_port": "NPSHResult"
     }
   ],
   "view": {

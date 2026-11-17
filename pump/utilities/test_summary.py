@@ -472,13 +472,16 @@ def write_docx(
         if s.extra.get("vibration_chart_png"):
             doc.add_paragraph(_("High-speed vibration limit (API 610 chart)"))
             doc.add_picture(io.BytesIO(s.extra["vibration_chart_png"]), width=Cm(14.0))
+        if s.extra.get("test_points_png"):
+            doc.add_paragraph(_("Test points and vibration against flow"))
+            doc.add_picture(io.BytesIO(s.extra["test_points_png"]), width=Cm(16.5))
 
         doc.add_heading(_("Bearing temperatures"), level=2)
         table([[_(label), value or ""] for label, value in s.bearings])
 
         if s.curve_png:
             doc.add_heading(_("Test curve"), level=2)
-            doc.add_picture(io.BytesIO(s.curve_png), width=Cm(16.5))
+            doc.add_picture(io.BytesIO(s.curve_png), width=Cm(15.0))
         for note in s.notes:
             doc.add_paragraph(note)
     out = Path(path)
@@ -578,6 +581,18 @@ def render_tex(
                 r"\begin{center}\includegraphics[width=0.75\linewidth]{%s}\end{center}"
                 % crel,
             ]
+        points_png = s.extra.get("test_points_png")
+        if points_png and fig_dir is not None:
+            fig_dir.mkdir(parents=True, exist_ok=True)
+            pname = f"test_points_{i + 1}.png"
+            (fig_dir / pname).write_bytes(points_png)
+            prel = f"{fig_rel}/{pname}" if fig_rel else pname
+            out += [
+                r"\par\smallskip\noindent\begin{minipage}{\linewidth}\centering"
+                r"{\small %s}\par\smallskip"
+                % e(_("Test points and vibration against flow")),
+                r"\includegraphics[width=0.95\linewidth]{%s}\end{minipage}\par" % prel,
+            ]
         out.append(r"\subsection*{%s}" % e(_("Bearing temperatures")))
         out += _tex_table(
             [[_(label), value or ""] for label, value in s.bearings],
@@ -590,7 +605,8 @@ def render_tex(
             rel = f"{fig_rel}/{name}" if fig_rel else name
             out += [
                 r"\subsection*{%s}" % e(_("Test curve")),
-                r"\begin{center}\includegraphics[width=0.92\linewidth]{%s}"
+                r"\begin{center}\includegraphics[width=0.92\linewidth,"
+                r"height=0.82\textheight,keepaspectratio]{%s}"
                 r"\end{center}" % rel,
             ]
         for note in s.notes:
@@ -767,6 +783,15 @@ def write_xlsx(
                 img = XLImage(io.BytesIO(s.curve_png))
                 img.width, img.height = img.width * 0.55, img.height * 0.55
                 ws.add_image(img, f"A{r + 2}")
+            except Exception:  # Pillow missing: the table is the deliverable
+                pass
+        if s.extra.get("test_points_png"):
+            try:
+                from openpyxl.drawing.image import Image as XLImage
+
+                pts = XLImage(io.BytesIO(s.extra["test_points_png"]))
+                pts.width, pts.height = pts.width * 0.5, pts.height * 0.5
+                ws.add_image(pts, f"L{r + 2}")
             except Exception:  # Pillow missing: the table is the deliverable
                 pass
     out = Path(path)

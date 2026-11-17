@@ -533,3 +533,131 @@ msgstr "Esta bomba"
 msgid "stage"
 msgstr "estágio"
 
+
+# Annex M charts (Figures M.3 / M.4)
+
+msgid "Allowable operating region: not in the project"
+msgstr "Região operacional admissível: não consta no projeto"
+
+msgid "As rated"
+msgstr "Nominal"
+
+msgid "Calculated efficiency"
+msgstr "Eficiência calculada"
+
+msgid "Curve No."
+msgstr "Curva n.º"
+
+msgid "Flowrate"
+msgstr "Vazão"
+
+msgid "Impeller diameter"
+msgstr "Diâmetro do impelidor"
+
+msgid "Impeller eye area"
+msgstr "Área do olho do impelidor"
+
+msgid "Impeller no."
+msgstr "Impelidor n.º"
+
+msgid "Key"
+msgstr "Legenda"
+
+msgid "Kinematic viscosity"
+msgstr "Viscosidade cinemática"
+
+msgid "Max."
+msgstr "Máx."
+
+msgid "Min."
+msgstr "Mín."
+
+msgid "No vibration recorded in the Test Points table."
+msgstr "Nenhuma vibração registrada na tabela de pontos de teste."
+
+msgid "Pumped liquid"
+msgstr "Líquido bombeado"
+
+msgid "Relative density"
+msgstr "Densidade relativa"
+
+msgid "Speed, r/min"
+msgstr "Rotação, rpm"
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Test points and vibration (overall)"
+msgstr "Pontos de teste e vibração (global)"
+
+msgid "Test points and vibration against flow"
+msgstr "Pontos de teste e vibração em função da vazão"
+
+msgid "Vibration"
+msgstr "Vibração"
+
+msgid "allowable operating region of flow"
+msgstr "região operacional admissível de vazão"
+
+msgid "basic vibration limit"
+msgstr "limite básico de vibração"
+
+msgid "efficiency"
+msgstr "eficiência"
+
+msgid "efficiency, expressed in percentage"
+msgstr "eficiência, expressa em porcentagem"
+
+msgid "expressed in metres"
+msgstr "expressa em metros"
+
+msgid "filtered"
+msgstr "filtrada"
+
+msgid "flowrate"
+msgstr "vazão"
+
+msgid "flowrate, expressed in cubic metres per hour"
+msgstr "vazão, expressa em metros cúbicos por hora"
+
+msgid "head"
+msgstr "altura manométrica"
+
+msgid "head vs. flow curve"
+msgstr "curva altura × vazão"
+
+msgid "head, expressed in metres"
+msgstr "altura manométrica, expressa em metros"
+
+msgid "limit outside the preferred region"
+msgstr "limite fora da região preferencial"
+
+msgid "power"
+msgstr "potência"
+
+msgid "power, expressed in kilowatts"
+msgstr "potência, expressa em quilowatts"
+
+msgid "preferred operating region of flow"
+msgstr "região operacional preferencial de vazão"
+
+msgid "rated flow"
+msgstr "vazão nominal"
+
+msgid "rated operating point"
+msgstr "ponto de operação nominal"
+
+msgid "rated point"
+msgstr "ponto nominal"
+
+msgid "test point"
+msgstr "ponto de teste"
+
+msgid "tested flow range (no allowable region in the project)"
+msgstr "faixa de vazão testada (região admissível não consta no projeto)"
+
+msgid "vibration"
+msgstr "vibração"
+
+msgid "vibration vs. flow curve"
+msgstr "curva vibração × vazão"

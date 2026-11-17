@@ -169,6 +169,28 @@ enter the RMS readings at each point (drive end / non-drive end, overall / filte
 
 Without per-point readings, the rated-flow column falls back to the mechanical run.
 
+**The two charts.**  The summary draws its charts in the style of Annex M:
+- **Test curve (Figure M.3 format)**: one dotted grid on one flow axis, with every
+  quantity on its own scale in its own height band:
+  - head (Y1) upper left;
+  - efficiency (Y2) lower left;
+  - power (Y3) right, middle;
+  - NPSH3 (Y4) right, bottom, when the project has an NPSH test.
+
+  Curves are numbered 1-4 and the rated point is marked ◁ on each, with the head
+  tolerance as a bar.  Arrow *a* spans the preferred region; arrow *b*, the allowable
+  region, is drawn only when the vendor's allowable region is known.  The header repeats
+  the pump, the liquid and the rated point, and boxes give the impeller diameters (max /
+  rated / min) and the test date.
+- **Test points and vibration (Figure M.4 format)**: the head curve with each tested
+  point as a star and the region limits hatched.  Under it, vibration against flow, with
+  the basic limit across the preferred region and the +30 % limit outside it.  It is drawn
+  when the Test Points table has vibration.
+
+Read the second chart first: a point above the red line is a vibration failure, and its
+flow tells you which limit applies.  Curves are drawn over the tested range only and are
+never extrapolated.
+
 ## 9 · Witness checklist
 
 Before the test:

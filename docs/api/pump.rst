@@ -65,3 +65,5 @@ Reporting
 .. automodule:: pump.utilities.report_html
 
 .. automodule:: pump.utilities.test_summary
+
+.. automodule:: pump.utilities.annex_m_charts

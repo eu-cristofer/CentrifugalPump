@@ -71,4 +71,6 @@ Limits are RMS only.  The Sundyne spectra for B-34004A read "inch/s pk", but the
 states that the values are RMS (recorded by the owner on 2026-11-17).  They are entered
 as RMS with that provenance noted in the project.
 
+The test data summary also draws **vibration against flow** in the Figure M.4 format: the basic limit across the preferred region, the +30 % limit outside it, and every test point.
+
 Worked exercise: [TR-01](../training/TR-01-witness-performance-test.md), exercise 10.

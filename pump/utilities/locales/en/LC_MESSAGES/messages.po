@@ -467,3 +467,131 @@ msgstr ""
 msgid "stage"
 msgstr ""
 
+
+# Annex M charts (Figures M.3 / M.4)
+
+msgid "Allowable operating region: not in the project"
+msgstr ""
+
+msgid "As rated"
+msgstr ""
+
+msgid "Calculated efficiency"
+msgstr ""
+
+msgid "Curve No."
+msgstr ""
+
+msgid "Flowrate"
+msgstr ""
+
+msgid "Impeller diameter"
+msgstr ""
+
+msgid "Impeller eye area"
+msgstr ""
+
+msgid "Impeller no."
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+msgid "Kinematic viscosity"
+msgstr ""
+
+msgid "Max."
+msgstr ""
+
+msgid "Min."
+msgstr ""
+
+msgid "No vibration recorded in the Test Points table."
+msgstr ""
+
+msgid "Pumped liquid"
+msgstr ""
+
+msgid "Relative density"
+msgstr ""
+
+msgid "Speed, r/min"
+msgstr ""
+
+msgid "Temperature"
+msgstr ""
+
+msgid "Test points and vibration (overall)"
+msgstr ""
+
+msgid "Test points and vibration against flow"
+msgstr ""
+
+msgid "Vibration"
+msgstr ""
+
+msgid "allowable operating region of flow"
+msgstr ""
+
+msgid "basic vibration limit"
+msgstr ""
+
+msgid "efficiency"
+msgstr ""
+
+msgid "efficiency, expressed in percentage"
+msgstr ""
+
+msgid "expressed in metres"
+msgstr ""
+
+msgid "filtered"
+msgstr ""
+
+msgid "flowrate"
+msgstr ""
+
+msgid "flowrate, expressed in cubic metres per hour"
+msgstr ""
+
+msgid "head"
+msgstr ""
+
+msgid "head vs. flow curve"
+msgstr ""
+
+msgid "head, expressed in metres"
+msgstr ""
+
+msgid "limit outside the preferred region"
+msgstr ""
+
+msgid "power"
+msgstr ""
+
+msgid "power, expressed in kilowatts"
+msgstr ""
+
+msgid "preferred operating region of flow"
+msgstr ""
+
+msgid "rated flow"
+msgstr ""
+
+msgid "rated operating point"
+msgstr ""
+
+msgid "rated point"
+msgstr ""
+
+msgid "test point"
+msgstr ""
+
+msgid "tested flow range (no allowable region in the project)"
+msgstr ""
+
+msgid "vibration"
+msgstr ""
+
+msgid "vibration vs. flow curve"
+msgstr ""

@@ -17,16 +17,28 @@ from .curves import format_geometry
 
 
 def build_report_png(
-    corrected: CorrectedCurve, rated: RatedPoint, ylims: Optional[dict] = None
+    corrected: CorrectedCurve,
+    rated: RatedPoint,
+    ylims: Optional[dict] = None,
+    npsh=None,
 ):
-    """Reuse the library's matplotlib plot for the report image (BytesIO PNG)."""
+    """Reuse the library's matplotlib plot for the report image (BytesIO PNG).
+
+    With ``npsh`` (an ``NPSHResultSignal`` carrying a curve) the image gains
+    the NPSHr chart: test points, fit, NPSHa and the quoted NPSHr.
+    """
     ylims = ylims or {}
+    result = getattr(npsh, "result", None)
     return corrected.curve.plot_performance_curve(
         capacity=rated.q,
         return_io=True,
         head_ylim=ylims.get("head"),
         power_ylim=ylims.get("power"),
         efficiency_ylim=ylims.get("efficiency"),
+        npsh_curve=getattr(npsh, "curve", None),
+        npsha=getattr(result, "npsha", None),
+        npshr_quoted=getattr(result, "npshr_quoted", None),
+        npsh_ylim=ylims.get("npsh"),
     )
 
 
@@ -184,7 +196,9 @@ def assemble_report_data(
                     entry["not_evaluated"] = list(b.compliance.not_evaluated)
             png = b.plot_png
             if png is None and b.corrected is not None:
-                png = build_report_png(b.corrected, rated)
+                png = build_report_png(
+                    b.corrected, rated, npsh=getattr(b, "npsh", None)
+                )
             if png is not None:
                 entry["Performance Curve"] = png
             viscous = getattr(b.corrected, "viscous", None) if b.corrected else None

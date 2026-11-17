@@ -16,7 +16,6 @@ from pump.utilities.test_summary import (
     PerformanceLine,
     TestDataSummary,
     VibrationLine,
-    plot_test_curve,
     vibration_by_region,
     write_docx,
     write_pdf,
@@ -327,6 +326,88 @@ def _high_speed_chart(rated, branch, criteria, translate: Translate, stages: int
         return None
 
 
+def _annex_m_charts(
+    rated, branch, criteria, s, eq, size_type, por, stages, translate: Translate
+):
+    """The Figure M.3 test curve and the Figure M.4 test points / vibration
+    chart (``None`` for either that cannot be drawn)."""
+    from pump.utilities.annex_m_charts import (
+        plot_annex_m_curve,
+        plot_test_points_vibration,
+    )
+
+    _ = translate
+    curve = branch.fitted.curve
+    npsh = getattr(branch, "npsh", None)
+    npsh_res = getattr(npsh, "result", None)
+    h_band = criteria.head_tolerance(rated.head)
+    try:
+        curve_png = plot_annex_m_curve(
+            curve,
+            rated={
+                "q": rated.q,
+                "head": rated.head,
+                "power": rated.power,
+                "efficiency": rated.efficiency,
+                "npsh3": getattr(npsh_res, "npshr_quoted", None),
+            },
+            por=por,
+            npsh_curve=getattr(npsh, "curve", None),
+            header={
+                "serial": eq.get("Serial No.", ""),
+                "size_type": size_type,
+                "stages": s.get("stages", ""),
+                "speed": f"{_mag(rated.speed, 'rpm'):g}",
+                "impeller_no": s.get("impeller_pattern", ""),
+                "liquid": rated.fluid_name,
+                "density": f"{rated.density_rel:.3f}",
+                "viscosity": f"{_mag(rated.viscosity, 'mm**2/s'):g}",
+                "curve_no": s.get("curve_number", ""),
+            },
+            impeller={
+                "max": rated.impeller_diameter_max,
+                "rated": rated.impeller_diameter,
+                "min": rated.impeller_diameter_min,
+            },
+            date=s.get("test_date", ""),
+            head_band=(-h_band[0], h_band[1]),
+            translate=translate,
+        )
+    except Exception:
+        curve_png = None
+
+    points = tuple(getattr(branch.fitted, "point_vibration", ()) or ())
+    points_png = None
+    if points:
+        from .acceptance import vibration_limits_for
+
+        vib = criteria.vibration
+        if vib.configured:
+            limits = vibration_limits_for(rated, branch.fitted, stages)
+        else:
+            limits = {
+                "overall": criteria.mechanical_run.role_max.get("vibration_unfiltered"),
+                "filtered": criteria.mechanical_run.role_max.get("vibration_filtered"),
+            }
+        increase = vib.outside_por_increase if vib.configured else 0.30
+        try:
+            points_png = plot_test_points_vibration(
+                curve,
+                rated.q,
+                rated.head,
+                points,
+                limits,
+                por=por,
+                aor_factor=1.0 + increase,
+                translate=translate,
+                title=f"{branch.pump_tag} · "
+                + _("Test points and vibration (overall)"),
+            )
+        except Exception:
+            points_png = None
+    return curve_png, points_png
+
+
 def _bearings(branch, settings: dict, translate: Translate) -> tuple:
     mech = getattr(getattr(branch, "mechanical", None), "result", None)
     oil = bearing = None
@@ -423,26 +504,9 @@ def test_data_summaries(
             por = (sel.por_min * q_bep, sel.por_max * q_bep)
         except Exception:
             por = None
-        try:
-            png = plot_test_curve(
-                b.fitted.curve,
-                rated.q,
-                rated.head,
-                por=por,
-                npsh_curve=getattr(getattr(b, "npsh", None), "curve", None),
-                title=f"{b.pump_tag} · {_('rated speed')} {_mag(rated.speed, 'rpm'):g} rpm",
-                labels={
-                    "flow": _("Flow") + " (m³/h)",
-                    "head": _("Head") + " (m)",
-                    "eff": _("Efficiency") + " (%)",
-                    "power": _("Power") + " (kW)",
-                    "npsh": "NPSH3 (m)",
-                    "por": _("Preferred operating region"),
-                    "rated": _("Rated point"),
-                },
-            )
-        except Exception:
-            png = None
+        png, points_png = _annex_m_charts(
+            rated, b, criteria, s, eq, size_type, por, n_stages, translate
+        )
         notes = [
             _("Blank fields are not recorded in the project: complete them by hand.")
         ]
@@ -463,7 +527,14 @@ def test_data_summaries(
                 construction=construction,
                 vibration=vib_lines,
                 vibration_notes=vib_notes,
-                extra={"vibration_chart_png": vib_chart} if vib_chart else {},
+                extra={
+                    k: v
+                    for k, v in (
+                        ("vibration_chart_png", vib_chart),
+                        ("test_points_png", points_png),
+                    )
+                    if v
+                },
                 bearings=_bearings(b, s, translate),
                 curve_png=png,
                 notes=tuple(notes),
