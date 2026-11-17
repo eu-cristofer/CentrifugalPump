@@ -174,7 +174,8 @@ def test_report_export_fields_stored_only_when_filled(qapp):
     dlg.close()
 
 
-def test_cli_summary_flag(qapp, tmp_path):
+def test_cli_summary_flag(qapp, tmp_path, capsys):
+    from pump.utilities.report_latex import find_latex_engine
     from pumpflow.export_cli import main
 
     rc = main(
@@ -189,6 +190,10 @@ def test_cli_summary_flag(qapp, tmp_path):
             "--summary",
         ]
     )
-    assert rc == 0
     for ext in ("docx", "tex", "xlsx"):
         assert (tmp_path / f"R_test_summary.{ext}").is_file()
+    if find_latex_engine():
+        assert rc == 0 and (tmp_path / "R_test_summary.pdf").is_file()
+    else:  # no TeX: the PDF failure is reported and the exit code says so
+        assert rc == 1
+        assert "FAILED summary pdf" in capsys.readouterr().err
