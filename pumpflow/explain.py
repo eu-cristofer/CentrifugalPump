@@ -35,15 +35,18 @@ FORMULAS = {
         "Efficiency",
         "η = P_hyd / P_shaft = ρ·g·Q·H / P_shaft\n"
         "P_hyd is the hydraulic power with the density of the test water at the "
-        "row's temperature; P_shaft is the breaking (motor output) power.",
+        "row's temperature; P_shaft is the breaking (motor output) power.\n"
+        "API 610 does not rate efficiency: it is judged only when the purchaser "
+        "specified a tolerance.",
     ),
     "npsha": (
         "NPSH available",
         "NPSHa = (p_s,abs − p_v)/(ρ·g) + v_s²/(2·g) + z_s\n"
         "p_s,abs = absolute suction pressure (gauge + atmosphere); p_v = vapour "
         "pressure at the liquid temperature; v_s = suction velocity; z_s = tap "
-        "elevation above the pump reference. The margin rule (ratio or "
-        "difference vs NPSHr) is configured by the owner.",
+        "elevation above the pump reference. The margin rule comes from the "
+        "client (N-553 rev E: NPSHa − NPSHr ≥ 0.8 m and NPSHa/NPSHr ≥ 1.15 at "
+        "rated flow); API 610 itself only requires NPSH3 ≤ the quoted NPSHr.",
     ),
     "viscosity_b": (
         "Viscosity parameter B (HI 9.6.7)",

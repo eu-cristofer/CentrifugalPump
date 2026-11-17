@@ -31,16 +31,26 @@ so the gauge or absolute reference is never ambiguous.
 - The **margin** is the ratio $NPSH_a/NPSH_r$ and the difference $NPSH_a - NPSH_r$
   (`npsh_margin`).
 
-## The margin rule is data, and is not configured
+## Two different rules
 
-No public API 610 / N-553 margin value was found, so the shipped rule is **not
-configured**: `check_npsh` reports ratio and margin with the status `info`, never a
-pass or fail.  When the owner enters a rule (`min_ratio` and/or `min_margin`) the status
-becomes `pass` or `fail`, and a rule that is not verified is labelled *unverified
-criteria* in the report.  See {doc}`acceptance-tolerances`.
+1. **Rated NPSH +0 % (API 610).**  The NPSH3 tested at the rated point must not exceed
+   the *quoted* NPSHr (8th ed. Table 4-2 and 4.3.4.1.3; 11th ed. Table 16 and 8.3.4.3.4).
+   Every edition ships `npshr_tol_plus = 0.0`.  The rule is judged when the quoted value is
+   entered: tick *Judge against the quoted NPSHr* in the NPSH node, or pass
+   `npshr_quoted=` to `check_npsh`.
+2. **NPSH margin (client).**  API 610 sets no NPSHa/NPSHr margin.  The Petrobras N-553
+   rev E overlay requires, at rated flow, NPSHa - NPSHr $\ge$ 0.8 m **and**
+   NPSHa/NPSHr $\ge$ 1.15 (7.3).  When the margin is below 1 m or the ratio below 1.20,
+   NPSHr must be measured at every test point except shut-off (9.22 note).  Rev D words
+   it differently (0.8 m or ratio 1.25, whichever is greater, over the whole range from
+   minimum flow to rated flow), so check the revision named on the datasheet.
 
-API 610 itself gives the NPSHr test a 0 % positive tolerance: the tested NPSH3 must
-not exceed the quoted value.
+With no rule at all, `check_npsh` reports ratio and margin with the status `info`, never
+pass or fail.  A rule changed in the node is labelled *unverified criteria*.  See
+{doc}`acceptance-tolerances`.
+
+B-34004A (N-553 rev E): NPSHa 2.40 m, NPSHr about 1.08 m at rated flow, so the margin is
+1.32 m and the ratio 2.22.  It **passes**.
 
 ## Assumptions
 

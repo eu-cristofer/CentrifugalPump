@@ -36,19 +36,33 @@ oil-temperature channel is still `info`.  The verdict reads `PASSED`, `FAILED` o
 `PASSED (not fully assessed)`; with unverified criteria the report adds *(unverified
 limits)*.
 
-## The values shipped (all unverified)
+## The values shipped
 
 | Criterion | Value | Source |
 |---|---|---|
-| Minimum duration | 4 h at rated flow, with oil-temperature stabilisation | Amarinth bulletin MP2606-100 rev A |
-| Filtered (discrete) vibration | 2.0 mm/s RMS (allowable region 2.6) | idem, horizontal pumps, preferred region |
-| Unfiltered (overall) vibration | 3.0 mm/s RMS (allowable region 3.9) | idem |
-| Stabilisation | not configured | - |
+| Unfiltered (overall) vibration | 3.0 mm/s RMS, +30 % outside the preferred region | API 610 8th Table 2-5; 11th/12th Table 8 |
+| Filtered (discrete) vibration | 2.0 mm/s RMS, +30 % outside the preferred region | same |
+| Minimum duration | 4 h at rated flow | 11th 8.3.4.2.2 / 12th 8.3.4.2, *if specified*; the 8th edition has no run test |
+| Stabilisation | none in the API tables; N-553 rev E: no rise > 2 K in 30 min, after a 1 h warm-up | N-553 rev E 9.20 |
 
-Open questions: the limits are **RMS**, so it matters whether a test sheet's "in/s" is RMS or
-peak (B-34004A's unfiltered 0.16 in/s is 4.06 mm/s if RMS, which fails 3.0, but 2.87 mm/s if
-peak); and the API 610 allowance for pumps above 3600 rpm or 300 kW per stage (this pump runs at
-10 300 rpm) is not applied.  See {doc}`acceptance-tolerances`.
+The mechanical-run part stays **unverified**, for two reasons:
+- under the 8th edition the duration comes from the purchase order;
+- the 11th and 12th editions allow higher vibration for pumps above 3600 r/min or 300 kW
+  per stage (Figures 34 / 35), and that allowance is not applied: its formula is illegible
+  in the local copy.  The tool keeps the conservative 3.0 / 2.0 mm/s.
+
+## RMS, not peak
+
+API 610 bearing-housing limits are **RMS**.  The 8th edition says so in its own words:
+true-peak values "are for information and diagnostic purposes only and are not to be used
+to determine the acceptability of the equipment" (2.8.3.7 note).  When US units are
+specified, true-peak velocities shall *also* be recorded (4.3.3.3.1).  US vendors
+therefore often print both, or only peak.
+
+So a test sheet in **in/s** needs one question answered: RMS or true peak?  Do not convert
+a peak value to RMS by dividing by $\sqrt 2$: that holds only for a pure sine wave.  Ask
+for the RMS readings.  B-34004A's unfiltered 0.16 in/s is 4.06 mm/s; read as RMS, it
+**fails** 3.0 mm/s under the 8th edition.
 
 ## Worked notebook
 

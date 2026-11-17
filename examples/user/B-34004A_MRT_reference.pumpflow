@@ -411,7 +411,7 @@
       "y": 160.0,
       "settings": {
         "title": "B-34004 witness reference",
-        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, η, shut-off) — see head-tolerance note.\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance: API 610 8th edition is inferred from the 10th, which gives ±2 % for rated heads above 300 m. A predicts +1.72 %, which passes but is tight. Confirm against the 8th-edition table.\n- Unfiltered vibration of 0.16 in/s: is the Sundyne \"IN/SEC\" reading RMS (4.06 mm/s, above 3.0) or peak (2.87 mm/s RMS, inside 3.0)? Ask Sundyne. The API 610 allowance above 3600 rpm (this pump runs at 10 300 rpm) has not been applied.\n- NPSH margin rule: not configured (no API 610 / N-553 value found).\n- SG: the datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt.\n- The datasheet body says B-33004A/B (the title says B-34004A/B).\n- A: no inlet temperature was recorded at the 120 % point (52.2 °C assumed).\n",
+        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, shut-off; η is information only under API 610) and the test speed (within 3 % of 10 212 rpm).\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance (API 610 8th Table 4-2, checked): −2/+2 % above 300 m. A predicts +1.72 %, which passes but is tight.\n- Unfiltered vibration of 0.16 in/s = 4.06 mm/s: above the 3.0 mm/s RMS limit (8th Table 2-5) *if* the Sundyne \"IN/SEC\" reading is RMS. True peak may not be used for acceptance (8th 2.8.3.7 note): ask Sundyne for the RMS readings. The 8th edition has no high-speed allowance.\n- NPSH: N-553 rev E 7.3 (≥ 0.8 m and ratio ≥ 1.15 at rated flow) passes, 1.32 m and 2.22; NPSH3 1.08 m ≤ quoted 1.24 m (rated NPSH +0 %). The datasheet calls for N-553 **rev C**: confirm the rule.\n- SG: the datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt.\n- The datasheet body says B-33004A/B (the title says B-34004A/B).\n- A: no inlet temperature was recorded at the 120 % point (52.2 °C assumed).\n",
         "report": true
       }
     },
@@ -1040,6 +1040,10 @@
         "overrides": {
           "min_ratio": null,
           "min_margin": null
+        },
+        "npshr_quoted": {
+          "value": 4.06,
+          "unit": "ft"
         }
       }
     },
@@ -1094,6 +1098,10 @@
         "overrides": {
           "min_ratio": null,
           "min_margin": null
+        },
+        "npshr_quoted": {
+          "value": 4.06,
+          "unit": "ft"
         }
       }
     },

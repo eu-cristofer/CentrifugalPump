@@ -51,7 +51,9 @@ class ComplianceCheckNode(BaseNode):
         result = check_compliance(fitted, rated, self.settings.get("tolerances") or None)
         self._last = result
         self._rated = rated
-        n_fail = sum(1 for p in result.parameters if not p.passed)
+        n_fail = sum(
+            1 for p in result.parameters if not p.passed and not p.informational
+        )
         # A verdict against criteria not verified from the standard text is
         # provisional: say so, instead of presenting it as final.
         tail = " (unverified criteria)" if result.unverified else ""
@@ -73,7 +75,8 @@ class ComplianceCheckNode(BaseNode):
         dlg = ui.PropertyDialog(
             parent, "API 610 Compliance Check",
             "Deviation δ = (predicted − rated)/rated.  Head min ≤ pred ≤ max · "
-            "Power δ≤tol · Efficiency δ≥−tol · Shut-off |δ|≤tol.",
+            "Power δ≤tol · Shut-off |δ|≤tol · Efficiency: information only unless "
+            "a purchaser tolerance is set.",
             width=680,
         )
         verdict = QLabel(objectName="VerdictBanner")
@@ -96,7 +99,14 @@ class ComplianceCheckNode(BaseNode):
         tol_head = ui.spin(cur["head"] * 100, 0, 50, 0.5, 1, None)
         tol_shut = ui.spin(cur["shutoff"] * 100, 0, 50, 0.5, 1, None)
         tol_pow = ui.spin(cur["power"] * 100, 0, 50, 0.5, 1, None)
-        tol_eff = ui.spin(cur["efficiency"] * 100, 0, 50, 0.5, 1, None)
+        # API 610 does not rate efficiency: it is judged only when the purchaser
+        # specified a tolerance (e.g. N-553 9.14 for drivers >= 1 MW: -0 %).
+        eff_guaranteed = ui.checkbox(
+            "Efficiency is guaranteed (purchaser-specified tolerance)",
+            cur.get("efficiency") is not None,
+        )
+        tol_eff = ui.spin((cur.get("efficiency") or 0.0) * 100, 0, 50, 0.5, 1, None)
+        tol_eff.setEnabled(eff_guaranteed.isChecked())
 
         def refresh():
             on_change()
@@ -149,12 +159,16 @@ class ComplianceCheckNode(BaseNode):
                 "head": tol_head.value() / 100.0,
                 "shutoff": tol_shut.value() / 100.0,
                 "power": tol_pow.value() / 100.0,
-                "efficiency": tol_eff.value() / 100.0,
+                "efficiency": (
+                    tol_eff.value() / 100.0 if eff_guaranteed.isChecked() else None
+                ),
             }
+            tol_eff.setEnabled(eff_guaranteed.isChecked())
             refresh()
 
         for sb in (tol_head, tol_shut, tol_pow, tol_eff):
             sb.valueChanged.connect(lambda _=None: write_tol())
+        eff_guaranteed.toggled.connect(lambda _=None: write_tol())
 
         reset = QPushButton("Reset to API 610 standard")
         reset.setObjectName("ToolButton")
@@ -165,8 +179,12 @@ class ComplianceCheckNode(BaseNode):
             for sb, key in ((tol_head, "head"), (tol_shut, "shutoff"),
                             (tol_pow, "power"), (tol_eff, "efficiency")):
                 sb.blockSignals(True)
-                sb.setValue(b[key] * 100)
+                sb.setValue((b[key] or 0.0) * 100)
                 sb.blockSignals(False)
+            eff_guaranteed.blockSignals(True)
+            eff_guaranteed.setChecked(b["efficiency"] is not None)
+            eff_guaranteed.blockSignals(False)
+            tol_eff.setEnabled(b["efficiency"] is not None)
             refresh()
 
         reset.clicked.connect(do_reset)
@@ -182,6 +200,7 @@ class ComplianceCheckNode(BaseNode):
         dlg.add(ui.row("Head", tol_head, "%"))
         dlg.add(ui.row("Shut-off head", tol_shut, "%"))
         dlg.add(ui.row("Power", tol_pow, "%"))
+        dlg.add(ui.row("", eff_guaranteed))
         dlg.add(ui.row("Efficiency", tol_eff, "%"))
         dlg.add(ui.row("", reset))
         refresh()
@@ -206,12 +225,16 @@ def _append_param(table: QTableWidget, p) -> None:
         notes.append("unverified")
     if getattr(p, "extrapolated", False):
         notes.append("extrapolated")
+    if getattr(p, "note", ""):
+        notes.append(p.note)
+    info = getattr(p, "informational", False)
     cells = [
         p.name, fmt(p.actual), fmt(p.predicted),
         fmt(p.minimum) if p.minimum is not None else "—",
         fmt(p.maximum) if p.maximum is not None else "—",
-        f"{p.deviation * 100:+.2f} %", f"{p.tolerance * 100:.1f} %",
-        "✅" if p.passed else "❌",
+        f"{p.deviation * 100:+.2f} %",
+        f"{p.tolerance * 100:.1f} %" if p.tolerance is not None else "—",
+        "info" if info else ("✅" if p.passed else "❌"),
         " · ".join(notes),
     ]
     for c, text in enumerate(cells):
@@ -219,7 +242,10 @@ def _append_param(table: QTableWidget, p) -> None:
         if c == 0:
             item.setForeground(QColor("#28323d"))
         if c == 7:
-            item.setForeground(QColor("#2e7d5b") if p.passed else QColor("#b4413c"))
+            item.setForeground(
+                QColor("#5d6b78") if info
+                else QColor("#2e7d5b") if p.passed else QColor("#b4413c")
+            )
             f = item.font()
             f.setBold(True)
             item.setFont(f)

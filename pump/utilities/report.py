@@ -322,14 +322,23 @@ def npsh_verdict(translate: Callable[[str], str], result) -> str:
 
 
 def npsh_summary_rows(translate: Callable[[str], str], result) -> list:
-    """``[(label, value), ...]`` strings: NPSHa, NPSHr, ratio, margin, verdict."""
-    return [
+    """``[(label, value), ...]`` strings: NPSHa, NPSHr, ratio, margin, the
+    quoted-NPSHr check (when judged) and the verdict."""
+    rows = [
         (translate("NPSH available"), f"{result.npsha.to('m'):0.2f~P}"),
         (translate("NPSH required"), f"{result.npshr.to('m'):0.2f~P}"),
         (translate("Ratio"), f"{result.ratio:0.2f}"),
         (translate("Margin"), f"{result.margin.to('m'):0.2f~P}"),
-        (translate("Overall verdict"), npsh_verdict(translate, result)),
     ]
+    quoted = getattr(result, "npshr_quoted", None)
+    quoted_ok = getattr(result, "quoted_ok", None)
+    if quoted is not None and quoted_ok is not None:
+        mark = translate("PASSED") if quoted_ok else translate("FAILED")
+        rows.append(
+            (translate("Quoted NPSH required"), f"{quoted.to('m'):0.2f~P} ({mark})")
+        )
+    rows.append((translate("Overall verdict"), npsh_verdict(translate, result)))
+    return rows
 
 
 def npsh_points_table(translate: Callable[[str], str], table) -> tuple:

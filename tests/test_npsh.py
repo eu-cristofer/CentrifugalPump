@@ -209,13 +209,23 @@ def test_check_with_criteria_pass_and_fail():
     assert mixed.status == "fail" and mixed.verified is True
 
 
-def test_shipped_npsh_criteria_are_not_configured():
+def test_api_editions_have_no_margin_rule_but_rated_npsh_plus_zero():
+    # API 610 sets no NPSHa/NPSHr margin (that is the client's), only "Rated NPSH +0 %".
     for key, _label in AcceptanceCriteria.available():
         crit = AcceptanceCriteria.load(key)
         assert crit.npsh.min_ratio is None and crit.npsh.min_margin is None
-        assert crit.npsh.verified is False and not crit.npsh.configured
-        assert "not configured" in crit.npsh.source
-        assert "NPSH margin rule (not configured)" in crit.unverified
+        assert not crit.npsh.configured
+        assert crit.npsh.npshr_tol_plus == 0.0
+
+
+def test_quoted_npshr_rule():
+    rule = NPSHCriteria(npshr_tol_plus=0.0)
+    over = check_npsh(Q_(2.4, "m"), Q_(1.2, "m"), rule, npshr_quoted=Q_(1.1, "m"))
+    assert over.status == "fail" and over.quoted_ok is False
+    ok = check_npsh(Q_(2.4, "m"), Q_(1.2, "m"), rule, npshr_quoted=Q_(1.2, "m"))
+    assert ok.status == "pass" and ok.quoted_ok is True
+    # No quoted value: nothing to judge.
+    assert check_npsh(Q_(2.4, "m"), Q_(1.2, "m"), rule).status == "info"
 
 
 def test_criteria_from_table():

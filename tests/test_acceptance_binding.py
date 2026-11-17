@@ -107,9 +107,9 @@ def test_criteria_for_unknown_key_falls_back_to_default():
 
 def test_default_tolerances_from_criteria():
     tol = default_tolerances(_rated())
-    assert tol == pytest.approx(
-        {"head": 0.03, "shutoff": 0.10, "power": 0.04, "efficiency": 0.03}
-    )
+    eff = tol.pop("efficiency")
+    assert eff is None  # efficiency is not a rated value in API 610
+    assert tol == pytest.approx({"head": 0.03, "shutoff": 0.10, "power": 0.04})
 
 
 def test_shutoff_tolerance_keyed_by_rated_head_not_shutoff_head():
@@ -143,8 +143,9 @@ def test_deviations_are_predicted_minus_rated_over_rated(fitted):
 def test_result_carries_criteria_metadata(fitted):
     res = check_compliance(fitted, _rated(standard_key="api610:8", client="n553"))
     assert "API 610" in res.criteria_label and "Petrobras" in res.criteria_label
-    assert isinstance(res.unverified, tuple) and res.unverified
-    assert all(p.verified is False for p in res.parameters)
+    # API 610 8th + N-553 rev E: performance tolerances checked against the text.
+    assert res.unverified == ()
+    assert all(p.verified is True for p in res.parameters)
     assert res.parallel_ok is None  # not a parallel-operation unit
 
 
@@ -205,6 +206,7 @@ def test_assemble_report_data_carries_acceptance(fitted):
     data = assemble_report_data(rated, [BranchBundle(pump_tag="B-1A", fitted=fitted)])
     acc = data["acceptance"]
     assert "API 610" in acc["label"] and "Petrobras" in acc["label"]
-    assert acc["verified"] is False
-    assert isinstance(acc["unverified"], list) and acc["unverified"]
+    assert acc["verified"] is True
+    # Open items outside the performance verdict are still listed for the report.
+    assert acc["unverified"] == ["mechanical running test limits"]
     assert "B-1A" in data["test_data"]

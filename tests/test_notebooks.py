@@ -32,6 +32,7 @@ EXPECTED = {
     "UC-09_reports",
     "UC-11_mechanical_run",
     "viscosity_HI967",
+    "TR-01_witness_training",
 }
 
 

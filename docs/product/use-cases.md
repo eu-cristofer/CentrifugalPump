@@ -88,21 +88,26 @@
   assessed)), trend plot, and a "Mechanical running test" report section.
 - **Supported by:** `pump.mechanical_run` (`MechanicalRunLog`,
   `MechanicalRunChecker`, `plot_mechanical_run`), limits in
-  `pump/standards/api610.toml` (`mechanical_run`, unverified seeds), the
+  `pump/standards/api610.toml` (`mechanical_run`; vibration from API 610 8th
+  Table 2-5 / 11th-12th Table 8), the N-553 rev E stabilisation rule, the
   `mechanical_run` workbench node.
 - **Pinned by:** `tests/test_mechanical_run.py` (incl. the B-34004A 4 h record),
   `tests/test_mechanical_run_gui.py`.
-- **Open:** vibration / stabilisation limits must be confirmed by the owner
-  (shipped `verified = false`).
-  - Against the placeholder 3.0 mm/s seed limit, B-34004A's unfiltered vibration of 0.16 in/s (4.06 mm/s) reads as **FAILED**.
-  - That limit came from the reference notebook and isn't confirmed for this OH6 pump, so the API 610 vibration limits the owner supplies will decide the real verdict.
+- **Open:** the mechanical-run part stays `verified = false`: the 8th edition has
+  no run test (the duration comes from the purchase order), and the 11th/12th
+  high-speed allowance (Figures 34/35) is not applied.
+  - Against the API 610 8th-edition limit of 3.0 mm/s RMS, B-34004A's unfiltered
+    0.16 in/s (4.06 mm/s) reads as **FAILED** *if the sheet is RMS*.  True-peak
+    values may not be used for acceptance (8th 2.8.3.7 note): ask Sundyne for the
+    RMS readings.
 
 ### UC-05 — Check NPSH margin ✅
 - **Input:** NPSHr points (any units) or a suction-condition NPSHa calculation;
-  NPSHa from the node or the rated point.
+  NPSHa from the node or the rated point; optional quoted NPSHr.
 - **Output:** NPSHr at rated (fitted curve), NPSHa, ratio and margin, verdict
-  against the configured margin rule ("not configured" until the owner enters
-  one), plot, report section.
+  against the client margin rule (N-553 rev E: >= 0.8 m and ratio >= 1.15) and
+  the API 610 "rated NPSH +0 %" check against the quoted NPSHr, plot, report
+  section.
 - **Supported by:** `pump.npsh` (`npsh_available` with vapour pressure,
   `npsh3_from_sweep`, `NPSHrCurve`, `check_npsh`, `plot_npsh`), `npsh` node.
 - **Pinned by:** `tests/test_npsh.py`, `tests/test_npsh_gui.py`.

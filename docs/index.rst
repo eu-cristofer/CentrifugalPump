@@ -28,6 +28,13 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    concepts/mechanical-run
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Training
+
+   training/README
+   training/TR-01-witness-performance-test
+
+.. toctree::
    :maxdepth: 2
    :caption: API reference
 

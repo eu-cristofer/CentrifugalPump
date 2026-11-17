@@ -265,13 +265,14 @@ def test_entry_without_power_is_rejected_not_crashing(tmp_path):
     assert result == [] and "efficiency" in result.reasons[0]
 
 
-def test_por_bounds_are_seeded_unverified_for_every_edition():
+def test_por_bounds_for_every_edition():
+    # 8th 2.1.12, 11th 6.1.12, 12th 6.1: preferred operating region 70-120 % of BEP.
     for key, _label in AcceptanceCriteria.available():
         crit = AcceptanceCriteria.load(key)
         sel = crit.selection
         assert (sel.por_min, sel.por_max) == (0.70, 1.20)
-        assert sel.verified is False and sel.source
-        assert "preferred operating region (pump selection)" in crit.unverified
+        assert sel.source
+        assert sel.verified is (key != "api610:10")
 
 
 def test_custom_por_changes_the_flag(catalogue):

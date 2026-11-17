@@ -453,6 +453,7 @@ def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
                 {
                     "name": p.name, "actual": p.actual, "predicted": p.predicted,
                     "deviation": p.deviation, "tolerance": p.tolerance, "passed": p.passed,
+                    "informational": p.informational, "note": p.note,
                 }
                 for p in b.compliance.parameters
             ]

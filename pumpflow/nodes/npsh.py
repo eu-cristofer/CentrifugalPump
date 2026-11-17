@@ -200,12 +200,19 @@ class NPSHNode(BaseNode):
                 npsha = Q_(
                     float(s["npsha"]), units.pint_str("npsh", s.get("npsha_unit", "m"))
                 )
+            quoted = None
+            if s.get("npshr_quoted") is not None:
+                quoted = Q_(
+                    float(s["npshr_quoted"]),
+                    units.pint_str("npsh", s.get("npshr_quoted_unit", "m")),
+                )
             npsh_set = NPSHSet(
                 pump_tag=tag,
                 points=pts,
                 npsha=npsha,
                 mode=mode,
                 degree=int(s.get("degree", 2)),
+                npshr_quoted=quoted,
             )
             sig = check_npsh_set(
                 npsh_set, rated, overrides_to_quantities(s.get("overrides"))
@@ -360,6 +367,26 @@ class NPSHNode(BaseNode):
         dv.addWidget(npsha_chk)
         dv.addWidget(npsha_f.row("NPSHa"))
 
+        # -- Quoted NPSHr (API 610 "rated NPSH +0 %") --------------------------
+        quoted_chk = ui.checkbox(
+            "Judge against the quoted NPSHr (datasheet, at rated flow)",
+            s.get("npshr_quoted") is not None,
+        )
+        quoted_f = ui.UnitField(
+            "npsh",
+            s["npshr_quoted"] if s.get("npshr_quoted") is not None else 0.0,
+            s.get("npshr_quoted_unit"),
+            on_change=lambda: sync(),
+            lo=0.0,
+            hi=1e6,
+            step=0.1,
+            decimals=3,
+        )
+        quoted_f.spin.setToolTip(
+            "API 610: NPSH3 at the rated point shall not exceed the quoted value "
+            "(rated NPSH tolerance +0 %)."
+        )
+
         # -- NPSHa: calculator ----------------------------------------------
         pf = ui.PressureField(
             s["calc_p"],
@@ -440,6 +467,14 @@ class NPSHNode(BaseNode):
             s["degree"] = degree.value()
             s["npsha"] = npsha_f.magnitude() if npsha_chk.isChecked() else None
             s["npsha_unit"] = npsha_f.unit_label()
+            if quoted_chk.isChecked():
+                s["npshr_quoted"] = quoted_f.magnitude()
+                s["npshr_quoted_unit"] = quoted_f.unit_label()
+            else:
+                s.pop("npshr_quoted", None)
+                s.pop("npshr_quoted_unit", None)
+            quoted_f.spin.setEnabled(quoted_chk.isChecked())
+            quoted_f.combo.setEnabled(quoted_chk.isChecked())
             s["calc_p"] = pf.magnitude()
             s["calc_p_unit"] = pf.unit_label()
             s["calc_p_ref"] = pf.ref()
@@ -476,6 +511,7 @@ class NPSHNode(BaseNode):
         mode.currentIndexChanged.connect(sync)
         degree.valueChanged.connect(sync)
         npsha_chk.toggled.connect(sync)
+        quoted_chk.toggled.connect(sync)
         id_chk.toggled.connect(sync)
         ratio_chk.toggled.connect(sync)
         ratio_spin.valueChanged.connect(sync)
@@ -490,6 +526,8 @@ class NPSHNode(BaseNode):
         dlg.add(bar)
         dlg.add(table)
         dlg.add(ui.row("Fit degree", degree))
+        dlg.add(quoted_chk)
+        dlg.add(quoted_f.row("Quoted NPSHr"))
         dlg.add(ui.hline())
         dlg.add(ui.section("NPSHa"))
         dlg.add(ui.row("Source", mode))

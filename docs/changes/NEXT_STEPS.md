@@ -17,11 +17,13 @@ Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is com
 - [ ] Archive the project: `/sprint-loop archive 001_masterpiece`.
 
 ## 2. Before / at the B-34004B witness test (owner)
-- [ ] **Vibration units.** Ask Sundyne whether "VIBRATION-IN/SEC" on their sheets is **RMS or peak**. B-34004A unfiltered 0.16 in/s is 4.06 mm/s RMS, so FAILED against 3.0 mm/s; if it is peak, the RMS value is 2.87 mm/s, so passed.
-- [ ] **API 610 8th edition tolerance table.** The 8th edition is currently *inferred* from the 10th (head ±2 % above 300 m). B-34004A predicts +1.72 %, which passes, but tightly. Confirm, then set `verified = true` with the clause as `source` in `pump/standards/api610.toml`.
-- [ ] **High-speed vibration allowance.** API 610 relaxes the vibration limits for pumps above 3600 rpm or 300 kW per stage. This pump runs at 10 300 rpm; the allowance is not applied yet.
-- [ ] **N-553 client overlay.** Fill in `pump/standards/clients/n553.toml` (tolerances, NPSH margin rule, vibration) from the Petrobras standard.
-- [ ] **NPSH margin rule.** It is "not configured" today; enter the API/N-553 rule.
+- [ ] **Vibration units.** Ask Sundyne whether "VIBRATION-IN/SEC" on their sheets is **RMS or true peak**. API 610 8th (2.8.3.7 note) accepts RMS only: true peak "is not to be used to determine acceptability". B-34004A unfiltered 0.16 in/s = 4.06 mm/s, so FAILED against 3.0 mm/s if RMS. If it is true peak, ask for the RMS readings; do not convert peak/√2.
+- [x] **API 610 8th edition tolerance table.** Done 2026-11-16 from the licensed text: Table 4-2 confirms head −2/+2 % above 300 m (B-34004A +1.72 % passes). It also showed that the 8th's shut-off bands split at **150 m**, not 75 m (fixed), and that efficiency is "not a rating value" (now information only).
+- [x] **High-speed vibration allowance.** Not applicable to the 8th edition (Table 2-5 has none). The 11th/12th allowance (Figures 34/35) is still not applied; its formula is illegible in the local text conversion, so confirm it from the printed standard.
+- [x] **N-553 client overlay.** Filled from **rev E** (NPSH margin, temperature stabilisation). ⚠ The B-34004 datasheet calls for **N-553 rev C**, which is not available: confirm the rules match rev C, or obtain rev C.
+- [x] **NPSH margin rule.** N-553 rev E 7.3: ≥ 0.8 m **and** ratio ≥ 1.15 at rated flow. B-34004A passes (1.32 m, 2.22). API "rated NPSH +0 %" is judged once the quoted NPSHr is entered in the NPSH node.
+- [ ] **Quoted NPSHr.** Read it from the datasheet / proposal and enter it in the NPSH node.
+- [ ] **Mechanical-run duration.** The 8th edition defines no running test; confirm the 4 h (N-553 rev E 9.21: ndm ≥ 350 000 or energy density) from the purchase order.
 - [ ] **SG discrepancy.** The datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt. Ask why.
 - [ ] **Datasheet typo.** The body says "B-33004A/B" but the title says B-34004A/B.
 - [ ] On test day:
@@ -31,12 +33,22 @@ Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is com
   - save as `B-34004B_witness.pumpflow`.
 
 ## 3. Confirm researched values against the standards (owner)
-Every value below is stored with its `source` and `verified = false` because the paid standard text was not consulted. Confirm each one, then flip `verified` with a clause reference.
-- [ ] API 610 10th/11th head, shut-off and power tolerances and the vibration table. Source: Amarinth bulletin MP2606-100.
-- [ ] API 610 12th edition (still pre-S5 seed values).
+On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in `marker-output/`, git-ignored, never published). Still open:
+- [x] API 610 11th/12th head, shut-off and power tolerances, vibration table, POR (Table 16, Table 8, 6.1.12).
+- [ ] API 610 10th edition: no text available; still Amarinth bulletin values, `verified = false`.
+- [ ] API 610 11th/12th high-speed vibration allowance (Figures 34/35).
+- [ ] Test-speed check (within 3 % of rated, 8th 4.3.3.2.3 / 11th 8.3.3.3 c): documented in the training, not yet checked by the tool.
 - [ ] HI 9.6.7 viscosity equations (`pump/viscosity.py`). They are validated independently, not against the standard text; buying ANSI/HI 9.6.7 would allow pinning its worked example.
-- [ ] Preferred operating region 70–120 % of BEP, used by pump selection.
-- [ ] Mechanical-run temperature-stabilisation rule (not configured).
+- [x] Preferred operating region 70–120 % of BEP (8th 2.1.12, 11th 6.1.12, 12th 6.1).
+- [x] Mechanical-run temperature-stabilisation rule: N-553 rev E 9.20 (2 K / 30 min after a 1 h warm-up).
+
+## 3b. Code review findings (2026-11-16)
+- [x] A1–A3: efficiency information only; 8th shut-off bands; rising-curve rule; rated NPSH +0 %.
+- [ ] B1: the verdict is still computed in two places (`binding.check_compliance` and `PerformanceChecker.check_summary`). Move it into `pump/acceptance.py`.
+- [ ] B2: silent `except Exception` in `check_summary` and `parallel_operation_ok` can drop a criterion; make it "not evaluated" plus a provisional verdict.
+- [ ] B3: `test_summary_with_limits` uses `capacity.m < 0.1` (unit-dependent).
+- [ ] B4: split `pumpflow/binding.py` (1 480 lines) into a package.
+- [ ] C1: refresh `CLAUDE.md` (stale: "no type checking", "±3 % hard-coded", `Point`, `mathx`, "seven nodes").
 
 ## 4. Product follow-ups (candidate sprints for a 002 project)
 - [ ] Render Markdown notes in reports. They are printed raw today: pipes, asterisks.

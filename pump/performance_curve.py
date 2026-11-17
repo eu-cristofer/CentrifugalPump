@@ -1039,14 +1039,19 @@ class PerformanceChecker:
         if rated_eff is not None:
             try:
                 pred_eff = self.curve.predict_efficiency(rated_q)
-                min_eff = rated_eff - self.criteria.efficiency_tol_minus * rated_eff
-                rows.append([
-                    "Efficiency",
-                    _fmt_value(pred_eff),
-                    _fmt_value(min_eff),
-                    "-",
-                    bool(_dimensionless(pred_eff) >= _dimensionless(min_eff)),
-                ])
+                tol_eff = self.criteria.efficiency_tol_minus
+                if tol_eff is None:
+                    # Not a rated value in API 610: reported, not judged.
+                    rows.append(["Efficiency (info)", _fmt_value(pred_eff), "-", "-", "info"])
+                else:
+                    min_eff = rated_eff - tol_eff * rated_eff
+                    rows.append([
+                        "Efficiency",
+                        _fmt_value(pred_eff),
+                        _fmt_value(min_eff),
+                        "-",
+                        bool(_dimensionless(pred_eff) >= _dimensionless(min_eff)),
+                    ])
             except Exception:
                 pass
 

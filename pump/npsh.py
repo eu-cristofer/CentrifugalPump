@@ -283,6 +283,10 @@ class NPSHCriteria:
         Minimum ``NPSHa / NPSHr``.
     min_margin : Q_ or None
         Minimum ``NPSHa - NPSHr`` (a length).
+    npshr_tol_plus : float or None
+        Allowed relative excess of the tested NPSHr over the *quoted* NPSHr at
+        the rated point (API 610 "Rated NPSH +0 %" is ``0.0``).  Judged only
+        when a quoted value is given to :func:`check_npsh`.
     source : str
         Provenance of the rule.
     verified : bool
@@ -298,12 +302,13 @@ class NPSHCriteria:
 
     min_ratio: Optional[float] = None
     min_margin: Optional[Q_] = None
+    npshr_tol_plus: Optional[float] = None
     source: str = _NOT_CONFIGURED_SOURCE
     verified: bool = False
 
     @property
     def configured(self) -> bool:
-        """True when at least one limit is set."""
+        """True when at least one margin limit (ratio or margin) is set."""
         return self.min_ratio is not None or self.min_margin is not None
 
     @classmethod
@@ -312,9 +317,11 @@ class NPSHCriteria:
         table = table or {}
         min_ratio = table.get("min_ratio")
         min_margin = table.get("min_margin")
+        tol = table.get("npshr_tol_plus")
         return cls(
             min_ratio=float(min_ratio) if min_ratio is not None else None,
             min_margin=_parse_quantity(min_margin) if min_margin is not None else None,
+            npshr_tol_plus=float(tol) if tol is not None else None,
             source=str(table.get("source", _NOT_CONFIGURED_SOURCE)),
             verified=bool(table.get("verified", False)),
         )
@@ -326,7 +333,9 @@ class NPSHResult:
     Outcome of :func:`check_npsh`.
 
     ``status`` is ``"pass"``, ``"fail"`` or ``"info"`` (no rule configured:
-    ratio and margin are reported but nothing is judged).
+    ratio and margin are reported but nothing is judged).  ``quoted_ok`` is the
+    "rated NPSH" check (tested NPSHr against the quoted NPSHr), ``None`` when no
+    quoted value or no tolerance was given.
     """
 
     npsha: Q_
@@ -336,16 +345,24 @@ class NPSHResult:
     status: str
     criteria: NPSHCriteria
     verified: bool
+    npshr_quoted: Optional[Q_] = None
+    quoted_ok: Optional[bool] = None
 
 
 def check_npsh(
-    npsha: Q_, npshr: Q_, criteria: Optional[NPSHCriteria] = None
+    npsha: Q_,
+    npshr: Q_,
+    criteria: Optional[NPSHCriteria] = None,
+    npshr_quoted: Optional[Q_] = None,
 ) -> NPSHResult:
     """
     Compare NPSHa with NPSHr under an optional margin rule.
 
     The status is ``"info"`` when no limit is configured; otherwise it is
     ``"fail"`` if any configured limit is not met and ``"pass"`` if all are.
+    With ``npshr_quoted`` (the datasheet / proposal NPSHr at rated flow) and a
+    ``criteria.npshr_tol_plus``, the tested NPSHr must also not exceed the
+    quoted value by more than that fraction (API 610: +0 %).
 
     Examples
     --------
@@ -357,6 +374,11 @@ def check_npsh(
     'pass'
     >>> check_npsh(Q_(1.4, "m"), Q_(1.2, "m"), rule).status
     'fail'
+    >>> api = NPSHCriteria(npshr_tol_plus=0.0)
+    >>> check_npsh(Q_(2.4, "m"), Q_(1.2, "m"), api, npshr_quoted=Q_(1.1, "m")).status
+    'fail'
+    >>> check_npsh(Q_(2.4, "m"), Q_(1.2, "m"), api, npshr_quoted=Q_(1.3, "m")).quoted_ok
+    True
     """
     criteria = criteria if criteria is not None else NPSHCriteria()
     m = npsh_margin(npsha, npshr)
@@ -365,6 +387,11 @@ def check_npsh(
         checks.append(m["ratio"] >= criteria.min_ratio)
     if criteria.min_margin is not None:
         checks.append(bool(m["margin"] >= criteria.min_margin))
+    quoted_ok = None
+    if npshr_quoted is not None and criteria.npshr_tol_plus is not None:
+        limit = npshr_quoted * (1.0 + criteria.npshr_tol_plus)
+        quoted_ok = bool(npshr <= limit * (1.0 + 1e-9))
+        checks.append(quoted_ok)
     if not checks:
         status = "info"
     else:
@@ -377,6 +404,8 @@ def check_npsh(
         status=status,
         criteria=criteria,
         verified=criteria.verified,
+        npshr_quoted=npshr_quoted,
+        quoted_ok=quoted_ok,
     )
 
 

@@ -126,13 +126,18 @@ final assertions — all run in CI) and a workbench node:
 | UC-07 | Impeller trim | [UC-07](use_cases/UC-07_trim.ipynb) | Trim |
 | UC-08 | Compare pumps (twin A vs B) | [UC-08](use_cases/UC-08_compare.ipynb) | Explorer Δ, report "Comparison" |
 | UC-09 | Reports: Word, LaTeX, PDF, HTML (en/pt) | [UC-09](use_cases/UC-09_reports.ipynb) | Report Export, `python -m pumpflow.export_cli` |
-| UC-10 | Learn the fundamentals | [concepts](docs/concepts/) | formula tooltips |
+| UC-10 | Learn the fundamentals | [concepts](docs/concepts/), [training](docs/training/) ([TR-01 exercises](use_cases/TR-01_witness_training.ipynb)) | formula tooltips, ⓘ help buttons |
 | UC-11 | Mechanical running test acceptance | [UC-11](use_cases/UC-11_mechanical_run.ipynb) | Mechanical Run |
 | — | Viscosity correction (HI 9.6.7) | [viscosity](use_cases/viscosity_HI967.ipynb) | Correction ("apply viscosity") |
 
 Acceptance values (API 610 tolerances, vibration, POR) are data in
-`pump/standards/api610.toml` with a `source` and a `verified` flag; verdicts on
-unverified criteria are labelled as provisional.
+`pump/standards/api610.toml` (plus client overlays such as Petrobras N-553 in
+`pump/standards/clients/`), each with a clause-level `source` and a `verified`
+flag.  The 8th, 11th and 12th editions and N-553 rev E were checked against the
+standard texts; the 10th edition and the mechanical-run limits remain open, and
+verdicts on unverified criteria are labelled as provisional.  Efficiency is not
+a rated value in API 610, so it is reported for information unless the
+purchaser specified a tolerance.
 
 **Status:** delivered by project
 [001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints). Next steps: [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).

@@ -621,6 +621,8 @@ FIELDS: Dict[str, tuple] = {
         NPSHTable(),
         # Optional NPSHa typed in the node (unset = use the rated point's).
         OptDisp("npsha", "npsh", "npsha_unit"),
+        # Optional quoted (datasheet) NPSHr at rated flow; unset = not judged.
+        OptDisp("npshr_quoted", "npsh", "npshr_quoted_unit"),
         # NPSHa calculator: suction conditions (suction ID is optional).
         Pressures(keys=("calc_p",), unit_key="calc_p_unit", ref_key="calc_p_ref"),
         Disp("calc_temp", "temperature", "calc_temp_unit"),

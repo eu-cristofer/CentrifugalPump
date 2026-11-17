@@ -181,6 +181,9 @@ msgstr "NPSH available"
 msgid "NPSH required"
 msgstr "NPSH required"
 
+msgid "Quoted NPSH required"
+msgstr ""
+
 msgid "Margin"
 msgstr "Margin"
 

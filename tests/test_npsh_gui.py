@@ -78,10 +78,12 @@ def test_b34004a_node_evaluates(qapp):
     assert "B-34004A" in node.status
     assert "NPSHr" in node.status and "NPSHa 2.40 m" in node.status
     assert "ratio" in node.status
-    assert "not configured" in node.status  # no margin rule is seeded
+    # Default rated point carries the N-553 rev E overlay: margin >= 0.8 m and
+    # ratio >= 1.15 at rated flow; B-34004A has 1.32 m and 2.22.
+    assert "PASSED" in node.status and "unverified" not in node.status
     sig = out["NPSHResult"]
     assert sig.pump_tag == "B-34004A"
-    assert sig.result.status == "info"
+    assert sig.result.status == "pass"
     assert sig.result.ratio > 1.9
     # NPSHr at the rated 43.1 gpm is ~3.5-4.1 ft (1.07-1.25 m)
     npshr_ft = sig.result.npshr.to("ft").magnitude

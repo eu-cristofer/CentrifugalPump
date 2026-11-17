@@ -53,7 +53,8 @@ def test_every_edition_loads_with_sorted_bands(key):
         assert limits[-1] == float("inf")
         assert all(minus >= 0 and plus >= 0 for _, minus, plus in bands)
     assert crit.power_tol_plus >= 0
-    assert crit.efficiency_tol_minus >= 0
+    # Efficiency is not a rated value in API 610: no edition defines a tolerance.
+    assert crit.efficiency_tol_minus is None
     assert crit.parallel_shutoff_min_ratio >= 1.0
 
 
@@ -73,19 +74,42 @@ def test_unknown_client_raises_keyerror():
 
 
 def test_clients_lists_n553():
-    assert ("n553", "Petrobras N-553 (client overlay)") in AcceptanceCriteria.clients()
+    assert (
+        "n553",
+        "Petrobras N-553 rev E (client overlay)",
+    ) in AcceptanceCriteria.clients()
 
 
 # --------------------------------------------------------------------------- #
-# Default numbers == pre-S5 behaviour (tests/test_compliance.py expectations)
+# Default numbers: API 610 12th ed. Table 16 (checked against the standard text)
 # --------------------------------------------------------------------------- #
-def test_default_tolerances_match_historical_values():
+def test_default_tolerances_match_table_16():
     crit = AcceptanceCriteria.default()
     assert crit.head_tolerance(Q_(73, "m")) == (0.03, 0.03)
     assert crit.head_tolerance(Q_(900, "m")) == (0.03, 0.03)
     assert crit.power_tol_plus == pytest.approx(0.04)
-    assert crit.efficiency_tol_minus == pytest.approx(0.03)
+    assert crit.efficiency_tol_minus is None
     assert crit.parallel_shutoff_min_ratio == pytest.approx(1.10)
+
+
+# API 610 8th edition Table 4-2 (the B-34004 contract edition).
+@pytest.mark.parametrize(
+    "rated_head_m, head, shutoff",
+    [
+        (100, (0.02, 0.05), 0.10),  # 0-150 m
+        (150, (0.02, 0.05), 0.10),
+        (200, (0.02, 0.03), 0.08),  # 151-300 m (shut-off band split at 150 m, not 75 m)
+        (333.8, (0.02, 0.02), 0.05),  # B-34004: > 300 m
+    ],
+)
+def test_api610_8th_table_4_2(rated_head_m, head, shutoff):
+    crit = AcceptanceCriteria.load("api610:8")
+    assert crit.head_tolerance(Q_(rated_head_m, "m")) == pytest.approx(head)
+    assert crit.shutoff_tolerance(Q_(rated_head_m, "m")) == pytest.approx(
+        (shutoff, shutoff)
+    )
+    assert crit.power_tol_plus == pytest.approx(0.04)
+    assert crit.npsh.npshr_tol_plus == 0.0  # rated NPSH +0 %
 
 
 @pytest.mark.parametrize(
@@ -135,23 +159,44 @@ def test_checker_limits_match_default_criteria(design_point, curve):
 # --------------------------------------------------------------------------- #
 # Verified / unverified and overlay merge
 # --------------------------------------------------------------------------- #
-def test_shipped_editions_are_unverified_seeds():
-    crit = AcceptanceCriteria.default()
+@pytest.mark.parametrize("key", ["api610:8", "api610:11", "api610:12"])
+def test_checked_editions_cite_their_clauses(key):
+    crit = AcceptanceCriteria.load(key)
+    assert crit.verified is True
+    assert "Table" in crit.source and "seed" not in crit.source
+    # Performance tolerances verified; only the mechanical run stays open
+    # (8th: no run test in the edition; 11th/12th: high-speed allowance not applied).
+    assert crit.unverified == ("mechanical running test limits",)
+
+
+def test_10th_edition_stays_unverified():
+    crit = AcceptanceCriteria.load("api610:10")
     assert crit.verified is False
-    assert crit.unverified
-    assert "seed" in crit.source
+    assert "power tolerance" in crit.unverified
 
 
-def test_n553_overlay_changes_nothing_but_is_unverified():
+def test_extrapolation_threshold_is_a_tool_setting_not_unverified():
+    crit = AcceptanceCriteria.load("api610:10")
+    assert not any("extrapolation" in item for item in crit.unverified)
+
+
+def test_n553_overlay_adds_npsh_margin_and_keeps_api_tolerances():
     base = AcceptanceCriteria.load("api610:8")
     over = AcceptanceCriteria.load("api610:8", client="n553")
     assert over.client == "n553"
-    assert over.client_label == "Petrobras N-553 (client overlay)"
+    assert over.client_label == "Petrobras N-553 rev E (client overlay)"
     assert over.head_bands == base.head_bands
     assert over.shutoff_bands == base.shutoff_bands
     assert over.power_tol_plus == base.power_tol_plus
-    assert over.verified is False
-    assert any("N-553" in item for item in over.unverified)
+    # N-553 rev E 7.3: margin >= 0.8 m AND ratio >= 1.15; API rated NPSH +0 % kept.
+    assert over.npsh.min_margin == Q_(0.8, "m")
+    assert over.npsh.min_ratio == pytest.approx(1.15)
+    assert over.npsh.npshr_tol_plus == 0.0
+    assert over.npsh.verified is True
+    assert over.verified is True
+    # A verified overlay must not hide the base's own open mechanical-run values.
+    assert over.mechanical_run.verified is False
+    assert "mechanical running test limits" in over.unverified
 
 
 _STD_TOML = """
@@ -212,11 +257,11 @@ def test_unverified_overlay_makes_result_unverified(tmp_standards):
 
 
 def test_verified_overlay_over_unverified_base_stays_unverified():
-    # Real shipped base is unverified; a verified overlay cannot make it verified,
-    # and the parts it overrides drop out of the unverified list.
-    base = AcceptanceCriteria.default()
-    assert base.verified is False
-    assert "power tolerance" in base.unverified
+    # The 10th edition is unverified; a verified overlay cannot make it verified.
+    over = AcceptanceCriteria.load("api610:10", client="n553")
+    assert over.verified is False
+    assert "power tolerance" in over.unverified
+    assert "NPSH margin rule" in over.unverified  # base NPSH part still open
 
 
 # --------------------------------------------------------------------------- #

@@ -250,6 +250,9 @@ msgstr "NPSH disponível"
 msgid "NPSH required"
 msgstr "NPSH requerido"
 
+msgid "Quoted NPSH required"
+msgstr "NPSH requerido cotado"
+
 msgid "Margin"
 msgstr "Margem"
 

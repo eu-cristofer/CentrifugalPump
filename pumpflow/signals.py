@@ -324,10 +324,12 @@ class ParameterCheck:
     minimum: Optional[float]  # acceptable min (or None)
     maximum: Optional[float]  # acceptable max (or None)
     deviation: float  # δ = (predicted − rated) / rated
-    tolerance: float  # fractional tolerance
+    tolerance: Optional[float]  # fractional tolerance (None: information only)
     passed: bool
     extrapolated: bool = False  # predicted value extrapolated (shut-off, no Q≈0 point)
     verified: bool = True  # criteria verified against the standard text
+    informational: bool = False  # reported, but not part of the verdict
+    note: str = ""  # why a row is informational or failed a conditional rule
 
 
 @dataclass(frozen=True)
@@ -392,6 +394,7 @@ class NPSHSet:
     npsha: Optional[Q_] = None
     mode: str = "points"
     degree: int = 2
+    npshr_quoted: Optional[Q_] = None  # datasheet NPSHr at rated flow ("rated NPSH")
 
 
 @dataclass(frozen=True)

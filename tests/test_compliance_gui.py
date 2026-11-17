@@ -51,9 +51,9 @@ def test_project_evaluates_with_criteria_metadata(scene):
     for res in results:
         assert "API 610 8th" in res.criteria_label
         assert "N-553" in res.criteria_label
-        assert res.unverified  # seed criteria are flagged unverified
+        assert res.unverified == ()  # 8th ed. + N-553 rev E checked against the text
         assert res.parameters
-        assert all(p.verified is False for p in res.parameters)
+        assert all(p.verified is True for p in res.parameters)
 
 
 def test_rated_point_parses_standard_text(scene):
@@ -72,7 +72,7 @@ def test_reset_restores_criteria_defaults(scene):
     dlg = node.create_dialog(None, lambda: None)
     assert dlg is not None
     base = default_tolerances(rated)
-    # B-34004A: API 610 8th ed. (inferred from 10th), rated head 333.8 m > 300 m -> ±2 %
+    # B-34004A: API 610 8th ed. Table 4-2, rated head 333.8 m > 300 m -> ±2 %
     assert base["head"] == pytest.approx(0.02)
     assert node.settings["tolerances"] == {"head": 0.2}  # opening does not reset
     node.settings["tolerances"] = {}

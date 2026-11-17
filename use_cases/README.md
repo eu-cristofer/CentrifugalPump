@@ -41,7 +41,7 @@ End every notebook with `assert` cells: the demo becomes a test, and
 `pytest tests/test_notebooks.py` (marker `slow`) executes them all in CI.
 
 **Generated notebooks.** `UC-01`, `UC-02`, `UC-03-04`, `UC-05`, `UC-07`, `UC-08`, `UC-09`,
-`UC-11` and `viscosity_HI967` are written by [`build_notebooks.py`](build_notebooks.py)
+`UC-11`, `viscosity_HI967` and `TR-01_witness_training` are written by [`build_notebooks.py`](build_notebooks.py)
 from plain Python strings (`nbformat`). Edit the script, not the `.ipynb`, then run
 `python use_cases/build_notebooks.py` and execute the notebooks. Write temporary output
 (reports, catalogues) to a `tempfile.TemporaryDirectory`, never into the repo.
@@ -65,6 +65,7 @@ intro (see `UC-06_affinity_speed_change.ipynb` ↔ `example_1.pumpflow`).
 | [`UC-09_reports.ipynb`](UC-09_reports.ipynb) | [UC-09](../docs/product/use-cases.md) | The FAT report as `.docx`, `.tex` and (with a TeX engine) `.pdf`, in en and pt |
 | [`UC-11_mechanical_run.ipynb`](UC-11_mechanical_run.ipynb) | [UC-11](../docs/product/use-cases.md) | A 4 h mechanical run log: limits, stabilisation, duration and the verdicts |
 | [`viscosity_HI967.ipynb`](viscosity_HI967.ipynb) | HI 9.6.7 | Viscosity correction: B, the factors, the corrected curve and the edge cases |
+| [`TR-01_witness_training.ipynb`](TR-01_witness_training.ipynb) | Training [TR-01](../docs/training/TR-01-witness-performance-test.md) | Exercises for witnessing an API 610 performance test: tolerance bands by edition, efficiency, NPSH rules, vibration in RMS, test speed, the rising-curve rule; answers asserted |
 
 The physics behind each notebook is explained in the [concept pages](../docs/concepts/affinity.md)
 (affinity, head components, NPSH, viscosity, acceptance tolerances, system curve, mechanical run).

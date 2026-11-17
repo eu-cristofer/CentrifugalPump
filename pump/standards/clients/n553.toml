@@ -1,9 +1,35 @@
-# Client overlay: Petrobras N-553.
-# Deliberately defines NO tolerance keys, so it changes nothing until someone
-# configures it from the client specification.
+# Client overlay: Petrobras N-553 rev E (with amendment 1, 04/2015).
+#
+# Checked 2026-11-16 against the owner's licensed copy of N-553 rev E (local text
+# conversion, never committed).  Only keys the client text changes are defined;
+# everything else comes from the API 610 edition.
+#
+# CAUTION: check the revision named on the datasheet.  B-34004 A/B calls for
+# "N-553C" (rev C), which was not available; rev D (also checked) differs on the
+# NPSH margin: "0.8 m or ratio 1.25, whichever is greater, from minimum continuous
+# stable flow to rated flow" (rev D 7.3), versus rev E's rule below at rated flow.
 
 client = "n553"
-label = "Petrobras N-553 (client overlay)"
-verified = false
-source = "placeholder: no N-553 values configured"
-note = "This overlay must be configured with the N-553 acceptance values before it changes any tolerance."
+label = "Petrobras N-553 rev E (client overlay)"
+verified = true
+source = "N-553 rev E: 7.3 (adds to API 610:2010 6.1.8) NPSH margin at rated flow; 9.14 (replaces 8.3.3.4) efficiency at rated flow quoted to -0 % only for drivers >= 1 MW (not encoded: enter it as an efficiency override when it applies); test speed within 3 % of rated, and results corrected to actual driver speed for fixed-speed electric motors (replaces 8.3.3.3 c); performance-test vibration per API 610:2010 6.9.3.6, measured at each test flow +/-5 %."
+
+[npsh]
+min_margin = "0.8 m"
+min_ratio = 1.15
+source = "N-553 rev E 7.3: at rated flow NPSHa shall exceed NPSHr by at least 0.8 m AND NPSHa/NPSHr shall be at least 1.15 (larger margins may be specified on the data sheet). 9.22 NOTE: if the margin is < 1 m or the ratio < 1.20, NPSHr shall be determined at every test point except shut-off."
+verified = true
+
+[mechanical_run]
+source = "N-553 rev E 9.20 (replaces API 610:2010 8.3.4.2.1): run at rated flow until oil and bearing temperatures stabilise, i.e. no rise of more than 2 K during 30 min, after at least a 1 h warm-up (NOTE 1, 2). 9.21 (replaces 8.3.4.2.2): 4 h at rated flow when ndm >= 350 000 or the energy-density criterion is met. Vibration limits stay those of the API edition."
+verified = true
+
+[[mechanical_run.stabilisation]]
+role = "oil_temperature"
+delta = "2 delta_degC"
+window = "30 min"
+
+[[mechanical_run.stabilisation]]
+role = "bearing_temperature"
+delta = "2 delta_degC"
+window = "30 min"

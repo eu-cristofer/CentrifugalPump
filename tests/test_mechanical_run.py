@@ -214,7 +214,7 @@ def test_plot_returns_png():
 # Seeds in the standard tables
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("key", [k for k, _ in AcceptanceCriteria.available()])
-def test_every_edition_has_seeded_unverified_mechanical_run(key):
+def test_every_edition_has_an_open_mechanical_run(key):
     crit = AcceptanceCriteria.load(key)
     mr = crit.mechanical_run
     assert mr.min_duration.to("h").magnitude == pytest.approx(4)
@@ -222,11 +222,20 @@ def test_every_edition_has_seeded_unverified_mechanical_run(key):
     assert mr.role_max["vibration_unfiltered"].to("mm/s").magnitude == pytest.approx(
         3.0
     )
-    assert mr.stabilisation == {}  # never seeded
-    # Researched values (secondary source, 2026-11-15) — still not the standard text
-    # 8/10/11: researched (secondary source, 2026-11-15); 12: still a seed
-    assert mr.verified is False and ("Amarinth" in mr.source or "seed" in mr.source)
+    assert mr.stabilisation == {}  # API editions: no stabilisation rule encoded
+    # Still open: the 8th edition defines no mechanical run test (duration comes
+    # from the purchaser), and the 11th/12th high-speed allowance is not applied.
+    assert mr.verified is False
+    assert "Table" in mr.source or "Amarinth" in mr.source
     assert "mechanical running test limits" in crit.unverified
+
+
+def test_n553_adds_temperature_stabilisation():
+    crit = AcceptanceCriteria.load("api610:8", client="n553")
+    delta, window = crit.mechanical_run.stabilisation["oil_temperature"]
+    assert delta.to("delta_degC").magnitude == pytest.approx(2.0)
+    assert window.to("min").magnitude == pytest.approx(30.0)
+    assert "bearing_temperature" in crit.mechanical_run.stabilisation
 
 
 # --------------------------------------------------------------------------- #

@@ -10,10 +10,16 @@ one table per edition) so they can be reviewed and corrected without touching
 code.  A *client overlay* (``pump/standards/clients/*.toml``) may replace any
 subset of the keys of an edition.
 
-Every table currently shipped is a **seed** copied from the pre-Sprint-5 code
-defaults and is flagged ``verified = false``; :attr:`AcceptanceCriteria.unverified`
-lists the parts that still need confirmation against the standard text.  The
-NPSH margin rule is shipped *not configured* (no limits at all).
+Each edition table carries ``verified`` and a ``source`` naming the clauses it
+was checked against.  A verified table may still list ``unverified_parts`` (keys
+the standard text does not settle); :attr:`AcceptanceCriteria.unverified` lists
+every part that still needs confirmation.  Tool settings such as the shut-off
+extrapolation threshold are not standard values and are never listed.
+
+Efficiency is **not a rated value** in API 610 (8th ed. Table 4-2 note; 11th and
+12th ed. Table 16 note c): an edition without ``efficiency_tol_minus`` reports
+efficiency for information only.  A purchaser-specified efficiency tolerance is
+entered as an override (or by a client overlay).
 
 Tolerance bands are keyed on the **rated differential head** (including the
 shut-off band, which is selected by the rated head, not by the shut-off head).
@@ -47,7 +53,12 @@ from .mechanical_run import MechanicalRunCriteria
 from .npsh import NPSHCriteria
 from .utilities.unit_conversion import Q_
 
-__all__ = ["AcceptanceCriteria", "SelectionCriteria", "deviation"]
+__all__ = [
+    "AcceptanceCriteria",
+    "SelectionCriteria",
+    "deviation",
+    "head_rises_to_shutoff",
+]
 
 _STD_DIR = Path(__file__).parent / "standards"
 _CLIENT_DIR = _STD_DIR / "clients"
@@ -61,6 +72,10 @@ _PARTS = {
     "parallel_shutoff_min_ratio": "parallel-operation shut-off ratio",
     "shutoff_extrapolation_q_fraction": "shut-off extrapolation threshold",
 }
+
+# Tool settings: kept in the tables (and overridable) but they are not standard
+# values, so they are never reported as "unverified".
+_TOOL_SETTINGS = {"shutoff_extrapolation_q_fraction"}
 
 # The ``mechanical_run`` sub-table is merged key by key (not replaced wholesale).
 _MR_PART = "mechanical running test limits"
@@ -79,6 +94,16 @@ _DEFAULT_KEY = "api610:12"
 def _read_toml(path: str) -> dict:
     with open(path, "rb") as fh:
         return tomllib.load(fh)
+
+
+def _merge_sub(base: Optional[dict], overlay: Mapping, overlay_label: str) -> dict:
+    """Overlay a sub-table key by key, keeping *both* sources (base | overlay)."""
+    merged = {**(base or {}), **overlay}
+    base_src = (base or {}).get("source", "")
+    over_src = overlay.get("source", "")
+    if base_src and over_src:
+        merged["source"] = f"{base_src} | {overlay_label}: {over_src}"
+    return merged
 
 
 def _edition_sort_key(edition: str):
@@ -203,8 +228,9 @@ class AcceptanceCriteria:
         Sorted by ``max_rated_head`` (a Pint quantity; may be infinite).
     power_tol_plus : float
         Maximum allowed positive power deviation.
-    efficiency_tol_minus : float
-        Maximum allowed negative (relative) efficiency deviation.
+    efficiency_tol_minus : float or None
+        Maximum allowed negative (relative) efficiency deviation, or ``None``
+        when efficiency is not a rated value (information only).
     parallel_shutoff_min_ratio : float
         Minimum shut-off head / rated head for parallel operation.
     shutoff_extrapolation_q_fraction : float
@@ -229,7 +255,7 @@ class AcceptanceCriteria:
     head_bands: tuple
     shutoff_bands: tuple
     power_tol_plus: float
-    efficiency_tol_minus: float
+    efficiency_tol_minus: Optional[float]
     parallel_shutoff_min_ratio: float
     shutoff_extrapolation_q_fraction: float
     unverified: tuple
@@ -304,15 +330,24 @@ class AcceptanceCriteria:
             for k in _PARTS:
                 if k in overlay:
                     merged[k] = overlay[k]
+            # A merged sub-table is verified only when every layer that
+            # contributes to it is: a verified overlay that adds one rule must
+            # not hide the base edition's own unverified values.
             if "mechanical_run" in overlay:
-                mr_table = {**(mr_table or {}), **overlay["mechanical_run"]}
-                mr_overridden = overlay_verified
+                base_ok = mr_table is None or bool(mr_table.get("verified", False))
+                mr_table = _merge_sub(mr_table, overlay["mechanical_run"], client_label)
+                mr_overridden = overlay_verified and base_ok
+                mr_table["verified"] = mr_overridden
             if "npsh" in overlay:
-                npsh_table = {**(npsh_table or {}), **overlay["npsh"]}
-                npsh_overridden = overlay_verified
+                base_ok = npsh_table is None or bool(npsh_table.get("verified", False))
+                npsh_table = _merge_sub(npsh_table, overlay["npsh"], client_label)
+                npsh_overridden = overlay_verified and base_ok
+                npsh_table["verified"] = npsh_overridden
             if "selection" in overlay:
-                sel_table = {**(sel_table or {}), **overlay["selection"]}
-                sel_overridden = overlay_verified
+                base_ok = sel_table is None or bool(sel_table.get("verified", False))
+                sel_table = _merge_sub(sel_table, overlay["selection"], client_label)
+                sel_overridden = overlay_verified and base_ok
+                sel_table["verified"] = sel_overridden
             verified = verified and overlay_verified
             if overlay.get("source"):
                 source = f"{source} | {client_label}: {overlay['source']}"
@@ -333,10 +368,19 @@ class AcceptanceCriteria:
         )
 
         unverified = []
-        if not base.get("verified", False):
-            unverified += [
-                name for k, name in _PARTS.items() if k not in overridden_verified
-            ]
+        base_open = (
+            set(merged)  # every part the tables define
+            if not base.get("verified", False)
+            else set(base.get("unverified_parts", ()))
+        )
+        unverified += [
+            name
+            for k, name in _PARTS.items()
+            if k in base_open
+            and k in merged
+            and k not in overridden_verified
+            and k not in _TOOL_SETTINGS
+        ]
         if mr_table is not None and not (
             mr_overridden or mr_table.get("verified", False)
         ):
@@ -364,7 +408,11 @@ class AcceptanceCriteria:
             head_bands=_parse_bands(merged["head_bands"]),
             shutoff_bands=_parse_bands(merged["shutoff_bands"]),
             power_tol_plus=float(merged["power_tol_plus"]),
-            efficiency_tol_minus=float(merged["efficiency_tol_minus"]),
+            efficiency_tol_minus=(
+                float(merged["efficiency_tol_minus"])
+                if merged.get("efficiency_tol_minus") is not None
+                else None
+            ),
             parallel_shutoff_min_ratio=float(merged["parallel_shutoff_min_ratio"]),
             shutoff_extrapolation_q_fraction=float(
                 merged["shutoff_extrapolation_q_fraction"]
@@ -387,6 +435,17 @@ class AcceptanceCriteria:
     def default(cls) -> "AcceptanceCriteria":
         """The default criteria (``api610:12``, no client overlay)."""
         return cls.load(_DEFAULT_KEY)
+
+    @property
+    def performance_unverified(self) -> tuple:
+        """The unverified parts that bear on the performance-test verdict.
+
+        Excludes the mechanical run, NPSH and selection parts (each has its own
+        verdict) so an open mechanical-run item does not make the performance
+        verdict provisional.
+        """
+        perf = set(_PARTS.values()) | {self.client_label}
+        return tuple(item for item in self.unverified if item in perf)
 
     # ------------------------------------------------------------ tolerances
     def head_tolerance(self, rated_head) -> tuple:
@@ -422,3 +481,31 @@ def deviation(rated, predicted) -> float:
     if hasattr(ratio, "to"):
         return float(ratio.to("dimensionless").magnitude)
     return float(ratio)
+
+
+def head_rises_to_shutoff(predict_head, rated_q, samples: int = 60) -> bool:
+    """True when the head rises continuously from ``rated_q`` back to shut-off.
+
+    API 610 (8th ed. Table 4-2 note a; 11th/12th ed. Table 16 note a): when a
+    rising head-flow curve is specified, the *negative* shut-off tolerance is
+    allowed only if the test curve still shows a rising characteristic.
+    ``predict_head`` is a callable ``Q -> head`` (e.g. ``curve.predict_head``).
+
+    Examples
+    --------
+    >>> from pump import Q_
+    >>> falling = lambda q: Q_(100.0 - 0.1 * q.to("m**3/h").magnitude ** 2, "m")
+    >>> head_rises_to_shutoff(falling, Q_(20, "m**3/h"))
+    True
+    >>> drooping = lambda q: Q_(100.0 + q.to("m**3/h").magnitude
+    ...                         - 0.1 * q.to("m**3/h").magnitude ** 2, "m")
+    >>> head_rises_to_shutoff(drooping, Q_(20, "m**3/h"))
+    False
+    """
+    q_max = float(rated_q.to("m**3/h").magnitude)
+    heads = [
+        float(predict_head(Q_(q_max * i / samples, "m**3/h")).to("m").magnitude)
+        for i in range(samples + 1)
+    ]
+    # Head must not increase with flow anywhere on [0, Q_rated].
+    return all(b <= a + 1e-9 for a, b in zip(heads, heads[1:]))

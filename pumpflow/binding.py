@@ -50,7 +50,7 @@ from pump import (
     compare_curves,
     plot_comparison,
 )
-from pump.acceptance import AcceptanceCriteria
+from pump.acceptance import AcceptanceCriteria, head_rises_to_shutoff
 from pump.acceptance import deviation as acceptance_deviation
 from pump.constants import G
 
@@ -642,8 +642,14 @@ def check_compliance(
     tol = dict(lib_defaults)
     if tolerances:
         tol.update(tolerances)
+
+    def _differs(a, b) -> bool:
+        if a is None or b is None:
+            return (a is None) != (b is None)
+        return abs(a - b) > 1e-9
+
     overridden = any(
-        abs(tol[k] - lib_defaults[k]) > 1e-9 for k in lib_defaults if k in tol
+        _differs(tol[k], lib_defaults[k]) for k in lib_defaults if k in tol
     )
     verified = bool(criteria.verified)
 
@@ -692,24 +698,35 @@ def check_compliance(
         )
     )
 
-    # --- Efficiency:  δ ≥ −tol -----------------------------------------------
+    # --- Efficiency:  δ ≥ −tol, or information only ----------------------------
+    # API 610 does not rate efficiency (8th Table 4-2 note; 11th/12th Table 16
+    # note c): without a purchaser-specified tolerance the row is reported but
+    # takes no part in the verdict.
     if rated.efficiency is not None:
         rated_eff = float(rated.efficiency.to("percent").magnitude)
         pred_eff = float(
             fitted.curve.predict_efficiency(rated_q).to("percent").magnitude
         )
         dev_eff = acceptance_deviation(rated_eff, pred_eff)
+        eff_tol = tol.get("efficiency")
+        info_only = eff_tol is None
         params.append(
             ParameterCheck(
                 name="Efficiency",
                 actual=rated_eff,
                 predicted=pred_eff,
-                minimum=None,
+                minimum=None if info_only else _limit(rated_eff * (1.0 - eff_tol)),
                 maximum=None,
                 deviation=dev_eff,
-                tolerance=tol["efficiency"],
-                passed=dev_eff >= -tol["efficiency"] - 1e-9,
-                verified=verified,
+                tolerance=eff_tol,
+                passed=True if info_only else dev_eff >= -eff_tol - 1e-9,
+                verified=verified if not info_only else True,
+                informational=info_only,
+                note=(
+                    "information only: efficiency is not a rated value in API 610"
+                    if info_only
+                    else ""
+                ),
             )
         )
 
@@ -718,6 +735,15 @@ def check_compliance(
         rated_so = float(rated.head_shutoff.to("m").magnitude)
         pred_so = float(fitted.curve.predict_head(Q_(0, "m**3/h")).to("m").magnitude)
         dev_so = acceptance_deviation(rated_so, pred_so)
+        in_band = -shutoff_band[0] - 1e-9 <= dev_so <= shutoff_band[1] + 1e-9
+        note = ""
+        # API 610 Table 4-2 / Table 16 note a: with a rising curve specified
+        # (here: parallel operation), the negative shut-off tolerance is allowed
+        # only if the tested curve still rises to shut-off.
+        if in_band and dev_so < 0 and rated.parallel_operation:
+            if not head_rises_to_shutoff(fitted.curve.predict_head, rated_q):
+                in_band = False
+                note = "negative tolerance not allowed: the curve does not rise to shut-off"
         params.append(
             ParameterCheck(
                 name="Shutoff Head",
@@ -727,16 +753,20 @@ def check_compliance(
                 maximum=_limit(rated_so * (1.0 + shutoff_band[1])),
                 deviation=dev_so,
                 tolerance=tol["shutoff"],
-                passed=-shutoff_band[0] - 1e-9 <= dev_so <= shutoff_band[1] + 1e-9,
+                passed=in_band,
                 extrapolated=bool(checker.shutoff_extrapolated),
                 verified=verified,
+                note=note,
             )
         )
 
     # --- Parallel operation (only when the rated point asks for it) ----------
     parallel_ok = checker.parallel_operation_ok() if rated.parallel_operation else None
 
-    overall = all(p.passed for p in params) and parallel_ok is not False
+    overall = (
+        all(p.passed for p in params if not p.informational)
+        and parallel_ok is not False
+    )
     return ComplianceResult(
         pump_tag=fitted.pump_tag,
         parameters=tuple(params),
@@ -744,7 +774,7 @@ def check_compliance(
         tolerances=tol,
         overridden=overridden,
         criteria_label=criteria_label(criteria),
-        unverified=tuple(criteria.unverified),
+        unverified=criteria.performance_unverified,
         parallel_ok=parallel_ok,
     )
 
@@ -915,10 +945,11 @@ def check_npsh_set(
     criteria = NPSHCriteria(
         min_ratio=min_ratio,
         min_margin=min_margin,
+        npshr_tol_plus=getattr(base, "npshr_tol_plus", None),
         source=source,
         verified=False if overridden else bool(getattr(base, "verified", False)),
     )
-    result = check_npsh(npsha, npshr, criteria)
+    result = check_npsh(npsha, npshr, criteria, npshr_quoted=npsh_set.npshr_quoted)
     try:
         plot = plot_npsh(curve, npsha, rated.q if rated is not None else None)
     except Exception:

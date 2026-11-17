@@ -263,7 +263,7 @@ assert all("P-0500S" != c.name for c in ranked)
 
 # the catalogue entries are not mutated by the selection
 assert catalogue.entries[1].speed.to("rpm").magnitude == 1480
-assert sel.verified is False
+assert sel.verified is True  # API 610 12th ed.: POR 70-120 % of BEP, checked
 
 tmp.cleanup()
 print("UC-01 acceptance OK:", [c.label for c in ranked[:3]])
@@ -293,8 +293,10 @@ temperature) -> pin them on `TestPoint`s -> `to_speed` (10 301 -> 10 212 rpm) ->
 `to_fluid` (test water -> rated fluid, SG 0.999) -> degree-3 fit -> `PerformanceChecker`
 against **API 610 8th edition + client overlay N-553**.
 
-> Standards values are **unverified** seeds (`verified = false`): the verdict is a
-> *provisional* one, see [acceptance tolerances](../docs/concepts/acceptance-tolerances.md).
+> The API 610 8th-edition tolerances (Table 4-2) and the N-553 rev E overlay were
+> checked against the standard texts; see
+> [acceptance tolerances](../docs/concepts/acceptance-tolerances.md).  Efficiency is
+> **not a rated value** in API 610, so it is reported for information only.
 
 **Acceptance:** at the rated flow 9.80 m3/h the predicted head is about 339.5 m
 (+1.7 % vs 333.8 m, inside +/-2 %), power about 24.6 kW and efficiency about 36.8 %.
@@ -441,8 +443,9 @@ for p in corrected.points:
 ## 5 · Check against the rated point
 
 `AcceptanceCriteria.load("api610:8", client="n553")` selects the edition and the client
-overlay (a placeholder that changes nothing yet).  The rated head 333.8 m is above 300 m,
-so the head band is +/-2 %.
+overlay.  API 610 8th ed. Table 4-2: the rated head 333.8 m is above 300 m, so the head
+band is -2/+2 %, the shut-off band +/-5 % and the power limit +4 %.  The N-553 rev E
+overlay adds the NPSH margin rule (>= 0.8 m and NPSHa/NPSHr >= 1.15 at rated flow).
 """),
         code(r"""
 criteria = AcceptanceCriteria.load("api610:8", client="n553")
@@ -507,8 +510,11 @@ assert checker.minimum_head <= pred_h <= checker.maximum_head
 assert pred_p <= checker.maximum_breaking_power
 assert "False" not in checker.check_summary
 
-# the criteria are provisional until the owner verifies them
-assert criteria.verified is False and len(criteria.unverified) > 0
+# the performance tolerances are checked against API 610 8th ed. Table 4-2;
+# only the mechanical-run limits remain open (no run test in the 8th edition)
+assert criteria.verified is True
+assert criteria.performance_unverified == ()
+assert criteria.efficiency_tol_minus is None  # "Efficiency is not a rating value"
 print("UC-02 acceptance OK")
 """),
     ]
@@ -1288,10 +1294,11 @@ for lang in ("en", "pt"):
     assert sizes[lang][1] > 2_000, "tex is empty"
     assert n_figures[lang] >= 3, "performance, NPSH/mechanical and comparison figures"
 
-# the docx carries the pump tag and the localised verdict (unverified criteria -> provisional)
+# the docx carries the pump tag and the localised verdict (API 610 12th ed.
+# Table 16 is checked against the text, so the verdict is not provisional)
 assert "P-1001A" in docx_text["en"] and "P-1001A" in docx_text["pt"]
 assert "Overall verdict" in docx_text["en"] and "APPROVED" in docx_text["en"]
-assert "unverified criteria" in docx_text["en"]
+assert "APPROVED (unverified criteria)" not in docx_text["en"]
 assert "Resultado geral" in docx_text["pt"] and "APROVADO" in docx_text["pt"]
 assert "Dados do Teste" in docx_text["pt"]
 
@@ -1630,6 +1637,170 @@ print("Viscosity HI 9.6.7 acceptance OK")
 
 
 # --------------------------------------------------------------------------- #
+# TR-01 - Witness training: API 610 performance test
+# --------------------------------------------------------------------------- #
+def tr01():
+    return [
+        md(r"""
+# TR-01 · Witnessing an API 610 performance test (exercises)
+
+Companion of the training guide
+[TR-01](../docs/training/TR-01-witness-performance-test.md).  Every exercise of the guide
+is worked here with the `pump` library, and the last cell **asserts** the answers.
+
+The tolerance tables come from `pump/standards/api610.toml` and
+`pump/standards/clients/n553.toml`; they were checked against API 610 8th, 11th, 12th
+editions and Petrobras N-553 rev E (clause references in each table's `source`).
+"""),
+        code(r"""
+from pump import Q_
+from pump.acceptance import AcceptanceCriteria, deviation, head_rises_to_shutoff
+from pump.npsh import check_npsh
+
+api8 = AcceptanceCriteria.load("api610:8")
+api11 = AcceptanceCriteria.load("api610:11")
+b34004 = AcceptanceCriteria.load("api610:8", client="n553")
+print(b34004.label, "+", b34004.client_label)
+print("verified performance tolerances:", b34004.verified,
+      "| open parts:", b34004.unverified)
+"""),
+        md(r"""
+## Exercise 1 · Which band? (rated head 120 m)
+
+The band is chosen by the **rated** head, for the shut-off check too.  Note the shut-off
+edge: 150 m in the 8th edition, 75 m in the 11th.
+"""),
+        code(r"""
+h = Q_(120, "m")
+ex1 = {
+    "8th head": api8.head_tolerance(h), "8th shut-off": api8.shutoff_tolerance(h),
+    "11th head": api11.head_tolerance(h), "11th shut-off": api11.shutoff_tolerance(h),
+}
+for k, (minus, plus) in ex1.items():
+    print(f"{k:14s} -{minus:.0%} / +{plus:.0%}")
+"""),
+        md(r"""
+## Exercise 2 · B-34004A head (rated 333.8 m, predicted 339.5 m)
+"""),
+        code(r"""
+rated_h, pred_h = Q_(333.8, "m"), Q_(339.5, "m")
+dh = deviation(rated_h, pred_h)
+minus, plus = b34004.head_tolerance(rated_h)
+head_ok = -minus <= dh <= plus
+print(f"dH = {dh:+.2%}  band -{minus:.0%}/+{plus:.0%}  -> {'PASS' if head_ok else 'FAIL'}"
+      f"  (room left {plus - dh:.2%})")
+print("under the 11th edition the band is", api11.head_tolerance(rated_h))
+"""),
+        md(r"""
+## Exercise 3 · Power (rated 26.9 kW, predicted 24.6 kW)
+
++4 % from all causes, after the corrections; a lower power is not a defect.
+"""),
+        code(r"""
+dp = deviation(Q_(26.9, "kW"), Q_(24.6, "kW"))
+power_ok = dp <= b34004.power_tol_plus
+print(f"dP = {dp:+.1%}  limit +{b34004.power_tol_plus:.0%}  -> {'PASS' if power_ok else 'FAIL'}")
+"""),
+        md(r"""
+## Exercise 4 · Efficiency 3.7 % low, 37 kW driver
+
+API 610 does not rate efficiency; N-553 rev E asks for -0 % only for drivers of 1 MW or
+more.  The criteria carry **no** efficiency tolerance, so efficiency is information only.
+"""),
+        code(r"""
+de = deviation(Q_(32.7, "percent"), Q_(31.5, "percent"))
+print(f"d_eta = {de:+.1%}; efficiency tolerance in the criteria: {b34004.efficiency_tol_minus}")
+"""),
+        md(r"""
+## Exercise 5 · NPSH (NPSHa 2.4 m, NPSH3 1.6 m, quoted 1.5 m)
+
+Two rules: the client margin (N-553 rev E: >= 0.8 m and ratio >= 1.15) and API 610's
+rated NPSH +0 % (tested NPSH3 <= quoted).
+"""),
+        code(r"""
+res = check_npsh(Q_(2.4, "m"), Q_(1.6, "m"), b34004.npsh, npshr_quoted=Q_(1.5, "m"))
+print(f"margin {res.margin:.2f~P}, ratio {res.ratio:.2f}, quoted ok: {res.quoted_ok}"
+      f" -> NPSH verdict {res.status.upper()}")
+needs_all_points = bool(res.margin < Q_(1.0, "m") or res.ratio < 1.20)
+print("N-553 rev E 9.22: NPSHr at every test point required:", needs_all_points)
+"""),
+        md(r"""
+## Exercise 6 · Vibration 0.16 in/s
+
+The limit is 3.0 mm/s **RMS** (8th Table 2-5).  True peak may not be used for acceptance.
+"""),
+        code(r"""
+v = Q_(0.16, "inch/s").to("mm/s")
+limit = b34004.mechanical_run.role_max["vibration_unfiltered"]
+vib_fails_if_rms = bool(v > limit)
+print(f"0.16 in/s = {v:.2f~P}; limit {limit:~P} RMS -> "
+      f"{'FAIL' if vib_fails_if_rms else 'PASS'} if the reading is RMS; "
+      "if true peak: not usable, ask for RMS")
+"""),
+        md(r"""
+## Exercise 7 · Test speed (rated 10 212 rpm, tested 10 301 rpm)
+"""),
+        code(r"""
+dn = deviation(Q_(10212, "rpm"), Q_(10301, "rpm"))
+speed_ok = abs(dn) <= 0.03
+print(f"dN = {dn:+.2%} -> {'within' if speed_ok else 'outside'} 3 %")
+"""),
+        md(r"""
+## Exercise 8 · Rising curve specified, shut-off 3 % low, curve droops
+
+The negative shut-off tolerance is allowed only if the test curve still rises to
+shut-off (`head_rises_to_shutoff`).  Two illustrative fitted curves through the same
+rated point (9.8 m3/h, 333.8 m); the rated shut-off head is taken as 345 m.
+"""),
+        code(r"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+def poly(c):
+    return lambda q: Q_(float(np.polyval(c, q.to("m**3/h").magnitude)), "m")
+
+rated_q, rated_so = Q_(9.8, "m**3/h"), Q_(345.0, "m")
+rising = poly([-0.24, 0.0, 356.85])          # head falls steadily with flow
+drooping = poly([-0.04819, 0.3855, 334.65])  # head peaks near 4 m3/h, then falls
+for name, f in (("rising", rising), ("drooping", drooping)):
+    so = f(Q_(0, "m**3/h"))
+    print(f"{name:9s} H(0) = {so:.1f~P} ({deviation(rated_so, so):+.1%} vs 345 m), "
+          f"H(rated) = {f(rated_q):.1f~P}, rises to shut-off: "
+          f"{head_rises_to_shutoff(f, rated_q)}")
+
+qs = np.linspace(0, 12, 100)
+for name, f in (("rising", rising), ("drooping", drooping)):
+    plt.plot(qs, [f(Q_(q, "m**3/h")).magnitude for q in qs], label=name)
+plt.axvline(9.8, ls=":", c="k")
+plt.xlabel("Q (m3/h)"); plt.ylabel("Head (m)"); plt.legend(); plt.grid(alpha=0.3)
+plt.show()
+"""),
+        md("## Answers (asserted)"),
+        code(r"""
+assert ex1["8th head"] == (0.02, 0.05) and ex1["8th shut-off"] == (0.10, 0.10)
+assert ex1["11th head"] == (0.03, 0.03) and ex1["11th shut-off"] == (0.08, 0.08)
+
+assert head_ok and abs(dh - 0.0171) < 5e-4 and api11.head_tolerance(rated_h) == (0.03, 0.03)
+assert power_ok and abs(dp + 0.0855) < 5e-4
+assert b34004.efficiency_tol_minus is None  # efficiency: information only
+assert res.status == "fail" and res.quoted_ok is False and needs_all_points
+assert abs(v.magnitude - 4.064) < 1e-3 and vib_fails_if_rms
+assert speed_ok and abs(dn - 0.00872) < 1e-4
+
+assert abs(drooping(rated_q).magnitude - 333.8) < 0.01
+assert head_rises_to_shutoff(rising, rated_q)
+assert not head_rises_to_shutoff(drooping, rated_q)
+# the drooping curve's shut-off is 3 % below 345 m: inside +/-5 %, yet it fails the rule
+so_dev = deviation(rated_so, drooping(Q_(0, "m**3/h")))
+assert abs(so_dev + 0.03) < 1e-3
+lo, hi = api8.shutoff_tolerance(Q_(333.8, "m"))
+assert -lo <= so_dev <= hi
+print("TR-01 answers OK")
+"""),
+    ]
+
+
+# --------------------------------------------------------------------------- #
 NOTEBOOKS = {
     "UC-01_selection": uc01,
     "UC-02_performance_verification": uc02,
@@ -1640,6 +1811,7 @@ NOTEBOOKS = {
     "UC-09_reports": uc09,
     "UC-11_mechanical_run": uc11,
     "viscosity_HI967": viscosity,
+    "TR-01_witness_training": tr01,
 }
 
 
