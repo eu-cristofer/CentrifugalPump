@@ -495,3 +495,41 @@ msgid "Criteria not yet verified against the standard text: {items}."
 msgstr "Critérios ainda não verificados contra o texto da norma: {items}."
 msgid "API 610 {ordinal} edition"
 msgstr "API 610 {number}ª edição"
+
+# Vibration by API 610 pump type; high-speed chart
+msgid "Drive-end bearing housing"
+msgstr "Caixa de mancal do lado acoplado"
+
+msgid "Non-drive-end bearing housing"
+msgstr "Caixa de mancal do lado não acoplado"
+
+msgid "Driver mounting surface"
+msgstr "Superfície de montagem do acionador"
+
+msgid "Pump bearing housing"
+msgstr "Caixa de mancal da bomba"
+
+msgid "Gearbox housing"
+msgstr "Carcaça da caixa de engrenagens"
+
+msgid "Thrust bearing housing / motor mounting flange"
+msgstr "Caixa do mancal de escora / flange de montagem do motor"
+
+msgid "Pump type {ptype}: measured at the API 610 locations of that type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), {basis}."
+msgstr "Bomba tipo {ptype}: medida nos pontos da API 610 para esse tipo; limites {overall:.1f} / {filtered:.1f} mm/s (global / filtrado), {basis}."
+
+msgid "High-speed vibration limit (API 610 chart)"
+msgstr "Limite de vibração para alta rotação (gráfico da API 610)"
+
+msgid "Rotational speed"
+msgstr "Rotação"
+
+msgid "Overall vibration limit"
+msgstr "Limite de vibração global"
+
+msgid "This pump"
+msgstr "Esta bomba"
+
+msgid "stage"
+msgstr "estágio"
+

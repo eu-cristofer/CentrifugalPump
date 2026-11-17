@@ -54,7 +54,9 @@ def test_regions_rated_preferred_allowable():
 def test_filtered_uses_filtered_limit_and_missing_keys_are_skipped():
     pts = _pts([(10.0, {"vib_nde_f": 1.1})])
     lines = vibration_by_region(pts, Q_(10, "m**3/h"), Q_(10, "m**3/h"), LIMITS)
-    assert [(v.location, v.measure) for v in lines] == [("Non-drive end", "Filtered")]
+    assert [(v.location, v.measure) for v in lines] == [
+        ("Non-drive-end bearing housing", "Filtered")
+    ]
     assert lines[0].rated == (1.1, 2.0) and lines[0].aor == (1.1, 2.6)
 
 
@@ -107,10 +109,10 @@ def test_b34004a_summary_values(qapp):
     header = dict(s.header)
     assert header["Item no."] == "B-34004"  # defaults to the service TAG
     assert header["Purchase order no."] == ""  # not in the project: left blank
-    # no per-point vibration: rated column from the mechanical run (0.16 in/s)
+    # Sundyne per-point gearbox-housing readings (RMS per the vendor), OH6
     overall = [v for v in s.vibration if v.measure == "Overall"][0]
-    assert overall.rated == (pytest.approx(4.06, abs=0.01), 3.0)
-    assert overall.por == (None, None)
+    assert overall.location == "Gearbox housing"
+    assert overall.rated == (pytest.approx(3.76, abs=0.01), 3.0)
     assert s.curve_png and s.curve_png.startswith(b"\x89PNG")
 
 
@@ -124,8 +126,10 @@ def test_point_vibration_fills_every_region(qapp, tmp_path):
     project = tmp_path / "synthetic.pumpflow"
     project.write_text(json.dumps(doc), encoding="utf-8")
     (s,) = _summaries(qapp, project)
-    (de,) = s.vibration
-    assert de.location == "Drive end" and de.rated[0] == pytest.approx(2.4)
+    (de,) = [v for v in s.vibration if v.location == "Drive-end bearing housing"]
+    assert de.location == "Drive-end bearing housing" and de.rated[0] == pytest.approx(
+        2.4
+    )
     assert de.por[0] is not None and de.aor == (pytest.approx(3.6), pytest.approx(3.9))
 
 

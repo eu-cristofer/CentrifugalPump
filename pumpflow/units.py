@@ -177,12 +177,9 @@ COLUMN_DIMENSIONS: Dict[str, str] = {
 # Optional Test Points vibration columns (bearing-housing velocity, RMS): drive
 # end / non-drive end, overall / filtered.  Kept out of COLUMN_DIMENSIONS so a
 # project without vibration data keeps its exact on-disk shape.
-VIBRATION_COLUMNS: Dict[str, str] = {
-    "vib_de": "vibration_velocity",
-    "vib_de_f": "vibration_velocity",
-    "vib_nde": "vibration_velocity",
-    "vib_nde_f": "vibration_velocity",
-}
+from pump.vibration import ALL_VIBRATION_KEYS as _ALL_VIB, LOCATIONS as _VIB_LOCS
+
+VIBRATION_COLUMNS: Dict[str, str] = {k: "vibration_velocity" for k in _ALL_VIB}
 
 #: Every Test Points column key -> unit dimension.
 ALL_COLUMN_DIMENSIONS: Dict[str, str] = {**COLUMN_DIMENSIONS, **VIBRATION_COLUMNS}
@@ -377,17 +374,19 @@ _HEADER_KEYS = {
     "η": "eff",
     "eta": "eff",
     "eff": "eff",
-    "vib_de": "vib_de",
-    "vib_de_f": "vib_de_f",
-    "vib_nde": "vib_nde",
-    "vib_nde_f": "vib_nde_f",
-    "vib_de_filtered": "vib_de_f",
-    "vib_nde_filtered": "vib_nde_f",
-    "de": "vib_de",
-    "de_f": "vib_de_f",
-    "nde": "vib_nde",
-    "nde_f": "vib_nde_f",
+    "gearbox": "vib_gb",
+    "gearbox_f": "vib_gb_f",
 }
+for _k in _VIB_LOCS:  # vib_gb, vib_gb_f, gb, gb_f, vib_gb_filtered, ...
+    _HEADER_KEYS.update(
+        {
+            f"vib_{_k}": f"vib_{_k}",
+            f"vib_{_k}_f": f"vib_{_k}_f",
+            f"vib_{_k}_filtered": f"vib_{_k}_f",
+            _k: f"vib_{_k}",
+            f"{_k}_f": f"vib_{_k}_f",
+        }
+    )
 
 # Aliases are keyed by casefolded text.
 _UNIT_ALIASES: Dict[str, Dict[str, str]] = {

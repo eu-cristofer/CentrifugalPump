@@ -76,6 +76,9 @@ class RatedPoint:
     impeller_diameter: Optional[Q_] = None  # nominal (reference for trimming)
     impeller_diameter_max: Optional[Q_] = None  # maximum allowed
     impeller_diameter_min: Optional[Q_] = None  # minimum allowed
+    # API 610 pump type (OH1..OH6, BB1..BB5, VS1..VS7): selects the vibration
+    # measurement locations and limits (``pump.vibration``); None = not set.
+    pump_type: Optional[str] = None
 
     @property
     def density_rel(self) -> float:
@@ -153,12 +156,9 @@ class TestRow:
     power: Q_  # measured breaking power      (kW)
     head: Optional[Q_] = None  # optional measured/overridden head (m)
     efficiency: Optional[Q_] = None  # optional measured efficiency    (percent)
-    # Optional bearing-housing vibration velocity (RMS) at this point:
-    # drive end / non-drive end, overall / filtered.
-    vib_de: Optional[Q_] = None
-    vib_de_f: Optional[Q_] = None
-    vib_nde: Optional[Q_] = None
-    vib_nde_f: Optional[Q_] = None
+    # Optional bearing-housing vibration velocity (RMS) at this point, keyed
+    # vib_<location> (overall) / vib_<location>_f (filtered); see pump.vibration.
+    vibration: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

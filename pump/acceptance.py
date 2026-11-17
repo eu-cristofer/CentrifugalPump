@@ -47,7 +47,7 @@ import tomllib
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Any, Mapping, Optional
 
 from .mechanical_run import MechanicalRunCriteria
 from .npsh import NPSHCriteria
@@ -58,6 +58,7 @@ __all__ = [
     "CheckRow",
     "PerformanceVerdict",
     "SelectionCriteria",
+    "VibrationCriteria",
     "deviation",
     "evaluate_performance",
     "head_rises_to_shutoff",
@@ -90,6 +91,9 @@ _NPSH_PART = "NPSH margin rule"
 
 # The ``selection`` sub-table (preferred operating region) is merged key by key too.
 _SELECTION_PART = "preferred operating region (pump selection)"
+
+# The ``vibration`` sub-table (bearing-housing limits by pump family).
+_VIBRATION_PART = "vibration limits"
 
 _DEFAULT_KEY = "api610:12"
 
@@ -160,6 +164,89 @@ def _band_for(bands: tuple, rated_head) -> tuple:
         if rated_head <= max_head:
             return (minus, plus)
     return (bands[-1][1], bands[-1][2])
+
+
+@dataclass(frozen=True)
+class VibrationCriteria:
+    """
+    Bearing-housing vibration limits (RMS, preferred operating region) by pump
+    family: overhung and between-bearings pumps (``oh_bb``) or vertically
+    suspended pumps (``vs``).
+
+    Examples
+    --------
+    >>> from pump.utilities.unit_conversion import Q_
+    >>> v = VibrationCriteria.from_table({"oh_bb_overall": "3.0 mm/s",
+    ...     "oh_bb_filtered": "2.0 mm/s", "vs_overall": "5.0 mm/s",
+    ...     "vs_filtered": "3.4 mm/s"})
+    >>> v.limits("VS4")["overall"]
+    <Quantity(5.0, 'millimeter / second')>
+    >>> v.limits("OH6")["filtered"]
+    <Quantity(2.0, 'millimeter / second')>
+    """
+
+    oh_bb: tuple = (None, None)  # (overall, filtered) Q_
+    vs: tuple = (None, None)
+    outside_por_increase: float = 0.30
+    source: str = "not configured"
+    verified: bool = False
+    high_speed: Any = None  # pump.vibration.HighSpeedRule (11th/12th) or None
+
+    @property
+    def configured(self) -> bool:
+        return self.oh_bb[0] is not None
+
+    def limits(
+        self, pump_type: Optional[str] = None, speed=None, power_per_stage=None
+    ) -> dict:
+        """
+        ``{"overall": Q_, "filtered": Q_, "basis": str}`` for a pump type
+        (OH/BB if unset).  For OH and BB pumps above 3600 r/min or 300 kW per
+        stage, the high-speed rule of the edition applies (when it has one).
+        """
+        from .vibration import limit_group
+
+        group = limit_group(pump_type)
+        overall, filtered = self.vs if group == "vs" else self.oh_bb
+        basis = "Table 9 / 2-6 (VS)" if group == "vs" else "Table 8 / 2-5 (OH, BB)"
+        rule = self.high_speed
+        if (
+            group == "oh_bb"
+            and rule is not None
+            and speed is not None
+            and rule.applies(speed, power_per_stage)
+        ):
+            overall = rule.overall(speed, power_per_stage)
+            filtered = rule.filtered(speed, power_per_stage)
+            p_txt = (
+                f"{power_per_stage.to('kW').magnitude:.0f} kW/stage"
+                if power_per_stage is not None
+                else "power not given (300 kW used)"
+            )
+            basis = f"high-speed rule at {speed.to('rpm').magnitude:.0f} r/min, {p_txt}"
+        return {"overall": overall, "filtered": filtered, "basis": basis}
+
+    @classmethod
+    def from_table(cls, table: Optional[Mapping]) -> "VibrationCriteria":
+        t = table or {}
+
+        def q(key):
+            return _parse_quantity(t[key]) if t.get(key) is not None else None
+
+        return cls(
+            oh_bb=(q("oh_bb_overall"), q("oh_bb_filtered")),
+            vs=(q("vs_overall"), q("vs_filtered")),
+            outside_por_increase=float(t.get("outside_por_increase", 0.30)),
+            source=str(t.get("source", "not configured")),
+            verified=bool(t.get("verified", False)),
+            high_speed=_high_speed(t.get("high_speed")),
+        )
+
+
+def _high_speed(table):
+    from .vibration import HighSpeedRule
+
+    return HighSpeedRule.from_table(table)
 
 
 @dataclass(frozen=True)
@@ -279,6 +366,7 @@ class AcceptanceCriteria:
     mechanical_run: MechanicalRunCriteria = field(default_factory=MechanicalRunCriteria)
     npsh: NPSHCriteria = field(default_factory=NPSHCriteria)
     selection: SelectionCriteria = field(default_factory=SelectionCriteria)
+    vibration: VibrationCriteria = field(default_factory=VibrationCriteria)
 
     # ------------------------------------------------------------ discovery
     @staticmethod
@@ -326,6 +414,8 @@ class AcceptanceCriteria:
         mr_table = dict(base["mechanical_run"]) if "mechanical_run" in base else None
         npsh_table = dict(base["npsh"]) if "npsh" in base else None
         sel_table = dict(base["selection"]) if "selection" in base else None
+        vib_table = dict(base["vibration"]) if "vibration" in base else None
+        vib_overridden = False
         verified = bool(base.get("verified", False))
         source = base.get("source", "")
         client_label = None
@@ -365,6 +455,11 @@ class AcceptanceCriteria:
                 sel_table = _merge_sub(sel_table, overlay["selection"], client_label)
                 sel_overridden = overlay_verified and base_ok
                 sel_table["verified"] = sel_overridden
+            if "vibration" in overlay:
+                base_ok = vib_table is None or bool(vib_table.get("verified", False))
+                vib_table = _merge_sub(vib_table, overlay["vibration"], client_label)
+                vib_overridden = overlay_verified and base_ok
+                vib_table["verified"] = vib_overridden
             verified = verified and overlay_verified
             if overlay.get("source"):
                 source = f"{source} | {client_label}: {overlay['source']}"
@@ -412,6 +507,10 @@ class AcceptanceCriteria:
             sel_overridden or sel_table.get("verified", False)
         ):
             unverified.append(_SELECTION_PART)
+        if vib_table is not None and not (
+            vib_overridden or vib_table.get("verified", False)
+        ):
+            unverified.append(_VIBRATION_PART)
         if overlay_unverified:
             unverified.append(overlay_unverified)
 
@@ -451,6 +550,7 @@ class AcceptanceCriteria:
                 if sel_table is not None
                 else SelectionCriteria()
             ),
+            vibration=VibrationCriteria.from_table(vib_table),
         )
 
     @classmethod

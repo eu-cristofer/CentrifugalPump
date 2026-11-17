@@ -168,6 +168,46 @@ def check_compliance(
     )
 
 
+def vibration_limits_for(rated: Optional[RatedPoint], fitted=None, stages: int = 1):
+    """Bearing-housing vibration limits for the rated pump (``limits`` dict).
+
+    The pump type selects the limit table (OH/BB or VS).  For OH/BB pumps above
+    3600 r/min or 300 kW per stage the edition's high-speed rule applies, with
+    ``P`` = power at the BEP of the fitted curve, converted to relative density
+    1.0, per stage (the figure's definition).  Without a fitted curve the rated
+    power, converted to relative density 1.0, is used and the basis says so.
+    """
+    full = criteria_for(rated) if rated is not None else AcceptanceCriteria.default()
+    vib = full.vibration
+    if not vib.configured:
+        return None
+    pump_type = getattr(rated, "pump_type", None) if rated is not None else None
+    speed = getattr(rated, "speed", None) if rated is not None else None
+    power = None
+    note = ""
+    stages = max(int(stages or 1), 1)
+    if fitted is not None:
+        try:
+            curve = fitted.curve
+            q_bep = curve.bep()[0]
+            rho = curve.fluid.density.to("kg/m**3").magnitude
+            power = curve.predict_breaking_power(q_bep) * (1000.0 / rho) / stages
+            note = "P at BEP, SG 1.0"
+        except Exception:
+            power = None
+    if (
+        power is None
+        and rated is not None
+        and getattr(rated, "power", None) is not None
+    ):
+        power = rated.power / max(rated.density_rel, 1e-9) / stages
+        note = "P = rated power at SG 1.0 (no fitted curve)"
+    lim = vib.limits(pump_type, speed, power)
+    if note and "high-speed" in lim["basis"]:
+        lim["basis"] += f" ({note})"
+    return lim
+
+
 def check_mechanical_run(
     run_set: MechanicalRunSet,
     rated: Optional[RatedPoint] = None,
@@ -200,6 +240,15 @@ def check_mechanical_run(
     if min_duration is None:
         min_duration = base.min_duration
     role_max = dict(base.role_max or {})
+    # The pump type selects the vibration limits of its family (API 610
+    # Table 8 / 2-5 for OH and BB, Table 9 / 2-6 for VS).
+    pump_type = getattr(rated, "pump_type", None) if rated is not None else None
+    lim = vibration_limits_for(rated) if pump_type else None
+    if lim is not None:
+        if lim["overall"] is not None:
+            role_max["vibration_unfiltered"] = lim["overall"]
+        if lim["filtered"] is not None:
+            role_max["vibration_filtered"] = lim["filtered"]
     role_max.update(ov.get("role_max") or {})
     stabilisation = dict(base.stabilisation or {})
     for role, spec in (ov.get("stabilisation") or {}).items():

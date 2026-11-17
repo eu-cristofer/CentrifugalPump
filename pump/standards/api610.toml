@@ -58,6 +58,15 @@ npshr_tol_plus = 0.0
 source = "API 610 8th ed. Table 4-2 rated NPSH +0 % and 4.3.4.1.3 (NPSHR at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
 verified = true
 
+[editions."8".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 8th ed. Table 2-5 (overhung and between-bearings pumps, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS; Table 2-6 (vertically suspended, thrust bearing housing or motor mounting flange): overall 5.0 mm/s RMS, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region within the allowable region; RMS only (2.8.3.7 note). Locations: Figures 2-8A / 2-8B. No high-speed allowance in this edition."
+verified = true
+
 [editions."8".selection]
 por_min = 0.70
 por_max = 1.20
@@ -101,6 +110,15 @@ npshr_tol_plus = 0.0
 source = "rated NPSH +0 % taken from the 8th/11th/12th editions (Table 4-2 / Table 16); 10th-edition text not consulted. No API margin rule: use the client overlay."
 verified = false
 
+[editions."10".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "Taken from the 8th/11th/12th editions (identical values); 10th-edition text not consulted."
+verified = false
+
 [editions."10".selection]
 por_min = 0.70
 por_max = 1.20
@@ -126,7 +144,7 @@ shutoff_bands = [
 
 [editions."11".mechanical_run]
 min_duration = "4 h"
-source = "Duration: API 610 11th ed. 8.3.4.2.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. NOT APPLIED: the higher limits of Figure 34 for pumps above 3600 r/min or 300 kW per stage (the formula exponents are illegible in the local text conversion; confirm from the printed standard). The limits here are therefore conservative for high-speed pumps."
+source = "Duration: API 610 11th ed. 8.3.4.2.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 34 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
 verified = false
 
 [[editions."11".mechanical_run.roles]]
@@ -141,6 +159,27 @@ max = "3.0 mm/s"
 npshr_tol_plus = 0.0
 source = "API 610 11th ed. Table 16 rated NPSH 0 % and 8.3.4.3 (NPSH3 at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
 verified = true
+
+[editions."11".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 11th ed. Table 8 (OH and BB, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS for pumps up to 3600 r/min and 300 kW per stage; Table 9 (VS): overall 5.0, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region; RMS only (6.9.3.4). Locations: Figures 31-33. High-speed pumps (above 3600 r/min or 300 kW per stage): Figure 34 allowance applied from [vibration.high_speed] (exponents reconstructed, unverified)."
+verified = false
+
+[editions."11".vibration.high_speed]
+# Figure 34: horizontal (Table 8: OH, BB) pumps above 3600 r/min or 300 kW per stage.
+base = "3.0 mm/s"
+cap = "4.5 mm/s"
+n_ref = "3600 rpm"
+p_ref = "300 kW"
+speed_exponent = 0.30
+power_exponent = 0.21
+discrete_ratio = 0.67
+source = "API 610 11th ed. Figure 34: v_u = 3.0 (n/3600)^0.30 (P/300)^0.21 mm/s RMS, limited to 4.5 mm/s; P = power at BEP of the rated impeller, relative density 1.0, per stage (P <= 300 kW uses 300; the result is kept between 3.0 and 4.5 mm/s: the figure's 'transition from 3.0 to 4.5 mm/s'; rounded to two significant figures); discrete frequencies v_f < 0.67 v_u (Note 2). The exponents are illegible in the local text conversion: 0.30 and 0.21 are reconstructed and cross-checked against the figure's curve positions (P >= 3000 kW reaches 4.5 mm/s near 2 800 r/min, P <= 300 kW near 13 900 r/min). Confirm against the printed figure."
+verified = false
 
 [editions."11".selection]
 por_min = 0.70
@@ -167,7 +206,7 @@ shutoff_bands = [
 
 [editions."12".mechanical_run]
 min_duration = "4 h"
-source = "Duration: API 610 12th ed. 8.3.4.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. NOT APPLIED: the higher limits of Figure 35 for pumps above 3600 r/min or 300 kW per stage (the formula exponents are illegible in the local text conversion; confirm from the printed standard). The limits here are therefore conservative for high-speed pumps."
+source = "Duration: API 610 12th ed. 8.3.4.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 35 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
 verified = false
 
 [[editions."12".mechanical_run.roles]]
@@ -182,6 +221,27 @@ max = "3.0 mm/s"
 npshr_tol_plus = 0.0
 source = "API 610 12th ed. Table 16 rated NPSH 0 % and 8.3.4.3 (NPSH3 at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
 verified = true
+
+[editions."12".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 12th ed. Table 8 (OH and BB, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS for pumps up to 3600 r/min and 300 kW per stage; Table 9 (VS): overall 5.0, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region; RMS only. Locations: Figures 32-34. High-speed pumps (above 3600 r/min or 300 kW per stage): Figure 35 allowance applied from [vibration.high_speed] (exponents reconstructed, unverified)."
+verified = false
+
+[editions."12".vibration.high_speed]
+# Figure 35: horizontal (Table 8: OH, BB) pumps above 3600 r/min or 300 kW per stage.
+base = "3.0 mm/s"
+cap = "4.5 mm/s"
+n_ref = "3600 rpm"
+p_ref = "300 kW"
+speed_exponent = 0.30
+power_exponent = 0.21
+discrete_ratio = 0.67
+source = "API 610 12th ed. Figure 35: v_u = 3.0 (n/3600)^0.30 (P/300)^0.21 mm/s RMS, limited to 4.5 mm/s; P = power at BEP of the rated impeller, relative density 1.0, per stage (P <= 300 kW uses 300; the result is kept between 3.0 and 4.5 mm/s: the figure's 'transition from 3.0 to 4.5 mm/s'; rounded to two significant figures); discrete frequencies v_f < 0.67 v_u (Note 2). The exponents are illegible in the local text conversion: 0.30 and 0.21 are reconstructed and cross-checked against the figure's curve positions (P >= 3000 kW reaches 4.5 mm/s near 2 800 r/min, P <= 300 kW near 13 900 r/min). Confirm against the printed figure."
+verified = false
 
 [editions."12".selection]
 por_min = 0.70

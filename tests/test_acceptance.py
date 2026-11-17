@@ -166,7 +166,10 @@ def test_checked_editions_cite_their_clauses(key):
     assert "Table" in crit.source and "seed" not in crit.source
     # Performance tolerances verified; only the mechanical run stays open
     # (8th: no run test in the edition; 11th/12th: high-speed allowance not applied).
-    assert crit.unverified == ("mechanical running test limits",)
+    expected = ["mechanical running test limits"]
+    if key != "api610:8":  # 11th/12th: high-speed vibration allowance not applied
+        expected.append("vibration limits")
+    assert list(crit.unverified) == expected
 
 
 def test_10th_edition_stays_unverified():

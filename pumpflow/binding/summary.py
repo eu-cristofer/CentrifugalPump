@@ -178,13 +178,21 @@ def _performance(rated: RatedPoint, branch, criteria, compliance) -> tuple:
     return tuple(lines)
 
 
-def _vibration(rated, branch, criteria, translate: Translate):
+def _vibration(rated, branch, criteria, translate: Translate, stages: int = 1):
     _ = translate
     fitted = branch.fitted
-    limits = {
-        "overall": criteria.mechanical_run.role_max.get("vibration_unfiltered"),
-        "filtered": criteria.mechanical_run.role_max.get("vibration_filtered"),
-    }
+    pump_type = getattr(rated, "pump_type", None)
+    vib = criteria.vibration
+    if vib.configured:  # family table, or the high-speed rule (11th/12th)
+        from .acceptance import vibration_limits_for
+
+        limits = vibration_limits_for(rated, fitted, stages)
+    else:
+        limits = {
+            "overall": criteria.mechanical_run.role_max.get("vibration_unfiltered"),
+            "filtered": criteria.mechanical_run.role_max.get("vibration_filtered"),
+        }
+    increase = vib.outside_por_increase if vib.configured else 0.30
     sel = criteria.selection
     try:
         q_bep = fitted.curve.bep()[0]
@@ -194,7 +202,12 @@ def _vibration(rated, branch, criteria, translate: Translate):
     notes = []
     if points:
         lines = vibration_by_region(
-            points, rated.q, q_bep, limits, por=(sel.por_min, sel.por_max)
+            points,
+            rated.q,
+            q_bep,
+            limits,
+            por=(sel.por_min, sel.por_max),
+            aor_factor=1.0 + increase,
         )
         if q_bep is not None:
             notes.append(
@@ -254,7 +267,64 @@ def _vibration(rated, branch, criteria, translate: Translate):
             "used for acceptance."
         ),
     )
+    if pump_type and limits.get("overall") is not None:
+        notes.insert(
+            1,
+            _(
+                "Pump type {ptype}: measured at the API 610 locations of that "
+                "type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), "
+                "{basis}."
+            ).format(
+                ptype=pump_type,
+                overall=float(limits["overall"].to("mm/s").magnitude),
+                filtered=float(limits["filtered"].to("mm/s").magnitude),
+                basis=limits.get("basis", ""),
+            ),
+        )
     return lines, tuple(notes)
+
+
+def _high_speed_chart(rated, branch, criteria, translate: Translate, stages: int = 1):
+    """The high-speed vibration chart with this pump marked, when the edition's
+    high-speed rule applies to it (OH/BB above 3600 r/min or 300 kW/stage)."""
+    from pump.vibration import limit_group, plot_high_speed_chart
+
+    rule = criteria.vibration.high_speed
+    pump_type = getattr(rated, "pump_type", None)
+    if rule is None or not pump_type or limit_group(pump_type) != "oh_bb":
+        return None
+    from .acceptance import vibration_limits_for
+
+    lim = vibration_limits_for(rated, branch.fitted, stages)
+    if lim is None or "high-speed" not in lim.get("basis", ""):
+        return None
+    _ = translate
+    power = None
+    try:
+        curve = branch.fitted.curve
+        rho = curve.fluid.density.to("kg/m**3").magnitude
+        power = (
+            curve.predict_breaking_power(curve.bep()[0])
+            * (1000.0 / rho)
+            / max(stages, 1)
+        )
+    except Exception:
+        power = None
+    try:
+        return plot_high_speed_chart(
+            rule,
+            rated.speed,
+            power,
+            title=f"{branch.pump_tag} · {pump_type} · {lim['basis']}",
+            labels={
+                "x": _("Rotational speed") + " (r/min)",
+                "y": _("Overall vibration limit") + " (mm/s RMS)",
+                "pump": _("This pump"),
+                "curve": "{p} kW/" + _("stage"),
+            },
+        )
+    except Exception:
+        return None
 
 
 def _bearings(branch, settings: dict, translate: Translate) -> tuple:
@@ -341,7 +411,12 @@ def test_data_summaries(
             ("Volute/diffuser pattern no.", s.get("volute_pattern", ""), ""),
             ("Blade tip clearance (%)", s.get("blade_tip_clearance", ""), ""),
         )
-        vib_lines, vib_notes = _vibration(rated, b, criteria, translate)
+        try:
+            n_stages = int(str(s.get("stages") or "1").strip())
+        except ValueError:
+            n_stages = 1
+        vib_lines, vib_notes = _vibration(rated, b, criteria, translate, n_stages)
+        vib_chart = _high_speed_chart(rated, b, criteria, translate, n_stages)
         sel = criteria.selection
         try:
             q_bep = b.fitted.curve.bep()[0]
@@ -388,6 +463,7 @@ def test_data_summaries(
                 construction=construction,
                 vibration=vib_lines,
                 vibration_notes=vib_notes,
+                extra={"vibration_chart_png": vib_chart} if vib_chart else {},
                 bearings=_bearings(b, s, translate),
                 curve_png=png,
                 notes=tuple(notes),

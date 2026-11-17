@@ -111,9 +111,22 @@ are not used for acceptance.  When US units are specified, true peak is recorded
 addition** (4.3.3.3.1).  A sheet in **in/s** must therefore say which it is.  Never divide
 a peak value by √2 to get RMS: that only holds for a pure sine wave.
 
-The 11th and 12th editions raise the limits for pumps above 3600 r/min or 300 kW per stage
-(Figure 34 / 35).  The 8th edition has no such allowance.  The tool does not apply the
-11th/12th allowance yet, so its limits are conservative for high-speed pumps.
+**Where** you measure depends on the API 610 pump type (set it on the Rated Point):
+- OH1/OH2 and BB: drive-end and non-drive-end bearing housings;
+- OH3-OH5 (vertical in-line): driver mounting surface and pump bearing housing;
+- **OH6 (integrally geared): the gearbox housing**;
+- VS: thrust bearing housing or motor mounting flange.
+
+VS pumps have higher limits (5.0 / 3.4 mm/s, Table 9).
+
+The 11th and 12th editions raise the limits for OH and BB pumps above 3600 r/min or
+300 kW per stage (Figure 34 / 35):
+- overall *v_u* = 3.0·(n/3600)^0.30·(P/300)^0.21, kept between 3.0 and 4.5 mm/s;
+- discrete 0.67·*v_u*;
+- *P* = BEP power at relative density 1.0, per stage.
+
+The tool applies this rule and draws the chart in the test data summary.  The 8th edition
+has no such allowance.  See {doc}`../concepts/vibration`.
 
 N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
 
@@ -205,6 +218,10 @@ Work them by hand from §2-§7, then check with the notebook.
 9. The BEP flow of the tested curve is 10 m³/h and rated flow is 10 m³/h.  DE overall
    vibration (RMS): 2.8 mm/s at 5 m³/h, 2.1 at 9.9, 2.6 at 11.0 and 3.4 at 12.5 m³/h
    (shut-off not measured).  Fill in the summary's three columns, tested vs specified.
+10. An OH6 pump bought to API 610 12th edition runs at **10 212 r/min**, with about 25 kW
+   at BEP (relative density 1.0).  Gearbox-housing readings: overall 3.84, largest
+   discrete line 2.24 mm/s RMS.  Which limits apply, and does it pass?  And under the
+   8th edition?
 
 ## Answers
 
@@ -232,3 +249,7 @@ Work them by hand from §2-§7, then check with the notebook.
 9. Rated flow (within ±5 %): **2.1 / 3.0**.  Preferred region (7-12 m³/h): **2.6 / 3.0**.
    Allowable region (every point except shut-off): **3.4 / 3.9**.  The 12.5 m³/h point is
    outside the preferred region, so it is judged against 3.0 × 1.3 = 3.9 mm/s.
+10. P = 25 kW is below 300, so use 300: *v_u* = 3.0·(10 212/3600)^0.30 = **4.1 mm/s**,
+   *v_f* = 0.67·4.1 = **2.7 mm/s**.  3.84 ≤ 4.1 and 2.24 ≤ 2.7, so it **passes** under the
+   12th edition.  Under the 8th edition there is no high-speed allowance: the limits are
+   3.0 / 2.0 mm/s and it **fails** both.  This is B-34004A's real situation.

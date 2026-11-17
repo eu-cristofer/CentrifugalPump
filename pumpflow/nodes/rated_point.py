@@ -45,6 +45,27 @@ from . import ui
 
 _DEFAULT_LABEL = "Custom (entered below)"
 
+# Help text behind the (i) button of the "API 610 pump type" section.
+PUMP_TYPE_HELP = """
+<p><b>Why it matters.</b> API 610 measures bearing-housing vibration at locations
+that depend on the pump type, and judges it against the limits of its family.</p>
+<p><b>Where vibration is measured</b> (RMS velocity, overall and filtered):<br>
+&bull; <b>OH1, OH2, BB1&ndash;BB5</b>: each pump bearing housing, drive end and
+non-drive end; horizontal, vertical and axial (8th Fig. 2-8A; 11th Fig. 31;
+12th Fig. 32).<br>
+&bull; <b>OH3, OH4, OH5</b> (vertical in-line): driver mounting surface and pump
+bearing housing (11th Fig. 33a; 12th Fig. 34a, drawn for OH3).<br>
+&bull; <b>OH6</b> (integrally geared): gearbox housing, stud-mounted sensor
+(11th Fig. 33b; 12th Fig. 34b).<br>
+&bull; <b>VS1&ndash;VS7</b>: pump thrust bearing housing or motor mounting flange
+(8th Fig. 2-8B; 11th Fig. 32; 12th Fig. 33).</p>
+<p><b>Limits</b> in the preferred operating region: OH and BB 3.0 mm/s overall,
+2.0 mm/s discrete (8th Table 2-5; 11th/12th Table 8); VS 5.0 / 3.4 mm/s
+(Table 2-6 / Table 9); +30 % outside the preferred region. RMS only.</p>
+<p>The Test Points vibration columns follow the type chosen here (wire the Rated
+Point into Test Points). Not set: drive end / non-drive end.</p>
+"""
+
 # Help text behind the (i) button of the "Impeller diameter" section.
 IMPELLER_DIAMETER_HELP = """
 <p><b>Where to find the values.</b> On the API 610 datasheet, in the
@@ -203,6 +224,7 @@ class RatedPointInputNode(BaseNode):
             impeller_diameter=_length_opt(s, "d_imp"),
             impeller_diameter_max=_length_opt(s, "d_max"),
             impeller_diameter_min=_length_opt(s, "d_min"),
+            pump_type=(str(s.get("pump_type") or "").strip().upper() or None),
         )
 
     def compute(self, inputs) -> Dict[str, object]:
@@ -216,6 +238,7 @@ class RatedPointInputNode(BaseNode):
             return self.emit_nothing(msg, "invalid")
         s = self.settings
         par = " · ∥-op" if rated.parallel_operation else ""
+        par = (f" · {rated.pump_type}" if rated.pump_type else "") + par
         fl = " · fluid✓" if self._fluid_override is not None else ""
         self.status = (
             f"{rated.tag} · {float(s['q']):g} {s.get('q_unit', 'm³/h')}"
@@ -399,6 +422,42 @@ class RatedPointInputNode(BaseNode):
         edition_combo.currentIndexChanged.connect(lambda _=None: on_standard_change())
         client_combo.currentIndexChanged.connect(lambda _=None: on_standard_change())
 
+        # ---- API 610 PUMP TYPE — vibration locations and limits ----
+        from pump.vibration import PUMP_TYPES, limit_group, locations_for
+
+        type_combo = ui.combo(
+            [("— not set —", "")]
+            + [(f"{code} — {desc}", code) for code, desc in PUMP_TYPES.items()],
+            s.get("pump_type") or "",
+            None,
+        )
+        type_combo.setObjectName("PumpType")
+        type_hint = QLabel("")
+        type_hint.setWordWrap(True)
+        type_hint.setObjectName("FieldHint")
+
+        def describe_type():
+            code = type_combo.currentData() or None
+            locs = ", ".join(loc.label for loc in locations_for(code))
+            table = "Table 9 / 2-6 (VS)" if limit_group(code) == "vs" else "Table 8 / 2-5 (OH, BB)"
+            type_hint.setText(
+                f"Vibration measured at: {locs} · limits: API 610 {table}"
+                if code
+                else f"Not set: vibration inputs default to {locs}."
+            )
+
+        def on_type_change():
+            code = type_combo.currentData() or ""
+            if code:  # stored only when set, so older projects re-save unchanged
+                s["pump_type"] = code
+            else:
+                s.pop("pump_type", None)
+            describe_type()
+            apply()
+
+        type_combo.currentIndexChanged.connect(lambda _=None: on_type_change())
+        describe_type()
+
         # ---- RATED FLUID — relative ↔ absolute density kept in sync ----
         dens_rel = ui.spin(s["dens_rel"], 0.0, 5.0, 0.001, 6, None)
         density_rel_display = QLabel("—")
@@ -502,6 +561,13 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.row("Service TAG", tag))
         dlg.add(ui.row("Standard / edition", edition_combo))
         dlg.add(ui.row("Client overlay", client_combo))
+        dlg.add(
+            ui.section_with_info(
+                "API 610 pump type", "API 610 pump type", PUMP_TYPE_HELP
+            )
+        )
+        dlg.add(ui.row("Pump type", type_combo))
+        dlg.add(ui.row("", type_hint))
         dlg.add(ui.row("Standard", std))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated duty"))

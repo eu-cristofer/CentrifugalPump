@@ -118,12 +118,10 @@ Every edition and overlay carries `verified` and a `source` naming its clauses.
 
 Still open:
 - the **10th edition**, which was not available;
-- the **mechanical run** in every edition:
-  - the 8th edition has no mechanical running test, so the duration comes from the
-    purchase order;
-  - the 11th and 12th editions relax the vibration limits for pumps above 3600 r/min or
-    300 kW per stage (Figures 34 / 35), but the formula is illegible in the local copy,
-    so the tool keeps the conservative 3.0 / 2.0 mm/s.
+- the **mechanical run** in every edition: the 8th edition has no mechanical running
+  test, so the duration comes from the purchase order;
+- the **11th/12th high-speed vibration rule** (Figures 34 / 35): applied, but with
+  exponents reconstructed from the figure, so unverified.  See {doc}`vibration`.
 
 A verdict computed with unverified criteria is **provisional** and says so: *APPROVED
 (unverified criteria)* or *FAILED (unverified limits)*.  Never flip a flag to `true`

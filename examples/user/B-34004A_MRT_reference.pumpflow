@@ -85,7 +85,8 @@
           "unit": "mm"
         },
         "standard_key": "api610:8",
-        "client": "n553"
+        "client": "n553",
+        "pump_type": "OH6"
       }
     },
     {
@@ -104,7 +105,9 @@
           "n": "rpm",
           "power": "hp",
           "head": "m",
-          "eff": "percent"
+          "eff": "percent",
+          "vib_gb": "in/s",
+          "vib_gb_f": "in/s"
         },
         "pressure_ref": "g",
         "rows": [
@@ -116,7 +119,9 @@
             "n": 10301.0,
             "power": 25.41,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.151,
+            "vib_gb_f": 0.079
           },
           {
             "q": 29.4,
@@ -126,7 +131,9 @@
             "n": 10301.0,
             "power": 28.83,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.139,
+            "vib_gb_f": 0.083
           },
           {
             "q": 34.8,
@@ -136,7 +143,9 @@
             "n": 10301.0,
             "power": 30.56,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.148,
+            "vib_gb_f": 0.086
           },
           {
             "q": 43.5,
@@ -146,7 +155,9 @@
             "n": 10301.0,
             "power": 33.36,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.148,
+            "vib_gb_f": 0.084
           },
           {
             "q": 47.9,
@@ -156,7 +167,9 @@
             "n": 10301.0,
             "power": 35.09,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.151,
+            "vib_gb_f": 0.087
           },
           {
             "q": 52.2,
@@ -166,7 +179,9 @@
             "n": 10301.0,
             "power": 36.61,
             "head": null,
-            "eff": null
+            "eff": null,
+            "vib_gb": 0.14,
+            "vib_gb_f": 0.088
           }
         ]
       }
@@ -411,7 +426,7 @@
       "y": 160.0,
       "settings": {
         "title": "B-34004 witness reference",
-        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, shut-off; η is information only under API 610) and the test speed (within 3 % of 10 212 rpm).\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance (API 610 8th Table 4-2, checked): −2/+2 % above 300 m. A predicts +1.72 %, which passes but is tight.\n- Unfiltered vibration of 0.16 in/s = 4.06 mm/s: above the 3.0 mm/s RMS limit (8th Table 2-5) *if* the Sundyne \"IN/SEC\" reading is RMS. True peak may not be used for acceptance (8th 2.8.3.7 note): ask Sundyne for the RMS readings. The 8th edition has no high-speed allowance.\n- NPSH: N-553 rev E 7.3 (≥ 0.8 m and ratio ≥ 1.15 at rated flow) passes, 1.32 m and 2.22; NPSH3 1.08 m ≤ quoted 1.24 m (rated NPSH +0 %). The datasheet calls for N-553 **rev C**: confirm the rule.\n- SG: the datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt.\n- The datasheet body says B-33004A/B (the title says B-34004A/B).\n- A: no inlet temperature was recorded at the 120 % point (52.2 °C assumed).\n",
+        "body": "# B-34004 FAT — witness reference\n\n**Reference unit:** B-34004A (Sundyne LMV311 OH6, S/N A1863942-11), tested 12/13/2011 — PASSED.\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\nType the vendor's numbers **as printed**: every Test Points column has its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\") — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (B-34004B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, shut-off; η is information only under API 610) and the test speed (within 3 % of 10 212 rpm).\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As B-34004B_witness.pumpflow.\n\n## Open points\n- Head tolerance (API 610 8th Table 4-2, checked): −2/+2 % above 300 m. A predicts +1.72 %, which passes but is tight.\n- Vibration: Sundyne states its in/s readings are **RMS** (owner, 2026-11-17), although the FFT printouts read \"inch/s pk\". Per-point gearbox-housing readings (OH6, API 610 location) are entered from the test report spectra (pp. 6-11): overall 0.139-0.151 in/s = 3.5-3.8 mm/s, above the 8th-edition 3.0 mm/s limit; largest discrete line 0.079-0.088 in/s (at 3600 cpm) = 2.0-2.2 mm/s, at/above 2.0. The mechanical-run \"VIBRATION-IN/SEC RPM 10300\" row is the 1x pump-speed component only. The 8th edition has no high-speed allowance (under the 11th/12th the OH6 limit at 10 212 r/min would be about 4.1 / 2.7 mm/s).\n- NPSH: N-553 rev E 7.3 (≥ 0.8 m and ratio ≥ 1.15 at rated flow) passes, 1.32 m and 2.22; NPSH3 1.08 m ≤ quoted 1.24 m (rated NPSH +0 %). The datasheet calls for N-553 **rev C**: confirm the rule.\n- SG: the datasheet says 0.999, but Sundyne's conversion used 0.990 and 0.50 cSt.\n- The datasheet body says B-33004A/B (the title says B-34004A/B).\n- A: no inlet temperature was recorded at the 120 % point (52.2 °C assumed).\n",
         "report": true
       }
     },
@@ -1311,6 +1326,18 @@
       "src_node": "rated",
       "src_port": "RatedPoint",
       "dst_node": "trim_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "test_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "test_b",
       "dst_port": "RatedPoint"
     }
   ],

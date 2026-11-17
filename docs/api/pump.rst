@@ -42,6 +42,8 @@ Acceptance
 
 .. automodule:: pump.mechanical_run
 
+.. automodule:: pump.vibration
+
 System, selection & comparison
 ------------------------------
 

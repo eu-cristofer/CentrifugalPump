@@ -9,7 +9,7 @@ Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is com
 - [ ] Archive the project: `/sprint-loop archive 001_masterpiece`.
 
 ## 2. Before / at the B-34004B witness test (owner)
-- [ ] **Vibration units.** Ask Sundyne whether "VIBRATION-IN/SEC" on their sheets is **RMS or true peak**. API 610 8th (2.8.3.7 note) accepts RMS only: true peak "is not to be used to determine acceptability". B-34004A unfiltered 0.16 in/s = 4.06 mm/s, so FAILED against 3.0 mm/s if RMS. If it is true peak, ask for the RMS readings; do not convert peak/√2.
+- [x] **Vibration units.** Sundyne states its in/s readings are **RMS** (owner, 2026-11-17), although the FFT printouts say "inch/s pk". The per-point gearbox-housing readings (spectra pp. 6-11) are in the reference project: overall 3.5-3.8 mm/s, above the 8th-edition 3.0 limit.
 - [x] **API 610 8th edition tolerance table.** Done 2026-11-16 from the licensed text: Table 4-2 confirms head −2/+2 % above 300 m (B-34004A +1.72 % passes). It also showed that the 8th's shut-off bands split at **150 m**, not 75 m (fixed), and that efficiency is "not a rating value" (now information only).
 - [x] **High-speed vibration allowance.** Not applicable to the 8th edition (Table 2-5 has none). The 11th/12th allowance (Figures 34/35) is still not applied; its formula is illegible in the local text conversion, so confirm it from the printed standard.
 - [x] **N-553 client overlay.** Filled from **rev E** (NPSH margin, temperature stabilisation). ⚠ The B-34004 datasheet calls for **N-553 rev C**, which is not available: confirm the rules match rev C, or obtain rev C.
@@ -28,7 +28,9 @@ Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is com
 On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in `marker-output/`, git-ignored, never published). Still open:
 - [x] API 610 11th/12th head, shut-off and power tolerances, vibration table, POR (Table 16, Table 8, 6.1.12).
 - [ ] API 610 10th edition: no text available; still Amarinth bulletin values, `verified = false`.
-- [ ] API 610 11th/12th high-speed vibration allowance (Figures 34/35).
+- [x] API 610 11th/12th high-speed vibration allowance (Figures 34/35): applied, with the chart (2026-11-17). Exponents 0.30/0.21 reconstructed from the figure: **confirm against the printed figure**, then set `verified = true`.
+- [ ] Pump type on every project (Rated Point): drives vibration locations and limits.
+- [ ] Shaft displacement (proximity probes) limits: coefficients differ in the local text (8th 6.5e6 vs 11th OCR 6,2e6), confirm before encoding.
 - [x] Test-speed check (within 3 % of rated, 8th 4.3.3.2.3 / 11th 8.3.3.3 c): the Compliance node's "Test speed" row (2026-11-17).
 - [ ] HI 9.6.7 viscosity equations (`pump/viscosity.py`). They are validated independently, not against the standard text; buying ANSI/HI 9.6.7 would allow pinning its worked example.
 - [x] Preferred operating region 70–120 % of BEP (8th 2.1.12, 11th 6.1.12, 12th 6.1).

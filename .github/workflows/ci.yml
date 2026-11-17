@@ -49,11 +49,13 @@ jobs:
           pump/quantity_io.py
           pump/utilities/pressure.py
           pump/utilities/test_summary.py
+          pump/vibration.py
           pumpflow/binding/
           pumpflow/signals.py
           pumpflow/settings_codec.py
           pumpflow/export_cli.py
           tests/test_canvas_dispose.py
+          tests/test_pump_type_vibration.py
           tests/test_test_summary.py
           tests/test_vibration_columns.py
           tests/test_acceptance.py

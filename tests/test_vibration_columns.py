@@ -39,9 +39,9 @@ def test_rows_carry_vibration_quantities(qapp):
     s["rows"][2]["vib_nde_f"] = 2.0  # no label stored -> exchange unit mm/s
     tps = node.to_signal()
     row = tps.rows[2]
-    assert row.vib_de.to("mm/s").magnitude == pytest.approx(4.064)
-    assert row.vib_nde_f.to("mm/s").magnitude == pytest.approx(2.0)
-    assert tps.rows[0].vib_de is None
+    assert row.vibration["vib_de"].to("mm/s").magnitude == pytest.approx(4.064)
+    assert row.vibration["vib_nde_f"].to("mm/s").magnitude == pytest.approx(2.0)
+    assert "vib_de" not in tps.rows[0].vibration
 
 
 def test_codec_writes_vibration_units_only_with_data(qapp):

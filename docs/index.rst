@@ -26,6 +26,7 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    concepts/acceptance-tolerances
    concepts/system-curve
    concepts/mechanical-run
+   concepts/vibration
 
 .. toctree::
    :maxdepth: 1

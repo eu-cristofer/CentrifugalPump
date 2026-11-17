@@ -31,7 +31,7 @@ Examples
 ...                                    "filtered": Q_(2.0, "mm/s")})
 >>> de = rows[0]  # preferred region 70-120 % of 9.6 = 6.72-11.52 m3/h
 >>> (de.location, de.measure, de.rated, de.por, de.aor)
-('Drive end', 'Overall', (2.4, 3.0), (2.4, 3.0), (3.6, 3.9))
+('Drive-end bearing housing', 'Overall', (2.4, 3.0), (2.4, 3.0), (3.6, 3.9))
 """
 
 from __future__ import annotations
@@ -62,13 +62,20 @@ __all__ = [
     "write_xlsx",
 ]
 
-#: Test-point vibration keys -> (location, measure) msgids.
-VIBRATION_KEYS = {
-    "vib_de": ("Drive end", "Overall"),
-    "vib_de_f": ("Drive end", "Filtered"),
-    "vib_nde": ("Non-drive end", "Overall"),
-    "vib_nde_f": ("Non-drive end", "Filtered"),
-}
+
+def _vibration_keys() -> dict:
+    """Every vibration column key -> (location label, measure) msgids."""
+    from ..vibration import ALL_VIBRATION_KEYS, location_of_key
+
+    out = {}
+    for key in ALL_VIBRATION_KEYS:
+        loc, filtered = location_of_key(key)
+        out[key] = (loc.label, "Filtered" if filtered else "Overall")
+    return out
+
+
+#: Test-point vibration keys -> (location, measure) msgids (``pump.vibration``).
+VIBRATION_KEYS = _vibration_keys()
 
 Translate = Callable[[str], str]
 
@@ -462,6 +469,9 @@ def write_docx(
                 run.bold = True
         for note in s.vibration_notes:
             doc.add_paragraph(note)
+        if s.extra.get("vibration_chart_png"):
+            doc.add_paragraph(_("High-speed vibration limit (API 610 chart)"))
+            doc.add_picture(io.BytesIO(s.extra["vibration_chart_png"]), width=Cm(14.0))
 
         doc.add_heading(_("Bearing temperatures"), level=2)
         table([[_(label), value or ""] for label, value in s.bearings])
@@ -556,6 +566,18 @@ def render_tex(
         out.append(r"\end{tabular}}\par\smallskip")
         for note in s.vibration_notes:
             out.append(r"{\small %s}\par" % e(note))
+        chart = s.extra.get("vibration_chart_png")
+        if chart and fig_dir is not None:
+            fig_dir.mkdir(parents=True, exist_ok=True)
+            cname = f"vibration_{i + 1}.png"
+            (fig_dir / cname).write_bytes(chart)
+            crel = f"{fig_rel}/{cname}" if fig_rel else cname
+            out += [
+                r"\par\smallskip{\small %s}\par"
+                % e(_("High-speed vibration limit (API 610 chart)")),
+                r"\begin{center}\includegraphics[width=0.75\linewidth]{%s}\end{center}"
+                % crel,
+            ]
         out.append(r"\subsection*{%s}" % e(_("Bearing temperatures")))
         out += _tex_table(
             [[_(label), value or ""] for label, value in s.bearings],
@@ -720,6 +742,15 @@ def write_xlsx(
         for note in s.vibration_notes:
             ws.cell(r, 1, note)
             r += 1
+        if s.extra.get("vibration_chart_png"):
+            try:
+                from openpyxl.drawing.image import Image as XLImage
+
+                chart = XLImage(io.BytesIO(s.extra["vibration_chart_png"]))
+                chart.width, chart.height = chart.width * 0.45, chart.height * 0.45
+                ws.add_image(chart, f"H{max(r - 12, 2)}")
+            except Exception:  # Pillow missing: the table is the deliverable
+                pass
         r = block(
             _("Bearing temperatures"),
             None,

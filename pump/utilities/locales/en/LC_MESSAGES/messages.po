@@ -429,3 +429,41 @@ msgid "Criteria not yet verified against the standard text: {items}."
 msgstr ""
 msgid "API 610 {ordinal} edition"
 msgstr ""
+
+# Vibration by API 610 pump type; high-speed chart
+msgid "Drive-end bearing housing"
+msgstr ""
+
+msgid "Non-drive-end bearing housing"
+msgstr ""
+
+msgid "Driver mounting surface"
+msgstr ""
+
+msgid "Pump bearing housing"
+msgstr ""
+
+msgid "Gearbox housing"
+msgstr ""
+
+msgid "Thrust bearing housing / motor mounting flange"
+msgstr ""
+
+msgid "Pump type {ptype}: measured at the API 610 locations of that type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), {basis}."
+msgstr ""
+
+msgid "High-speed vibration limit (API 610 chart)"
+msgstr ""
+
+msgid "Rotational speed"
+msgstr ""
+
+msgid "Overall vibration limit"
+msgstr ""
+
+msgid "This pump"
+msgstr ""
+
+msgid "stage"
+msgstr ""
+

@@ -81,7 +81,11 @@ def test_rated_point_impeller_info_button(qapp):
 
     node = make_node("rated_point")
     dlg = node.create_dialog(None, lambda: None)
-    buttons = [b for b in dlg.findChildren(QToolButton) if b.objectName() == "InfoButton"]
+    buttons = [
+        b
+        for b in dlg.findChildren(QToolButton)
+        if b.objectName() == "InfoButton" and b.toolTip() == "About: Impeller diameter"
+    ]
     assert len(buttons) == 1
     buttons[0].click()
     text = buttons[0]._box.text()

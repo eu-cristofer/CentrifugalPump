@@ -39,19 +39,31 @@ from ..signals import BenchGeometry, TestPointSet, TestRow
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
+from pump.vibration import ALL_VIBRATION_KEYS, location_of_key, vibration_keys
 
-_NAMES = [
-    "Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η",
-    "Vib DE", "Vib DE f", "Vib NDE", "Vib NDE f",
-]
-_ALL_KEYS = [
-    "q", "p_suc", "p_dis", "temp_c", "n", "power", "head", "eff",
-    "vib_de", "vib_de_f", "vib_nde", "vib_nde_f",
-]
+_NAMES = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
+_ALL_KEYS = ["q", "p_suc", "p_dis", "temp_c", "n", "power", "head", "eff"]
 _KEYS = _ALL_KEYS[:6]  # hydraulic input columns (also the header-less paste order)
-_VIB_KEYS = _ALL_KEYS[8:]  # optional vibration columns (RMS), shown on demand
-_VIB_COLS = range(8, 12)
-_EDITABLE = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11}
+_EDITABLE = {0, 1, 2, 3, 4, 5}
+# Optional vibration columns (bearing-housing velocity, RMS): one overall and
+# one filtered column per API 610 measurement location of the pump type.
+_VIB_KEYS = list(ALL_VIBRATION_KEYS)
+
+
+def vibration_columns(pump_type: Optional[str], rows=()) -> List[str]:
+    """Vibration column keys to show: the pump type's locations, plus any
+    location that already holds data (so nothing entered is ever hidden)."""
+    keys = vibration_keys(pump_type)
+    for k in _VIB_KEYS:
+        if k not in keys and any(r.get(k) is not None for r in rows):
+            keys.append(k)
+    return keys
+
+
+def vibration_column_title(key: str) -> str:
+    """'Gearbox overall', 'DE filt.', ..."""
+    loc, filtered = location_of_key(key)
+    return f"{loc.short} {'filt.' if filtered else 'overall'}"
 _PRESSURE_KEYS = ("p_suc", "p_dis")
 _DEFAULT_LABEL = "Water at T_water"
 
@@ -147,7 +159,7 @@ def _row_from_dict(r: dict, columns: dict, pressure_ref: str = "g") -> TestRow:
         power=Q_(num("power"), _pint_of(cols, "power")),
         head=None if head is None else Q_(float(head), _pint_of(cols, "head")),
         efficiency=None if eff is None else Q_(float(eff), _pint_of(cols, "eff")),
-        **{
+        vibration={
             k: Q_(float(r[k]), _pint_of(cols, k))
             for k in _VIB_KEYS
             if r.get(k) is not None
@@ -187,9 +199,8 @@ def testset_settings(tps: TestPointSet, columns: Optional[dict] = None) -> dict:
                 if r.efficiency is None
                 else r.efficiency.to("percent").magnitude,
                 **{
-                    k: getattr(r, k).to("mm/s").magnitude
-                    for k in _VIB_KEYS
-                    if getattr(r, k, None) is not None
+                    k: v.to("mm/s").magnitude
+                    for k, v in (getattr(r, "vibration", None) or {}).items()
                 },
             }
         )
@@ -235,7 +246,11 @@ class TestPointsTableNode(BaseNode):
     # Optional Fluid input (multi): wired Fluid nodes set the TEST fluid density,
     # used to derive Head/η instead of per-row water at T_water (UC-00).  A
     # "Fluid source" picker chooses water-at-T_water or one of the wired fluids.
-    inputs = [PortSpec("FluidSpec", "FluidSpec", multi=True)]
+    # Optional RatedPoint: its API 610 pump type selects the vibration columns.
+    inputs = [
+        PortSpec("FluidSpec", "FluidSpec", multi=True),
+        PortSpec("RatedPoint", "RatedPoint"),
+    ]
     outputs = [PortSpec("TestPointSet", "TestPointSet")]
 
     def default_settings(self) -> Dict:
@@ -268,6 +283,8 @@ class TestPointsTableNode(BaseNode):
         )
 
     def compute(self, inputs) -> Dict[str, object]:
+        rated = self.first(inputs, "RatedPoint")
+        self._pump_type = getattr(rated, "pump_type", None) if rated else None
         self._fluids = self.all_of(inputs, "FluidSpec")
         chosen = resolve_fluid(self._fluids, self.settings.get("fluid_choice"))
         self._test_density = chosen.density if chosen is not None else None
@@ -286,7 +303,7 @@ class TestPointsTableNode(BaseNode):
         return {"TestPointSet": tps}
 
     def port_label(self, name: str) -> str:
-        return "Fluid" if name == "FluidSpec" else "TestPoints"
+        return {"FluidSpec": "Fluid", "RatedPoint": "Rated"}.get(name, "TestPoints")
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
@@ -296,9 +313,16 @@ class TestPointsTableNode(BaseNode):
         for k, v in default_geometry_settings().items():
             s.setdefault(k, v)
         cols = s["columns"]
-        for k in _VIB_KEYS:  # runtime labels for the optional vibration columns
+        pump_type = getattr(self, "_pump_type", None)
+        vib_keys = vibration_columns(pump_type, s["rows"])
+        for k in vib_keys:  # runtime labels for the shown vibration columns
             cols.setdefault(k, units.PREFS.default_unit("vibration_velocity"))
         dims = units.ALL_COLUMN_DIMENSIONS
+        # Table columns: hydraulic + head/eff + this pump type's vibration.
+        col_keys_all = _ALL_KEYS + vib_keys
+        names = _NAMES + [vibration_column_title(k) for k in vib_keys]
+        vib_cols = range(len(_ALL_KEYS), len(col_keys_all))
+        editable = set(_EDITABLE) | set(vib_cols)
 
         dlg = ui.PropertyDialog(
             parent,
@@ -321,20 +345,28 @@ class TestPointsTableNode(BaseNode):
             None,
         )
 
-        table = QTableWidget(len(s["rows"]), len(_NAMES))
+        table = QTableWidget(len(s["rows"]), len(names))
         table.verticalHeader().setVisible(True)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.setObjectName("TestGrid")
 
         def header_text(i: int) -> str:
-            key = _ALL_KEYS[i]
+            key = col_keys_all[i]
             lab = cols[key]
             if key in _PRESSURE_KEYS:
                 lab = f"{lab} {s['pressure_ref']}"
-            return f"{_NAMES[i]} [{lab}]"
+            return f"{names[i]} [{lab}]"
 
         def update_headers():
-            table.setHorizontalHeaderLabels([header_text(i) for i in range(len(_NAMES))])
+            table.setHorizontalHeaderLabels([header_text(i) for i in range(len(names))])
+            for c in vib_cols:  # where API 610 measures, for this pump type
+                item = table.horizontalHeaderItem(c)
+                if item is not None:
+                    loc, filt = location_of_key(col_keys_all[c])
+                    item.setToolTip(
+                        f"{loc.label}: {'filtered (largest discrete frequency)' if filt else 'overall'}"
+                        f" bearing-housing velocity, RMS. {loc.where}"
+                    )
             head_item = table.horizontalHeaderItem(_NAMES.index("Head"))
             if head_item is not None:  # formula tooltip (UC-10)
                 head_item.setToolTip(explain.tooltip("head"))
@@ -391,8 +423,8 @@ class TestPointsTableNode(BaseNode):
             table.blockSignals(True)
             table.setRowCount(len(s["rows"]))
             for i, r in enumerate(s["rows"]):
-                for c in sorted(_EDITABLE):
-                    key = _ALL_KEYS[c]
+                for c in sorted(editable):
+                    key = col_keys_all[c]
                     val = r.get(key)
                     item = QTableWidgetItem("" if val is None else f"{float(val):g}")
                     table.setItem(i, c, item)
@@ -401,10 +433,10 @@ class TestPointsTableNode(BaseNode):
 
         def on_cell_changed(item):
             row, col = item.row(), item.column()
-            if col not in _EDITABLE or row >= len(s["rows"]):
+            if col not in editable or row >= len(s["rows"]):
                 return
             val = parse_decimal(item.text(), None)
-            s["rows"][row][_ALL_KEYS[col]] = val
+            s["rows"][row][col_keys_all[col]] = val
             table.blockSignals(True)
             item.setText("" if val is None else f"{val:g}")
             refresh_computed(row)
@@ -428,7 +460,7 @@ class TestPointsTableNode(BaseNode):
 
             return handler
 
-        for i, key in enumerate(_ALL_KEYS):
+        for i, key in enumerate(col_keys_all):
             if key == "p_dis":
                 continue
             keys = _PRESSURE_KEYS if key == "p_suc" else (key,)
@@ -520,9 +552,12 @@ class TestPointsTableNode(BaseNode):
         def has_vibration() -> bool:
             return any(r.get(k) is not None for r in s["rows"] for k in _VIB_KEYS)
 
+        from pump.vibration import locations_for
+
+        where = ", ".join(loc.label for loc in locations_for(pump_type))
         vib_chk = ui.checkbox(
-            "Vibration columns (bearing housing, RMS: drive end / non-drive end, "
-            "overall / filtered)",
+            f"Vibration columns (RMS, overall / filtered) · {pump_type or 'pump type not set'}"
+            f": {where}",
             has_vibration(),
         )
         vib_chk.setObjectName("ShowVibration")
@@ -533,7 +568,7 @@ class TestPointsTableNode(BaseNode):
         )
 
         def show_vibration(on: bool) -> None:
-            for c in _VIB_COLS:
+            for c in vib_cols:
                 table.setColumnHidden(c, not on)
             strip.sync()
 
@@ -631,6 +666,16 @@ class TestPointsTableNode(BaseNode):
                 s["rows"] = new_rows
                 if any(k in _VIB_KEYS for k in col_keys):
                     vib_chk.setChecked(True)
+                hidden = [
+                    k for k in col_keys if k in _VIB_KEYS and k not in col_keys_all
+                ]
+                if hidden:
+                    banner.show_message(
+                        "Pasted vibration for locations of another pump type "
+                        f"({', '.join(hidden)}): kept in the data; reopen the "
+                        "table to see their columns.",
+                        "warn",
+                    )
                 sync_header_widgets()
                 update_headers()
                 fill()

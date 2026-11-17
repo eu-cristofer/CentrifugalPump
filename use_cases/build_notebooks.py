@@ -1654,6 +1654,8 @@ editions and Petrobras N-553 rev E (clause references in each table's `source`).
 """),
         code(r"""
 from pump import Q_
+from IPython.display import Image, display
+
 from pump.acceptance import AcceptanceCriteria, deviation, head_rises_to_shutoff
 from pump.npsh import check_npsh
 
@@ -1793,6 +1795,26 @@ limits = {"overall": b34004.mechanical_run.role_max["vibration_unfiltered"],
 print("rated", de.rated, "| preferred", de.por, "| allowable", de.aor)
 """),
         md(r"""
+## Exercise 10 · The high-speed vibration limit (11th/12th editions)
+
+OH and BB pumps above 3600 r/min or 300 kW per stage:
+v_u = 3.0 (n/3600)^0.30 (P/300)^0.21, kept between 3.0 and 4.5 mm/s; discrete 0.67 v_u;
+P = BEP power at relative density 1.0 per stage (300 kW minimum).  The 8th edition has
+no such allowance.
+"""),
+        code(r"""
+from pump.vibration import HighSpeedRule, plot_high_speed_chart
+
+n, p_bep = Q_(10212, "rpm"), Q_(25, "kW")
+lim12 = AcceptanceCriteria.load("api610:12").vibration.limits("OH6", n, p_bep)
+lim8 = AcceptanceCriteria.load("api610:8").vibration.limits("OH6", n, p_bep)
+tested_overall, tested_discrete = Q_(3.84, "mm/s"), Q_(2.24, "mm/s")
+print("12th:", lim12["overall"], lim12["filtered"], "|", lim12["basis"])
+print("8th: ", lim8["overall"], lim8["filtered"])
+display(Image(data=plot_high_speed_chart(HighSpeedRule(), n, p_bep,
+                                         title="OH6 at 10 212 r/min (12th edition rule)")))
+"""),
+        md(r"""
 ## The whole verdict at once
 
 The workbench's Compliance node and `PerformanceChecker` use one engine,
@@ -1834,6 +1856,9 @@ print("no power column:"); show(partial)
         md("## Answers (asserted)"),
         code(r"""
 assert de.rated == (2.1, 3.0) and de.por == (2.6, 3.0) and de.aor == (3.4, 3.9)
+assert abs(lim12["overall"].magnitude - 4.1) < 1e-9 and abs(lim12["filtered"].magnitude - 2.7) < 1e-9
+assert tested_overall <= lim12["overall"] and tested_discrete <= lim12["filtered"]
+assert tested_overall > lim8["overall"] and tested_discrete > lim8["filtered"]
 assert full.approved and full.row("Efficiency").status == "info"
 assert not partial.approved and partial.passed and partial.not_evaluated == ("Power",)
 
