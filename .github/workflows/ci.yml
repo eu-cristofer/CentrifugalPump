@@ -59,6 +59,8 @@ jobs:
           tests/test_pump_type_vibration.py
           tests/test_annex_m_charts.py
           tests/test_dialog_maximize.py
+          tests/test_mechanical_run_gui.py
+          pumpflow/nodes/mechanical_run_check.py
           tests/test_test_summary.py
           tests/test_vibration_columns.py
           tests/test_acceptance.py

@@ -212,6 +212,7 @@ def check_mechanical_run(
     run_set: MechanicalRunSet,
     rated: Optional[RatedPoint] = None,
     overrides: Optional[dict] = None,
+    fitted=None,
 ) -> MechanicalRunResultSignal:
     """Check a mechanical-run log against the acceptance criteria.
 
@@ -223,7 +224,9 @@ def check_mechanical_run(
          "stabilisation": {role: (delta Q_, window Q_)}}
 
     (a ``{"delta": Q_, "window": Q_}`` dict is accepted instead of the tuple).
-    Any override marks the criteria as unverified.
+    Any override marks the criteria as unverified.  ``fitted`` (the pump's
+    fitted curve) gives the BEP power used by the 11th/12th-edition high-speed
+    vibration rule; without it the rated power is used.
     """
     from pump.mechanical_run import (
         MechanicalRunChecker,
@@ -243,7 +246,7 @@ def check_mechanical_run(
     # The pump type selects the vibration limits of its family (API 610
     # Table 8 / 2-5 for OH and BB, Table 9 / 2-6 for VS).
     pump_type = getattr(rated, "pump_type", None) if rated is not None else None
-    lim = vibration_limits_for(rated) if pump_type else None
+    lim = vibration_limits_for(rated, fitted) if pump_type else None
     if lim is not None:
         if lim["overall"] is not None:
             role_max["vibration_unfiltered"] = lim["overall"]

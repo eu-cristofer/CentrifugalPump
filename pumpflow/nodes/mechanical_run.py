@@ -1,20 +1,20 @@
 """
-nodes.mechanical_run — Mechanical Run  (sprint 6 / UC-11)
+nodes.mechanical_run — MRT Log  (sprint 6 / UC-11)
 
 Source node.  A time-stamped multi-channel log of the mechanical running test
 (vibration, temperatures, pressures, flow, power ...) for one physical pump.
-Emits a ``MechanicalRunSet`` and a ``MechanicalRunResultSignal`` (the verdict
-against ``pump.mechanical_run`` criteria, plus the trend plot).  The result
-connects to Report Export's multi ``branch`` input.
+It is data entry only and emits a ``MechanicalRunSet``.  The verdict is
+produced by an **MRT Check** node (:mod:`.mechanical_run_check`) wired after it.
 
 Runtime settings::
 
     {"pump_tag": str,
      "columns": [{"name", "dimension", "unit" (display label), "role"}, ...],
-     "rows": [{"time": "HH:MM", "values": {<name>: float | None}}, ...],
-     "overrides": {"min_duration": None | {"value", "unit"},
-                   "role_max": {role: {"value", "unit"}},
-                   "stabilisation": {role: {"delta": {...}, "window": {...}}}}}
+     "rows": [{"time": "HH:MM", "values": {<name>: float | None}}, ...]}
+
+Projects saved before the split had one ``mechanical_run`` node holding the
+criteria overrides too.  ``persistence.migrate`` splits such a node into this
+log and an MRT Check that receives the overrides and the Report Export wire.
 """
 
 from __future__ import annotations
@@ -22,14 +22,11 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QColor, QGuiApplication
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QGridLayout,
     QHBoxLayout,
     QHeaderView,
-    QLabel,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -40,7 +37,6 @@ from pump import Q_
 from pump.mechanical_run import ROLES, Channel, MechanicalRunLog, RunReading
 
 from .. import units
-from ..binding import check_mechanical_run
 from ..numfmt import parse_decimal
 from ..settings_codec import DURATION_LABELS, ROLE_DIMENSIONS, delta_pint
 from ..signals import MechanicalRunSet
@@ -220,36 +216,25 @@ def _default_rows() -> List[dict]:
 
 class MechanicalRunNode(BaseNode):
     kind = "mechanical_run"
-    title = "Mechanical Run"
+    title = "MRT Log"
     glyph = "⟳"
     is_source = True
-    inputs = [PortSpec("RatedPoint", "RatedPoint")]
-    outputs = [
-        PortSpec("MechanicalRunResult", "MechanicalRunResult"),
-        PortSpec("MechanicalRunSet", "MechanicalRunSet"),
-    ]
+    inputs: list = []
+    outputs = [PortSpec("MechanicalRunSet", "MechanicalRunSet")]
 
     def default_settings(self) -> Dict:
         return {
             "pump_tag": "B-0001",
             "columns": _default_columns(),
             "rows": _default_rows(),
-            "overrides": {"min_duration": None, "role_max": {}, "stabilisation": {}},
         }
 
     def port_label(self, name: str) -> str:
-        return {
-            "RatedPoint": "Rated",
-            "MechanicalRunResult": "Result",
-            "MechanicalRunSet": "Log",
-        }.get(name, name)
+        return {"MechanicalRunSet": "Log"}.get(name, name)
 
     # -- payload -----------------------------------------------------------
     def compute(self, inputs) -> Dict[str, object]:
         s = self.settings
-        self._signal = None
-        self._result = None
-        self._rated = self.first(inputs, "RatedPoint")
         try:
             log = build_log(s)
         except Exception as exc:
@@ -264,40 +249,25 @@ class MechanicalRunNode(BaseNode):
         if len(filled) < 2:
             return self.emit_nothing("Enter readings: < 2 rows have values", "invalid")
         run_set = MechanicalRunSet(pump_tag=str(s["pump_tag"]).strip(), log=log)
-        try:
-            sig = check_mechanical_run(
-                run_set, self._rated, overrides_to_quantities(s.get("overrides"))
-            )
-        except Exception as exc:
-            return self.emit_nothing(f"{type(exc).__name__}: {exc}", "invalid")
-        self._signal = sig
-        self._result = sig.result
-        duration = getattr(sig.result, "duration", None) or log.duration
-        hours = float(duration.to("h").magnitude)
-        verdict = verdict_label(sig.result)
+        hours = float(log.duration.to("h").magnitude)
         self.status = (
-            f"{run_set.pump_tag} · {len(log.readings)} readings · "
-            f"{hours:.1f} h · {verdict}"
+            f"{run_set.pump_tag} · {len(log.readings)} readings · {hours:.1f} h"
         )
-        self.state = "ok" if getattr(sig.result, "passed", False) else "reject"
-        return {"MechanicalRunResult": sig, "MechanicalRunSet": run_set}
+        self.state = "ok"
+        return {"MechanicalRunSet": run_set}
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
         s = self.settings
         s.setdefault("columns", _default_columns())
         s.setdefault("rows", [])
-        ov0 = s.setdefault("overrides", {})
-        ov0.setdefault("min_duration", None)
-        ov0.setdefault("role_max", {})
-        ov0.setdefault("stabilisation", {})
         cols: List[dict] = s["columns"]
 
         dlg = ui.PropertyDialog(
             parent,
-            "Mechanical Run",
-            "Time-stamped readings of the mechanical running test, checked "
-            "against the acceptance criteria.",
+            "MRT Log",
+            "Time-stamped readings of the mechanical running test.  Wire it "
+            "into an MRT Check for the verdict.",
             width=760,
             maximizable=True,
         )
@@ -313,42 +283,10 @@ class MechanicalRunNode(BaseNode):
         grid.setObjectName("RunGrid")
         grid.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        result_table = QTableWidget(0, 7)
-        result_table.setObjectName("RunResult")
-        result_table.setHorizontalHeaderLabels(
-            ["Channel", "Unit", "Min", "Max", "Last", "Limit", "Status"]
-        )
-        result_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        result_table.setEditTriggers(QTableWidget.NoEditTriggers)
-
-        # -- result / banner ------------------------------------------------
-        def fill_result():
-            result = getattr(self, "_result", None)
-            rows = _channel_rows(result) if result is not None else []
-            result_table.setRowCount(len(rows))
-            for i, row in enumerate(rows):
-                status = str(_get(row, "status", "") or "")
-                vals = [
-                    _get(row, "name"),
-                    _get(row, "unit"),
-                    _cell(_get(row, "min")),
-                    _cell(_get(row, "max")),
-                    _cell(_get(row, "last")),
-                    _cell(_get(row, "limit")),
-                    status.upper(),
-                ]
-                for c, v in enumerate(vals):
-                    item = QTableWidgetItem("" if v is None else str(v))
-                    item.setFlags(Qt.ItemIsEnabled)
-                    if c == 6 and status.lower() == "fail":
-                        item.setForeground(QColor("#b91c1c"))
-                    result_table.setItem(i, c, item)
-
         def recompute():
             on_change()
             kind = {"ok": "ok", "reject": "error"}.get(self.state, "warn")
             banner.show_message(self.status, kind)
-            fill_result()
 
         # -- readings grid --------------------------------------------------
         def update_grid_headers():
@@ -599,104 +537,6 @@ class MechanicalRunNode(BaseNode):
             bl.addStretch(1)
             return bar
 
-        # -- criteria overrides ---------------------------------------------
-        ov = s["overrides"]
-        md = ov.get("min_duration") or {}
-        md_chk = QCheckBox("Min duration")
-        md_chk.setChecked(bool(md))
-        md_spin = ui.spin(md.get("value", 4.0), 0.0, 1.0e5, 0.5, 2, None)
-        md_unit = ui.combo([("h", "h"), ("min", "min")], md.get("unit", "h"), None)
-
-        widgets: Dict[str, dict] = {}
-        og = QWidget()
-        gl = QGridLayout(og)
-        gl.setContentsMargins(0, 0, 0, 0)
-        gl.addWidget(md_chk, 0, 0)
-        gl.addWidget(md_spin, 0, 1)
-        gl.addWidget(md_unit, 0, 2)
-        grow = 1
-        for role in ROLES:
-            dim = ROLE_DIMENSIONS.get(role)
-            if not dim:
-                continue
-            mx = (ov.get("role_max") or {}).get(role) or {}
-            st = (ov.get("stabilisation") or {}).get(role) or {}
-            w = {
-                "dim": dim,
-                "mx_chk": QCheckBox(f"{role}  max"),
-                "mx_spin": ui.spin(mx.get("value", 0.0), -1.0e6, 1.0e6, 0.1, 3, None),
-                "mx_unit": ui.combo(
-                    units.options_for(dim),
-                    mx.get("unit", units.canonical_unit(dim)),
-                    None,
-                ),
-                "st_chk": QCheckBox("stab. Δ ≤"),
-                "st_spin": ui.spin(
-                    (st.get("delta") or {}).get("value", 2.0), 0.0, 1.0e6, 0.1, 3, None
-                ),
-                "st_unit": ui.combo(
-                    units.options_for(dim),
-                    (st.get("delta") or {}).get("unit", units.canonical_unit(dim)),
-                    None,
-                ),
-                "win_spin": ui.spin(
-                    (st.get("window") or {}).get("value", 60.0),
-                    1.0,
-                    1.0e5,
-                    5.0,
-                    1,
-                    None,
-                ),
-            }
-            w["mx_chk"].setChecked(bool(mx))
-            w["st_chk"].setChecked(bool(st))
-            gl.addWidget(w["mx_chk"], grow, 0)
-            gl.addWidget(w["mx_spin"], grow, 1)
-            gl.addWidget(w["mx_unit"], grow, 2)
-            gl.addWidget(w["st_chk"], grow, 3)
-            gl.addWidget(w["st_spin"], grow, 4)
-            gl.addWidget(w["st_unit"], grow, 5)
-            gl.addWidget(w["win_spin"], grow, 6)
-            gl.addWidget(QLabel("min window"), grow, 7)
-            widgets[role] = w
-            grow += 1
-
-        def apply_overrides(*_):
-            new: dict = {"min_duration": None, "role_max": {}, "stabilisation": {}}
-            if md_chk.isChecked():
-                new["min_duration"] = {
-                    "value": md_spin.value(),
-                    "unit": md_unit.currentData(),
-                }
-            for role, w in widgets.items():
-                if w["mx_chk"].isChecked():
-                    new["role_max"][role] = {
-                        "value": w["mx_spin"].value(),
-                        "unit": w["mx_unit"].currentData(),
-                    }
-                if w["st_chk"].isChecked():
-                    new["stabilisation"][role] = {
-                        "delta": {
-                            "value": w["st_spin"].value(),
-                            "unit": w["st_unit"].currentData(),
-                        },
-                        "window": {"value": w["win_spin"].value(), "unit": "min"},
-                    }
-            s["overrides"] = new
-            recompute()
-
-        md_chk.toggled.connect(apply_overrides)
-        md_spin.valueChanged.connect(apply_overrides)
-        md_unit.currentIndexChanged.connect(apply_overrides)
-        for w in widgets.values():
-            w["mx_chk"].toggled.connect(apply_overrides)
-            w["mx_spin"].valueChanged.connect(apply_overrides)
-            w["mx_unit"].currentIndexChanged.connect(apply_overrides)
-            w["st_chk"].toggled.connect(apply_overrides)
-            w["st_spin"].valueChanged.connect(apply_overrides)
-            w["st_unit"].currentIndexChanged.connect(apply_overrides)
-            w["win_spin"].valueChanged.connect(apply_overrides)
-
         tag.textChanged.connect(lambda v: (s.__setitem__("pump_tag", v), recompute()))
 
         dlg.add(ui.section("Pump identity"))
@@ -713,13 +553,7 @@ class MechanicalRunNode(BaseNode):
             )
         )
         dlg.add(grid)
-        dlg.add(ui.hline())
-        dlg.add(ui.section("Criteria overrides (blank = library criteria)"))
-        dlg.add(og)
-        dlg.add(ui.hline())
-        dlg.add(ui.section("Verdict"))
         dlg.add(banner)
-        dlg.add(result_table)
 
         fill_cols()
         fill_grid()

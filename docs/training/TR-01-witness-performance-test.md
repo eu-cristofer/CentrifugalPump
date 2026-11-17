@@ -132,6 +132,14 @@ N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
 
 ## 7 · The mechanical run
 
+In the workbench the run is two nodes:
+- **MRT Log**: type or paste the 15-minute readings with their units and roles;
+- **MRT Check**: wire the log, the rated point and the fitted curve into it.  It gives
+  the verdict, the per-channel table (min / max / last / limit) and the trend plot.
+  Your own limits (overrides) go here and make the verdict provisional.
+
+Keep the log faithful to the test sheet, and argue about the limits in the check.
+
 - **Duration.**  The 8th edition has no mechanical running test.  The 11th/12th run 4 h at
   rated flow *if specified*.  N-553 rev E 9.21 requires 4 h when ndm ≥ 350 000 or the
   energy-density criterion is met.
@@ -211,7 +219,7 @@ At the end:
   why (a missing column?) before signing.
 - [ ] Efficiency reported; judged only if guaranteed.
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
-- [ ] Mechanical run: duration, stabilisation, vibration (Mechanical Run node).
+- [ ] Mechanical run: duration, stabilisation, vibration (MRT Log → MRT Check).
 - [ ] Report exported (Word / PDF), open points listed, signatures if required.
 - [ ] Test data summary exported, blanks completed by hand, signed by vendor and witness.
 

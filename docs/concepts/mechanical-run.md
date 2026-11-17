@@ -64,6 +64,13 @@ a peak value to RMS by dividing by $\sqrt 2$: that holds only for a pure sine wa
 for the RMS readings.  B-34004A's unfiltered 0.16 in/s is 4.06 mm/s; read as RMS, it
 **fails** 3.0 mm/s under the 8th edition.
 
+## In the workbench
+
+**MRT Log** holds the readings; **MRT Check** judges them.  The check takes the rated point
+(edition, client overlay and pump type select the limits), and optionally the fitted
+curve (BEP power for the 11th/12th-edition high-speed vibration rule).  Overrides entered
+in the check mark the verdict as provisional.
+
 ## Worked notebook
 
 [UC-11 - mechanical run](../../use_cases/UC-11_mechanical_run.ipynb): a 4 h log in in/s and degF,

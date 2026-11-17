@@ -709,12 +709,7 @@
               "Seal cavity": 65.65
             }
           }
-        ],
-        "overrides": {
-          "min_duration": null,
-          "role_max": {},
-          "stabilisation": {}
-        }
+        ]
       }
     },
     {
@@ -996,12 +991,7 @@
               "Seal cavity": null
             }
           }
-        ],
-        "overrides": {
-          "min_duration": null,
-          "role_max": {},
-          "stabilisation": {}
-        }
+        ]
       }
     },
     {
@@ -1132,6 +1122,32 @@
           "unit": "mm"
         },
         "max_trim_pct": 5.0
+      }
+    },
+    {
+      "id": "mrt_a_check",
+      "kind": "mechanical_run_check",
+      "x": -620.0,
+      "y": 1060.0,
+      "settings": {
+        "overrides": {
+          "min_duration": null,
+          "role_max": {},
+          "stabilisation": {}
+        }
+      }
+    },
+    {
+      "id": "mrt_b_check",
+      "kind": "mechanical_run_check",
+      "x": -320.0,
+      "y": 1060.0,
+      "settings": {
+        "overrides": {
+          "min_duration": null,
+          "role_max": {},
+          "stabilisation": {}
+        }
       }
     }
   ],
@@ -1271,11 +1287,11 @@
     {
       "src_node": "rated",
       "src_port": "RatedPoint",
-      "dst_node": "mrt_a",
+      "dst_node": "mrt_a_check",
       "dst_port": "RatedPoint"
     },
     {
-      "src_node": "mrt_a",
+      "src_node": "mrt_a_check",
       "src_port": "MechanicalRunResult",
       "dst_node": "report",
       "dst_port": "branch"
@@ -1283,11 +1299,11 @@
     {
       "src_node": "rated",
       "src_port": "RatedPoint",
-      "dst_node": "mrt_b",
+      "dst_node": "mrt_b_check",
       "dst_port": "RatedPoint"
     },
     {
-      "src_node": "mrt_b",
+      "src_node": "mrt_b_check",
       "src_port": "MechanicalRunResult",
       "dst_node": "report",
       "dst_port": "branch"
@@ -1351,6 +1367,30 @@
       "src_port": "NPSHResult",
       "dst_node": "plot_b",
       "dst_port": "NPSHResult"
+    },
+    {
+      "src_node": "mrt_a",
+      "src_port": "MechanicalRunSet",
+      "dst_node": "mrt_a_check",
+      "dst_port": "MechanicalRunSet"
+    },
+    {
+      "src_node": "mrt_b",
+      "src_port": "MechanicalRunSet",
+      "dst_node": "mrt_b_check",
+      "dst_port": "MechanicalRunSet"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "mrt_a_check",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "mrt_b_check",
+      "dst_port": "FittedModel"
     }
   ],
   "view": {

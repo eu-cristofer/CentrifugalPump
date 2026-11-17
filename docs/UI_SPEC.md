@@ -192,7 +192,7 @@ double‑click‑to‑open property dialog.
 
 **Window size.**  Every property dialog is an independent window that can be
 minimised and maximised from its title bar.  Chart and table windows
-(Performance Plot, Test Points, Mechanical Run, NPSH, Curve Fit, Explore Chart,
+(Performance Plot, Test Points, MRT Log, MRT Check, NPSH, Curve Fit, Explore Chart,
 Selection, System Curve, Operating Point, Compliance) also carry a
 **Maximize / Restore** button in the header; double‑clicking the header or
 pressing **F11** does the same.  Each node type reopens at its last size and
@@ -432,12 +432,22 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
 
 | Kind | Inputs | Outputs | Key settings |
 |------|--------|---------|--------------|
-| `mechanical_run` | RatedPoint (opt.) | MechanicalRunResult, MechanicalRunSet | channels (name, dimension, unit, role), 15-min readings, limit overrides |
+| `mechanical_run` (**MRT Log**) | — | MechanicalRunSet | pump TAG, channels (name, dimension, unit, role), 15-min readings, paste |
+| `mechanical_run_check` (**MRT Check**) | MechanicalRunSet, RatedPoint (opt.), FittedModel (opt.) | MechanicalRunResult | limit overrides; shows the verdict, per-channel table and trend plot |
 | `npsh` | RatedPoint (opt.) | NPSHResult | mode (NPSHr points / NPSHa calculator), per-column units, margin-rule overrides |
 | `trim` | FittedModel or CorrectedCurve, RatedPoint | CorrectedCurve | mode (target diameter / solve for rated duty), max trim % |
 | `system_curve` | Fluid (opt.) | SystemCurveSpec | mode (static + k / two points / pipe Darcy–Weisbach), units per field |
 | `operating_point` | FittedModel, SystemCurveSpec | OperatingPointResult | method (poly / spline) |
 | `selection` | — | RatedPoint (chosen candidate) | duty Q/H with units, catalogue folder |
+
+**MRT Log → MRT Check.**  The mechanical running test is two nodes: the log is
+data entry only; the check judges it against the criteria of the wired rated
+point (edition, client overlay, pump type).  A fitted curve wired into the
+check gives the BEP power for the 11th/12th-edition high-speed vibration rule.
+Projects saved with the earlier single `mechanical_run` node (log + overrides +
+verdict) are split on load by `persistence.split_mechanical_runs`.  The node
+keeps its log, and a `<id>_check` node placed below it takes the overrides,
+the rated-point wire and the Report Export wire.  The verdicts are unchanged.
 
 Comparison of pumps (UC-08) is not a node: the Explorer readout shows Δ % vs the
 first model and Report Export adds a "Comparison" section when ≥ 2 pumps are fitted.

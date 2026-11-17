@@ -205,7 +205,7 @@ def migrate(doc: dict) -> dict:
     out = copy.deepcopy(doc)
     meta = out.get("meta") or {}
     if int(meta.get("schema_version", 1)) >= 2:
-        return out
+        return split_mechanical_runs(out)
     for node in out.get("nodes", []):
         settings = node.get("settings")
         if isinstance(settings, dict):
@@ -214,7 +214,100 @@ def migrate(doc: dict) -> dict:
                 kind, settings_codec.upgrade_v1(kind, settings)
             )
     out["meta"] = {**meta, "schema_version": SCHEMA_VERSION}
-    return out
+    return split_mechanical_runs(out)
+
+
+#: Offset of the MRT Check created beside a split legacy Mechanical Run node.
+_CHECK_OFFSET = (0.0, 200.0)
+
+
+def split_mechanical_runs(doc: dict) -> dict:
+    """Split legacy one-node mechanical runs into **MRT Log** + **MRT Check**.
+
+    Before the split a ``mechanical_run`` node held the log *and* the criteria
+    overrides, took the rated point and emitted the verdict.  Each such node
+    (recognised by an ``overrides`` key or a ``MechanicalRunResult`` /
+    ``RatedPoint`` wire) keeps its log and gets a ``mechanical_run_check``
+    node ``<id>_check`` placed below it, which receives:
+
+    - the overrides (already in their on-disk form);
+    - the rated-point wire;
+    - every wire that left the old node's ``MechanicalRunResult`` port;
+    - a new ``MechanicalRunSet`` wire from the log.
+
+    Nothing else changes, so the verdicts stay the same.  It works in place on
+    ``doc`` and returns it.  Running it again changes nothing: a split log has
+    none of those keys or wires.
+
+    Examples
+    --------
+    >>> doc = {"nodes": [{"id": "m", "kind": "mechanical_run", "x": 0, "y": 0,
+    ...         "settings": {"pump_tag": "P", "overrides": {"min_duration": None,
+    ...                      "role_max": {}, "stabilisation": {}}}}],
+    ...        "edges": [{"src_node": "m", "src_port": "MechanicalRunResult",
+    ...                   "dst_node": "r", "dst_port": "branch"}]}
+    >>> out = split_mechanical_runs(doc)
+    >>> [n["kind"] for n in out["nodes"]]
+    ['mechanical_run', 'mechanical_run_check']
+    >>> sorted((e["src_node"], e["dst_node"]) for e in out["edges"])
+    [('m', 'm_check'), ('m_check', 'r')]
+    >>> split_mechanical_runs(out) == out
+    True
+    """
+    nodes = doc.get("nodes") or []
+    edges = doc.get("edges") or []
+    ids = {n.get("id") for n in nodes}
+    added = []
+    for node in nodes:
+        if node.get("kind") != "mechanical_run":
+            continue
+        nid = node.get("id")
+        settings = (
+            node.get("settings") if isinstance(node.get("settings"), dict) else {}
+        )
+        legacy_wires = [
+            e
+            for e in edges
+            if (e.get("src_node") == nid and e.get("src_port") == "MechanicalRunResult")
+            or (e.get("dst_node") == nid and e.get("dst_port") == "RatedPoint")
+        ]
+        if "overrides" not in settings and not legacy_wires:
+            continue
+        check_id = f"{nid}_check"
+        n = 2
+        while check_id in ids:
+            check_id = f"{nid}_check{n}"
+            n += 1
+        ids.add(check_id)
+        overrides = settings.pop(
+            "overrides", {"min_duration": None, "role_max": {}, "stabilisation": {}}
+        )
+        added.append(
+            {
+                "id": check_id,
+                "kind": "mechanical_run_check",
+                "x": float(node.get("x", 0.0)) + _CHECK_OFFSET[0],
+                "y": float(node.get("y", 0.0)) + _CHECK_OFFSET[1],
+                "settings": {"overrides": overrides},
+            }
+        )
+        for e in legacy_wires:
+            if e.get("src_node") == nid:
+                e["src_node"] = check_id
+            else:
+                e["dst_node"] = check_id
+        edges.append(
+            {
+                "src_node": nid,
+                "src_port": "MechanicalRunSet",
+                "dst_node": check_id,
+                "dst_port": "MechanicalRunSet",
+            }
+        )
+    if added:
+        doc["nodes"] = nodes + added
+        doc["edges"] = edges
+    return doc
 
 
 def read_project(path: str | Path) -> dict:

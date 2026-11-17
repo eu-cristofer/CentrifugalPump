@@ -1,4 +1,5 @@
-"""Qt (offscreen) tests: Mechanical Run node, codec round-trip, report section (sprint 6)."""
+"""Qt (offscreen) tests: MRT Log + MRT Check nodes, codec round-trip, the
+legacy one-node split, and the report section (sprint 6 / UC-11)."""
 
 import copy
 import os
@@ -67,7 +68,26 @@ _COLUMNS = [
 ]
 
 
+_OVERRIDES = {
+    "min_duration": None,
+    "role_max": {},
+    "stabilisation": {
+        "oil_temperature": {
+            "delta": {"value": 2.0, "unit": "°F"},
+            "window": {"value": 60.0, "unit": "min"},
+        }
+    },
+}
+
+
+def _b34004a_log_settings():
+    s = _b34004a_settings()
+    s.pop("overrides")
+    return s
+
+
 def _b34004a_settings():
+    """The legacy one-node settings (log + overrides) of B-34004A."""
     names = [c["name"] for c in _COLUMNS]
     rows = []
     for line in _RAW.splitlines():
@@ -108,29 +128,70 @@ def _node():
     from pumpflow.nodes.registry import make_node
 
     node = make_node("mechanical_run")
-    node.settings.update(_b34004a_settings())
+    node.settings.update(_b34004a_log_settings())
     return node
 
 
-def test_default_node_evaluates(qapp):
+def _check(log_node, rated=None, fitted=None):
+    """An MRT Check fed by ``log_node``: ``(check node, outputs)``."""
+    import copy as _copy
+
+    from pumpflow.nodes.registry import make_node
+
+    check = make_node("mechanical_run_check")
+    check.settings["overrides"] = _copy.deepcopy(_OVERRIDES)
+    inputs = {"MechanicalRunSet": [log_node.compute({})["MechanicalRunSet"]]}
+    if rated is not None:
+        inputs["RatedPoint"] = [rated]
+    if fitted is not None:
+        inputs["FittedModel"] = [fitted]
+    return check, check.compute(inputs)
+
+
+def test_default_log_emits_only_the_log(qapp):
     from pumpflow.nodes.registry import make_node
 
     node = make_node("mechanical_run")
     out = node.compute({})
-    assert "MechanicalRunResult" in out
+    assert set(out) == {"MechanicalRunSet"}
     assert "readings" in node.status
+    assert "overrides" not in node.settings
+    assert [p.name for p in node.outputs] == ["MechanicalRunSet"]
+    assert node.inputs == []
 
 
-def test_b34004a_node_evaluates(qapp):
+def test_b34004a_log_and_check(qapp):
     node = _node()
     out = node.compute({})
-    assert "17 readings" in node.status
-    assert "4.0 h" in node.status
-    # unfiltered 0.16 in/s = 4.06 mm/s > 3.0 mm/s seed (unverified): FAILED
-    assert "FAILED" in node.status
-    assert out["MechanicalRunResult"].pump_tag == "B-34004A"
+    assert "17 readings" in node.status and "4.0 h" in node.status
+    assert "FAILED" not in node.status  # the log gives no verdict
     assert out["MechanicalRunSet"].pump_tag == "B-34004A"
-    assert out["MechanicalRunResult"].plot_png is not None
+    check, res = _check(node)
+    # unfiltered 0.16 in/s = 4.06 mm/s > 3.0 mm/s seed (unverified): FAILED
+    assert "FAILED" in check.status and "17 readings" in check.status
+    assert res["MechanicalRunResult"].pump_tag == "B-34004A"
+    assert res["MechanicalRunResult"].plot_png is not None
+
+
+def test_check_without_log_is_idle(qapp):
+    from pumpflow.nodes.registry import make_node
+
+    check = make_node("mechanical_run_check")
+    assert check.compute({}) == {}
+    assert check.state == "idle"
+
+
+def test_check_dialog_shows_verdict_and_trend(qapp):
+    from PySide6.QtWidgets import QLabel, QTableWidget
+
+    check, _res = _check(_node())
+    dlg = check.create_dialog(None, lambda: None)
+    table = dlg.findChild(QTableWidget, "RunResult")
+    assert table.rowCount() >= 1
+    trend = dlg.findChild(QLabel, "RunTrend")
+    assert trend.pixmap() is not None and not trend.pixmap().isNull()
+    assert dlg.max_button is not None
+    dlg.close()
 
 
 def test_too_few_readings_is_invalid(qapp):
@@ -155,7 +216,7 @@ def test_dialog_opens(qapp):
 def test_codec_roundtrip():
     from pumpflow.settings_codec import decode, encode
 
-    rt = _b34004a_settings()
+    rt = _b34004a_settings()  # the codec still reads legacy overrides
     v2 = encode("mechanical_run", rt)
     # columns carry Pint strings on disk, overrides {"value", "unit"}
     assert v2["columns"][0]["unit"] == "gal/min"
@@ -164,6 +225,10 @@ def test_codec_roundtrip():
     assert st["window"] == {"value": 60.0, "unit": "minute"}
     assert decode("mechanical_run", v2) == rt
     assert encode("mechanical_run", decode("mechanical_run", v2)) == v2
+    # the MRT Check stores the overrides in the same on-disk form
+    chk = {"overrides": copy.deepcopy(_OVERRIDES)}
+    assert encode("mechanical_run_check", chk)["overrides"] == v2["overrides"]
+    assert decode("mechanical_run_check", encode("mechanical_run_check", chk)) == chk
 
 
 def test_codec_unknown_unit_converts_to_canonical():
@@ -206,10 +271,76 @@ def test_scene_roundtrip(qapp):
         ],
         "edges": [],
     }
-    scene.load_dict(doc)
-    logic = next(n.logic for n in scene.nodes if n.logic.kind == "mechanical_run")
-    assert logic.settings["pump_tag"] == "B-34004A"
-    assert len(logic.settings["rows"]) == 17
+    doc["nodes"].append(
+        {"id": "rep", "kind": "report_export", "x": 400, "y": 0, "settings": {}}
+    )
+    doc["edges"] = [
+        {
+            "src_node": "n1",
+            "src_port": "MechanicalRunResult",
+            "dst_node": "rep",
+            "dst_port": "branch",
+        }
+    ]
+    scene.load_dict(doc)  # a legacy one-node run is split on load
+    try:
+        logic = next(n.logic for n in scene.nodes if n.logic.kind == "mechanical_run")
+        assert logic.settings["pump_tag"] == "B-34004A"
+        assert len(logic.settings["rows"]) == 17
+        assert "overrides" not in logic.settings
+        check = next(
+            n.logic for n in scene.nodes if n.logic.kind == "mechanical_run_check"
+        )
+        assert check.node_id == "n1_check"
+        st = check.settings["overrides"]["stabilisation"]["oil_temperature"]
+        assert st["delta"]["value"] == 2.0
+        assert "FAILED" in check.status  # same verdict as the one-node run
+        out = scene.to_dict()
+        wires = {(e["src_node"], e["src_port"], e["dst_node"]) for e in out["edges"]}
+        assert ("n1", "MechanicalRunSet", "n1_check") in wires
+        assert ("n1_check", "MechanicalRunResult", "rep") in wires
+        # saved in the new form, reloading changes nothing
+        scene.load_dict(out)
+        assert scene.to_dict() == out
+    finally:
+        scene.dispose()
+
+
+def test_b34004a_reference_uses_log_and_check(qapp):
+    """The regression fixture: MRT Log -> MRT Check (rated + fitted wired) ->
+    Report Export; the verdict is unchanged (FAILED on unverified limits)."""
+    import json
+    from pathlib import Path
+
+    from pumpflow.export_cli import build_scene, report_inputs
+
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "examples/user/B-34004A_MRT_reference.pumpflow"
+    )
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    kinds = {n["id"]: n["kind"] for n in doc["nodes"]}
+    assert kinds["mrt_a"] == "mechanical_run"
+    assert kinds["mrt_a_check"] == "mechanical_run_check"
+    wires = {
+        (e["src_node"], e["src_port"], e["dst_node"], e["dst_port"])
+        for e in doc["edges"]
+    }
+    assert ("mrt_a", "MechanicalRunSet", "mrt_a_check", "MechanicalRunSet") in wires
+    assert ("rated", "RatedPoint", "mrt_a_check", "RatedPoint") in wires
+    assert ("fit_a", "FittedModel", "mrt_a_check", "FittedModel") in wires
+    assert ("mrt_a_check", "MechanicalRunResult", "report", "branch") in wires
+
+    _app, scene = build_scene(str(path))
+    try:
+        by_id = {n.logic.node_id: n.logic for n in scene.nodes}
+        assert by_id["mrt_a"].state == "ok"
+        assert by_id["mrt_a_check"].status.endswith("FAILED (unverified limits)")
+        _rated, branches, _s = report_inputs(scene)
+        (b,) = branches
+        assert b.mechanical is not None and not b.mechanical.result.passed
+    finally:
+        scene.dispose()
 
 
 def _report_data(tmp_path):
@@ -218,8 +349,8 @@ def _report_data(tmp_path):
     from pumpflow.signals import BranchBundle
 
     rated = make_node("rated_point").compute({})["RatedPoint"]
-    node = _node()
-    sig = node.compute({})["MechanicalRunResult"]
+    _chk, res = _check(_node())
+    sig = res["MechanicalRunResult"]
     bundle = BranchBundle(pump_tag="B-34004A", mechanical=sig)
     return assemble_report_data(rated, [bundle], {})
 

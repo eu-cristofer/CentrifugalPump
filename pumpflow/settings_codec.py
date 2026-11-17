@@ -633,6 +633,8 @@ FIELDS: Dict[str, tuple] = {
         OptDisp("discharge_z", "length", "discharge_z_unit"),
     ),
     "mechanical_run": (RunLog(),),
+    # MRT Check: only the criteria overrides (same on-disk form as before).
+    "mechanical_run_check": (RunLog(),),
     "npsh": (
         NPSHTable(),
         # Optional NPSHa typed in the node (unset = use the rated point's).

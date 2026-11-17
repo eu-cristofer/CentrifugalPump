@@ -370,7 +370,7 @@ class ComplianceResult:
 
 
 # ---------------------------------------------------------------------------
-# 5b. Mechanical run — produced by the Mechanical Run node  (sprint 6 / UC-11)
+# 5b. Mechanical run — produced by MRT Log and MRT Check  (sprint 6 / UC-11)
 # ---------------------------------------------------------------------------
 
 
