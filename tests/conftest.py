@@ -62,3 +62,40 @@ def design_point(water):
         breaking_power=Q_(252, "kW"),
         head_shutoff=Q_(117, "m"),
     )
+
+
+# --------------------------------------------------------------------------- #
+# Qt canvas hygiene: dispose every GraphScene a test module created
+# --------------------------------------------------------------------------- #
+@pytest.fixture(autouse=True, scope="module")
+def _dispose_graph_scenes():
+    """Hand canvas items back to Python before their scenes are discarded.
+
+    Without this, scenes created and dropped by tests let Qt delete
+    non-QObject items (edges) behind their Python wrappers, which can crash a
+    later test (see ``GraphScene.dispose``).  Only active when PySide6 is
+    importable.
+    """
+    created = []
+    try:
+        from pumpflow.canvas.scene import GraphScene
+    except Exception:  # no PySide6: nothing to track
+        yield
+        return
+    original = GraphScene.__init__
+
+    def tracking_init(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        created.append(self)
+
+    GraphScene.__init__ = tracking_init
+    try:
+        yield
+    finally:
+        GraphScene.__init__ = original
+        for scene in created:
+            try:
+                scene.dispose()
+            except RuntimeError:  # already deleted by Qt
+                pass
+        created.clear()

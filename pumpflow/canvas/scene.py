@@ -97,6 +97,24 @@ class GraphScene(QGraphicsScene):
             self.edges.remove(edge)
         self.removeItem(edge)
 
+    def dispose(self) -> None:
+        """Empty the scene in a controlled way before it is discarded.
+
+        ``EdgeItem`` is a ``QGraphicsPathItem`` (not a QObject): if Qt deletes
+        it together with the scene, its Python wrapper is not told and may be
+        freed a second time when the node <-> logic reference cycles are
+        collected, corrupting the heap (seen as a segfault in a *later* test on
+        PySide6 6.12).  Removing every item first hands ownership back to
+        Python, and clearing ``logic.item`` breaks the cycles.
+        """
+        for edge in list(self.edges):
+            self.remove_edge(edge)
+        for node in list(self.nodes):
+            self.nodes.remove(node)
+            self.removeItem(node)
+            if getattr(node.logic, "item", None) is node:
+                node.logic.item = None
+
     # -- delete selection --------------------------------------------------
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
