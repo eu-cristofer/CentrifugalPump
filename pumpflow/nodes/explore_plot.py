@@ -106,6 +106,7 @@ class ExploreChartNode(BaseNode):
             "Interactive Q×H / Q×P / Q×η — pan, zoom and hover. "
             "Measured points, fitted curves and ad-hoc Point markers.",
             width=720,
+            maximizable=True,
         )
         banner = ui.Banner()
 

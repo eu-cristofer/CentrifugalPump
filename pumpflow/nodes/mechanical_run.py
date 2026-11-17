@@ -299,6 +299,7 @@ class MechanicalRunNode(BaseNode):
             "Time-stamped readings of the mechanical running test, checked "
             "against the acceptance criteria.",
             width=760,
+            maximizable=True,
         )
         banner = ui.Banner()
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. B-34004A")

@@ -155,6 +155,7 @@ class SystemCurveNode(BaseNode):
             "System resistance:  H = H_static + k·Q^n, solved through two points, "
             "or computed from pipe data (Darcy–Weisbach, Swamee–Jain friction).",
             width=560,
+            maximizable=True,
         )
         banner = ui.Banner()
 

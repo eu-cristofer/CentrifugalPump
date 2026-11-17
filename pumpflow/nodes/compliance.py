@@ -86,6 +86,7 @@ class ComplianceCheckNode(BaseNode):
             "Power δ≤tol · Shut-off |δ|≤tol · Efficiency: information only unless "
             "a purchaser tolerance is set.",
             width=680,
+            maximizable=True,
         )
         verdict = QLabel(objectName="VerdictBanner")
         verdict.setFont(ui_font(15, QFont.Bold))

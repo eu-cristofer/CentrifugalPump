@@ -127,6 +127,7 @@ class PerformancePlotNode(BaseNode):
             parent, "Performance Plot",
             "Q×H, Q×P, Q×η — polynomial, spline and the rated point.",
             width=980,
+            maximizable=True,
         )
         banner = ui.Banner()
         holder = {"canvas": None}

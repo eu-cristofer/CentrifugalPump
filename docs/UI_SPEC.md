@@ -190,6 +190,15 @@ settings pane), the **main area** (canvas/preview), and **validation**. All
 widgets follow the Orange convention: a compact icon node on the canvas, and a
 double‑click‑to‑open property dialog.
 
+**Window size.**  Every property dialog is an independent window that can be
+minimised and maximised from its title bar.  Chart and table windows
+(Performance Plot, Test Points, Mechanical Run, NPSH, Curve Fit, Explore Chart,
+Selection, System Curve, Operating Point, Compliance) also carry a
+**Maximize / Restore** button in the header; double‑clicking the header or
+pressing **F11** does the same.  Each node type reopens at its last size and
+maximised state, kept in the app settings (`QSettings`, key
+`dialogs/<kind>/geometry`), never in the `.pumpflow` file.
+
 ### 5.1 Rated Point Input
 - **Inputs:** none (source node). Optional: a loaded JSON file.
 - **Outputs:** `RatedPoint`.

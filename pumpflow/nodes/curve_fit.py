@@ -53,6 +53,7 @@ class CurveFitNode(BaseNode):
             "Least-squares polynomial (primary) + natural cubic spline (secondary) "
             "for Head, Power and Efficiency vs. Capacity.",
             width=980,
+            maximizable=True,
         )
         banner = ui.Banner()
         from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout, QHBoxLayout

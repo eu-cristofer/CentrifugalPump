@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from typing import Callable, List, Optional
 
-from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
-from PySide6.QtGui import QFont
+from PySide6.QtCore import QByteArray, QEvent, QPoint, QSettings, Qt, QTimer
+from PySide6.QtGui import QFont, QKeySequence, QShortcut
 
 from pump import Q_, Pressure
 
@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QScrollArea,
     QSpinBox,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -36,14 +37,41 @@ from PySide6.QtWidgets import (
 from .. import units as _units
 
 
-class PropertyDialog(QDialog):
-    """A consistent shell: header, a body you fill, and live-apply semantics."""
+def window_settings() -> QSettings:
+    """Where node windows remember their size (app settings, not the project).
 
-    def __init__(self, parent, title: str, subtitle: str = "", width: int = 460):
+    Tests replace this to keep the user's own settings untouched.
+    """
+    return QSettings("PumpFlow", "PumpFlow")
+
+
+class PropertyDialog(QDialog):
+    """A consistent shell: header, a body you fill, and live-apply semantics.
+
+    Every node window can be minimised and maximised from the title bar.  With
+    ``maximizable=True`` (charts and tables) the header also carries a
+    Maximize / Restore button; double-clicking the header or pressing F11 does
+    the same.  :meth:`remember_as` makes the window reopen at its last size and
+    maximised state (stored in the app settings, never in the project file).
+    """
+
+    def __init__(
+        self,
+        parent,
+        title: str,
+        subtitle: str = "",
+        width: int = 460,
+        maximizable: bool = False,
+    ):
         super().__init__(parent)
-        # An independent (modeless) tool window with its own min/restore/close,
-        # so the canvas and menus stay usable while it is open.
+        # An independent (modeless) tool window with its own min/max/close,
+        # so the canvas and menus stay usable while it is open.  QDialog has no
+        # maximise button unless asked for.
         self.setWindowFlag(Qt.Window, True)
+        self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
+        self.setWindowFlag(Qt.WindowCloseButtonHint, True)
+        self._memory_key: Optional[str] = None
+        self.max_button: Optional[QToolButton] = None
         self.setWindowTitle(title)
         self.setMinimumWidth(width)
         self.setObjectName("PropertyDialog")
@@ -62,7 +90,21 @@ class PropertyDialog(QDialog):
         hl.setSpacing(2)
         t = QLabel(title, objectName="DialogTitle")
         t.setFont(ui_font(12, QFont.DemiBold))
-        hl.addWidget(t)
+        if maximizable:
+            top = QHBoxLayout()
+            top.setContentsMargins(0, 0, 0, 0)
+            top.addWidget(t, 1)
+            btn = QToolButton(objectName="HeaderMaximize")
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.clicked.connect(self.toggle_maximized)
+            top.addWidget(btn, 0, Qt.AlignTop)
+            hl.addLayout(top)
+            self.max_button = btn
+            self._sync_max_button()
+            header.installEventFilter(self)
+            QShortcut(QKeySequence(Qt.Key_F11), self, activated=self.toggle_maximized)
+        else:
+            hl.addWidget(t)
         if subtitle:
             s = QLabel(subtitle, objectName="DialogSubtitle")
             s.setWordWrap(True)
@@ -83,6 +125,57 @@ class PropertyDialog(QDialog):
     def add(self, widget: QWidget) -> QWidget:
         self.body_layout.addWidget(widget)
         return widget
+
+    # -- maximise / restore ------------------------------------------------
+    def toggle_maximized(self) -> None:
+        """Maximise the window, or restore it to its previous size."""
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+        self._sync_max_button()
+
+    def _sync_max_button(self) -> None:
+        if self.max_button is None:
+            return
+        if self.isMaximized():
+            self.max_button.setText("🗗  Restore")
+            self.max_button.setToolTip("Restore the window size (F11 or double-click the header)")
+        else:
+            self.max_button.setText("⛶  Maximize")
+            self.max_button.setToolTip("Maximize the window (F11 or double-click the header)")
+
+    def changeEvent(self, event) -> None:  # title-bar maximise keeps the button right
+        if event.type() == QEvent.WindowStateChange:
+            self._sync_max_button()
+        super().changeEvent(event)
+
+    def eventFilter(self, obj, event) -> bool:
+        header = getattr(self, "_header", None)
+        if obj is header and event.type() == QEvent.MouseButtonDblClick:
+            self.toggle_maximized()
+            return True
+        return super().eventFilter(obj, event)
+
+    # -- remembered size ---------------------------------------------------
+    def remember_as(self, key: str) -> None:
+        """Restore the last size / maximised state saved under ``key`` and save
+        it again whenever the window is hidden or closed."""
+        self._memory_key = key
+        saved = window_settings().value(f"dialogs/{key}/geometry")
+        if isinstance(saved, (QByteArray, bytes)) and len(saved):
+            self.restoreGeometry(QByteArray(saved))
+            self._sync_max_button()
+
+    def save_window_state(self) -> None:
+        if self._memory_key:
+            window_settings().setValue(
+                f"dialogs/{self._memory_key}/geometry", self.saveGeometry()
+            )
+
+    def hideEvent(self, event) -> None:
+        self.save_window_state()
+        super().hideEvent(event)
 
     def fit_to_contents(self, vertical_only: bool = False) -> None:
         """Resize the window to fit header + body preferred size (opt-in).

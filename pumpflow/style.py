@@ -32,6 +32,9 @@ QDockWidget::title { background: #e4e9ef; padding: 6px 10px; }
 #PropertyDialog { background: #ffffff; }
 #DialogHeader { background: #2b3a4a; }
 #DialogTitle { color: #ffffff; background: transparent; }
+#HeaderMaximize { color: #ffffff; background: transparent; border: 1px solid #5d7185;
+    border-radius: 6px; padding: 3px 9px; font-size: 12px; }
+#HeaderMaximize:hover { background: #3a4d61; border-color: #9fb3c7; }
 #DialogSubtitle { color: #c4d0db; font-size: 12px; background: transparent; }
 #SectionLabel { color: #5b7185; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 #FieldLabel { color: #3c4753; }

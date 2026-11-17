@@ -329,6 +329,7 @@ class TestPointsTableNode(BaseNode):
             "Test Points Table",
             "Raw measured rows for one physical pump. Head and η are computed live.",
             width=720,
+            maximizable=True,
         )
         banner = ui.Banner()
 

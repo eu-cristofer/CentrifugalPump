@@ -347,6 +347,8 @@ class MainWindow(QMainWindow):
         if dlg is None:
             return
         dlg.setAttribute(Qt.WA_DeleteOnClose, True)
+        if hasattr(dlg, "remember_as"):  # reopen at the last size / maximised
+            dlg.remember_as(logic.kind)
         self._open_dialogs[logic] = dlg
         dlg.finished.connect(lambda _result, lg=logic: self._on_dialog_closed(lg))
         dlg.show()

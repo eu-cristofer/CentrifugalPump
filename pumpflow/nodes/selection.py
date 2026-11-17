@@ -152,6 +152,7 @@ class SelectionNode(BaseNode):
             "and/or impeller trim (affinity laws).  Preferred operating region: "
             "unverified seed from the standards data.",
             width=760,
+            maximizable=True,
         )
         banner = ui.Banner()
         info = QLabel("—")

@@ -259,6 +259,7 @@ class NPSHNode(BaseNode):
             "NPSHr test points and the NPSHa they are judged against at the "
             "rated capacity.",
             width=640,
+            maximizable=True,
         )
         banner = ui.Banner()
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. B-34004A")

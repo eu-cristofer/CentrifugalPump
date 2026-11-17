@@ -81,6 +81,7 @@ class OperatingPointNode(BaseNode):
             "Intersection of the fitted pump head curve with the system curve. "
             "A solution outside the tested capacity range is flagged as extrapolated.",
             width=520,
+            maximizable=True,
         )
         banner = ui.Banner()
         method = ui.combo(
