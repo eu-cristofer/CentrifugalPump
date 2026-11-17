@@ -11,13 +11,12 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QLabel
 
 from pump import Q_
 
 from .. import explain, units
 from ..binding import BindingError, correct_curve, make_fluid
-from ..numfmt import fmt
 from ..signals import RatedPoint, TestPointSet
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
@@ -175,12 +174,8 @@ class SpeedCorrectionNode(BaseNode):
             None,
         )
 
-        table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(
-            ["Q [m³/h]", "Head [m]", "Power [kW]", "η [%]", "stage"]
-        )
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.setObjectName("ReadGrid")
+        grid = ui.BeforeAfterTable(s)
+        table = grid.table
 
         def refresh():
             on_change()
@@ -234,32 +229,7 @@ class SpeedCorrectionNode(BaseNode):
                 )
             else:
                 visc_info.setText("—")
-            table.setRowCount(0)
-            if not corrected:
-                return
-            for pair in corrected.before_after:
-                m, c = pair["measured"], pair["corrected"]
-                _append(
-                    table,
-                    [
-                        fmt(m["q"]),
-                        fmt(m["head"]),
-                        fmt(m["power"]),
-                        fmt(m["eff"], 1) if m["eff"] is not None else "—",
-                        "measured",
-                    ],
-                    muted=True,
-                )
-                _append(
-                    table,
-                    [
-                        fmt(c["q"]),
-                        fmt(c["head"]),
-                        fmt(c["power"]),
-                        fmt(c["eff"], 1) if c["eff"] is not None else "—",
-                        "corrected",
-                    ],
-                )
+            grid.fill(corrected.before_after if corrected else (), ("measured", "corrected"))
 
         def set_lock(v):
             s["lock_to_rated"] = bool(v)
@@ -297,20 +267,10 @@ class SpeedCorrectionNode(BaseNode):
             dlg.add(ui.row("Correct to fluid", fluid_pick))
         dlg.add(ui.hline())
         dlg.add(ui.section("Before / after correction"))
+        dlg.add(grid.strip)
         dlg.add(table)
         dlg.add(banner)
         refresh()
         dlg.resize(660, 560)
         return dlg
 
-
-def _append(table: QTableWidget, values, muted: bool = False):
-    from PySide6.QtGui import QColor
-
-    r = table.rowCount()
-    table.insertRow(r)
-    for c, v in enumerate(values):
-        item = QTableWidgetItem(str(v))
-        if muted:
-            item.setForeground(QColor("#8a96a3"))
-        table.setItem(r, c, item)

@@ -191,10 +191,11 @@ def signature_block(translate: Callable[[str], str], report_data: dict):
     """``(header, rows)`` of the signature table, or ``None`` without a cover.
 
     One row per signatory (default Vendor / Inspector / Client witness with blank
-    names); the Signature and Date cells are blank lines to sign on.
+    names); the Signature and Date cells are blank lines to sign on.  A cover
+    with ``"include_signatures": False`` has no signature block either.
     """
     cover = report_data.get(COVER_KEY) or {}
-    if not cover:
+    if not cover or cover.get("include_signatures") is False:
         return None
     signatories = cover.get("signatories") or [
         {"role": role, "name": ""} for role in SIGNATURE_ROLES

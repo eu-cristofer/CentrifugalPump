@@ -1001,7 +1001,8 @@ def cover_from_settings(
     "signatories": [{"role", "name"}, ...]}`` -- all plain strings.  The standard
     falls back to ``standard`` (the acceptance label) when the settings carry
     none; without signatories the three default roles (Vendor / Inspector /
-    Client witness, blank names) are used.
+    Client witness, blank names) are used.  ``"include_signatures"`` (default
+    ``True``) says whether the report prints the signature block.
     """
     s = settings or {}
 
@@ -1025,6 +1026,8 @@ def cover_from_settings(
     if not signatories:
         signatories = [{"role": role, "name": ""} for role in DEFAULT_SIGNATORY_ROLES]
     cover["signatories"] = signatories
+    # The signature block is optional (default on); the cover page stays.
+    cover["include_signatures"] = bool(s.get("include_signatures", True))
     return cover
 
 

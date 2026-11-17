@@ -536,6 +536,171 @@ class UnitColumnHeader:
         self.unit = label
 
 
+class BeforeAfterTable:
+    """Read-only before/after table (Q, Head, Power, η, stage) with display-unit
+    combos for Q, Head and Power.
+
+    Rows arrive in the binding's canonical units (m³/h, m, kW, %); the combos
+    only change what is *shown* — nothing upstream or in the report changes.
+    The chosen labels are kept in ``settings["table_units"]`` so the window
+    reopens in the same units.
+    """
+
+    DIMS = (("capacity", "Q"), ("head", "Head"), ("power", "Power"))
+
+    def __init__(self, settings: dict, prefs=None):
+        from PySide6.QtWidgets import QHeaderView, QTableWidget
+
+        prefs = prefs if prefs is not None else _units.PREFS
+        self._settings = settings
+        stored = settings.get("table_units")
+        self.units = dict(stored) if isinstance(stored, dict) else {}
+        self.combos = {}
+        self.strip = QWidget()
+        h = QHBoxLayout(self.strip)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(8)
+        h.addWidget(QLabel("Show in", objectName="FieldLabel"))
+        for dim, label in self.DIMS:
+            unit = self.units.get(dim) or prefs.default_unit(dim)
+            cb = combo(_units.options_for(dim), unit, None)
+            self.units[dim] = cb.currentData() or _units.canonical_unit(dim)
+            cb.currentIndexChanged.connect(lambda _=None, d=dim: self._unit_changed(d))
+            h.addWidget(QLabel(label, objectName="FieldLabel"))
+            h.addWidget(cb)
+            self.combos[dim] = cb
+        h.addStretch(1)
+
+        self.table = QTableWidget(0, 5)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setObjectName("ReadGrid")
+        self._pairs = ()
+        self._labels = ("before", "after")
+        self._set_headers()
+
+    def _set_headers(self) -> None:
+        u = self.units
+        self.table.setHorizontalHeaderLabels(
+            [
+                f"Q [{u['capacity']}]",
+                f"Head [{u['head']}]",
+                f"Power [{u['power']}]",
+                "η [%]",
+                "stage",
+            ]
+        )
+
+    def _unit_changed(self, dim: str) -> None:
+        self.units[dim] = self.combos[dim].currentData()
+        self._settings["table_units"] = dict(self.units)
+        self._set_headers()
+        self.fill(self._pairs, self._labels)
+
+    def _show(self, value, dim: str) -> str:
+        from ..numfmt import fmt
+
+        if value is None:
+            return "—"
+        canon = _units.canonical_unit(dim)
+        return fmt(_units.convert_display(float(value), dim, canon, self.units[dim]))
+
+    def _cells(self, row: dict, stage: str) -> list:
+        from ..numfmt import fmt
+
+        eff = row.get("eff")
+        return [
+            self._show(row.get("q"), "capacity"),
+            self._show(row.get("head"), "head"),
+            self._show(row.get("power"), "power"),
+            fmt(eff, 1) if eff is not None else "—",
+            stage,
+        ]
+
+    def fill(self, pairs, labels=("before", "after")) -> None:
+        """Show ``({"measured": row, "corrected": row}, ...)`` pairs."""
+        from PySide6.QtGui import QColor
+        from PySide6.QtWidgets import QTableWidgetItem
+
+        self._pairs = tuple(pairs or ())
+        self._labels = labels
+        self.table.setRowCount(0)
+        for pair in self._pairs:
+            for key, stage, muted in (
+                ("measured", labels[0], True),
+                ("corrected", labels[1], False),
+            ):
+                r = self.table.rowCount()
+                self.table.insertRow(r)
+                for c, text in enumerate(self._cells(pair[key], stage)):
+                    item = QTableWidgetItem(text)
+                    if muted:
+                        item.setForeground(QColor("#8a96a3"))
+                    self.table.setItem(r, c, item)
+
+    def clear(self) -> None:
+        self.fill((), self._labels)
+
+
+def info_button(title: str, html: str, parent: Optional[QWidget] = None):
+    """A small round "i" button that opens ``html`` in a modeless help box."""
+    from PySide6.QtWidgets import QPushButton, QToolButton
+
+    btn = QToolButton(parent)
+    btn.setText("i")
+    btn.setObjectName("InfoButton")
+    btn.setToolTip(f"About: {title}")
+    btn.setCursor(Qt.PointingHandCursor)
+    btn.setFixedSize(20, 20)
+    btn.setStyleSheet(
+        "QToolButton#InfoButton { border: 1px solid #5b8def; border-radius: 10px;"
+        " color: #5b8def; font-weight: bold; font-style: italic; }"
+        "QToolButton#InfoButton:hover { background: #5b8def; color: white; }"
+    )
+
+    def show():
+        box = QDialog(btn.window())
+        box.setWindowTitle(title)
+        box.setObjectName("InfoDialog")
+        box.setMinimumWidth(480)
+        lay = QVBoxLayout(box)
+        lay.setContentsMargins(18, 16, 18, 14)
+        lay.setSpacing(10)
+        text = QLabel(html)
+        text.setTextFormat(Qt.RichText)
+        text.setWordWrap(True)
+        text.setStyleSheet("font-weight: normal;")
+        text.setFixedWidth(460)
+        text.setMinimumHeight(text.heightForWidth(460) + 8)
+        lay.addWidget(text)
+        ok = QPushButton("OK")
+        ok.clicked.connect(box.close)
+        bar = QHBoxLayout()
+        bar.addStretch(1)
+        bar.addWidget(ok)
+        lay.addLayout(bar)
+        box.text = text.text  # let tests read the help text
+        btn._box = box  # keep a reference while it is open
+        box.adjustSize()
+        box.show()
+
+    btn.clicked.connect(show)
+    return btn
+
+
+def section_with_info(title: str, info_title: str, html: str) -> QWidget:
+    """A section heading followed by an :func:`info_button`."""
+    w = QWidget()
+    h = QHBoxLayout(w)
+    h.setContentsMargins(0, 0, 0, 0)
+    h.setSpacing(6)
+    h.addWidget(section(title))
+    btn = info_button(info_title, html, w)
+    h.addWidget(btn)
+    h.addStretch(1)
+    w.info_button = btn
+    return w
+
+
 def checkbox(text: str, value: bool, on_change: Optional[Callable] = None) -> QCheckBox:
     cb = QCheckBox(text)
     cb.setChecked(bool(value))

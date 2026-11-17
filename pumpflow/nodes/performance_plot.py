@@ -101,7 +101,7 @@ class PerformancePlotNode(BaseNode):
         dlg = ui.PropertyDialog(
             parent, "Performance Plot",
             "Q×H, Q×P, Q×η — polynomial, spline and the rated point.",
-            width=680,
+            width=980,
         )
         banner = ui.Banner()
         holder = {"canvas": None}
@@ -139,13 +139,19 @@ class PerformancePlotNode(BaseNode):
         points.toggled.connect(lambda v: (s.__setitem__("show_points", bool(v)), redraw()))
 
         from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget as QW
+
+        # Two columns: parameters on the left, the plot on the right.
+        settings_panel = QW()
+        settings_panel.setObjectName("PlotSettings")
+        left = QVBoxLayout(settings_panel)
+        left.setContentsMargins(0, 0, 0, 0)
+        left.setSpacing(10)
+        settings_panel.setMinimumWidth(340)
+        settings_panel.setMaximumWidth(420)
+
         toolbar = QW()
         tl = QHBoxLayout(toolbar)
         tl.setContentsMargins(0, 0, 0, 0)
-        tl.addWidget(poly)
-        tl.addWidget(spline)
-        tl.addWidget(points)
-        tl.addStretch(1)
         refresh = QPushButton("Refresh")
         refresh.setObjectName("ToolButton")
         # Re-pull the latest upstream model and redraw — useful while this
@@ -211,17 +217,32 @@ class PerformancePlotNode(BaseNode):
             for f in (lo_f, hi_f):
                 f.spin.setEnabled(cur is not None)
                 f.combo.setEnabled(cur is not None)
-            dlg.add(ui.row(title, auto))
-            dlg.add(lo_f.row("   min"))
-            dlg.add(hi_f.row("   max"))
+            left.addWidget(ui.row(title, auto))
+            left.addWidget(lo_f.row("   min"))
+            left.addWidget(hi_f.row("   max"))
 
-        dlg.add(toolbar)
-        dlg.add(ui.section("Y-axis limits"))
+        tl.addStretch(1)
+        left.addWidget(ui.section("Curves"))
+        left.addWidget(poly)
+        left.addWidget(spline)
+        left.addWidget(points)
+        left.addWidget(ui.hline())
+        left.addWidget(ui.section("Y-axis limits"))
         for _key, dim, skey, ukey, default_canon in _YLIMS:
             ylim_editor({"head": "Head", "power": "Power", "efficiency": "Efficiency η"}[_key],
                         dim, skey, ukey, default_canon)
-        dlg.add(plot_area)
-        dlg.add(banner)
+        left.addWidget(ui.hline())
+        left.addWidget(toolbar)
+        left.addWidget(banner)
+        left.addStretch(1)
+
+        columns = QW()
+        cl = QHBoxLayout(columns)
+        cl.setContentsMargins(0, 0, 0, 0)
+        cl.setSpacing(16)
+        cl.addWidget(settings_panel)
+        cl.addWidget(plot_area, 1)
+        dlg.add(columns)
         redraw()
-        dlg.resize(720, 760)
+        dlg.resize(1180, 760)
         return dlg

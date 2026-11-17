@@ -45,6 +45,28 @@ from . import ui
 
 _DEFAULT_LABEL = "Custom (entered below)"
 
+# Help text behind the (i) button of the "Impeller diameter" section.
+IMPELLER_DIAMETER_HELP = """
+<p><b>Where to find the values.</b> On the API 610 datasheet, in the
+<i>Performance</i> block: impeller diameter <b>rated</b>, <b>maximum</b> and
+<b>minimum</b> (e.g. B-34004: 128 / 131 / 125 mm). Use the as-built value from
+the test record if the vendor trimmed the impeller after the datasheet was issued.</p>
+<p><b>Nominal D</b>: the diameter installed for the test, which is the
+diameter the test curve belongs to.<br>
+<b>Maximum D</b>: the largest impeller the casing accepts.<br>
+<b>Minimum D</b>: the smallest impeller allowed.<br>
+Keep minimum &le; nominal &le; maximum. Any unit can be used.</p>
+<p><b>0 means &ldquo;not set&rdquo;.</b> All three are optional. The
+performance test, its corrections and the acceptance check do not use them.</p>
+<p><b>What uses them.</b><br>
+&bull; <b>Impeller Trim</b> needs the nominal D as the reference for the
+diameter affinity laws (Q &prop; D, H &prop; D&sup2;, P &prop; D&sup3;), and
+warns when the trimmed D falls outside the minimum&ndash;maximum range.<br>
+&bull; <b>Export to catalogue</b> saves the three diameters with the curve.
+<b>Pump Selection</b> then ranks a trimmed candidate by how much room is left
+before its maximum impeller.</p>
+"""
+
 
 def _standard_keys(s: Dict):
     """``(standard_key, client)`` of the settings: stored keys, else parsed text."""
@@ -491,7 +513,13 @@ class RatedPointInputNode(BaseNode):
         dlg.add(hso_field.row("Shut-off head"))
         dlg.add(npsha_field.row("NPSHa"))
         dlg.add(ui.hline())
-        dlg.add(ui.section("Impeller diameter (datasheet, 0 = not set)"))
+        dlg.add(
+            ui.section_with_info(
+                "Impeller diameter (datasheet, 0 = not set)",
+                "Impeller diameter",
+                IMPELLER_DIAMETER_HELP,
+            )
+        )
         dlg.add(d_fields["d_imp"].row("Nominal  D"))
         dlg.add(d_fields["d_max"].row("Maximum  D"))
         dlg.add(d_fields["d_min"].row("Minimum  D"))

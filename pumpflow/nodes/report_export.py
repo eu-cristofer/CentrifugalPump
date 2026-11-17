@@ -206,6 +206,24 @@ class ReportExportNode(BaseNode):
 
         signers.itemChanged.connect(on_signer)
 
+        include_sigs = ui.checkbox(
+            "Include signature block in the report",
+            s.get("include_signatures", True),
+            None,
+        )
+        signers.setEnabled(include_sigs.isChecked())
+
+        def on_include_sigs(v):
+            # Stored only when off, so older projects re-save byte-identical.
+            if v:
+                s.pop("include_signatures", None)
+            else:
+                s["include_signatures"] = False
+            signers.setEnabled(bool(v))
+            on_change()
+
+        include_sigs.toggled.connect(on_include_sigs)
+
         equip = QTableWidget(len(_DEFAULT_EQUIP), 2)
         equip.setHorizontalHeaderLabels(["Field", "Value"])
         equip.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -371,6 +389,7 @@ class ReportExportNode(BaseNode):
         dlg.add(ui.row("Test date", test_date))
         dlg.add(ui.row("Revision", revision))
         dlg.add(ui.section("Signatories"))
+        dlg.add(include_sigs)
         dlg.add(signers)
         dlg.add(ui.hline())
         dlg.add(ui.section("Equipment description (service-level)"))

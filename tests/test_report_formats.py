@@ -620,3 +620,23 @@ def test_pdf_survives_symbols_in_free_text(tmp_path, report_data):
     )
     out = LatexReportGenerator("en").generate_pdf(data, str(tmp_path / "sym.pdf"))
     assert open(out, "rb").read().startswith(b"%PDF")
+
+
+def test_signature_block_can_be_left_out(tmp_path, report_data):
+    """``include_signatures: False`` drops only the signature block; the cover stays."""
+    data = _with_cover(report_data)
+    data["cover"]["include_signatures"] = False
+    rendered = _render_all(tmp_path, data)
+    for fmt, text in rendered.items():
+        assert "Signatures" not in text, fmt
+        assert "Ada Vendor" not in text, fmt
+        assert "Pump Station 7" in text and "Deviations and open points" in text, fmt
+
+
+def test_cover_from_settings_include_signatures():
+    from pumpflow.binding import cover_from_settings
+
+    assert cover_from_settings({})["include_signatures"] is True
+    off = cover_from_settings({"include_signatures": False})
+    assert off["include_signatures"] is False
+    assert len(off["signatories"]) == 3  # the names are kept, just not printed

@@ -18,13 +18,12 @@ from __future__ import annotations
 import warnings
 from typing import Dict
 
-from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QLabel
 
 from pump import Q_
 
 from .. import units
 from ..binding import BindingError, diameter_for_rated, trim_curve
-from ..numfmt import fmt
 from .base import BaseNode, PortSpec
 from . import ui
 
@@ -156,12 +155,8 @@ class TrimNode(BaseNode):
         info = QLabel("—")
         info.setWordWrap(True)
 
-        table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(
-            ["Q [m³/h]", "Head [m]", "Power [kW]", "η [%]", "stage"]
-        )
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.setObjectName("ReadGrid")
+        grid = ui.BeforeAfterTable(s)
+        table = grid.table
 
         def refresh():
             on_change()
@@ -185,32 +180,7 @@ class TrimNode(BaseNode):
                     "" if self.state == "idle" else self.status,
                     "info" if self.state in ("ok", "idle") else "error",
                 )
-            table.setRowCount(0)
-            if not trimmed:
-                return
-            for pair in trimmed.before_after:
-                m, c = pair["measured"], pair["corrected"]
-                _append(
-                    table,
-                    [
-                        fmt(m["q"]),
-                        fmt(m["head"]),
-                        fmt(m["power"]),
-                        fmt(m["eff"], 1) if m["eff"] is not None else "—",
-                        "reference",
-                    ],
-                    muted=True,
-                )
-                _append(
-                    table,
-                    [
-                        fmt(c["q"]),
-                        fmt(c["head"]),
-                        fmt(c["power"]),
-                        fmt(c["eff"], 1) if c["eff"] is not None else "—",
-                        "trimmed",
-                    ],
-                )
+            grid.fill(trimmed.before_after if trimmed else (), ("reference", "trimmed"))
 
         def on_target():
             s["d_target"] = target.magnitude()
@@ -231,20 +201,9 @@ class TrimNode(BaseNode):
         dlg.add(ui.row("Result", info))
         dlg.add(ui.hline())
         dlg.add(ui.section("Reference vs trimmed curve"))
+        dlg.add(grid.strip)
         dlg.add(table)
         dlg.add(banner)
         refresh()
         dlg.resize(660, 560)
         return dlg
-
-
-def _append(table: QTableWidget, values, muted: bool = False):
-    from PySide6.QtGui import QColor
-
-    r = table.rowCount()
-    table.insertRow(r)
-    for c, v in enumerate(values):
-        item = QTableWidgetItem(str(v))
-        if muted:
-            item.setForeground(QColor("#8a96a3"))
-        table.setItem(r, c, item)
