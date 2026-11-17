@@ -307,6 +307,7 @@ class FittedModel:
     power_spline: Any = None
     efficiency_spline: Any = None
     r2: dict = field(default_factory=dict)  # {"head": .., "power": .., "eff": ..}
+    test_speeds: tuple = ()  # measured pump speeds (Q_ rpm) before correction
 
 
 # ---------------------------------------------------------------------------
@@ -320,16 +321,17 @@ class ParameterCheck:
 
     name: str  # Head | Power | Efficiency | Shutoff Head
     actual: float  # rated / nominal value
-    predicted: float  # value predicted from the fitted curve
+    predicted: Optional[float]  # value predicted from the fitted curve (None: n/e)
     minimum: Optional[float]  # acceptable min (or None)
     maximum: Optional[float]  # acceptable max (or None)
-    deviation: float  # δ = (predicted − rated) / rated
+    deviation: Optional[float]  # δ = (predicted − rated) / rated
     tolerance: Optional[float]  # fractional tolerance (None: information only)
     passed: bool
     extrapolated: bool = False  # predicted value extrapolated (shut-off, no Q≈0 point)
     verified: bool = True  # criteria verified against the standard text
     informational: bool = False  # reported, but not part of the verdict
     note: str = ""  # why a row is informational or failed a conditional rule
+    evaluated: bool = True  # False: required but could not be computed
 
 
 @dataclass(frozen=True)
@@ -344,10 +346,19 @@ class ComplianceResult:
     criteria_label: str = ""  # e.g. "API 610 12th edition + Petrobras N-553 (...)"
     unverified: tuple = ()  # names of criteria parts not yet verified
     parallel_ok: Optional[bool] = None  # parallel-operation rule (None = n/a)
+    not_evaluated: tuple = ()  # required checks that could not be computed
 
     @property
     def verdict_label(self) -> str:
-        return "APPROVED" if self.overall_pass else "REJECTED"
+        if self.overall_pass:
+            return "APPROVED"
+        if (
+            self.not_evaluated
+            and all(p.passed or not p.evaluated for p in self.parameters)
+            and self.parallel_ok is not False
+        ):
+            return "NOT FULLY ASSESSED"
+        return "REJECTED"
 
 
 # ---------------------------------------------------------------------------

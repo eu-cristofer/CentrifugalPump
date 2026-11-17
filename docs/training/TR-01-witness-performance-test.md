@@ -57,7 +57,8 @@ Three traps:
    density and viscosity, from all causes together.
 
 Also check the **test speed**: within 3 % of the rated speed unless otherwise agreed (8th
-4.3.3.2.3; 11th 8.3.3.3 c).  N-553 rev E adds that, for a fixed-speed motor, results are
+4.3.3.2.3; 11th 8.3.3.3 c).  The Compliance node shows it as the *Test speed* row, judged
+on the worst point.  N-553 rev E adds that, for a fixed-speed motor, results are
 corrected to the actual driver speed.
 
 ## 3 · Efficiency is not a pass/fail item (usually)
@@ -143,7 +144,9 @@ During the test:
 - [ ] NPSH 3 % head-drop data, if specified.
 
 At the end:
-- [ ] Head, shut-off and power inside the bands at the rated flow (Compliance node).
+- [ ] Head, shut-off, power and test speed inside the bands at the rated flow (Compliance
+  node).  **NOT FULLY ASSESSED** means a required check could not be computed: find out
+  why (a missing column?) before signing.
 - [ ] Efficiency reported; judged only if guaranteed.
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
 - [ ] Mechanical run: duration, stabilisation, vibration (Mechanical Run node).

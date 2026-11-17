@@ -210,3 +210,28 @@ def test_assemble_report_data_carries_acceptance(fitted):
     # Open items outside the performance verdict are still listed for the report.
     assert acc["unverified"] == ["mechanical running test limits"]
     assert "B-1A" in data["test_data"]
+
+
+def test_verdict_label_three_states():
+    from pumpflow.signals import ComplianceResult, ParameterCheck
+
+    ok = ParameterCheck("Head", 1.0, 1.0, 0.9, 1.1, 0.0, 0.03, True)
+    ne = ParameterCheck(
+        "Power", 1.0, None, None, 1.04, None, 0.04, False, evaluated=False
+    )
+    bad = ParameterCheck("Head", 1.0, 2.0, 0.9, 1.1, 1.0, 0.03, False)
+    assert ComplianceResult("A", (ok,), True).verdict_label == "APPROVED"
+    partial = ComplianceResult("A", (ok, ne), False, not_evaluated=("Power",))
+    assert partial.verdict_label == "NOT FULLY ASSESSED"
+    failed = ComplianceResult("A", (bad, ne), False, not_evaluated=("Power",))
+    assert failed.verdict_label == "REJECTED"  # a real failure wins
+
+
+def test_report_sentence_for_not_fully_assessed():
+    from pump.utilities.report import LocalizationHelper, performance_verdict
+
+    for lang, word in (("en", "NOT FULLY ASSESSED"), ("pt", "NÃO TOTALMENTE AVALIADO")):
+        text = performance_verdict(LocalizationHelper(lang)._, False, None, ["Power"])
+        assert text.startswith(word + ":"), text
+    # without missing checks a failure is still a plain rejection
+    assert performance_verdict(LocalizationHelper("en")._, False) == "NOT APPROVED"

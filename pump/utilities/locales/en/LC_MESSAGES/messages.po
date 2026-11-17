@@ -46,6 +46,9 @@ msgstr "APPROVED"
 msgid "NOT APPROVED"
 msgstr "NOT APPROVED"
 
+msgid "NOT FULLY ASSESSED"
+msgstr ""
+
 msgid "Capacity"
 msgstr "Capacity"
 

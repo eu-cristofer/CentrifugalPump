@@ -292,7 +292,10 @@ class LatexReportGenerator:
             out.append(r"\subsection{%s}" % latex_escape(_("Test Data - ") + pump_tag))
             if "verdict" in entry:
                 verdict = performance_verdict(
-                    _, entry["verdict"], report_data.get("acceptance")
+                    _,
+                    entry["verdict"],
+                    report_data.get("acceptance"),
+                    entry.get("not_evaluated"),
                 )
                 out.append(
                     r"\textbf{%s:} %s"

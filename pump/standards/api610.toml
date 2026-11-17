@@ -23,8 +23,9 @@ title = "API 610 / ISO 13709"
 
 [editions."8"]
 label = "API 610 8th edition"
-source = "API 610 8th ed. Table 4-2 Performance Tolerances: rated differential head 0-150 m -2/+5 %, 151-300 m -2/+3 %, >300 m -2/+2 %; shut-off 0-150 m +/-10 %, 151-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % (cumulative tolerances not acceptable, note b); rated NPSH +0 %; 'Efficiency is not a rating value'. Parallel operation: head rise to shut-off >= 10 % (2.1.11)."
+source = "API 610 8th ed. Table 4-2 Performance Tolerances: rated differential head 0-150 m -2/+5 %, 151-300 m -2/+3 %, >300 m -2/+2 %; shut-off 0-150 m +/-10 %, 151-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % (cumulative tolerances not acceptable, note b); rated NPSH +0 %; 'Efficiency is not a rating value'. Parallel operation: head rise to shut-off >= 10 % (2.1.11).; test speed within 3 % of rated unless otherwise agreed (4.3.3.2.3)."
 verified = true
+test_speed_tol = 0.03
 power_tol_plus = 0.04
 parallel_shutoff_min_ratio = 1.10
 shutoff_extrapolation_q_fraction = 0.05
@@ -65,8 +66,9 @@ verified = true
 
 [editions."10"]
 label = "API 610 10th edition"
-source = "head bands: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th' (10th: 0-150 m +5/-2 %, 151-300 m +3/-2 %, >300 m +/-2 %); shut-off 10/8/5 % and power +4 %: pre-S5 seeds corroborated by secondary sources; efficiency: no tolerance (not a rated value in the 8th, 11th and 12th editions; 10th not consulted). Not checked against the 10th-edition text."
+source = "head bands: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th' (10th: 0-150 m +5/-2 %, 151-300 m +3/-2 %, >300 m +/-2 %); shut-off 10/8/5 % and power +4 %: pre-S5 seeds corroborated by secondary sources; efficiency: no tolerance (not a rated value in the 8th, 11th and 12th editions; 10th not consulted). Not checked against the 10th-edition text.; test speed within 3 %: taken from the 8th/11th editions, 10th not consulted."
 verified = false
+test_speed_tol = 0.03
 power_tol_plus = 0.04
 parallel_shutoff_min_ratio = 1.10
 shutoff_extrapolation_q_fraction = 0.05
@@ -107,8 +109,9 @@ verified = false
 
 [editions."11"]
 label = "API 610 11th edition"
-source = "API 610 11th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.11)."
+source = "API 610 11th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.11).; test speed within 3 % of rated unless otherwise agreed (8.3.3.3 c)."
 verified = true
+test_speed_tol = 0.03
 power_tol_plus = 0.04
 parallel_shutoff_min_ratio = 1.10
 shutoff_extrapolation_q_fraction = 0.05
@@ -147,8 +150,9 @@ verified = true
 
 [editions."12"]
 label = "API 610 12th edition"
-source = "API 610 12th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.13 and the parallel-operation requirements of 6.1)."
+source = "API 610 12th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.13 and the parallel-operation requirements of 6.1).; test speed within 3 % of rated unless otherwise agreed (8.3.3, paragraph after Table 16)."
 verified = true
+test_speed_tol = 0.03
 power_tol_plus = 0.04
 parallel_shutoff_min_ratio = 1.10
 shutoff_extrapolation_q_fraction = 0.05

@@ -200,7 +200,10 @@ class HtmlReportGenerator:
             out.append(f"<h3>{_e(_('Test Data - ') + pump_tag)}</h3>")
             if "verdict" in entry:
                 verdict = performance_verdict(
-                    _, entry["verdict"], report_data.get("acceptance")
+                    _,
+                    entry["verdict"],
+                    report_data.get("acceptance"),
+                    entry.get("not_evaluated"),
                 )
                 out.append(
                     f"<p><strong>{_e(_('Overall verdict'))}:</strong> {_e(verdict)}</p>"

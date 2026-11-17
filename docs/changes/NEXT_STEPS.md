@@ -37,16 +37,16 @@ On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked aga
 - [x] API 610 11th/12th head, shut-off and power tolerances, vibration table, POR (Table 16, Table 8, 6.1.12).
 - [ ] API 610 10th edition: no text available; still Amarinth bulletin values, `verified = false`.
 - [ ] API 610 11th/12th high-speed vibration allowance (Figures 34/35).
-- [ ] Test-speed check (within 3 % of rated, 8th 4.3.3.2.3 / 11th 8.3.3.3 c): documented in the training, not yet checked by the tool.
+- [x] Test-speed check (within 3 % of rated, 8th 4.3.3.2.3 / 11th 8.3.3.3 c): the Compliance node's "Test speed" row (2026-11-17).
 - [ ] HI 9.6.7 viscosity equations (`pump/viscosity.py`). They are validated independently, not against the standard text; buying ANSI/HI 9.6.7 would allow pinning its worked example.
 - [x] Preferred operating region 70–120 % of BEP (8th 2.1.12, 11th 6.1.12, 12th 6.1).
 - [x] Mechanical-run temperature-stabilisation rule: N-553 rev E 9.20 (2 K / 30 min after a 1 h warm-up).
 
 ## 3b. Code review findings (2026-11-16)
 - [x] A1–A3: efficiency information only; 8th shut-off bands; rising-curve rule; rated NPSH +0 %.
-- [ ] B1: the verdict is still computed in two places (`binding.check_compliance` and `PerformanceChecker.check_summary`). Move it into `pump/acceptance.py`.
-- [ ] B2: silent `except Exception` in `check_summary` and `parallel_operation_ok` can drop a criterion; make it "not evaluated" plus a provisional verdict.
-- [ ] B3: `test_summary_with_limits` uses `capacity.m < 0.1` (unit-dependent).
+- [x] B1: one engine, `pump.acceptance.evaluate_performance` (ADR 0012), 2026-11-17.
+- [x] B2: a check that cannot be computed is "not evaluated", and the verdict reads NOT FULLY ASSESSED, never an approval.
+- [x] B3: shut-off rows are detected against a fraction of the rated flow, not `capacity.m < 0.1`.
 - [ ] B4: split `pumpflow/binding.py` (1 480 lines) into a package.
 - [ ] C1: refresh `CLAUDE.md` (stale: "no type checking", "±3 % hard-coded", `Point`, `mathx`, "seven nodes").
 

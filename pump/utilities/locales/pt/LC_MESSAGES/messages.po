@@ -133,6 +133,9 @@ msgstr "APROVADO"
 msgid "NOT APPROVED"
 msgstr "REPROVADO"
 
+msgid "NOT FULLY ASSESSED"
+msgstr "NÃO TOTALMENTE AVALIADO"
+
 msgid "Capacity"
 msgstr "Vazão"
 

@@ -52,7 +52,9 @@ class ComplianceCheckNode(BaseNode):
         self._last = result
         self._rated = rated
         n_fail = sum(
-            1 for p in result.parameters if not p.passed and not p.informational
+            1
+            for p in result.parameters
+            if not p.passed and not p.informational and p.evaluated
         )
         # A verdict against criteria not verified from the standard text is
         # provisional: say so, instead of presenting it as final.
@@ -60,6 +62,12 @@ class ComplianceCheckNode(BaseNode):
         if result.overall_pass:
             self.status = f"{result.pump_tag} · ✅ APPROVED{tail}"
             self.state = "ok"
+        elif result.verdict_label == "NOT FULLY ASSESSED":
+            self.status = (
+                f"{result.pump_tag} · ⚠ NOT FULLY ASSESSED: "
+                + ", ".join(result.not_evaluated)
+            )
+            self.state = "reject"
         else:
             self.status = f"{result.pump_tag} · ❌ {n_fail} out of tolerance{tail}"
             self.state = "reject"
@@ -122,11 +130,17 @@ class ComplianceCheckNode(BaseNode):
                 return
             for p in result.parameters:
                 _append_param(table, p)
+            # Show every row without an inner scrollbar (5-6 rows).
+            table.resizeRowsToContents()
+            rows_h = sum(table.rowHeight(i) for i in range(table.rowCount()))
+            table.setMinimumHeight(table.horizontalHeader().height() + rows_h + 6)
             ok = result.overall_pass
             tail = "  (unverified criteria)" if result.unverified else ""
-            verdict.setText(
-                f"{'APPROVED ✓' if ok else 'REJECTED ✗'}{tail}   ·   {result.pump_tag}"
-            )
+            label = {
+                "APPROVED": "APPROVED ✓",
+                "NOT FULLY ASSESSED": "NOT FULLY ASSESSED ⚠",
+            }.get(result.verdict_label, "REJECTED ✗")
+            verdict.setText(f"{label}{tail}   ·   {result.pump_tag}")
             verdict.setProperty("verdict", "pass" if ok else "fail")
             _repolish(verdict)
             criteria_lbl.setText(f"Criteria: {result.criteria_label}")
@@ -228,13 +242,15 @@ def _append_param(table: QTableWidget, p) -> None:
     if getattr(p, "note", ""):
         notes.append(p.note)
     info = getattr(p, "informational", False)
+    evaluated = getattr(p, "evaluated", True)
     cells = [
-        p.name, fmt(p.actual), fmt(p.predicted),
+        p.name, fmt(p.actual),
+        fmt(p.predicted) if p.predicted is not None else "—",
         fmt(p.minimum) if p.minimum is not None else "—",
         fmt(p.maximum) if p.maximum is not None else "—",
-        f"{p.deviation * 100:+.2f} %",
+        f"{p.deviation * 100:+.2f} %" if p.deviation is not None else "—",
         f"{p.tolerance * 100:.1f} %" if p.tolerance is not None else "—",
-        "info" if info else ("✅" if p.passed else "❌"),
+        "info" if info else ("n/e ⚠" if not evaluated else ("✅" if p.passed else "❌")),
         " · ".join(notes),
     ]
     for c, text in enumerate(cells):

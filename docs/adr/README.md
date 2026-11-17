@@ -31,6 +31,7 @@ rather than editing history.
 | [0004](0004-refactor-performancecurve-god-class.md) | Refactor `PerformanceCurve`: split plotting from computation | 🟠 High | `Proposed` |
 | [0005](0005-consolidate-point-hierarchy.md) | Consolidate the `Point` hierarchy & remove broken code | 🟠 High | `Proposed` |
 | [0011](0011-schema-v2-value-unit-persistence.md) | Schema v2: value + unit persistence | 🟠 High | `Accepted` |
+| [0012](0012-single-performance-verdict-engine.md) | One performance-verdict engine, no silent passes | 🟠 High | `Accepted` |
 | [0006](0006-replace-hasattr-duck-typing.md) | Replace `hasattr` duck-typing with an explicit schema | 🟡 Medium | `Proposed` |
 | [0007](0007-remove-acl-private-state-leak.md) | Remove the ACL leak: private-attribute pinning in `binding` | 🟡 Medium | `Proposed` |
 | [0008](0008-separate-node-logic-from-qt-dialogs.md) | Separate node logic from Qt dialogs | 🟡 Medium | `Proposed` |

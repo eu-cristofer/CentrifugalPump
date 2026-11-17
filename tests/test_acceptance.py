@@ -356,3 +356,93 @@ def test_no_warning_without_acceptable_limits(design_point, curve):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         PerformanceChecker(design_point, curve)
+
+
+# --------------------------------------------------------------------------- #
+# The single verdict engine (evaluate_performance)
+# --------------------------------------------------------------------------- #
+class _Curve:
+    """Minimal curve: H = 357 - 0.18 Q^2 (m, m3/h); power and efficiency fixed."""
+
+    points = ()
+
+    def __init__(self, power=True, eff=True):
+        self._power, self._eff = power, eff
+
+    def predict_head(self, q):
+        return Q_(357.0 - 0.18 * q.to("m**3/h").magnitude ** 2, "m")
+
+    def predict_breaking_power(self, q):
+        if not self._power:
+            raise AttributeError("no breaking power on the test points")
+        return Q_(24.6, "kW")
+
+    def predict_efficiency(self, q):
+        if not self._eff:
+            raise AttributeError("no efficiency")
+        return Q_(36.8, "percent")
+
+
+def _verdict(curve=None, **kw):
+    from pump.acceptance import evaluate_performance
+
+    args = dict(
+        rated_power=Q_(26.9, "kW"),
+        rated_efficiency=Q_(32.7, "percent"),
+        rated_speed=Q_(10212, "rpm"),
+        test_speeds=(Q_(10301, "rpm"), Q_(10290, "rpm")),
+    )
+    args.update(kw)
+    return evaluate_performance(
+        curve or _Curve(),
+        Q_(9.8, "m**3/h"),
+        Q_(333.8, "m"),
+        AcceptanceCriteria.load("api610:8"),
+        **args,
+    )
+
+
+def test_engine_b34004a_like_point_is_approved():
+    v = _verdict()
+    assert [(r.name, r.status) for r in v.rows] == [
+        ("Head", "pass"),
+        ("Power", "pass"),
+        ("Efficiency", "info"),
+        ("Test speed", "pass"),
+    ]
+    assert v.approved and v.complete
+    assert v.row("Test speed").deviation == pytest.approx(89 / 10212)
+
+
+def test_engine_power_that_cannot_be_predicted_is_not_evaluated_not_dropped():
+    v = _verdict(_Curve(power=False))
+    row = v.row("Power")
+    assert row is not None and row.status == "not evaluated"
+    assert "cannot predict" in row.note
+    assert v.passed and not v.complete and not v.approved
+    assert v.not_evaluated == ("Power",)
+
+
+def test_engine_efficiency_with_purchaser_tolerance_is_judged():
+    v = _verdict(tolerances={"efficiency": 0.0}, rated_efficiency=Q_(40, "percent"))
+    assert v.row("Efficiency").status == "fail" and not v.approved
+
+
+def test_engine_test_speed_outside_3_percent_fails():
+    v = _verdict(test_speeds=(Q_(10212 * 1.035, "rpm"),))
+    assert v.row("Test speed").status == "fail" and not v.approved
+
+
+def test_engine_parallel_operation_needs_rise_and_ratio():
+    # 357/333.8 = 1.07 < 1.10: parallel operation not met although the curve rises.
+    v = _verdict(parallel_operation=True)
+    assert v.parallel_ok is False and v.row("Parallel operation").status == "fail"
+
+
+def test_checker_and_engine_agree(design_point, curve):
+    chk = PerformanceChecker(design_point, curve)
+    v = chk.verdict()
+    assert v.row("Head").maximum.to("m").magnitude == pytest.approx(
+        chk.maximum_head.to("m").magnitude
+    )
+    assert "not evaluated" not in chk.check_summary

@@ -247,8 +247,18 @@ def mechanical_run_verdict(translate: Callable[[str], str], result) -> str:
     return text
 
 
-def performance_verdict(translate: Callable[[str], str], passed: bool, acceptance=None) -> str:
-    """Localized performance verdict; provisional when the criteria are unverified."""
+def performance_verdict(
+    translate: Callable[[str], str], passed: bool, acceptance=None, not_evaluated=None
+) -> str:
+    """Localized performance verdict; provisional when the criteria are unverified.
+
+    ``not_evaluated`` (names of required checks that could not be computed,
+    with no check failed) gives "NOT FULLY ASSESSED: ..." instead of an
+    approval or a rejection.
+    """
+    if not passed and not_evaluated:
+        names = ", ".join(translate(n) for n in not_evaluated)
+        return f"{translate('NOT FULLY ASSESSED')}: {names}"
     text = translate("APPROVED") if passed else translate("NOT APPROVED")
     if acceptance and not acceptance.get("verified", True):
         text += f" ({translate('unverified criteria')})"
@@ -577,7 +587,10 @@ class ReportGenerator:
         for tag, test_data in report_data["test_data"].items():
             document.add_paragraph(self._('Test Data - ') + tag, style='Title_2')
             if "verdict" in test_data:
-                verdict = performance_verdict(self._, test_data["verdict"], acceptance)
+                verdict = performance_verdict(
+                    self._, test_data["verdict"], acceptance,
+                    test_data.get("not_evaluated"),
+                )
                 document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
             if test_data.get(VISCOSITY_KEY):

@@ -50,8 +50,7 @@ from pump import (
     compare_curves,
     plot_comparison,
 )
-from pump.acceptance import AcceptanceCriteria, head_rises_to_shutoff
-from pump.acceptance import deviation as acceptance_deviation
+from pump.acceptance import AcceptanceCriteria, evaluate_performance
 from pump.constants import G
 
 from .mathx import NaturalCubicSpline, r_squared
@@ -536,6 +535,12 @@ def fit_model(
         power_spline=power_spline,
         efficiency_spline=eff_spline,
         r2=r2,
+        # Measured pump speeds (before correction), for the test-speed check.
+        test_speeds=tuple(
+            Q_(pair["measured"]["speed"], "rpm")
+            for pair in (corrected.before_after or ())
+            if pair.get("measured", {}).get("speed") is not None
+        ),
     )
 
 
@@ -606,20 +611,6 @@ def default_tolerances(rated: RatedPoint) -> dict:
     }
 
 
-def _band(tol: float, default_plus: float, band: tuple) -> tuple:
-    """``(minus, plus)``: the criteria band, unless the user overrode the value."""
-    if abs(tol - default_plus) <= 1e-9:
-        return band
-    return (tol, tol)
-
-
-def _limit(value: float) -> float:
-    """Acceptance limits are rounded to 2 decimals, exactly as
-    ``PerformanceChecker._compute_limits`` does, so the GUI table and the
-    library/report limits are the same numbers."""
-    return round(value, 2)
-
-
 def check_compliance(
     fitted: FittedModel,
     rated: RatedPoint,
@@ -628,16 +619,12 @@ def check_compliance(
     """
     Evaluate API 610 deviations & verdict.
 
-    Numbers come straight from ``PerformanceChecker(design_point, curve,
-    criteria=)`` and the curve's ``predict_*`` polynomials so they match
-    ``report_summary`` / ``test_summary_with_limits`` for the same inputs
-    (UI_SPEC §9.4).  Every deviation is ``acceptance.deviation(rated,
-    predicted) = (predicted − rated) / rated``.
+    A thin adapter: the verdict is :func:`pump.acceptance.evaluate_performance`
+    (the same engine as ``PerformanceChecker``), and this function only turns
+    its rows into display floats (m, kW, %, rpm).  Every deviation is
+    ``(predicted - rated) / rated``.
     """
     criteria = criteria_for(rated)
-    design_point = make_design_point(rated, fitted.curve.fluid)
-    checker = PerformanceChecker(design_point, fitted.curve, criteria=criteria)
-
     lib_defaults = default_tolerances(rated)
     tol = dict(lib_defaults)
     if tolerances:
@@ -651,131 +638,63 @@ def check_compliance(
     overridden = any(
         _differs(tol[k], lib_defaults[k]) for k in lib_defaults if k in tol
     )
+    verdict = evaluate_performance(
+        fitted.curve,
+        rated.q,
+        rated.head,
+        criteria,
+        rated_power=rated.power,
+        rated_efficiency=rated.efficiency,
+        rated_shutoff=rated.head_shutoff,
+        parallel_operation=bool(rated.parallel_operation),
+        rated_speed=rated.speed,
+        test_speeds=tuple(getattr(fitted, "test_speeds", ()) or ()),
+        tolerances=tol,
+    )
     verified = bool(criteria.verified)
+    display_unit = {
+        "Head": "m",
+        "Power": "kW",
+        "Efficiency": "percent",
+        "Shutoff Head": "m",
+        "Test speed": "rpm",
+    }
 
-    rated_q = rated.q
-    rated_head = float(rated.head.to("m").magnitude)
-    rated_power = float(rated.power.to("kW").magnitude)
-    head_band = _band(
-        tol["head"], lib_defaults["head"], criteria.head_tolerance(rated.head)
-    )
-    shutoff_band = _band(
-        tol["shutoff"], lib_defaults["shutoff"], criteria.shutoff_tolerance(rated.head)
-    )
+    def mag(q, unit):
+        return None if q is None else float(q.to(unit).magnitude)
+
     params = []
-
-    # --- Head:  min ≤ predicted ≤ max ------------------------------------------
-    pred_head = float(fitted.curve.predict_head(rated_q).to("m").magnitude)
-    dev_head = acceptance_deviation(rated_head, pred_head)
-    params.append(
-        ParameterCheck(
-            name="Head",
-            actual=rated_head,
-            predicted=pred_head,
-            minimum=_limit(rated_head * (1.0 - head_band[0])),
-            maximum=_limit(rated_head * (1.0 + head_band[1])),
-            deviation=dev_head,
-            tolerance=tol["head"],
-            passed=-head_band[0] - 1e-9 <= dev_head <= head_band[1] + 1e-9,
-            verified=verified,
-        )
-    )
-
-    # --- Power:  δ ≤ tol ------------------------------------------------------
-    pred_power = float(fitted.curve.predict_breaking_power(rated_q).to("kW").magnitude)
-    dev_power = acceptance_deviation(rated_power, pred_power)
-    params.append(
-        ParameterCheck(
-            name="Power",
-            actual=rated_power,
-            predicted=pred_power,
-            minimum=None,
-            maximum=_limit(rated_power * (1.0 + tol["power"])),
-            deviation=dev_power,
-            tolerance=tol["power"],
-            passed=dev_power <= tol["power"] + 1e-9,
-            verified=verified,
-        )
-    )
-
-    # --- Efficiency:  δ ≥ −tol, or information only ----------------------------
-    # API 610 does not rate efficiency (8th Table 4-2 note; 11th/12th Table 16
-    # note c): without a purchaser-specified tolerance the row is reported but
-    # takes no part in the verdict.
-    if rated.efficiency is not None:
-        rated_eff = float(rated.efficiency.to("percent").magnitude)
-        pred_eff = float(
-            fitted.curve.predict_efficiency(rated_q).to("percent").magnitude
-        )
-        dev_eff = acceptance_deviation(rated_eff, pred_eff)
-        eff_tol = tol.get("efficiency")
-        info_only = eff_tol is None
+    for row in verdict.rows:
+        unit = display_unit.get(row.name)
+        if unit is None:  # parallel operation: reported through parallel_ok
+            continue
         params.append(
             ParameterCheck(
-                name="Efficiency",
-                actual=rated_eff,
-                predicted=pred_eff,
-                minimum=None if info_only else _limit(rated_eff * (1.0 - eff_tol)),
-                maximum=None,
-                deviation=dev_eff,
-                tolerance=eff_tol,
-                passed=True if info_only else dev_eff >= -eff_tol - 1e-9,
-                verified=verified if not info_only else True,
-                informational=info_only,
-                note=(
-                    "information only: efficiency is not a rated value in API 610"
-                    if info_only
-                    else ""
-                ),
+                name=row.name,
+                actual=mag(row.rated, unit),
+                predicted=mag(row.predicted, unit),
+                minimum=mag(row.minimum, unit),
+                maximum=mag(row.maximum, unit),
+                deviation=row.deviation,
+                tolerance=row.tolerance,
+                passed=row.status in ("pass", "info"),
+                extrapolated=row.extrapolated,
+                verified=verified or row.status == "info",
+                informational=row.status == "info",
+                note=row.note,
+                evaluated=row.status != "not evaluated",
             )
         )
-
-    # --- Shutoff Head:  |δ| ≤ tol --------------------------------------------
-    if rated.head_shutoff is not None:
-        rated_so = float(rated.head_shutoff.to("m").magnitude)
-        pred_so = float(fitted.curve.predict_head(Q_(0, "m**3/h")).to("m").magnitude)
-        dev_so = acceptance_deviation(rated_so, pred_so)
-        in_band = -shutoff_band[0] - 1e-9 <= dev_so <= shutoff_band[1] + 1e-9
-        note = ""
-        # API 610 Table 4-2 / Table 16 note a: with a rising curve specified
-        # (here: parallel operation), the negative shut-off tolerance is allowed
-        # only if the tested curve still rises to shut-off.
-        if in_band and dev_so < 0 and rated.parallel_operation:
-            if not head_rises_to_shutoff(fitted.curve.predict_head, rated_q):
-                in_band = False
-                note = "negative tolerance not allowed: the curve does not rise to shut-off"
-        params.append(
-            ParameterCheck(
-                name="Shutoff Head",
-                actual=rated_so,
-                predicted=pred_so,
-                minimum=_limit(rated_so * (1.0 - shutoff_band[0])),
-                maximum=_limit(rated_so * (1.0 + shutoff_band[1])),
-                deviation=dev_so,
-                tolerance=tol["shutoff"],
-                passed=in_band,
-                extrapolated=bool(checker.shutoff_extrapolated),
-                verified=verified,
-                note=note,
-            )
-        )
-
-    # --- Parallel operation (only when the rated point asks for it) ----------
-    parallel_ok = checker.parallel_operation_ok() if rated.parallel_operation else None
-
-    overall = (
-        all(p.passed for p in params if not p.informational)
-        and parallel_ok is not False
-    )
     return ComplianceResult(
         pump_tag=fitted.pump_tag,
         parameters=tuple(params),
-        overall_pass=overall,
+        overall_pass=verdict.approved,
         tolerances=tol,
         overridden=overridden,
         criteria_label=criteria_label(criteria),
         unverified=criteria.performance_unverified,
-        parallel_ok=parallel_ok,
+        parallel_ok=verdict.parallel_ok,
+        not_evaluated=verdict.not_evaluated,
     )
 
 
@@ -1137,6 +1056,8 @@ def assemble_report_data(
             entry["test_data"] = b.fitted.curve.test_data
             if b.compliance is not None:
                 entry["verdict"] = bool(b.compliance.overall_pass)
+                if b.compliance.verdict_label == "NOT FULLY ASSESSED":
+                    entry["not_evaluated"] = list(b.compliance.not_evaluated)
             png = b.plot_png
             if png is None and b.corrected is not None:
                 png = build_report_png(b.corrected, rated)

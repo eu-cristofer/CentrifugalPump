@@ -55,8 +55,11 @@ from .utilities.unit_conversion import Q_
 
 __all__ = [
     "AcceptanceCriteria",
+    "CheckRow",
+    "PerformanceVerdict",
     "SelectionCriteria",
     "deviation",
+    "evaluate_performance",
     "head_rises_to_shutoff",
 ]
 
@@ -71,6 +74,7 @@ _PARTS = {
     "efficiency_tol_minus": "efficiency tolerance",
     "parallel_shutoff_min_ratio": "parallel-operation shut-off ratio",
     "shutoff_extrapolation_q_fraction": "shut-off extrapolation threshold",
+    "test_speed_tol": "test speed tolerance",
 }
 
 # Tool settings: kept in the tables (and overridable) but they are not standard
@@ -236,6 +240,9 @@ class AcceptanceCriteria:
     shutoff_extrapolation_q_fraction : float
         If no test point lies below this fraction of rated capacity, the
         shut-off head is considered extrapolated.
+    test_speed_tol : float or None
+        Allowed relative difference between test and rated speed (API 610:
+        within 3 % unless otherwise agreed); ``None`` = not checked.
     unverified : tuple of str
         Human-readable names of the parts not verified against the standard.
     mechanical_run : MechanicalRunCriteria
@@ -259,6 +266,7 @@ class AcceptanceCriteria:
     parallel_shutoff_min_ratio: float
     shutoff_extrapolation_q_fraction: float
     unverified: tuple
+    test_speed_tol: Optional[float] = None
     mechanical_run: MechanicalRunCriteria = field(default_factory=MechanicalRunCriteria)
     npsh: NPSHCriteria = field(default_factory=NPSHCriteria)
     selection: SelectionCriteria = field(default_factory=SelectionCriteria)
@@ -418,6 +426,11 @@ class AcceptanceCriteria:
                 merged["shutoff_extrapolation_q_fraction"]
             ),
             unverified=tuple(unverified),
+            test_speed_tol=(
+                float(merged["test_speed_tol"])
+                if merged.get("test_speed_tol") is not None
+                else None
+            ),
             mechanical_run=(
                 MechanicalRunCriteria.from_table(mr_table)
                 if mr_table is not None
@@ -509,3 +522,393 @@ def head_rises_to_shutoff(predict_head, rated_q, samples: int = 60) -> bool:
     ]
     # Head must not increase with flow anywhere on [0, Q_rated].
     return all(b <= a + 1e-9 for a, b in zip(heads, heads[1:]))
+
+
+# --------------------------------------------------------------------------- #
+# The performance verdict: one engine for the library and the workbench
+# --------------------------------------------------------------------------- #
+PASS, FAIL, INFO, NOT_EVALUATED = "pass", "fail", "info", "not evaluated"
+
+_TOL_EPS = 1e-9
+
+
+@dataclass(frozen=True)
+class CheckRow:
+    """
+    One acceptance check at the rated point.
+
+    ``status`` is ``"pass"``, ``"fail"``, ``"info"`` (reported, not judged) or
+    ``"not evaluated"`` (required but the data or the prediction is missing;
+    the verdict is then not an approval).  Quantities keep the units of the
+    rated value; ``deviation`` and ``tolerance`` are fractions.
+    """
+
+    name: str
+    rated: Optional[Q_]
+    predicted: Optional[Q_]
+    minimum: Optional[Q_]
+    maximum: Optional[Q_]
+    deviation: Optional[float]
+    tolerance: Optional[float]
+    status: str
+    extrapolated: bool = False
+    note: str = ""
+
+    @property
+    def judged(self) -> bool:
+        """True for rows that take part in the verdict."""
+        return self.status != INFO
+
+
+@dataclass(frozen=True)
+class PerformanceVerdict:
+    """
+    Outcome of :func:`evaluate_performance`.
+
+    ``passed`` means no judged row failed; ``complete`` means every required
+    row could be evaluated.  ``approved`` is ``passed and complete``.
+    """
+
+    rows: tuple
+    criteria: "AcceptanceCriteria"
+    parallel_ok: Optional[bool] = None
+
+    @property
+    def passed(self) -> bool:
+        return not any(r.status == FAIL for r in self.rows)
+
+    @property
+    def complete(self) -> bool:
+        return not any(r.status == NOT_EVALUATED for r in self.rows)
+
+    @property
+    def approved(self) -> bool:
+        return self.passed and self.complete
+
+    @property
+    def not_evaluated(self) -> tuple:
+        return tuple(r.name for r in self.rows if r.status == NOT_EVALUATED)
+
+    def row(self, name: str) -> Optional[CheckRow]:
+        return next((r for r in self.rows if r.name == name), None)
+
+
+def _band(override: Optional[float], default: tuple) -> tuple:
+    """``(minus, plus)``: the criteria band, or a symmetric user override."""
+    if override is None or abs(override - default[1]) <= _TOL_EPS:
+        return default
+    return (override, override)
+
+
+def _limit(value: Q_) -> Q_:
+    """Limits are rounded to 2 decimals in the rated value's unit."""
+    return Q_(round(float(value.magnitude), 2), value.units)
+
+
+def _try_predict(fn, q):
+    try:
+        return fn(q), ""
+    except Exception as exc:  # reported as "not evaluated", never swallowed
+        return None, f"cannot predict: {type(exc).__name__}: {exc}"
+
+
+def evaluate_performance(
+    curve,
+    rated_q: Q_,
+    rated_head: Q_,
+    criteria: "AcceptanceCriteria",
+    *,
+    rated_power: Optional[Q_] = None,
+    rated_efficiency: Optional[Q_] = None,
+    rated_shutoff: Optional[Q_] = None,
+    parallel_operation: bool = False,
+    rated_speed: Optional[Q_] = None,
+    test_speeds: tuple = (),
+    tolerances: Optional[Mapping] = None,
+) -> PerformanceVerdict:
+    """
+    Judge a fitted, corrected performance curve at the rated point.
+
+    The single implementation of the API 610 performance verdict, used by
+    :class:`pump.PerformanceChecker` and by the workbench's Compliance node.
+
+    Checks (deviation ``(predicted - rated) / rated``):
+
+    - **Head**: inside the band chosen by the rated head.
+    - **Power**: ``<= +power_tol_plus`` (when a rated power is given).
+    - **Efficiency**: ``>= -tol`` only when a tolerance exists (criteria or
+      ``tolerances["efficiency"]``); otherwise ``info``.
+    - **Shutoff Head**: inside the shut-off band (chosen by the rated head);
+      with ``parallel_operation`` (rising curve specified) the negative side
+      is allowed only if :func:`head_rises_to_shutoff`.
+    - **Parallel operation**: shut-off / rated head ``>= parallel_shutoff_min_ratio``
+      and a rising curve (only when ``parallel_operation``).
+    - **Test speed**: every tested speed within ``test_speed_tol`` of the rated
+      speed (when both are given and the criteria define the tolerance).
+
+    ``tolerances`` overrides the criteria: ``{"head", "shutoff", "power",
+    "efficiency"}`` fractions (a head/shut-off override replaces the band by a
+    symmetric one; ``efficiency=None`` means information only).
+
+    Examples
+    --------
+    >>> from pump import Q_
+    >>> crit = AcceptanceCriteria.load("api610:8")
+    >>> head = lambda q: Q_(357.0 - 0.18 * q.to("m**3/h").magnitude ** 2, "m")
+    >>> class Curve:
+    ...     predict_head = staticmethod(head)
+    ...     def predict_breaking_power(self, q): return Q_(24.6, "kW")
+    ...     def predict_efficiency(self, q): return Q_(36.8, "percent")
+    ...     points = ()
+    >>> v = evaluate_performance(Curve(), Q_(9.8, "m**3/h"), Q_(333.8, "m"), crit,
+    ...     rated_power=Q_(26.9, "kW"), rated_efficiency=Q_(32.7, "percent"),
+    ...     rated_speed=Q_(10212, "rpm"), test_speeds=(Q_(10301, "rpm"),))
+    >>> [(r.name, r.status) for r in v.rows]
+    [('Head', 'pass'), ('Power', 'pass'), ('Efficiency', 'info'), ('Test speed', 'pass')]
+    >>> v.approved
+    True
+    """
+    tol = dict(tolerances or {})
+    rows = []
+
+    # --- Head -------------------------------------------------------------
+    h_minus, h_plus = _band(tol.get("head"), criteria.head_tolerance(rated_head))
+    pred_h, why = _try_predict(curve.predict_head, rated_q)
+    if pred_h is None:
+        rows.append(
+            CheckRow(
+                "Head",
+                rated_head,
+                None,
+                None,
+                None,
+                None,
+                h_plus,
+                NOT_EVALUATED,
+                note=why,
+            )
+        )
+    else:
+        pred_h = pred_h.to(rated_head.units)
+        d = deviation(rated_head, pred_h)
+        ok = -h_minus - _TOL_EPS <= d <= h_plus + _TOL_EPS
+        rows.append(
+            CheckRow(
+                "Head",
+                rated_head,
+                pred_h,
+                _limit(rated_head * (1 - h_minus)),
+                _limit(rated_head * (1 + h_plus)),
+                d,
+                h_plus,
+                PASS if ok else FAIL,
+            )
+        )
+
+    # --- Power ------------------------------------------------------------
+    if rated_power is not None:
+        p_tol = tol.get("power", criteria.power_tol_plus)
+        pred_p, why = _try_predict(curve.predict_breaking_power, rated_q)
+        if pred_p is None:
+            rows.append(
+                CheckRow(
+                    "Power",
+                    rated_power,
+                    None,
+                    None,
+                    None,
+                    None,
+                    p_tol,
+                    NOT_EVALUATED,
+                    note=why,
+                )
+            )
+        else:
+            pred_p = pred_p.to(rated_power.units)
+            d = deviation(rated_power, pred_p)
+            rows.append(
+                CheckRow(
+                    "Power",
+                    rated_power,
+                    pred_p,
+                    None,
+                    _limit(rated_power * (1 + p_tol)),
+                    d,
+                    p_tol,
+                    PASS if d <= p_tol + _TOL_EPS else FAIL,
+                )
+            )
+
+    # --- Efficiency (information only unless a tolerance exists) -----------
+    if rated_efficiency is not None:
+        e_tol = (
+            tol["efficiency"] if "efficiency" in tol else criteria.efficiency_tol_minus
+        )
+        pred_e, why = _try_predict(curve.predict_efficiency, rated_q)
+        if pred_e is None:
+            rows.append(
+                CheckRow(
+                    "Efficiency",
+                    rated_efficiency,
+                    None,
+                    None,
+                    None,
+                    None,
+                    e_tol,
+                    INFO if e_tol is None else NOT_EVALUATED,
+                    note=why,
+                )
+            )
+        else:
+            pred_e = pred_e.to(rated_efficiency.units)
+            d = deviation(rated_efficiency, pred_e)
+            if e_tol is None:
+                rows.append(
+                    CheckRow(
+                        "Efficiency",
+                        rated_efficiency,
+                        pred_e,
+                        None,
+                        None,
+                        d,
+                        None,
+                        INFO,
+                        note="information only: efficiency is not a rated value in API 610",
+                    )
+                )
+            else:
+                rows.append(
+                    CheckRow(
+                        "Efficiency",
+                        rated_efficiency,
+                        pred_e,
+                        _limit(rated_efficiency * (1 - e_tol)),
+                        None,
+                        d,
+                        e_tol,
+                        PASS if d >= -e_tol - _TOL_EPS else FAIL,
+                    )
+                )
+
+    # --- Shut-off head ------------------------------------------------------
+    zero = Q_(0, "m**3/h")
+    q_floor = criteria.shutoff_extrapolation_q_fraction * rated_q
+    points = getattr(curve, "points", ()) or ()
+    extrapolated = bool(points) and not any(p.capacity < q_floor for p in points)
+    rising = None
+    if rated_shutoff is not None or parallel_operation:
+        try:
+            rising = head_rises_to_shutoff(curve.predict_head, rated_q)
+        except Exception:
+            rising = None
+    if rated_shutoff is not None:
+        s_minus, s_plus = _band(
+            tol.get("shutoff"), criteria.shutoff_tolerance(rated_head)
+        )
+        pred_s, why = _try_predict(curve.predict_head, zero)
+        if pred_s is None:
+            rows.append(
+                CheckRow(
+                    "Shutoff Head",
+                    rated_shutoff,
+                    None,
+                    None,
+                    None,
+                    None,
+                    s_plus,
+                    NOT_EVALUATED,
+                    note=why,
+                )
+            )
+        else:
+            pred_s = pred_s.to(rated_shutoff.units)
+            d = deviation(rated_shutoff, pred_s)
+            ok = -s_minus - _TOL_EPS <= d <= s_plus + _TOL_EPS
+            note = ""
+            if ok and d < 0 and parallel_operation and rising is not True:
+                ok = False
+                note = (
+                    "negative tolerance not allowed: the curve does not rise "
+                    "to shut-off"
+                )
+            rows.append(
+                CheckRow(
+                    "Shutoff Head",
+                    rated_shutoff,
+                    pred_s,
+                    _limit(rated_shutoff * (1 - s_minus)),
+                    _limit(rated_shutoff * (1 + s_plus)),
+                    d,
+                    s_plus,
+                    PASS if ok else FAIL,
+                    extrapolated=extrapolated,
+                    note=note,
+                )
+            )
+
+    # --- Parallel operation -------------------------------------------------
+    parallel_ok = None
+    if parallel_operation:
+        pred_s, why = _try_predict(curve.predict_head, zero)
+        ratio_min = criteria.parallel_shutoff_min_ratio
+        if pred_s is None or rising is None:
+            rows.append(
+                CheckRow(
+                    "Parallel operation",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    ratio_min - 1,
+                    NOT_EVALUATED,
+                    note=why or "cannot evaluate the rising curve",
+                )
+            )
+        else:
+            ratio = float((pred_s / rated_head).to("dimensionless").magnitude)
+            parallel_ok = bool(ratio >= ratio_min - _TOL_EPS and rising)
+            note = "" if rising else "head does not rise continuously to shut-off"
+            rows.append(
+                CheckRow(
+                    "Parallel operation",
+                    rated_head,
+                    pred_s.to(rated_head.units),
+                    _limit(rated_head * ratio_min),
+                    None,
+                    ratio - 1,
+                    ratio_min - 1,
+                    PASS if parallel_ok else FAIL,
+                    extrapolated=extrapolated,
+                    note=note,
+                )
+            )
+
+    # --- Test speed -----------------------------------------------------------
+    n_tol = criteria.test_speed_tol
+    speeds = [s for s in (test_speeds or ()) if s is not None]
+    if rated_speed is not None and speeds and n_tol is not None:
+        devs = [deviation(rated_speed, s) for s in speeds]
+        worst = max(range(len(devs)), key=lambda i: abs(devs[i]))
+        ok = abs(devs[worst]) <= n_tol + _TOL_EPS
+        rows.append(
+            CheckRow(
+                "Test speed",
+                rated_speed,
+                speeds[worst].to(rated_speed.units),
+                _limit(rated_speed * (1 - n_tol)),
+                _limit(rated_speed * (1 + n_tol)),
+                devs[worst],
+                n_tol,
+                PASS if ok else FAIL,
+                note=(
+                    ""
+                    if ok
+                    else "test speed outside the agreed band: correct only if agreed"
+                ),
+            )
+        )
+
+    return PerformanceVerdict(
+        rows=tuple(rows), criteria=criteria, parallel_ok=parallel_ok
+    )

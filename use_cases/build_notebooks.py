@@ -1775,8 +1775,50 @@ plt.axvline(9.8, ls=":", c="k")
 plt.xlabel("Q (m3/h)"); plt.ylabel("Head (m)"); plt.legend(); plt.grid(alpha=0.3)
 plt.show()
 """),
+        md(r"""
+## The whole verdict at once
+
+The workbench's Compliance node and `PerformanceChecker` use one engine,
+`evaluate_performance`.  Every row is `pass`, `fail`, `info` (efficiency without a
+purchaser tolerance) or `not evaluated`; a verdict with a `not evaluated` row is
+**NOT FULLY ASSESSED**, never an approval.  Here with the exercise numbers and a curve
+that cannot predict power (no power column was recorded):
+"""),
+        code(r"""
+from pump.acceptance import evaluate_performance
+
+class TrainingCurve:
+    points = ()
+    def __init__(self, with_power=True):
+        self.with_power = with_power
+    def predict_head(self, q):
+        return Q_(357.0 - 0.18 * q.to("m**3/h").magnitude ** 2, "m")
+    def predict_breaking_power(self, q):
+        if not self.with_power:
+            raise AttributeError("no power column")
+        return Q_(24.6, "kW")
+    def predict_efficiency(self, q):
+        return Q_(31.5, "percent")
+
+def show(v):
+    for r in v.rows:
+        dev = f"{r.deviation:+.2%}" if r.deviation is not None else "-"
+        print(f"  {r.name:12s} {r.status:14s} {dev:>8s}  {r.note}")
+    print("  ->", "APPROVED" if v.approved else
+          ("NOT FULLY ASSESSED" if v.passed else "NOT APPROVED"))
+
+kw = dict(rated_power=Q_(26.9, "kW"), rated_efficiency=Q_(32.7, "percent"),
+          rated_speed=Q_(10212, "rpm"), test_speeds=(Q_(10301, "rpm"),))
+full = evaluate_performance(TrainingCurve(), rated_q, rated_h, b34004, **kw)
+partial = evaluate_performance(TrainingCurve(False), rated_q, rated_h, b34004, **kw)
+print("complete test data:"); show(full)
+print("no power column:"); show(partial)
+"""),
         md("## Answers (asserted)"),
         code(r"""
+assert full.approved and full.row("Efficiency").status == "info"
+assert not partial.approved and partial.passed and partial.not_evaluated == ("Power",)
+
 assert ex1["8th head"] == (0.02, 0.05) and ex1["8th shut-off"] == (0.10, 0.10)
 assert ex1["11th head"] == (0.03, 0.03) and ex1["11th shut-off"] == (0.08, 0.08)
 

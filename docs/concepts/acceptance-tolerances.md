@@ -24,6 +24,7 @@ $$
 | Rising curve (when specified) | the negative shut-off tolerance applies only if the curve still rises to shut-off | yes |
 | Parallel operation | $H_0 / H_{rated} \ge 1.10$ | yes, when `parallel` is set |
 | Rated NPSH | tested NPSH3 at rated flow $\le$ quoted NPSHr (+0 %) | yes, NPSH verdict |
+| Test speed | every tested speed within ±3 % of the rated speed | yes |
 
 The shut-off head is flagged *extrapolated* when no test point lies below 5 % of the rated
 flow.  This threshold is a tool setting, not a value from the standard.
@@ -71,8 +72,21 @@ API 610 has **no** NPSHa/NPSHr margin rule.  That rule comes from the client (se
 80-110 % (8th 2.1.12; 11th 6.1.12; 12th 6.1).
 
 **Test speed**: within 3 % of the rated speed unless otherwise agreed (8th 4.3.3.2.3;
-11th 8.3.3.3 c).  Results are corrected to the rated speed.  The tool does not check this
-yet: confirm it on the test sheet.
+11th 8.3.3.3 c).  Results are corrected to the rated speed.  The Compliance node checks the
+worst tested speed (`test_speed_tol = 0.03`) as the **Test speed** row.
+
+## One engine, three outcomes
+
+Every check above is made by `pump.acceptance.evaluate_performance`, used by both the
+library's `PerformanceChecker` and the workbench's Compliance node
+([ADR 0012](../adr/0012-single-performance-verdict-engine.md)).  Each row is `pass`,
+`fail`, `info` (reported, not judged) or `not evaluated` (required but not computable;
+the reason is in the row's note).  The verdict is:
+
+- **APPROVED** when nothing fails and everything required was evaluated;
+- **REJECTED / NOT APPROVED** when any judged check fails;
+- **NOT FULLY ASSESSED** when nothing fails but a required check could not be made,
+  for example no power column, so power cannot be predicted.  Never an approval.
 
 ## Client overlay: Petrobras N-553 rev E
 
