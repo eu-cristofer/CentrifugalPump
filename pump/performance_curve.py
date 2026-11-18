@@ -26,6 +26,8 @@ import io
 
 __all__ = ["PerformanceChecker", "PerformanceCurve"]
 
+from .design import color as _c
+
 class PerformanceFitter:
     """
     Handles polynomial regression for performance metrics (head, efficiency, power),
@@ -373,8 +375,8 @@ class PerformanceCurve:
         else:
             ax1 = axes
 
-        ax1.scatter(capacities, heads, color="blue", label="Head Data", marker="o")  # Data points only
-        ax1.plot(smooth_capacities, head_curve, "b-", label="Head Fit")  # Polynomial curve
+        ax1.scatter(capacities, heads, color=_c("chart-head"), label="Head Data", marker="o")  # Data points only
+        ax1.plot(smooth_capacities, head_curve, "-", color=_c("chart-head"), label="Head Fit")  # Polynomial curve
         ax1.set_ylabel("Head (m)")
         if chart_title:
             ax1.set_title(f"{chart_title} - {self.fluid.name}")
@@ -384,9 +386,9 @@ class PerformanceCurve:
         ax1.legend()
 
         if capacity is not None:
-            ax1.plot(capacity_value, fitted_head, "bx", markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
-            ax1.axvline(capacity_value, color="gray", linestyle="dashed")  # Vertical dashed line
-            ax1.axhline(fitted_head, color="gray", linestyle="dashed")  # Horizontal dashed line
+            ax1.plot(capacity_value, fitted_head, "x", color=_c("chart-head"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+            ax1.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")  # Vertical dashed line
+            ax1.axhline(fitted_head, color=_c("chart-cursor"), linestyle="dashed")  # Horizontal dashed line
 
             # Add tick labels
             ax1.text(ax1.get_xlim()[0],
@@ -412,8 +414,8 @@ class PerformanceCurve:
             power_curve = np.polyval(self.fitter.power_coeffs, smooth_capacities)
             
             ax2 = axes[1]
-            ax2.scatter(capacities, powers, color="red", label="Power Data", marker="o")
-            ax2.plot(smooth_capacities, power_curve, "r-", label="Power Fit")
+            ax2.scatter(capacities, powers, color=_c("chart-power"), label="Power Data", marker="o")
+            ax2.plot(smooth_capacities, power_curve, "-", color=_c("chart-power"), label="Power Fit")
             ax2.set_ylabel("Power (kW)")
             ax2.grid()
             ax2.legend()
@@ -421,9 +423,9 @@ class PerformanceCurve:
             ax2.yaxis.tick_right()
 
             if capacity is not None:
-                ax2.plot(capacity_value, fitted_power, "rx", markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
-                ax2.axvline(capacity_value, color="gray", linestyle="dashed")
-                ax2.axhline(fitted_power, color="gray", linestyle="dashed")
+                ax2.plot(capacity_value, fitted_power, "x", color=_c("chart-power"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+                ax2.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
+                ax2.axhline(fitted_power, color=_c("chart-cursor"), linestyle="dashed")
                 
                 # Add tick labels
                 ax2.text(ax2.get_xlim()[0],
@@ -439,17 +441,17 @@ class PerformanceCurve:
             efficiency_curve = np.polyval(self.fitter.efficiency_coeffs, smooth_capacities)
             
             ax3 = axes[2]
-            ax3.scatter(capacities, efficiencies, color="green", label="Efficiency Data", marker="o")
-            ax3.plot(smooth_capacities, efficiency_curve, "g-", label="Efficiency Fit")
+            ax3.scatter(capacities, efficiencies, color=_c("chart-efficiency"), label="Efficiency Data", marker="o")
+            ax3.plot(smooth_capacities, efficiency_curve, "-", color=_c("chart-efficiency"), label="Efficiency Fit")
             ax3.set_ylabel("Efficiency (%)")
             ax3.set_xlabel("Capacity (m³/h)")
             ax3.grid()
             ax3.legend()
 
             if capacity is not None:
-                ax3.plot(capacity_value, fitted_efficiency, "gx", markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
-                ax3.axvline(capacity_value, color="gray", linestyle="dashed")
-                ax3.axhline(fitted_efficiency, color="gray", linestyle="dashed")
+                ax3.plot(capacity_value, fitted_efficiency, "x", color=_c("chart-efficiency"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+                ax3.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
+                ax3.axhline(fitted_efficiency, color=_c("chart-cursor"), linestyle="dashed")
     
                 # Add tick labels
                 ax3.text(capacity_value, ax3.get_ylim()[0], f"{capacity_value:.1f}", verticalalignment='bottom', horizontalalignment='center', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
@@ -462,22 +464,22 @@ class PerformanceCurve:
             nv = np.array([v.to("m").magnitude for v in npsh_curve.npshr], dtype=float)
             grid = np.linspace(nq.min(), nq.max(), 100)
             fit = np.array([npsh_curve(Q_(x, "m**3/h")).to("m").magnitude for x in grid])
-            ax4.scatter(nq, nv, color="purple", label="NPSH3 Data", marker="o")
-            ax4.plot(grid, fit, "-", color="purple", label="NPSHr Fit")
+            ax4.scatter(nq, nv, color=_c("chart-npsh"), label="NPSH3 Data", marker="o")
+            ax4.plot(grid, fit, "-", color=_c("chart-npsh"), label="NPSHr Fit")
             if npsha is not None:
                 a = npsha.to("m").magnitude
-                ax4.axhline(a, color="darkorange", linestyle="-.", label=f"NPSHa {a:.2f} m")
+                ax4.axhline(a, color=_c("chart-npsha"), linestyle="-.", label=f"NPSHa {a:.2f} m")
             if capacity is not None:
-                ax4.axvline(capacity_value, color="gray", linestyle="dashed")
+                ax4.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
                 if nq.min() <= capacity_value <= nq.max():
                     at = npsh_curve(capacity).to("m").magnitude
-                    ax4.plot(capacity_value, at, "x", color="purple", markersize=10)
+                    ax4.plot(capacity_value, at, "x", color=_c("chart-npsh"), markersize=10)
                     ax4.text(ax4.get_xlim()[0], at, f"{at:.2f}", verticalalignment='center',
                              horizontalalignment='left', fontsize=10,
                              bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
                 if npshr_quoted is not None:
                     ax4.plot(capacity_value, npshr_quoted.to("m").magnitude, "D",
-                             markerfacecolor="white", markeredgecolor="purple",
+                             markerfacecolor="white", markeredgecolor=_c("chart-npsh"),
                              markersize=7, label="Quoted NPSHr")
             ax4.set_ylabel("NPSHr (m)")
             ax4.set_xlabel("Capacity (m³/h)")

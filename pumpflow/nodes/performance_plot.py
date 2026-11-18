@@ -26,6 +26,8 @@ from PySide6.QtWidgets import QFileDialog, QLabel, QSizePolicy, QVBoxLayout, QWi
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
+from pump.design import color as token_color
+
 from .. import units
 from .base import BaseNode, PortSpec
 from . import ui
@@ -218,7 +220,7 @@ class PerformancePlotNode(BaseNode):
             pv.insertWidget(2, canvas, 1)
             holder.update(canvas=canvas, nav=nav, fig=fig)
             holder["cursors"] = [
-                ax.axvline(0.0, color="#33414f", lw=0.8, alpha=0.6, visible=False)
+                ax.axvline(0.0, color=token_color("chart-ink"), lw=0.8, alpha=0.6, visible=False)
                 for ax in fig.pump_axes.values()
             ]
             canvas.mpl_connect("motion_notify_event", on_move)

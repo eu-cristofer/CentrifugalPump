@@ -36,6 +36,7 @@ from ..numfmt import fmt, parse_decimal
 from ..persistence import testset_from_json, testset_pressure_unit
 from ..sample_data import SINGLE_PUMP_JSON
 from ..signals import BenchGeometry, TestPointSet, TestRow
+from ..style import qcolor
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
 from . import ui
@@ -735,8 +736,8 @@ def _set_ro(
 ) -> None:
     item = QTableWidgetItem(text)
     item.setFlags(Qt.ItemIsEnabled)
-    item.setForeground(QColor("#3b6ea5"))
-    item.setBackground(QColor("#f1f5f9"))
+    item.setForeground(qcolor("table-computed-text"))
+    item.setBackground(qcolor("table-computed-bg"))
     if tooltip:
         item.setToolTip(tooltip)
     table.setItem(row, col, item)

@@ -55,35 +55,39 @@ from .report import (
     viscosity_sentence,
 )
 
+from ..design import render
+
 __all__ = ["HtmlReportGenerator"]
 
-_CSS = """
+_CSS = render(
+    """
 :root { color-scheme: light; }
-body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1c1c1c;
-  background: #fff; line-height: 1.5; margin: 0; }
+body { font-family: "Helvetica Neue", Arial, sans-serif; color: @report-text;
+  background: @report-bg; line-height: 1.5; margin: 0; }
 main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 h1 { font-size: 1.9rem; margin-bottom: 0.2rem; }
-h2 { font-size: 1.4rem; border-bottom: 2px solid #1f3a5f; padding-bottom: 0.2rem;
-  margin-top: 2.2rem; color: #1f3a5f; }
-h3 { font-size: 1.15rem; margin-top: 1.6rem; color: #1f3a5f; }
+h2 { font-size: 1.4rem; border-bottom: 2px solid @report-heading; padding-bottom: 0.2rem;
+  margin-top: 2.2rem; color: @report-heading; }
+h3 { font-size: 1.15rem; margin-top: 1.6rem; color: @report-heading; }
 h4 { font-size: 1rem; margin-top: 1.2rem; }
-.subtitle { font-size: 1.2rem; color: #444; margin: 0; }
-.date { color: #666; }
+.subtitle { font-size: 1.2rem; color: @report-subtitle; margin: 0; }
+.date { color: @report-muted; }
 table { border-collapse: collapse; margin: 0.8rem 0; font-size: 0.9rem; }
-th, td { border: 1px solid #b9c2cf; padding: 0.3rem 0.6rem; text-align: center; }
-thead th { background: #e8edf4; }
-table.kv th { text-align: left; background: #f3f5f9; width: 38%; }
+th, td { border: 1px solid @report-rule; padding: 0.3rem 0.6rem; text-align: center; }
+thead th { background: @report-head-bg; }
+table.kv th { text-align: left; background: @report-kv-bg; width: 38%; }
 table.kv td { text-align: left; }
 table.sig td { height: 2.4rem; }
-blockquote { font-style: italic; color: #333; border-left: 4px solid #b9c2cf;
+blockquote { font-style: italic; color: @report-quote; border-left: 4px solid @report-rule;
   margin: 0.8rem 0; padding: 0.2rem 1rem; }
 figure { margin: 1rem 0; text-align: center; }
 figure img { max-width: 100%; height: auto; }
-figcaption { font-size: 0.85rem; color: #555; }
+figcaption { font-size: 0.85rem; color: @report-caption; }
 .cover { margin: 1.5rem 0 2rem; }
 @media print { main { padding: 0; } h2 { page-break-after: avoid; }
   figure { page-break-inside: avoid; } }
 """.strip()
+)
 
 
 def _e(text) -> str:

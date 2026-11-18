@@ -29,13 +29,25 @@ from typing import Dict, List
 import numpy as np
 from PySide6.QtCore import Qt
 
+from pump.design import color as token_color
+
 from .. import units
 from ..binding import row_efficiency, row_head
 from .base import BaseNode, PortSpec
 from . import ui
 
 # A small, colour-blind-friendly cycle keyed per dataset/branch.
-_PALETTE = ["#2f6fb0", "#b4413c", "#2e7d5b", "#8a5a9e", "#c98a1b", "#3b8a8a"]
+_PALETTE = [
+    token_color(n)
+    for n in (
+        "chart-head",
+        "chart-power",
+        "chart-efficiency",
+        "chart-series-4",
+        "chart-series-5",
+        "chart-series-6",
+    )
+]
 
 
 def _mag(q, unit):
@@ -124,7 +136,7 @@ class ExploreChartNode(BaseNode):
 
         on_change()  # ensure caches reflect the latest upstream state
 
-        pg.setConfigOptions(antialias=True, background="w", foreground="#33414f")
+        pg.setConfigOptions(antialias=True, background="w", foreground=token_color("chart-ink"))
         glw = pg.GraphicsLayoutWidget()
         glw.setMinimumHeight(560)
 
@@ -236,7 +248,7 @@ class ExploreChartNode(BaseNode):
             ln = pg.InfiniteLine(
                 pos=default_q,
                 angle=90,
-                pen=pg.mkPen("#b4413c", style=Qt.DashLine, width=1),
+                pen=pg.mkPen(token_color("chart-power"), style=Qt.DashLine, width=1),
             )
             p.addItem(ln, ignoreBounds=True)
             qlines.append(ln)
@@ -296,7 +308,7 @@ class ExploreChartNode(BaseNode):
             if not models:
                 table.insertRow(0)
                 item = QTableWidgetItem("Wire a Curve Fit to read regression values")
-                item.setForeground(QColor("#8a96a3"))
+                item.setForeground(QColor(token_color("unit-label")))
                 table.setItem(0, 0, item)
                 table.setSpan(0, 0, 1, table.columnCount())
                 return
@@ -421,7 +433,7 @@ class ExploreChartNode(BaseNode):
                     pg.InfiniteLine(
                         pos=rated.q.to("m**3/h").magnitude,
                         angle=90,
-                        pen=pg.mkPen("#33414f", style=Qt.DashLine, width=1),
+                        pen=pg.mkPen(token_color("chart-ink"), style=Qt.DashLine, width=1),
                     )
                 )
 
@@ -456,11 +468,11 @@ class ExploreChartNode(BaseNode):
             pen=None,
             symbol="star",
             symbolSize=16,
-            symbolBrush="#c98a1b",
-            symbolPen="#7a5510",
+            symbolBrush=token_color("chart-series-5"),
+            symbolPen=token_color("chart-marker-edge"),
         )
         if label:
-            text = pg.TextItem(label, color="#7a5510", anchor=(0, 1))
+            text = pg.TextItem(label, color=token_color("chart-marker-edge"), anchor=(0, 1))
             text.setPos(x, y)
             ax.addItem(text)
 
@@ -469,11 +481,11 @@ class ExploreChartNode(BaseNode):
         vlines = []
         for ax in axes:
             vl = pg.InfiniteLine(
-                angle=90, movable=False, pen=pg.mkPen("#9aa6b2", width=1)
+                angle=90, movable=False, pen=pg.mkPen(token_color("chart-cursor"), width=1)
             )
             ax.addItem(vl, ignoreBounds=True)
             vlines.append(vl)
-        label = pg.TextItem("", color="#33414f", anchor=(0, 1))
+        label = pg.TextItem("", color=token_color("chart-ink"), anchor=(0, 1))
         axes[0].addItem(label, ignoreBounds=True)
 
         def on_move(evt):

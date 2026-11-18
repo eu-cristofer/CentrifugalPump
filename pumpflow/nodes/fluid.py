@@ -34,6 +34,8 @@ from ..binding import (
 )
 from ..signals import FluidSpec
 from .. import units
+from pump.design import color as token_color
+
 from .base import BaseNode, PortSpec
 from . import ui
 
@@ -161,7 +163,7 @@ class FluidNode(BaseNode):
         try:
             import pyqtgraph as pg
 
-            pg.setConfigOptions(antialias=True, background="w", foreground="#33414f")
+            pg.setConfigOptions(antialias=True, background="w", foreground=token_color("chart-ink"))
             plot = pg.PlotWidget()
             # Span the full body width but keep the height modest so showing the
             # chart only grows the window by a small amount.
@@ -169,9 +171,10 @@ class FluidNode(BaseNode):
             plot.showGrid(x=True, y=True, alpha=0.25)
             plot.setLabel("left", "ρ (kg/m³)")
             plot.setLabel("bottom", "Temperature (°C)")
-            curve = plot.plot([], [], pen=pg.mkPen("#2f6fb0", width=2))
+            curve = plot.plot([], [], pen=pg.mkPen(token_color("chart-head"), width=2))
             marker = pg.ScatterPlotItem(
-                size=10, brush=pg.mkBrush("#c0392b"), pen=pg.mkPen("#7a1f17")
+                size=10, brush=pg.mkBrush(token_color("chart-state-point")),
+                pen=pg.mkPen(token_color("chart-state-point-edge")),
             )
             plot.addItem(marker)
             chart_widget = plot

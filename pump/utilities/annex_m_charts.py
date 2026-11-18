@@ -35,17 +35,18 @@ from typing import Callable, Mapping, Optional, Sequence
 
 import numpy as np
 
+from ..design import color
 from .unit_conversion import Q_
 
 __all__ = ["plot_annex_m_curve", "plot_test_points_vibration"]
 
 Translate = Callable[[str], str]
 
-_INK = "#111111"
-_GRID_MAJOR = "#8a8a8a"
-_GRID_MINOR = "#d2d2d2"
-_ACCENT = "#1f4e8c"  # the measured vibration (Figure M.4 "6")
-_LIMIT = "#a23b2a"  # vibration limits
+_INK = color("print-ink")
+_GRID_MAJOR = color("print-grid-major")
+_GRID_MINOR = color("print-grid-minor")
+_ACCENT = color("print-measured")  # the measured vibration (Figure M.4 "6")
+_LIMIT = color("print-limit")  # vibration limits
 
 
 # --------------------------------------------------------------------------- #
@@ -529,7 +530,7 @@ def plot_annex_m_curve(
                 text,
                 fontsize=6.6,
                 va="bottom",
-                color="#1a1a1a",
+                color=color("print-text"),
             )
 
     left = [
@@ -713,7 +714,7 @@ def plot_test_points_vibration(
         marker="*",
         ls="none",
         ms=11,
-        mfc="#3c5a8a",
+        mfc=color("print-test-point"),
         mec=_INK,
         mew=0.6,
         zorder=5,

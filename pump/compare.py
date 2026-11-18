@@ -27,13 +27,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tabulate import tabulate
 
+from .design import color as _token_color
 from .performance_curve import PerformanceCurve
 from .utilities.unit_conversion import Q_
 
 __all__ = ["ComparisonRow", "ComparisonTable", "compare_curves", "plot_comparison"]
 
 _METRICS = ("head", "power", "efficiency")
-_COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf"]
+_COLORS = [
+    _token_color(n)
+    for n in (
+        "chart-head",
+        "chart-power",
+        "chart-efficiency",
+        "chart-series-4",
+        "chart-series-5",
+        "chart-series-6",
+    )
+]
 
 
 @dataclass(frozen=True)

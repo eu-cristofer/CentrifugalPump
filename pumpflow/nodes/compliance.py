@@ -22,7 +22,9 @@ from pump import Q_
 
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
-from ..style import ui_font
+from pump.design import color as token_color
+
+from ..style import qcolor, ui_font
 from .base import BaseNode, PortSpec
 from . import ui
 
@@ -30,7 +32,6 @@ _HEADERS = [
     "Parameter", "Actual", "Predicted", "Min", "Max", "Deviation", "Tol.", "Verdict",
     "Note",
 ]
-_AMBER = "#b7791f"
 
 
 class ComplianceCheckNode(BaseNode):
@@ -92,7 +93,7 @@ class ComplianceCheckNode(BaseNode):
         verdict.setFont(ui_font(15, QFont.Bold))
         criteria_lbl = QLabel("")
         unverified_lbl = QLabel("")
-        unverified_lbl.setStyleSheet(f"color: {_AMBER};")
+        unverified_lbl.setStyleSheet(f"color: {token_color('warn-text')};")
         unverified_lbl.setWordWrap(True)
         parallel_lbl = QLabel("")
         override_chip = ui.Banner()
@@ -257,17 +258,17 @@ def _append_param(table: QTableWidget, p) -> None:
     for c, text in enumerate(cells):
         item = QTableWidgetItem(str(text))
         if c == 0:
-            item.setForeground(QColor("#28323d"))
+            item.setForeground(qcolor("body-text"))
         if c == 7:
             item.setForeground(
-                QColor("#5d6b78") if info
-                else QColor("#2e7d5b") if p.passed else QColor("#b4413c")
+                qcolor("subtle-text") if info
+                else qcolor("ok-green") if p.passed else qcolor("reject-red")
             )
             f = item.font()
             f.setBold(True)
             item.setFont(f)
         if c == 8 and notes:
-            item.setForeground(QColor(_AMBER))
+            item.setForeground(qcolor("warn-text"))
         table.setItem(r, c, item)
 
 

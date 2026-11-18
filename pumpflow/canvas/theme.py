@@ -2,64 +2,75 @@
 canvas.theme
 ============
 
-Central palette + metrics for the workbench — a clean, calm, professional
-desktop look in an industrial blue/steel key on a light background.
+Palette and metrics of the node canvas, read from the design system
+(:mod:`pump.design`, ``pump/design/tokens.json``).  The names below are the
+canvas code's vocabulary; their values live only in the token file.
 """
 
 from __future__ import annotations
 
 from PySide6.QtGui import QColor, QFont
 
-from ..style import mono_font as _mono_font, ui_font
+from pump import design
+
+from ..style import mono_font as _mono_font, qcolor, ui_font
 
 # --- surfaces ---------------------------------------------------------------
-WINDOW_BG = QColor("#eef1f4")
-CANVAS_BG = QColor("#e7ebf0")
-GRID_DOT = QColor("#d3dae2")
-GRID_DOT_STRONG = QColor("#c2ccd6")
+WINDOW_BG = qcolor("window-bg")
+CANVAS_BG = qcolor("canvas-bg")
+GRID_DOT = qcolor("grid-dot")
+GRID_DOT_STRONG = qcolor("grid-dot-strong")
 
 # --- nodes ------------------------------------------------------------------
-NODE_BG = QColor("#ffffff")
-NODE_BG_ALT = QColor("#f7f9fb")
-NODE_BORDER = QColor("#c3ccd6")
-NODE_BORDER_SEL = QColor("#2f6fb0")
-NODE_SHADOW = QColor(40, 55, 75, 45)
-TITLE_BG = QColor("#2b3a4a")  # steel
-TITLE_BG_SOURCE = QColor("#3b6ea5")  # source nodes get a lighter steel-blue
-TITLE_TEXT = QColor("#ffffff")
-SUBTLE_TEXT = QColor("#5a6573")
-BODY_TEXT = QColor("#28323d")
+NODE_BG = qcolor("surface")
+NODE_BG_ALT = qcolor("surface-alt")
+NODE_BORDER = qcolor("border")
+NODE_BORDER_SEL = qcolor("accent")
+NODE_SHADOW = qcolor("node-shadow")
+TITLE_BG = qcolor("title-bg")  # steel
+TITLE_BG_SOURCE = qcolor("title-bg-source")  # source nodes: lighter steel-blue
+TITLE_TEXT = qcolor("title-text")
+SUBTLE_TEXT = qcolor("subtle-text")
+BODY_TEXT = qcolor("body-text")
+DIVIDER = qcolor("divider")  # status-line rule inside a node
 
 # --- accents / state --------------------------------------------------------
-ACCENT = QColor("#2f6fb0")  # industrial blue
-STEEL = QColor("#5b7185")
-OK_GREEN = QColor("#2e7d5b")
-REJECT_RED = QColor("#b4413c")
-AMBER = QColor("#c08a2e")
+ACCENT = qcolor("accent")  # industrial blue
+STEEL = qcolor("steel")
+OK_GREEN = qcolor("ok-green")
+REJECT_RED = qcolor("reject-red")
+AMBER = qcolor("amber")
 
 # --- ports (by signal type) -------------------------------------------------
 PORT_COLORS = {
-    "RatedPoint": QColor("#2f6fb0"),
-    "FluidSpec": QColor("#3aa0c8"),
-    "TestPointSet": QColor("#5b7185"),
-    "CorrectedCurve": QColor("#3f8f8a"),
-    "FittedModel": QColor("#6a6fb0"),
-    "ComplianceResult": QColor("#b06a3f"),
-    "BranchBundle": QColor("#7a8694"),
-    "*": QColor("#7a8694"),
+    "RatedPoint": qcolor("port-rated-point"),
+    "FluidSpec": qcolor("port-fluid-spec"),
+    "TestPointSet": qcolor("port-test-point-set"),
+    "CorrectedCurve": qcolor("port-corrected-curve"),
+    "FittedModel": qcolor("port-fitted-model"),
+    "ComplianceResult": qcolor("port-compliance-result"),
+    "BranchBundle": qcolor("port-branch-bundle"),
+    "*": qcolor("port-branch-bundle"),
 }
-PORT_RING = QColor("#ffffff")
-PORT_EMPTY = QColor("#ffffff")
-EDGE = QColor("#9aa7b4")
-EDGE_ACTIVE = QColor("#2f6fb0")
+PORT_RING = qcolor("port-ring")
+PORT_EMPTY = qcolor("port-ring")
+EDGE = qcolor("edge")
+EDGE_ACTIVE = qcolor("edge-active")
 
 # --- metrics ----------------------------------------------------------------
-NODE_W = 196
-TITLE_H = 30
-ROW_H = 22
-PORT_R = 6.0
-NODE_RADIUS = 9.0
-GRID_SIZE = 26
+NODE_W = int(design.length("node-width"))
+TITLE_H = int(design.length("node-title-height"))
+ROW_H = int(design.length("node-row-height"))
+PORT_R = design.length("port-radius")
+NODE_RADIUS = design.length("radius-node")
+GRID_SIZE = int(design.length("canvas-grid"))
+
+# Canvas fonts are painted in points; the tokens give pixels at 96 dpi.
+_PT_PER_PX = 0.75
+
+
+def _pt(style: str) -> int:
+    return max(1, round(design.font_px(style) * _PT_PER_PX))
 
 
 def port_color(signal_type: str) -> QColor:
@@ -67,12 +78,12 @@ def port_color(signal_type: str) -> QColor:
 
 
 def title_font() -> QFont:
-    return ui_font(9, QFont.DemiBold)
+    return ui_font(_pt("node-title"), QFont.DemiBold)
 
 
-def body_font(size: int = 8) -> QFont:
-    return ui_font(size)
+def body_font(size: int | None = None) -> QFont:
+    return ui_font(size if size is not None else _pt("node-body"))
 
 
-def mono_font(size: int = 8) -> QFont:
-    return _mono_font(size)
+def mono_font(size: int | None = None) -> QFont:
+    return _mono_font(size if size is not None else _pt("node-mono"))

@@ -60,6 +60,9 @@ jobs:
           tests/test_annex_m_charts.py
           tests/test_dialog_maximize.py
           tests/test_mechanical_run_gui.py
+          tests/test_style_fonts.py
+          tests/test_design_tokens.py
+          pump/design/__init__.py
           pumpflow/nodes/mechanical_run_check.py
           tests/test_test_summary.py
           tests/test_vibration_columns.py
@@ -72,6 +75,9 @@ jobs:
           tests/test_head_gui.py
           tests/test_mechanical_run.py
           tests/test_mechanical_run_gui.py
+          tests/test_style_fonts.py
+          tests/test_design_tokens.py
+          pump/design/__init__.py
           tests/test_notebooks.py
           tests/test_npsh.py
           tests/test_npsh_gui.py

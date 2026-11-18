@@ -23,14 +23,18 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from pump import Q_ as _Q
+from pump.design import color as token_color
 
-HEAD_C = "#2f6fb0"
-POWER_C = "#b4413c"
-EFF_C = "#2e7d5b"
-NPSH_C = "#6a3d9a"
-NPSHA_C = "#c27c0e"
-GRID_C = "#d9e0e8"
-MARK_C = "#33414f"
+HEAD_C = token_color("chart-head")
+POWER_C = token_color("chart-power")
+EFF_C = token_color("chart-efficiency")
+NPSH_C = token_color("chart-npsh")
+NPSHA_C = token_color("chart-npsha")
+GRID_C = token_color("chart-grid")
+MARK_C = token_color("chart-ink")
+TICK_C = token_color("chart-tick")
+FRAME_C = token_color("chart-frame")
+TITLE_C = token_color("chart-title")
 
 
 def build_figure(
@@ -89,11 +93,11 @@ def build_figure(
         if show_spline and spline is not None and xs.size:
             sx, sy = spline.sample(resolution)
             ax.plot(sx, sy, "--", color=color, lw=1.4, alpha=0.85, label="spline")
-        ax.set_ylabel(f"{label} ({unit})", fontsize=8, color="#33414f")
+        ax.set_ylabel(f"{label} ({unit})", fontsize=8, color=MARK_C)
         ax.grid(True, color=GRID_C, lw=0.8)
-        ax.tick_params(labelsize=7, colors="#5a6573")
+        ax.tick_params(labelsize=7, colors=TICK_C)
         for spine in ax.spines.values():
-            spine.set_color("#c3ccd6")
+            spine.set_color(FRAME_C)
         if rated_q is not None and len(coeffs):
             yv = float(np.polyval(coeffs, rated_q))
             ax.axvline(rated_q, color=MARK_C, ls=":", lw=1.0, alpha=0.7)
@@ -101,7 +105,7 @@ def build_figure(
             ax.plot([rated_q], [yv], "x", color=MARK_C, ms=8, mew=1.6, zorder=6)
             ax.annotate(f"{yv:.1f}", (ax.get_xlim()[0], yv), fontsize=7,
                         va="center", ha="left",
-                        bbox=dict(fc="white", ec="#c3ccd6", boxstyle="round,pad=0.2"))
+                        bbox=dict(fc="white", ec=FRAME_C, boxstyle="round,pad=0.2"))
         if not compact:
             ax.legend(fontsize=6.5, loc="best", framealpha=0.9)
 
@@ -156,11 +160,11 @@ def build_figure(
             yv = npsh_fit(rated_q)
             if yv is not None:
                 ax.plot([rated_q], [yv], "x", color=MARK_C, ms=8, mew=1.6, zorder=6)
-        ax.set_ylabel("NPSHr (m)", fontsize=8, color="#33414f")
+        ax.set_ylabel("NPSHr (m)", fontsize=8, color=MARK_C)
         ax.grid(True, color=GRID_C, lw=0.8)
-        ax.tick_params(labelsize=7, colors="#5a6573")
+        ax.tick_params(labelsize=7, colors=TICK_C)
         for spine in ax.spines.values():
-            spine.set_color("#c3ccd6")
+            spine.set_color(FRAME_C)
         ax.yaxis.set_label_position("right")
         ax.yaxis.tick_right()
         if not compact:
@@ -168,10 +172,10 @@ def build_figure(
         if ylims.get("npsh"):
             ax.set_ylim(ylims["npsh"])
 
-    axes[-1].set_xlabel("Capacity  Q (m³/h)", fontsize=8, color="#33414f")
+    axes[-1].set_xlabel("Capacity  Q (m³/h)", fontsize=8, color=MARK_C)
     service_prefix = f"{rated.service} — " if rated is not None and rated.service else ""
     title = f"{service_prefix}{fitted.pump_tag} — performance curve"
-    axes[0].set_title(title, fontsize=9.5, color="#28323d", pad=8)
+    axes[0].set_title(title, fontsize=9.5, color=TITLE_C, pad=8)
     fig.tight_layout(pad=1.1)
 
     q_lo = float(caps.min()) if caps.size else 0.0

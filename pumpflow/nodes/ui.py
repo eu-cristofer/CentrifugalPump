@@ -17,7 +17,14 @@ from PySide6.QtGui import QFont, QKeySequence, QShortcut
 
 from pump import Q_, Pressure
 
-from ..style import ui_font
+from ..style import qcolor, ui_font
+
+
+def _sp(name: str) -> int:
+    """A spacing token of the design system, in pixels."""
+    from pump.design import length
+
+    return int(length(name))
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -86,8 +93,8 @@ class PropertyDialog(QDialog):
         # white title/subtitle text sits on the light window color (unreadable).
         header.setAttribute(Qt.WA_StyledBackground, True)
         hl = QVBoxLayout(header)
-        hl.setContentsMargins(18, 14, 18, 12)
-        hl.setSpacing(2)
+        hl.setContentsMargins(_sp("space-dialog-x"), _sp("space-dialog-top"), _sp("space-dialog-x"), _sp("space-section"))
+        hl.setSpacing(_sp("space-header-gap"))
         t = QLabel(title, objectName="DialogTitle")
         t.setFont(ui_font(12, QFont.DemiBold))
         if maximizable:
@@ -117,8 +124,13 @@ class PropertyDialog(QDialog):
         scroll.setFrameShape(QFrame.NoFrame)
         self.body = QWidget()
         self.body_layout = QVBoxLayout(self.body)
-        self.body_layout.setContentsMargins(18, 14, 18, 16)
-        self.body_layout.setSpacing(12)
+        self.body_layout.setContentsMargins(
+            _sp("space-dialog-x"),
+            _sp("space-dialog-top"),
+            _sp("space-dialog-x"),
+            _sp("space-dialog-bottom"),
+        )
+        self.body_layout.setSpacing(_sp("space-section"))
         scroll.setWidget(self.body)
         outer.addWidget(scroll, 1)
 
@@ -239,7 +251,7 @@ def row(label: str, widget: QWidget, suffix: str = "") -> QWidget:
     w = QWidget()
     h = QHBoxLayout(w)
     h.setContentsMargins(0, 0, 0, 0)
-    h.setSpacing(8)
+    h.setSpacing(_sp("space-row"))
     lab = QLabel(label, objectName="FieldLabel")
     lab.setMinimumWidth(150)
     h.addWidget(lab)
@@ -310,7 +322,7 @@ def unit_row(label: str, spinbox: QWidget, unit_combo: QWidget) -> QWidget:
     w = QWidget()
     h = QHBoxLayout(w)
     h.setContentsMargins(0, 0, 0, 0)
-    h.setSpacing(8)
+    h.setSpacing(_sp("space-row"))
     lab = QLabel(label, objectName="FieldLabel")
     lab.setMinimumWidth(150)
     h.addWidget(lab)
@@ -510,7 +522,7 @@ class PressureField:
         w = QWidget()
         h = QHBoxLayout(w)
         h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(8)
+        h.setSpacing(_sp("space-row"))
         lab = QLabel(label, objectName="FieldLabel")
         lab.setMinimumWidth(150)
         h.addWidget(lab)
@@ -656,7 +668,7 @@ class BeforeAfterTable:
         self.strip = QWidget()
         h = QHBoxLayout(self.strip)
         h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(8)
+        h.setSpacing(_sp("space-row"))
         h.addWidget(QLabel("Show in", objectName="FieldLabel"))
         for dim, label in self.DIMS:
             unit = self.units.get(dim) or prefs.default_unit(dim)
@@ -731,7 +743,7 @@ class BeforeAfterTable:
                 for c, text in enumerate(self._cells(pair[key], stage)):
                     item = QTableWidgetItem(text)
                     if muted:
-                        item.setForeground(QColor("#8a96a3"))
+                        item.setForeground(qcolor("unit-label"))
                     self.table.setItem(r, c, item)
 
     def clear(self) -> None:
@@ -748,10 +760,14 @@ def info_button(title: str, html: str, parent: Optional[QWidget] = None):
     btn.setToolTip(f"About: {title}")
     btn.setCursor(Qt.PointingHandCursor)
     btn.setFixedSize(20, 20)
+    from pump.design import render
+
     btn.setStyleSheet(
-        "QToolButton#InfoButton { border: 1px solid #5b8def; border-radius: 10px;"
-        " color: #5b8def; font-weight: bold; font-style: italic; }"
-        "QToolButton#InfoButton:hover { background: #5b8def; color: white; }"
+        render(
+            "QToolButton#InfoButton { border: 1px solid @info-button; border-radius: 10px;"
+            " color: @info-button; font-weight: bold; font-style: italic; }"
+            "QToolButton#InfoButton:hover { background: @info-button; color: @title-text; }"
+        )
     )
 
     def show():

@@ -4,112 +4,116 @@ style
 
 Global Qt stylesheet — a clean, calm, professional desktop look in an industrial
 blue/steel key on a light background.
+
+:data:`APP_QSS` is a template: ``@token`` and ``@fs-<text style>`` name entries
+of the design system (:mod:`pump.design`, ``pump/design/tokens.json``) and are
+filled in by :func:`app_qss`.  Never write a colour, radius or font size here.
 """
 
 APP_QSS = """
-QMainWindow, QWidget { background: #eef1f4; color: #28323d;
-    font-family: "__UI_FONT__"; font-size: 13px; }
+QMainWindow, QWidget { background: @window-bg; color: @body-text;
+    font-family: "__UI_FONT__"; font-size: @fs-body; }
 
 /* ---- toolbar / menu ---- */
-QToolBar { background: #ffffff; border-bottom: 1px solid #d3dae2; spacing: 6px; padding: 5px 8px; }
-QToolBar QToolButton { padding: 6px 10px; border-radius: 6px; color: #28323d; }
-QToolBar QToolButton:hover { background: #e7ecf2; }
-QMenuBar { background: #ffffff; border-bottom: 1px solid #d3dae2; }
-QMenuBar::item:selected { background: #e7ecf2; }
-QMenu { background: #ffffff; border: 1px solid #c3ccd6; }
-QMenu::item:selected { background: #eaf1f8; color: #1f4f7a; }
-QStatusBar { background: #ffffff; border-top: 1px solid #d3dae2; color: #5a6573; }
+QToolBar { background: @surface; border-bottom: 1px solid @grid-dot; spacing: 6px; padding: 5px 8px; }
+QToolBar QToolButton { padding: 6px 10px; border-radius: @radius-control; color: @body-text; }
+QToolBar QToolButton:hover { background: @hover-bg; }
+QMenuBar { background: @surface; border-bottom: 1px solid @grid-dot; }
+QMenuBar::item:selected { background: @hover-bg; }
+QMenu { background: @surface; border: 1px solid @border; }
+QMenu::item:selected { background: @menu-selected-bg; color: @selected-text; }
+QStatusBar { background: @surface; border-top: 1px solid @grid-dot; color: @subtle-text; }
 
 /* ---- toolbox dock ---- */
-QDockWidget { titlebar-close-icon: none; color: #5a6573; font-size: 11px; }
-QDockWidget::title { background: #e4e9ef; padding: 6px 10px; }
-#Toolbox { background: #f4f6f9; }
-#ToolboxItem { text-align: left; padding: 9px 12px; border: 1px solid #d3dae2;
-    border-radius: 8px; background: #ffffff; margin: 3px 8px; color: #28323d; }
-#ToolboxItem:hover { border-color: #2f6fb0; background: #f6faff; }
+QDockWidget { titlebar-close-icon: none; color: @subtle-text; font-size: @fs-caption; }
+QDockWidget::title { background: @dock-title-bg; padding: 6px 10px; }
+#Toolbox { background: @surface-sunken; }
+#ToolboxItem { text-align: left; padding: 9px 12px; border: 1px solid @grid-dot;
+    border-radius: @radius-card; background: @surface; margin: 3px 8px; color: @body-text; }
+#ToolboxItem:hover { border-color: @accent; background: @toolbox-hover-bg; }
 
 /* ---- dialogs ---- */
-#PropertyDialog { background: #ffffff; }
-#DialogHeader { background: #2b3a4a; }
-#DialogTitle { color: #ffffff; background: transparent; }
-#HeaderMaximize { color: #ffffff; background: transparent; border: 1px solid #5d7185;
-    border-radius: 6px; padding: 3px 9px; font-size: 12px; }
-#HeaderMaximize:hover { background: #3a4d61; border-color: #9fb3c7; }
-#DialogSubtitle { color: #c4d0db; font-size: 12px; background: transparent; }
-#SectionLabel { color: #5b7185; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
-#FieldLabel { color: #3c4753; }
-#UnitLabel { color: #8a96a3; font-size: 12px; }
-#HLine { color: #e3e8ee; background: #e3e8ee; max-height: 1px; border: none; }
+#PropertyDialog { background: @surface; }
+#DialogHeader { background: @title-bg; }
+#DialogTitle { color: @title-text; background: transparent; }
+#HeaderMaximize { color: @title-text; background: transparent; border: 1px solid @header-button-border;
+    border-radius: @radius-control; padding: 3px 9px; font-size: @fs-subtitle; }
+#HeaderMaximize:hover { background: @header-button-hover-bg; border-color: @header-button-hover-border; }
+#DialogSubtitle { color: @header-subtitle; font-size: @fs-subtitle; background: transparent; }
+#SectionLabel { color: @steel; font-size: @fs-section-label; font-weight: 700; letter-spacing: 1px; }
+#FieldLabel { color: @field-label; }
+#UnitLabel { color: @unit-label; font-size: @fs-unit; }
+#HLine { color: @divider; background: @divider; max-height: 1px; border: none; }
 
 QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox {
-    background: #ffffff; border: 1px solid #c3ccd6; border-radius: 6px;
-    padding: 5px 8px; selection-background-color: #cfe2f5; }
-QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus { border-color: #2f6fb0; }
+    background: @surface; border: 1px solid @control-border; border-radius: @radius-control;
+    padding: @space-control-y @space-control-x; selection-background-color: @selection-bg; }
+QLineEdit:focus, QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus { border-color: @accent; }
 QComboBox::drop-down { border: none; width: 18px; }
-QCheckBox { color: #3c4753; spacing: 7px; }
-QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #b6c0cb;
-    border-radius: 4px; background: #ffffff; }
-QCheckBox::indicator:checked { background: #2f6fb0; border-color: #2f6fb0; }
+QCheckBox { color: @field-label; spacing: 7px; }
+QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid @control-border;
+    border-radius: @radius-check; background: @surface; }
+QCheckBox::indicator:checked { background: @accent; border-color: @accent; }
 
 /* ---- buttons ---- */
-#ToolButton { background: #eef2f6; border: 1px solid #c8d1da; border-radius: 6px;
-    padding: 6px 12px; color: #2b3a4a; }
-#ToolButton:hover { background: #e2e9f0; border-color: #2f6fb0; }
-#PrimaryButton { background: #2f6fb0; border: 1px solid #2a64a0; border-radius: 6px;
-    padding: 7px 16px; color: #ffffff; font-weight: 600; }
-#PrimaryButton:hover { background: #2a64a0; }
+#ToolButton { background: @surface-muted; border: 1px solid @border-tool-button; border-radius: @radius-control;
+    padding: 6px 12px; color: @tool-button-text; }
+#ToolButton:hover { background: @tool-button-hover-bg; border-color: @accent; }
+#PrimaryButton { background: @accent; border: 1px solid @accent-hover; border-radius: @radius-control;
+    padding: 7px 16px; color: @title-text; font-weight: 600; }
+#PrimaryButton:hover { background: @accent-hover; }
 
 /* ---- tables ---- */
-QTableWidget { background: #ffffff; border: 1px solid #d3dae2; border-radius: 8px;
-    gridline-color: #e6ebf0; selection-background-color: #dcebfb; selection-color: #1f4f7a; }
-QHeaderView::section { background: #eef2f6; color: #5b7185; border: none;
-    border-right: 1px solid #e0e6ec; border-bottom: 1px solid #d3dae2; padding: 6px 8px; font-weight: 600; }
+QTableWidget { background: @surface; border: 1px solid @grid-dot; border-radius: @radius-card;
+    gridline-color: @gridline; selection-background-color: @table-selection-bg; selection-color: @selected-text; }
+QHeaderView::section { background: @surface-muted; color: @steel; border: none;
+    border-right: 1px solid @header-divider; border-bottom: 1px solid @grid-dot; padding: 6px 8px; font-weight: 600; }
 QTableWidget::item { padding: 4px 6px; }
 
 /* ---- banners ---- */
-#Banner { border-radius: 7px; padding: 8px 12px; font-size: 12px; }
-#Banner[kind="info"] { background: #eef2f6; color: #44566a; }
-#Banner[kind="ok"]   { background: #e3f1ea; color: #1f6b4c; }
-#Banner[kind="warn"] { background: #fbf1de; color: #8a6116; }
-#Banner[kind="error"]{ background: #f8e4e2; color: #9a3a34; }
+#Banner { border-radius: @radius-banner; padding: @space-control-x @space-banner-x; font-size: @fs-banner; }
+#Banner[kind="info"] { background: @banner-info-bg; color: @banner-info-text; }
+#Banner[kind="ok"]   { background: @banner-ok-bg; color: @banner-ok-text; }
+#Banner[kind="warn"] { background: @banner-warn-bg; color: @banner-warn-text; }
+#Banner[kind="error"]{ background: @banner-error-bg; color: @banner-error-text; }
 
 /* ---- compliance verdict ---- */
-#VerdictBanner { border-radius: 9px; padding: 14px 18px; font-size: 18px; }
-#VerdictBanner[verdict="pass"] { background: #e3f1ea; color: #1f6b4c; border: 1px solid #bfe0cd; }
-#VerdictBanner[verdict="fail"] { background: #f8e4e2; color: #9a3a34; border: 1px solid #ecc6c1; }
-#VerdictBanner[verdict="idle"] { background: #eef2f6; color: #6b7785; border: 1px solid #d8e0e8; }
+#VerdictBanner { border-radius: @radius-node; padding: 14px @space-dialog-x; font-size: @fs-verdict; }
+#VerdictBanner[verdict="pass"] { background: @banner-ok-bg; color: @banner-ok-text; border: 1px solid @banner-ok-border; }
+#VerdictBanner[verdict="fail"] { background: @banner-error-bg; color: @banner-error-text; border: 1px solid @banner-error-border; }
+#VerdictBanner[verdict="idle"] { background: @banner-info-bg; color: @verdict-idle-text; border: 1px solid @verdict-idle-border; }
 
 /* ---- mono blocks (coeffs / pump list) ---- */
-#MonoBlock { font-family: "__MONO_FONT__"; font-size: 12px;
-    background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 7px; padding: 10px 12px; color: #33414f; }
+#MonoBlock { font-family: "__MONO_FONT__"; font-size: @fs-mono-block;
+    background: @mono-bg; border: 1px solid @divider; border-radius: @radius-banner; padding: 10px 12px; color: @mono-text; }
 
 QScrollBar:vertical { background: transparent; width: 11px; margin: 2px; }
-QScrollBar::handle:vertical { background: #c4cdd7; border-radius: 5px; min-height: 28px; }
-QScrollBar::handle:vertical:hover { background: #aab6c2; }
+QScrollBar::handle:vertical { background: @scrollbar; border-radius: @radius-scrollbar; min-height: 28px; }
+QScrollBar::handle:vertical:hover { background: @scrollbar-hover; }
 QScrollBar::add-line, QScrollBar::sub-line { height: 0; }
 QScrollBar:horizontal { background: transparent; height: 11px; margin: 2px; }
-QScrollBar::handle:horizontal { background: #c4cdd7; border-radius: 5px; min-width: 28px; }
+QScrollBar::handle:horizontal { background: @scrollbar; border-radius: @radius-scrollbar; min-width: 28px; }
 
 /* ---- welcome / splash dialog ---- */
-#WelcomeDialog { background: #ffffff; border: 1px solid #c3ccd6; border-radius: 10px; }
-#WelcomeHeader { background: #2b3a4a; }
-#WelcomeTitle { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: 0.3px; background: transparent; }
-#WelcomeSubtitle { color: #c4d0db; font-size: 12px; background: transparent; }
-#WelcomeContent { background: #f4f6f9; }
-#WelcomePanel { background: #f4f6f9; }
-#WelcomeSectionLabel { color: #5b7185; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
-#WelcomePlaceholder { color: #a0aab4; font-size: 12px; font-style: italic; padding: 4px 0; }
-#WelcomeDivider { color: #d3dae2; background: #d3dae2; max-width: 1px; border: none; }
-#WelcomeFooter { background: #ffffff; border-top: 1px solid #d3dae2; }
-#ExampleDesc { color: #8a96a3; font-size: 11px; padding: 0 4px 2px 4px; }
+#WelcomeDialog { background: @surface; border: 1px solid @border; border-radius: @radius-welcome; }
+#WelcomeHeader { background: @title-bg; }
+#WelcomeTitle { color: @title-text; font-size: @fs-welcome-title; font-weight: 700; letter-spacing: 0.3px; background: transparent; }
+#WelcomeSubtitle { color: @header-subtitle; font-size: @fs-subtitle; background: transparent; }
+#WelcomeContent { background: @surface-sunken; }
+#WelcomePanel { background: @surface-sunken; }
+#WelcomeSectionLabel { color: @steel; font-size: @fs-welcome-section-label; font-weight: 700; letter-spacing: 1.2px; }
+#WelcomePlaceholder { color: @placeholder; font-size: @fs-unit; font-style: italic; padding: 4px 0; }
+#WelcomeDivider { color: @grid-dot; background: @grid-dot; max-width: 1px; border: none; }
+#WelcomeFooter { background: @surface; border-top: 1px solid @grid-dot; }
+#ExampleDesc { color: @unit-label; font-size: @fs-caption; padding: 0 4px 2px 4px; }
 
 /* Recent-file and example row buttons */
-#RecentItem { text-align: left; padding: 7px 10px; border: 1px solid #d3dae2;
-    border-radius: 7px; background: #ffffff; color: #28323d; }
-#RecentItem:hover { border-color: #2f6fb0; background: #f0f6ff; color: #1f4f7a; }
-#ExampleItem { text-align: left; padding: 7px 10px; border: 1px solid #d3dae2;
-    border-radius: 7px; background: #ffffff; color: #28323d; font-weight: 600; }
-#ExampleItem:hover { border-color: #2f6fb0; background: #f0f6ff; color: #1f4f7a; }
+#RecentItem { text-align: left; padding: 7px 10px; border: 1px solid @grid-dot;
+    border-radius: @radius-banner; background: @surface; color: @body-text; }
+#RecentItem:hover { border-color: @accent; background: @row-hover-bg; color: @selected-text; }
+#ExampleItem { text-align: left; padding: 7px 10px; border: 1px solid @grid-dot;
+    border-radius: @radius-banner; background: @surface; color: @body-text; font-weight: 600; }
+#ExampleItem:hover { border-color: @accent; background: @row-hover-bg; color: @selected-text; }
 """
 
 
@@ -165,9 +169,57 @@ def init_fonts(app) -> None:
     app.setFont(f)
 
 
+def qcolor(name: str):
+    """A ``QColor`` for a colour token of :mod:`pump.design` (alpha kept)."""
+    from PySide6.QtGui import QColor
+
+    from pump.design import rgba
+
+    r, g, b, a = rgba(name)
+    return QColor(r, g, b, round(a * 255))
+
+
+def _px_to_pt(qss: str, dpi: float) -> str:
+    """Rewrite every ``font-size: Npx`` as points at ``dpi`` logical DPI.
+
+    A font set in pixels has ``pointSize() == -1``.  On Windows, Qt's native
+    style copies that point size into new fonts and warns ``QFont::setPointSize:
+    Point size <= 0 (-1)``.  Points at the screen's logical DPI keep the same
+    on-screen size: 0.75 pt/px on Windows (96 DPI), 1 pt/px on macOS (72 DPI).
+
+    >>> _px_to_pt("QWidget { font-size: 13px; }", 96)
+    'QWidget { font-size: 9.75pt; }'
+    >>> _px_to_pt("#T { font-size: 20px; }", 72)
+    '#T { font-size: 20pt; }'
+    """
+    import re
+
+    factor = 72.0 / (dpi if dpi and dpi > 0 else 96.0)
+    return re.sub(
+        r"font-size:\s*(\d+(?:\.\d+)?)px",
+        lambda m: f"font-size: {round(float(m.group(1)) * factor, 2):g}pt",
+        qss,
+    )
+
+
+def _logical_dpi() -> float:
+    from PySide6.QtGui import QGuiApplication
+
+    screen = QGuiApplication.primaryScreen()
+    return float(screen.logicalDotsPerInchY()) if screen is not None else 96.0
+
+
 def app_qss() -> str:
-    """The global stylesheet with the resolved font families substituted in."""
-    return APP_QSS.replace("__UI_FONT__", _UI_FAMILY).replace("__MONO_FONT__", _MONO_FAMILY)
+    """The global stylesheet with the resolved font families substituted in.
+
+    Font sizes are written in px in :data:`APP_QSS` and handed to Qt in points
+    (see :func:`_px_to_pt`), so no widget ends up with a pixel-sized font.
+    """
+    from pump.design import render
+
+    qss = render(APP_QSS)
+    qss = qss.replace("__UI_FONT__", _UI_FAMILY).replace("__MONO_FONT__", _MONO_FAMILY)
+    return _px_to_pt(qss, _logical_dpi())
 
 
 def ui_font(size: int | None = None, weight=None):

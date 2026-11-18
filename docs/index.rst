@@ -48,7 +48,7 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
 
    ARCHITECTURE
    RUN_AND_TEST
-   pumpflow-theming
+   design-system
 
 .. toctree::
    :maxdepth: 1
@@ -84,7 +84,6 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    changes/001_masterpiece/sprint-*
    UI_SPEC
    multi-unit-philosophy
-   THEMING
    BUILD
    DEV_JOURNEY
    REMOVAL_MAP

@@ -19,7 +19,8 @@ Blocks
   flow and in the preferred and allowable operating regions, tested vs
   specified (:func:`vibration_by_region`);
 - bearing temperatures;
-- the test curve (:func:`plot_test_curve`).
+- the test curve in the Annex M format
+  (:func:`pump.utilities.annex_m_charts.plot_annex_m_curve`).
 
 Examples
 --------
@@ -54,7 +55,6 @@ __all__ = [
     "TestDataSummary",
     "VIBRATION_KEYS",
     "vibration_by_region",
-    "plot_test_curve",
     "write_docx",
     "render_tex",
     "write_tex",
@@ -213,116 +213,6 @@ def vibration_by_region(
             )
         )
     return tuple(lines)
-
-
-# --------------------------------------------------------------------------- #
-# Test curve figure
-# --------------------------------------------------------------------------- #
-def plot_test_curve(
-    curve,
-    rated_q: Q_,
-    rated_head: Q_,
-    por: Optional[tuple] = None,
-    npsh_curve=None,
-    title: str = "",
-    labels: Optional[Mapping[str, str]] = None,
-) -> bytes:
-    """
-    The test-curve figure of the summary as PNG bytes.
-
-    Head and efficiency (twin axis), power and, when given, NPSH3 against flow
-    at rated speed; measured points, fitted curves, the rated point and the
-    preferred operating region ``por = (q_min, q_max)`` (``Q_`` values) shaded.
-    """
-    import matplotlib
-
-    matplotlib.use("Agg")
-    from matplotlib.figure import Figure
-
-    lab = {
-        "flow": "Flow (m³/h)",
-        "head": "Head (m)",
-        "eff": "Efficiency (%)",
-        "power": "Power (kW)",
-        "npsh": "NPSH3 (m)",
-        "por": "Preferred operating region",
-        "rated": "Rated point",
-    }
-    lab.update(labels or {})
-    fitter = curve.fitter
-    caps = np.asarray(fitter.capacities, dtype=float)
-    q_max = max(float(caps.max()), float(rated_q.to("m**3/h").magnitude)) * 1.05
-    qs = np.linspace(0.0, q_max, 200)
-
-    rows = 3 if npsh_curve is not None else 2
-    fig = Figure(figsize=(7.2, 2.6 * rows), dpi=150)
-    axes = fig.subplots(rows, 1, sharex=True)
-    ax_h = axes[0]
-    ax_e = ax_h.twinx()
-    ax_h.plot(qs, np.polyval(fitter.head_coeffs, qs), color="#1f5fa8", lw=1.6)
-    ax_h.plot(caps, fitter.heads, "o", color="#1f5fa8", ms=4)
-    ax_h.set_ylabel(lab["head"], color="#1f5fa8")
-    try:
-        effs = np.asarray(fitter.efficiencies, dtype=float)
-        ax_e.plot(qs, np.polyval(fitter.efficiency_coeffs, qs), color="#2e7d32", lw=1.2)
-        ax_e.plot(caps, effs, "s", color="#2e7d32", ms=3)
-        ax_e.set_ylabel(lab["eff"], color="#2e7d32")
-    except Exception:  # no efficiency data: head only
-        ax_e.set_visible(False)
-    rq = float(rated_q.to("m**3/h").magnitude)
-    ax_h.plot(
-        [rq],
-        [float(rated_head.to("m").magnitude)],
-        "kx",
-        ms=9,
-        mew=2,
-        label=lab["rated"],
-    )
-
-    ax_p = axes[1]
-    try:
-        ax_p.plot(qs, np.polyval(fitter.power_coeffs, qs), color="#b4413c", lw=1.4)
-        ax_p.plot(caps, fitter.powers, "o", color="#b4413c", ms=4)
-    except Exception:
-        pass
-    ax_p.set_ylabel(lab["power"], color="#b4413c")
-
-    if npsh_curve is not None:
-        ax_n = axes[2]
-        nq = np.asarray([float(q.to("m**3/h").magnitude) for q in npsh_curve.q])
-        nv = np.asarray([float(n.to("m").magnitude) for n in npsh_curve.npshr])
-        grid = np.linspace(float(nq.min()), float(nq.max()), 100)
-        ax_n.plot(
-            grid,
-            [float(npsh_curve(Q_(x, "m**3/h")).to("m").magnitude) for x in grid],
-            color="#6a1b9a",
-            lw=1.4,
-        )
-        ax_n.plot(nq, nv, "o", color="#6a1b9a", ms=4)
-        ax_n.set_ylabel(lab["npsh"], color="#6a1b9a")
-
-    for ax in axes:
-        ax.axvline(rq, color="k", ls=":", lw=0.8)
-        if por is not None:
-            lo, hi = (float(p.to("m**3/h").magnitude) for p in por)
-            ax.axvspan(
-                lo,
-                hi,
-                color="#9ec5e8",
-                alpha=0.25,
-                lw=0,
-                label=lab["por"] if ax is ax_h else None,
-            )
-        ax.grid(alpha=0.3)
-    axes[-1].set_xlabel(lab["flow"])
-    axes[-1].set_xlim(0, q_max)
-    ax_h.legend(loc="lower left", fontsize=7)
-    if title:
-        fig.suptitle(title, fontsize=10)
-    fig.tight_layout()
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png")
-    return buf.getvalue()
 
 
 # --------------------------------------------------------------------------- #

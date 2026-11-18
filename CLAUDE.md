@@ -82,6 +82,7 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 
 ## Conventions and gotchas
 
+- **Design tokens only**: colours, font sizes, radii and spacing come from `pump/design/tokens.json` through `pump.design` (`color`, `length`, `render` for `@token` stylesheets) or `pumpflow.style.qcolor`. No `#rrggbb` in code (`tests/test_design_tokens.py` fails); see `docs/design-system.md`.
 - Pass `Q_` quantities into library constructors; raw numbers raise `ValueError`.
 - Don't mutate curves in place; transforms and signals return new instances.
 - `pumpflow` must not re-implement physics or verdicts.

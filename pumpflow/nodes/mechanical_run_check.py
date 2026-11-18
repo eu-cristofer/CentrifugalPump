@@ -39,6 +39,7 @@ from pump.mechanical_run import ROLES
 from .. import units
 from ..binding import check_mechanical_run
 from ..settings_codec import ROLE_DIMENSIONS
+from ..style import qcolor
 from .base import BaseNode, PortSpec
 from .mechanical_run import (
     _cell,
@@ -188,7 +189,7 @@ class MechanicalRunCheckNode(BaseNode):
                     item = QTableWidgetItem("" if v is None else str(v))
                     item.setFlags(Qt.ItemIsEnabled)
                     if c == 6 and status.lower() == "fail":
-                        item.setForeground(QColor("#b91c1c"))
+                        item.setForeground(qcolor("reject-red"))
                     result_table.setItem(i, c, item)
             sig = getattr(self, "_signal", None)
             png = getattr(sig, "plot_png", None) if sig is not None else None

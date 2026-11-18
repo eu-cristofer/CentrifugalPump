@@ -142,7 +142,7 @@ class NodeItem(QGraphicsObject):
         )
 
         # port labels
-        painter.setFont(theme.body_font(8))
+        painter.setFont(theme.body_font())
         painter.setPen(QPen(theme.SUBTLE_TEXT))
         for name, port in self.in_ports.items():
             y = port.pos().y()
@@ -161,7 +161,7 @@ class NodeItem(QGraphicsObject):
 
         # status line + state dot
         sy = h - 26
-        painter.setPen(QPen(QColor("#e3e8ee")))
+        painter.setPen(QPen(theme.DIVIDER))
         painter.drawLine(QPointF(10, sy), QPointF(w - 10, sy))
 
         state = self.logic.state
@@ -171,7 +171,7 @@ class NodeItem(QGraphicsObject):
         painter.drawEllipse(QPointF(16, sy + 13), 4, 4)
 
         painter.setPen(QPen(theme.BODY_TEXT if state == "ok" else theme.SUBTLE_TEXT))
-        painter.setFont(theme.body_font(8))
+        painter.setFont(theme.body_font())
         painter.drawText(
             QRectF(28, sy + 4, w - 36, 18),
             Qt.AlignVCenter | Qt.AlignLeft,
