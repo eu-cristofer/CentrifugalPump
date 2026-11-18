@@ -11,6 +11,38 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **UI/UX review, round 2 (2026-11-18)**
+  - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
+    Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct
+    monochrome symbols (Fluid ≈, System Curve ∪, Compliance ⚖, MRT Check ◈,
+    Pump Selection ⊕) and never a state glyph.
+  - Disabled inputs, checkboxes and labels look disabled (`disabled-bg`,
+    `disabled-text`, `disabled-border` tokens); the Test Points bench-geometry
+    rows are disabled until "Apply bench geometry" is checked.
+  - Checked checkboxes draw a tick (`check-mark` token).
+  - Rated Point: the free-text "Standard" field is "Label on report cover",
+    under Standard / edition and Client overlay.
+  - Welcome: "Skip" is "Demo pipeline"; "Curve & Report" no longer renders as
+    "Curve _Report"; recent projects show folder and modified date.
+- **Verdicts read the same everywhere (UI/UX review, 2026-11-17)**
+  - `ComplianceResult.verdict_text`: `APPROVED ✓` / `NOT FULLY ASSESSED ⚠` /
+    `REJECTED ✗`, qualified "provisional" and "tolerances overridden".  The
+    Compliance node, Report Export and its consolidated verdict use it; Report
+    Export no longer shows a NOT FULLY ASSESSED pump as REJECTED.  Pinned node
+    statuses in `tests/fixtures/v1/expected.json` changed wording only.
+  - Tolerance overrides reach the report: docx, LaTeX and HTML state every
+    overridden tolerance next to its criteria default, with the user's reason
+    (or "Reason: not given").  `PerformanceChecker(tolerances=…)` makes the
+    report's summary limits match the verdict.  New strings in both `.po` files.
+  - Compliance: tolerance editors in a collapsed "Override acceptance
+    criteria…" section with a Reason field (`override_reason`, omitted when
+    unset).
+  - Canvas: verdict pill + OVERRIDDEN / PROVISIONAL chips on Compliance,
+    Report Export, MRT Check and NPSH nodes; state glyphs ✓ ! ✗ in the status
+    dot; below zoom 0.75 a node shows only its title and verdict.
+  - Node windows open sized to their content (≤ 90 % × 85 % of the screen) and
+    table columns are at least as wide as their headers.
+
 - **`pumpflow/app.py` — modeless node property dialogs (Orange3-style)**
   - Double-clicking a node now opens its property dialog with `show()` instead
     of `exec()`, as a **parentless top-level window**.  The canvas and menus stay

@@ -31,6 +31,9 @@ QDockWidget::title { background: @dock-title-bg; padding: 6px 10px; }
 #ToolboxItem { text-align: left; padding: 9px 12px; border: 1px solid @grid-dot;
     border-radius: @radius-card; background: @surface; margin: 3px 8px; color: @body-text; }
 #ToolboxItem:hover { border-color: @accent; background: @toolbox-hover-bg; }
+#ToolboxGroup { color: @steel; font-size: @fs-section-label; font-weight: bold;
+    letter-spacing: 1px; padding: 10px 14px 2px 14px; background: transparent; }
+#ToolboxScroll { background: @surface-sunken; }
 
 /* ---- dialogs ---- */
 #PropertyDialog { background: @surface; }
@@ -53,7 +56,13 @@ QComboBox::drop-down { border: none; width: 18px; }
 QCheckBox { color: @field-label; spacing: 7px; }
 QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid @control-border;
     border-radius: @radius-check; background: @surface; }
-QCheckBox::indicator:checked { background: @accent; border-color: @accent; }
+QCheckBox::indicator:checked { background: @accent; border-color: @accent; image: url("__CHECK_MARK__"); }
+QCheckBox:disabled { color: @disabled-text; }
+QCheckBox::indicator:disabled { background: @disabled-bg; border-color: @disabled-border; }
+QCheckBox::indicator:checked:disabled { background: @disabled-text; border-color: @disabled-text; }
+QLineEdit:disabled, QDoubleSpinBox:disabled, QSpinBox:disabled, QComboBox:disabled {
+    background: @disabled-bg; color: @disabled-text; border-color: @disabled-border; }
+#FieldLabel:disabled, #UnitLabel:disabled { color: @disabled-text; }
 
 /* ---- buttons ---- */
 #ToolButton { background: @surface-muted; border: 1px solid @border-tool-button; border-radius: @radius-control;
@@ -209,6 +218,36 @@ def _logical_dpi() -> float:
     return float(screen.logicalDotsPerInchY()) if screen is not None else 96.0
 
 
+_CHECK_MARK_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">'
+    '<path d="M3.5 8.4 6.6 11.3 12.5 4.8" fill="none" stroke="{ink}" '
+    'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+)
+
+
+def check_mark_path() -> str:
+    """Path of the checked-checkbox tick (an SVG in the ``check-mark`` token colour).
+
+    A Qt stylesheet can only draw the tick from an image file, so the SVG is
+    written once to the temp directory, named after its colour, and referenced
+    with forward slashes (Qt's ``url()`` wants them on Windows too).
+    """
+    import tempfile
+    from pathlib import Path
+
+    from pump.design import color
+
+    ink = color("check-mark")
+    name = "pumpflow-check-" + "".join(c for c in ink if c.isalnum()) + ".svg"
+    path = Path(tempfile.gettempdir()) / name
+    try:
+        if not path.exists():
+            path.write_text(_CHECK_MARK_SVG.format(ink=ink), encoding="utf-8")
+    except OSError:  # read-only temp: no tick, the accent fill still shows state
+        return ""
+    return path.as_posix()
+
+
 def app_qss() -> str:
     """The global stylesheet with the resolved font families substituted in.
 
@@ -219,6 +258,7 @@ def app_qss() -> str:
 
     qss = render(APP_QSS)
     qss = qss.replace("__UI_FONT__", _UI_FAMILY).replace("__MONO_FONT__", _MONO_FAMILY)
+    qss = qss.replace("__CHECK_MARK__", check_mark_path())
     return _px_to_pt(qss, _logical_dpi())
 
 

@@ -42,12 +42,37 @@ def build_report_png(
     )
 
 
-def report_summary_for(fitted: FittedModel, rated: RatedPoint) -> dict:
-    """``PerformanceChecker.report_summary`` for one branch (Check's numbers)."""
+def report_summary_for(
+    fitted: FittedModel, rated: RatedPoint, tolerances: Optional[dict] = None
+) -> dict:
+    """``PerformanceChecker.report_summary`` for one branch (Check's numbers).
+
+    ``tolerances`` are the Compliance node's overrides; the limits in the
+    summary then match the verdict computed with them.
+    """
     design_point = make_design_point(rated, fitted.curve.fluid)
     return PerformanceChecker(
-        design_point, fitted.curve, criteria=criteria_for(rated)
+        design_point, fitted.curve, criteria=criteria_for(rated), tolerances=tolerances
     ).report_summary
+
+
+def tolerance_override(compliance) -> Optional[dict]:
+    """``{name: (used, default)}`` of the tolerances a user changed, else ``None``.
+
+    Fractions; ``None`` for an efficiency tolerance that is not set.  Only the
+    tolerances that differ from the acceptance-criteria defaults are listed.
+    """
+    if compliance is None or not getattr(compliance, "overridden", False):
+        return None
+    defaults = getattr(compliance, "default_tolerances", None) or {}
+    out = {}
+    for key, used in (compliance.tolerances or {}).items():
+        default = defaults.get(key)
+        if (used is None) != (default is None) or (
+            used is not None and default is not None and abs(used - default) > 1e-9
+        ):
+            out[key] = (used, default)
+    return out or None
 
 
 def comparison_for(bundles, rated: RatedPoint) -> Optional[dict]:
@@ -188,12 +213,19 @@ def assemble_report_data(
             )
         entry = {}
         if b.fitted is not None:
-            entry["test_summary"] = report_summary_for(b.fitted, rated)
+            override = tolerance_override(b.compliance)
+            entry["test_summary"] = report_summary_for(
+                b.fitted, rated, b.compliance.tolerances if override else None
+            )
             entry["test_data"] = b.fitted.curve.test_data
             if b.compliance is not None:
                 entry["verdict"] = bool(b.compliance.overall_pass)
                 if b.compliance.verdict_label == "NOT FULLY ASSESSED":
                     entry["not_evaluated"] = list(b.compliance.not_evaluated)
+            if override:
+                entry["tolerance_override"] = override
+                if b.compliance.override_reason:
+                    entry["tolerance_override_reason"] = b.compliance.override_reason
             png = b.plot_png
             if png is None and b.corrected is not None:
                 png = build_report_png(

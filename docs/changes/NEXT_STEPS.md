@@ -44,6 +44,23 @@ On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked aga
 - [x] B4: `pumpflow/binding/` package (_common, curves, acceptance, reports, engineering), same public names (2026-11-17).
 - [x] C1: `CLAUDE.md` refreshed (2026-11-17).
 
+## 3c. UI/UX review (2026-11-17)
+- [x] One verdict vocabulary (`ComplianceResult.verdict_text`); Report Export no longer shows NOT FULLY ASSESSED as REJECTED.
+- [x] Tolerance overrides reach the report (stated with the criteria default and a reason); report summary limits use the same tolerances as the verdict.
+- [x] Override editing collapsed behind "Override acceptance criteria…" with a Reason field.
+- [x] Canvas verdict pill + OVERRIDDEN / PROVISIONAL chips; state glyphs (✓ ! ✗); zoomed-out overview.
+- [x] Node windows open sized to their content; table headers not clipped.
+- [ ] Shared rated point / fluid without wires (proposal in `docs/UI_SPEC.md` §11.1; decide first).
+- [x] Rated Point: the free-text "Standard" is now "Label on report cover", under the edition combos (UI_SPEC §12).
+- [x] Test Points: bench-geometry rows (label, value, unit) disabled while "Apply bench geometry" is off; disabled fields styled (`disabled-*` tokens).
+- [x] Checked checkboxes draw a tick (`check-mark` token, `style.check_mark_path`).
+- [ ] Decimal separator follows the OS locale; tie it to the report language or a setting.
+- [x] Toolbox and Add node menu grouped (Inputs / Corrections / Curves & analysis / Checks / Output); distinct monochrome glyphs; dock titled "Nodes".
+- [ ] Toolbox: glyphs have different widths, so titles do not line up; draw the glyph in a fixed-width column.
+- [x] Welcome: "Demo pipeline" replaces "Skip"; "&" escaped; recent projects show folder and modified date.
+- [ ] Form rows: long labels ("Discharge gauge elevation z_d") push their field right; align fields per section.
+- [ ] Dark theme (tokens have only `light`).
+
 ## 4. Product follow-ups (candidate sprints for a 002 project)
 - [x] API 610 test data summary export (Annex M / 8th App. T): Word, LaTeX, PDF, Excel; Test Points vibration columns (2026-11-17).
 - [ ] Vendor allowable-operating-region limits (min continuous stable flow / max flow) on the Rated Point, so the summary's allowable column uses them instead of "every tested point except shut-off".

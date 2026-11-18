@@ -51,7 +51,7 @@ _FIELDS = (
 class SystemCurveNode(BaseNode):
     kind = "system_curve"
     title = "System Curve"
-    glyph = "∿"
+    glyph = "∪"
     is_source = True
     inputs = [PortSpec("FluidSpec", "FluidSpec", multi=True)]
     outputs = [PortSpec("SystemCurveSpec", "SystemCurveSpec")]

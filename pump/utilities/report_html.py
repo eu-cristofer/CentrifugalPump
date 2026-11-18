@@ -49,6 +49,7 @@ from .report import (
     npsh_points_table,
     npsh_summary_rows,
     performance_verdict,
+    tolerance_override_sentence,
     signature_block,
     standard_sentence,
     unverified_sentence,
@@ -212,6 +213,11 @@ class HtmlReportGenerator:
                 out.append(
                     f"<p><strong>{_e(_('Overall verdict'))}:</strong> {_e(verdict)}</p>"
                 )
+            override_text = tolerance_override_sentence(
+                _, entry.get("tolerance_override"), entry.get("tolerance_override_reason", "")
+            )
+            if override_text:
+                out.append(f"<p>{_e(override_text)}</p>")
             out.append(self._summary(entry.get("test_summary") or {}, acceptance))
             if entry.get(VISCOSITY_KEY):
                 out.append(f"<p>{_e(viscosity_sentence(_, entry[VISCOSITY_KEY]))}</p>")

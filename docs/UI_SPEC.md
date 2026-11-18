@@ -144,7 +144,10 @@ the user can tell branches apart on the canvas.
   branch and collects them into a list keyed by pump TAG. Connecting/disconnecting
   a branch adds/removes that pump from the report with no other rewiring.
 - Each widget shows a **status line** (Orange‑style) summarizing its output
-  (e.g. "Pump A · 5 points · corrected to 1750 rpm" or "❌ 1 parameter out of tolerance").
+  (e.g. "Pump A · 5 points · corrected to 1750 rpm").  Its state dot carries a
+  glyph (✓ ok, ! invalid, ✗ error/rejected, hollow ring idle), so state never
+  relies on colour alone.  Nodes that judge something show a **verdict pill**
+  instead (§11).
 
 ---
 
@@ -287,9 +290,15 @@ maximised state, kept in the app settings (`QSettings`, key
   - Deviation per notebook: `δ = 1 − nominal/predicted`.
   - Verdict logic per notebook `status()`: head |δ|≤tol; power δ≤tol;
     efficiency δ≥−tol.
-- **Controls:** editable tolerance fields pre‑filled from
-  `PerformanceChecker` defaults (head 3 %, shutoff by band, power 4 %); a
-  reset‑to‑standard button; warning chip if user overrides defaults.
+- **Controls:** a collapsed **"Override acceptance criteria…"** section (opened
+  automatically when an override exists) with the tolerance fields pre‑filled
+  from the acceptance criteria of the rated point's edition and client overlay,
+  a **Reason** field and a reset‑to‑criteria button; a warning chip when the
+  user overrides the defaults.  An override is shown as an `OVERRIDDEN` chip on
+  the canvas node and in Report Export, and the report states every overridden
+  tolerance next to its criteria default, with the reason (or "Reason: not
+  given").  The report's summary limits use the same tolerances as the verdict
+  (`PerformanceChecker(tolerances=…)`).
 - **Binding:** `PerformanceChecker(design_point, curve)` →
   `acceptable_limits`, `test_summary_with_limits`, `check_summary`,
   `report_summary`.
@@ -464,3 +473,75 @@ take the canonical unit, never the active preset); the Qt-free
 `pumpflow/settings_codec.py` translates runtime settings ↔ disk; unset optional
 quantities are omitted on disk.
 
+---
+
+## 11. Verdicts on the canvas (UI/UX review, 2026-11-17)
+
+**One vocabulary.**  Every view of a performance verdict (canvas status line,
+Compliance window, Report Export, report) uses `ComplianceResult.verdict_text`:
+`APPROVED ✓`, `NOT FULLY ASSESSED ⚠` or `REJECTED ✗`, qualified with
+`provisional` (criteria not verified against the standard text) and
+`tolerances overridden`.  Report Export's consolidated verdict over several
+pumps is REJECTED if any pump is rejected, else NOT FULLY ASSESSED if any pump
+is, else APPROVED; a NOT FULLY ASSESSED pump is never shown as REJECTED.
+
+**Verdict pill.**  Compliance, Report Export, MRT Check and NPSH set
+`BaseNode.badge` (`(text, tone)`, tone `ok` / `fail` / `warn`) and
+`badge_notes` (`OVERRIDDEN`, `PROVISIONAL`).  The canvas paints the pill and the
+note chips at the start of the status line; the status text beside the pill
+drops the segment that repeats the verdict.  Below a zoom of
+`LOW_DETAIL_LOD` (0.75) the node body shows only the verdict pill (or a large
+state glyph) and the title, so a whole FAT reads at a glance.
+
+**First open.**  A node window opened for the first time (no remembered size)
+is sized to its content, up to 90 % of the screen width and 85 % of its
+height; table columns get at least their header width (`ui.fit_table_headers`).
+
+### 11.1 Proposed: shared inputs without wires (not implemented)
+
+The rated point and the test fluid feed almost every node.  In the B‑34004A
+reference project one Rated Point node sends about 20 links across the canvas,
+which hides the real data flow (test points → correction → fit → check).
+
+Proposal, to be decided before implementation:
+
+1. **Project context.**  A canvas may hold one Rated Point node and one Fluid
+   node marked *shared*.  Nodes with an unwired `RatedPoint` / `FluidSpec`
+   input take the shared one; the input port then shows a small *context*
+   badge (`◆ B‑34004`) instead of a link.  An explicit link still wins (A/B
+   cases with two rated points stay possible).
+2. **Edge emphasis.**  Links from shared sources are drawn faint and bundled,
+   and become solid only while the source or a target is selected.
+3. **Persistence.**  `shared: true` on the node's settings, omitted when unset
+   (schema v2 stays byte‑identical for existing files); migration does not
+   remove existing links.
+4. **Acceptance.**  The B‑34004A reference project shows at most the per‑branch
+   links when its Rated Point is shared; exported verdicts are unchanged.
+
+Open questions: whether Report Export should also take the shared rated
+point; how a second *shared* rated point is refused; whether option 2 alone is
+enough.
+
+## 12. Toolbox, welcome and form states (UI/UX review, round 2, 2026-11-18)
+
+- **Toolbox** (dock titled "Nodes", scrollable) and the **Add node** menu list the
+  node kinds in five sections, in the order a FAT is built
+  (`nodes.registry.NODE_GROUPS`): *Inputs* (Rated Point, Fluid, Test Points,
+  MRT Log, Point), *Corrections* (Speed, Trim), *Curves & analysis* (Curve Fit,
+  Performance Plot, Performance Explorer, System Curve, Operating Point, Pump
+  Selection), *Checks* (Compliance, MRT Check, NPSH) and *Output* (Report
+  Export, Note).  A kind not listed falls into a trailing "Other" section.
+- **Node glyphs** are distinct, monochrome text symbols (no colour emoji) and
+  never one of the state glyphs ✓ ! ✗ of §11: Fluid ≈, System Curve ∪,
+  Compliance ⚖, MRT Check ◈, Pump Selection ⊕.
+- **Disabled fields read as disabled**: inputs, combos, checkboxes and their
+  field labels take the `disabled-*` tokens.  The Test Points bench-geometry rows
+  (label, value, unit) are disabled while "Apply bench geometry" is off.
+- **Checked checkboxes** carry a tick (`check-mark` token, an SVG drawn by
+  `pumpflow.style.check_mark_path`), not only an accent fill.
+- **Rated Point**: the free-text field is "Label on report cover", placed under
+  Standard / edition and Client overlay.  It follows those combos, can be edited
+  to add documents, and never changes the acceptance criteria.
+- **Welcome**: "Demo pipeline" (formerly "Skip") builds the built-in demo, as
+  closing the window does; "&" in example titles is escaped; each recent
+  project shows its file name, folder and modified date.

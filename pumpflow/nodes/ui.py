@@ -36,6 +36,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QScrollArea,
     QSpinBox,
+    QStyle,
+    QTableWidget,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -78,6 +80,8 @@ class PropertyDialog(QDialog):
         self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
         self.setWindowFlag(Qt.WindowCloseButtonHint, True)
         self._memory_key: Optional[str] = None
+        self._geometry_restored = False
+        self._first_show_done = False
         self.max_button: Optional[QToolButton] = None
         self.setWindowTitle(title)
         self.setMinimumWidth(width)
@@ -177,7 +181,34 @@ class PropertyDialog(QDialog):
         saved = window_settings().value(f"dialogs/{key}/geometry")
         if isinstance(saved, (QByteArray, bytes)) and len(saved):
             self.restoreGeometry(QByteArray(saved))
+            self._geometry_restored = True
             self._sync_max_button()
+
+    # -- first-open size ---------------------------------------------------
+    def showEvent(self, event) -> None:
+        """On the first show, make table headers readable and, unless a size
+        was remembered, open the window large enough for its content."""
+        if not self._first_show_done:
+            self._first_show_done = True
+            fit_table_headers(self.body)
+            if not self._geometry_restored and not self.isMaximized():
+                self.fit_first_open()
+        super().showEvent(event)
+
+    def fit_first_open(self) -> None:
+        """Size the window to its content: full width, height capped at 85 % of
+        the screen (the body scrolls beyond that).  Never shrinks the window."""
+        self.body.adjustSize()
+        hint = self.body.sizeHint()
+        scrollbar = self.style().pixelMetric(QStyle.PM_ScrollBarExtent)
+        w = max(self.width(), self.minimumWidth(), hint.width() + scrollbar + 4)
+        h = max(self.height(), self._header.sizeHint().height() + hint.height() + 4)
+        screen = self.screen()
+        if screen is not None:
+            avail = screen.availableGeometry()
+            w = min(w, int(avail.width() * 0.9))
+            h = min(h, int(avail.height() * 0.85))
+        self.resize(w, h)
 
     def save_window_state(self) -> None:
         if self._memory_key:
@@ -212,6 +243,33 @@ class PropertyDialog(QDialog):
             w = min(w, avail.width())
             h = min(h, avail.height())
         self.resize(w, h)
+
+
+def fit_table_headers(
+    root: QWidget, max_width: int = 1100, max_column: int = 260
+) -> None:
+    """Give every table under ``root`` room for its full column headers.
+
+    Tables stretch their columns to the available width; without a floor they
+    clip the headers ("Paramete", "Predicted") in a narrow window.  The floor
+    is the sum over columns of the wider of header text and content (each
+    capped at ``max_column``), capped at ``max_width`` (wider tables scroll
+    horizontally instead).
+    """
+    for table in root.findChildren(QTableWidget):
+        header = table.horizontalHeader()
+        fm = header.fontMetrics()
+        pad = 24  # cell padding + sort/resize slack on both sides
+        needed = 0
+        for col in range(table.columnCount()):
+            item = table.horizontalHeaderItem(col)
+            label = item.text() if item is not None else str(col + 1)
+            content = table.sizeHintForColumn(col) if table.rowCount() else 0
+            needed += min(max(fm.horizontalAdvance(label) + pad, content), max_column)
+        if table.verticalHeader().isVisible():
+            needed += table.verticalHeader().sizeHint().width()
+        needed += 2 * table.frameWidth() + 2
+        table.setMinimumWidth(min(needed, max_width))
 
 
 class Banner(QLabel):

@@ -43,7 +43,7 @@ from . import ui
 class FluidNode(BaseNode):
     kind = "fluid"
     title = "Fluid"
-    glyph = "💧"
+    glyph = "≈"
     is_source = True
     inputs = []
     outputs = [PortSpec("FluidSpec", "FluidSpec")]

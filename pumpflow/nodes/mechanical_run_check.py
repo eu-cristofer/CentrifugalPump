@@ -58,7 +58,7 @@ def _empty_overrides() -> dict:
 class MechanicalRunCheckNode(BaseNode):
     kind = "mechanical_run_check"
     title = "MRT Check"
-    glyph = "✓"
+    glyph = "◈"
     inputs = [
         PortSpec("MechanicalRunSet", "MechanicalRunSet"),
         PortSpec("RatedPoint", "RatedPoint"),
@@ -106,6 +106,21 @@ class MechanicalRunCheckNode(BaseNode):
             f"{hours:.1f} h · {verdict_label(sig.result)}"
         )
         self.state = "ok" if getattr(sig.result, "passed", False) else "reject"
+        res = sig.result
+        if not getattr(res, "passed", False):
+            self.set_badge(
+                "FAILED", "fail", provisional=not getattr(res, "verified", True)
+            )
+        elif not getattr(res, "fully_assessed", True):
+            self.set_badge(
+                "NOT FULLY ASSESSED",
+                "warn",
+                provisional=not getattr(res, "verified", True),
+            )
+        else:
+            self.set_badge(
+                "PASSED", "ok", provisional=not getattr(res, "verified", True)
+            )
         return {"MechanicalRunResult": sig}
 
     # -- dialog ------------------------------------------------------------

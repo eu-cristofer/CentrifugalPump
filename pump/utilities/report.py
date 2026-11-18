@@ -265,6 +265,54 @@ def performance_verdict(
     return text
 
 
+TOLERANCE_OVERRIDE_INTRO = (
+    "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+)
+_OVERRIDE_NAMES = (
+    ("head", "head", "±"),
+    ("shutoff", "shut-off head", "±"),
+    ("power", "power", "+"),
+    ("efficiency", "efficiency", "−"),
+)
+
+
+def tolerance_override_sentence(
+    translate: Callable[[str], str], override, reason: str = ""
+) -> str:
+    """One sentence listing user-overridden tolerances, or ``""`` when none.
+
+    ``override`` is ``{name: (used, default)}`` with fractions (``None`` = not
+    set), as written by the workbench's Report Export.  The verdict and the
+    summary limits of the same section were computed with the *used* values.
+    ``reason`` (the user's justification) is appended; a missing reason is
+    stated, so an unexplained override is visible in the report.
+
+    Examples
+    --------
+    >>> tolerance_override_sentence(str, {"head": (0.05, 0.03)})
+    'Tolerances overridden by the user (acceptance-criteria default in brackets): head ±5.0 % (3.0 %). Reason: not given.'
+    """
+    if not override:
+        return ""
+
+    def pct(v):
+        return translate("not set") if v is None else f"{v * 100:0.1f} %"
+
+    parts = []
+    for key, label, sign in _OVERRIDE_NAMES:
+        if key in override:
+            used, default = override[key]
+            shown = pct(used) if used is None else f"{sign}{pct(used)}"
+            parts.append(f"{translate(label)} {shown} ({pct(default)})")
+    if not parts:
+        return ""
+    why = reason.strip() if reason else translate("not given")
+    return (
+        f"{translate(TOLERANCE_OVERRIDE_INTRO)}: {'; '.join(parts)}. "
+        f"{translate('Reason')}: {why}."
+    )
+
+
 def mechanical_run_duration_sentence(translate: Callable[[str], str], result) -> str:
     """``Duration: 4.00 h`` (plus the required minimum when configured)."""
     text = f"{translate('Duration')}: {result.duration.to('h'):0.2f~P}"
@@ -591,6 +639,13 @@ class ReportGenerator:
                     test_data.get("not_evaluated"),
                 )
                 document.add_paragraph(f"{self._('Overall verdict')}: {verdict}", style='Text_body')
+            override_text = tolerance_override_sentence(
+                self._,
+                test_data.get("tolerance_override"),
+                test_data.get("tolerance_override_reason", ""),
+            )
+            if override_text:
+                document.add_paragraph(override_text, style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
             if test_data.get(VISCOSITY_KEY):
                 document.add_paragraph(

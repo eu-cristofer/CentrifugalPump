@@ -661,3 +661,18 @@ msgstr "vibração"
 
 msgid "vibration vs. flow curve"
 msgstr "curva vibração × vazão"
+
+msgid "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+msgstr "Tolerâncias alteradas pelo usuário (padrão do critério de aceitação entre parênteses)"
+
+msgid "shut-off head"
+msgstr "altura em shut-off"
+
+msgid "not set"
+msgstr "não definida"
+
+msgid "Reason"
+msgstr "Motivo"
+
+msgid "not given"
+msgstr "não informado"

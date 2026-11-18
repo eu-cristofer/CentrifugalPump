@@ -351,6 +351,8 @@ class ComplianceResult:
     overall_pass: bool
     tolerances: dict = field(default_factory=dict)  # editable tolerances used
     overridden: bool = False  # True if user changed library defaults
+    default_tolerances: dict = field(default_factory=dict)  # criteria defaults
+    override_reason: str = ""  # why the user overrode (printed in the report)
     criteria_label: str = ""  # e.g. "API 610 12th edition + Petrobras N-553 (...)"
     unverified: tuple = ()  # names of criteria parts not yet verified
     parallel_ok: Optional[bool] = None  # parallel-operation rule (None = n/a)
@@ -367,6 +369,27 @@ class ComplianceResult:
         ):
             return "NOT FULLY ASSESSED"
         return "REJECTED"
+
+    @property
+    def verdict_text(self) -> str:
+        """The verdict as every view shows it (canvas, Compliance, Report Export).
+
+        ``APPROVED ✓`` / ``NOT FULLY ASSESSED ⚠`` / ``REJECTED ✗``, qualified
+        with "provisional" (criteria not verified against the standard text) and
+        "tolerances overridden" (user changed the criteria defaults).
+        """
+        text = {
+            "APPROVED": "APPROVED ✓",
+            "NOT FULLY ASSESSED": "NOT FULLY ASSESSED ⚠",
+        }.get(self.verdict_label, "REJECTED ✗")
+        qualifiers = []
+        if self.unverified:
+            qualifiers.append("provisional")
+        if self.overridden:
+            qualifiers.append("tolerances overridden")
+        if qualifiers:
+            text += " (" + ", ".join(qualifiers) + ")"
+        return text
 
 
 # ---------------------------------------------------------------------------

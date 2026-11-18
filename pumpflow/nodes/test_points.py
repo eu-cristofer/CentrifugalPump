@@ -516,6 +516,7 @@ class TestPointsTableNode(BaseNode):
             "discharge_z": "Discharge gauge elevation z_d",
         }
         geo_fields: Dict[str, ui.UnitField] = {}
+        geo_rows: Dict[str, QWidget] = {}
 
         def on_geo_change():
             applied = geo_chk.isChecked()
@@ -524,6 +525,8 @@ class TestPointsTableNode(BaseNode):
                 s[k] = f.magnitude() if applied else None
                 f.spin.setEnabled(applied)
                 f.combo.setEnabled(applied)
+                if k in geo_rows:  # the label greys out with its field
+                    geo_rows[k].setEnabled(applied)
             fill()  # Head column (and tooltips) re-derive with the geometry
             recompute_status()
 
@@ -716,7 +719,9 @@ class TestPointsTableNode(BaseNode):
         dlg.add(ui.section("Test bench geometry (optional)"))
         dlg.add(geo_chk)
         for k in _GEO_KEYS:
-            dlg.add(geo_fields[k].row(geo_labels[k]))
+            geo_rows[k] = geo_fields[k].row(geo_labels[k])
+            geo_rows[k].setEnabled(geo_chk.isChecked())
+            dlg.add(geo_rows[k])
         dlg.add(ui.hline())
         dlg.add(ui.section("Measured points"))
         dlg.add(vib_chk)

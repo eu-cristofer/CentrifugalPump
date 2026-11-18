@@ -85,6 +85,7 @@ def check_compliance(
     fitted: FittedModel,
     rated: RatedPoint,
     tolerances: Optional[dict] = None,
+    reason: str = "",
 ) -> ComplianceResult:
     """
     Evaluate API 610 deviations & verdict.
@@ -161,6 +162,8 @@ def check_compliance(
         overall_pass=verdict.approved,
         tolerances=tol,
         overridden=overridden,
+        default_tolerances=dict(lib_defaults),
+        override_reason=(reason or "").strip() if overridden else "",
         criteria_label=criteria_label(criteria),
         unverified=criteria.performance_unverified,
         parallel_ok=verdict.parallel_ok,

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from .utilities.unit_conversion import Q_, quantity_factory
 from .utilities.fluid import Fluid
 from .point import DesignPoint, TestPoint
-from .acceptance import AcceptanceCriteria, evaluate_performance
+from .acceptance import AcceptanceCriteria, evaluate_performance, _band
 from .viscosity import b_parameter, correction_factors
 from tabulate import tabulate
 import io
@@ -936,6 +936,7 @@ class PerformanceChecker:
         performance_curve: PerformanceCurve,
         acceptable_limits: Optional[Dict[str, float]] = None,
         criteria: Optional[AcceptanceCriteria] = None,
+        tolerances: Optional[Dict[str, Optional[float]]] = None,
     ):
         """
         Initializes the PerformanceChecker with a design point and performance curve.
@@ -950,6 +951,11 @@ class PerformanceChecker:
             Deprecated and ignored; pass ``criteria`` instead.
         criteria : AcceptanceCriteria, optional
             Tolerance tables (default: ``AcceptanceCriteria.default()``).
+        tolerances : dict, optional
+            User overrides of the criteria (``{"head", "shutoff", "power",
+            "efficiency"}``, fractions), applied exactly as
+            :func:`pump.acceptance.evaluate_performance` applies them, so the
+            limits in :attr:`report_summary` match the verdict.
         """
         if acceptable_limits is not None:
             warnings.warn(
@@ -960,11 +966,14 @@ class PerformanceChecker:
         self.design_point = design_point
         self.curve = performance_curve
         self.criteria = criteria if criteria is not None else AcceptanceCriteria.default()
+        self.tolerances: Dict[str, Optional[float]] = dict(tolerances or {})
 
         rated_head = self.design_point.differential_head
-        self.head_tolerance_minus, self.head_tolerance = self.criteria.head_tolerance(rated_head)
+        self.head_tolerance_minus, self.head_tolerance = self._head_band()
         self.shutoff_tolerance: float = self._get_shutoff_tolerance()
-        self.breaking_power_tolerance: float = self.criteria.power_tol_plus
+        self.breaking_power_tolerance: float = self.tolerances.get(
+            "power", self.criteria.power_tol_plus
+        )
 
         self._compute_limits()
 
@@ -978,10 +987,26 @@ class PerformanceChecker:
         float
             The tolerance value for the shutoff head.
         """
+        return self._shutoff_band()[1]
+
+    def _head_band(self) -> tuple:
+        """``(minus, plus)`` head tolerance: criteria band or user override."""
+        rated = self.design_point.differential_head
+        return _band(
+            getattr(self, "tolerances", {}).get("head"),
+            self.criteria.head_tolerance(rated),
+        )
+
+    def _shutoff_band(self) -> tuple:
+        """``(minus, plus)`` shut-off tolerance: criteria band or user override."""
         criteria = getattr(self, "criteria", None)
         if criteria is None:
             criteria = AcceptanceCriteria.default()
-        return criteria.shutoff_tolerance(self.design_point.differential_head)[1]
+        rated = self.design_point.differential_head
+        return _band(
+            getattr(self, "tolerances", {}).get("shutoff"),
+            criteria.shutoff_tolerance(rated),
+        )
 
     def _compute_limits(self) -> None:
         """
@@ -989,7 +1014,7 @@ class PerformanceChecker:
         Limits without input data are ``None``.
         """
         rated = self.design_point.differential_head
-        head_minus, head_plus = self.criteria.head_tolerance(rated)
+        head_minus, head_plus = self._head_band()
         self.minimum_head = round(rated - head_minus * rated, 2)
         self.maximum_head = round(rated + head_plus * rated, 2)
 
@@ -999,14 +1024,14 @@ class PerformanceChecker:
 
         head_shutoff = getattr(self.design_point, "head_shutoff", None)
         if head_shutoff is not None:
-            so_minus, so_plus = self.criteria.shutoff_tolerance(rated)
+            so_minus, so_plus = self._shutoff_band()
             self.maximum_head_shutoff = round(head_shutoff + so_plus * head_shutoff, 2)
             self.minimum_head_shutoff = round(head_shutoff - so_minus * head_shutoff, 2)
 
         breaking_power = getattr(self.design_point, "breaking_power", None)
         if breaking_power is not None:
             self.maximum_breaking_power = round(
-                breaking_power + self.criteria.power_tol_plus * breaking_power, 2
+                breaking_power + self.breaking_power_tolerance * breaking_power, 2
             )
 
     @property
@@ -1038,6 +1063,7 @@ class PerformanceChecker:
             parallel_operation=parallel_operation,
             rated_speed=getattr(dp, "speed_of_rotation", None),
             test_speeds=test_speeds,
+            tolerances=self.tolerances or None,
         )
 
     def parallel_operation_ok(self) -> Optional[bool]:

@@ -13,9 +13,11 @@ from __future__ import annotations
 
 from typing import Dict
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
-    QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem,
+    QHeaderView, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
+    QToolButton, QVBoxLayout, QWidget,
 )
 
 from pump import Q_
@@ -37,7 +39,7 @@ _HEADERS = [
 class ComplianceCheckNode(BaseNode):
     kind = "compliance"
     title = "API 610 Compliance Check"
-    glyph = "✓"
+    glyph = "⚖"
     inputs = [PortSpec("FittedModel", "FittedModel"), PortSpec("RatedPoint", "RatedPoint")]
     outputs = [PortSpec("ComplianceResult", "ComplianceResult")]
 
@@ -49,7 +51,12 @@ class ComplianceCheckNode(BaseNode):
         rated = self.first(inputs, "RatedPoint")
         if fitted is None or rated is None:
             return self.emit_nothing("Waiting for model + rated point", "idle")
-        result = check_compliance(fitted, rated, self.settings.get("tolerances") or None)
+        result = check_compliance(
+            fitted,
+            rated,
+            self.settings.get("tolerances") or None,
+            reason=self.settings.get("override_reason", ""),
+        )
         self._last = result
         self._rated = rated
         n_fail = sum(
@@ -57,21 +64,20 @@ class ComplianceCheckNode(BaseNode):
             for p in result.parameters
             if not p.passed and not p.informational and p.evaluated
         )
-        # A verdict against criteria not verified from the standard text is
-        # provisional: say so, instead of presenting it as final.
-        tail = " (unverified criteria)" if result.unverified else ""
-        if result.overall_pass:
-            self.status = f"{result.pump_tag} · ✅ APPROVED{tail}"
-            self.state = "ok"
-        elif result.verdict_label == "NOT FULLY ASSESSED":
-            self.status = (
-                f"{result.pump_tag} · ⚠ NOT FULLY ASSESSED: "
-                + ", ".join(result.not_evaluated)
-            )
-            self.state = "reject"
-        else:
-            self.status = f"{result.pump_tag} · ❌ {n_fail} out of tolerance{tail}"
-            self.state = "reject"
+        # One verdict vocabulary everywhere (ComplianceResult.verdict_text):
+        # provisional criteria and overridden tolerances are always said.
+        self.status = f"{result.pump_tag} · {result.verdict_text}"
+        if result.verdict_label == "NOT FULLY ASSESSED":
+            self.status += ": " + ", ".join(result.not_evaluated)
+        elif not result.overall_pass and n_fail:
+            self.status += f": {n_fail} out of tolerance"
+        self.state = "ok" if result.overall_pass else "reject"
+        self.set_badge(
+            result.verdict_label,
+            {"APPROVED": "ok", "NOT FULLY ASSESSED": "warn"}.get(result.verdict_label, "fail"),
+            provisional=bool(result.unverified),
+            overridden=result.overridden,
+        )
         return {"ComplianceResult": result}
 
     def port_label(self, name: str) -> str:
@@ -100,7 +106,11 @@ class ComplianceCheckNode(BaseNode):
 
         table = QTableWidget(0, len(_HEADERS))
         table.setHorizontalHeaderLabels(_HEADERS)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        hh = table.horizontalHeader()
+        hh.setSectionResizeMode(QHeaderView.ResizeToContents)
+        hh.setSectionResizeMode(len(_HEADERS) - 1, QHeaderView.Stretch)  # Note
+        table.verticalHeader().setVisible(False)
+        table.setWordWrap(True)
         table.setObjectName("ResultGrid")
 
         # tolerance editors (defaults depend on the rated head band)
@@ -137,12 +147,7 @@ class ComplianceCheckNode(BaseNode):
             rows_h = sum(table.rowHeight(i) for i in range(table.rowCount()))
             table.setMinimumHeight(table.horizontalHeader().height() + rows_h + 6)
             ok = result.overall_pass
-            tail = "  (unverified criteria)" if result.unverified else ""
-            label = {
-                "APPROVED": "APPROVED ✓",
-                "NOT FULLY ASSESSED": "NOT FULLY ASSESSED ⚠",
-            }.get(result.verdict_label, "REJECTED ✗")
-            verdict.setText(f"{label}{tail}   ·   {result.pump_tag}")
+            verdict.setText(f"{result.verdict_text}   ·   {result.pump_tag}")
             verdict.setProperty("verdict", "pass" if ok else "fail")
             _repolish(verdict)
             criteria_lbl.setText(f"Criteria: {result.criteria_label}")
@@ -186,7 +191,7 @@ class ComplianceCheckNode(BaseNode):
             sb.valueChanged.connect(lambda _=None: write_tol())
         eff_guaranteed.toggled.connect(lambda _=None: write_tol())
 
-        reset = QPushButton("Reset to API 610 standard")
+        reset = QPushButton("Reset to the acceptance criteria")
         reset.setObjectName("ToolButton")
 
         def do_reset():
@@ -201,6 +206,10 @@ class ComplianceCheckNode(BaseNode):
             eff_guaranteed.setChecked(b["efficiency"] is not None)
             eff_guaranteed.blockSignals(False)
             tol_eff.setEnabled(b["efficiency"] is not None)
+            s.pop("override_reason", None)
+            reason.blockSignals(True)
+            reason.clear()
+            reason.blockSignals(False)
             refresh()
 
         reset.clicked.connect(do_reset)
@@ -212,13 +221,53 @@ class ComplianceCheckNode(BaseNode):
         dlg.add(override_chip)
         dlg.add(table)
         dlg.add(ui.hline())
-        dlg.add(ui.section("Tolerances (editable)"))
-        dlg.add(ui.row("Head", tol_head, "%"))
-        dlg.add(ui.row("Shut-off head", tol_shut, "%"))
-        dlg.add(ui.row("Power", tol_pow, "%"))
-        dlg.add(ui.row("", eff_guaranteed))
-        dlg.add(ui.row("Efficiency", tol_eff, "%"))
-        dlg.add(ui.row("", reset))
+
+        # Overriding the criteria changes the verdict: keep it out of the way,
+        # say what it does, and ask why (the reason is printed in the report).
+        toggle = QToolButton(objectName="SectionToggle")
+        toggle.setCheckable(True)
+        toggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        toggle.setText("Override acceptance criteria…")
+        override_box = QWidget()
+        ob = QVBoxLayout(override_box)
+        ob.setContentsMargins(0, 0, 0, 0)
+        warn = ui.Banner(
+            "Changing a tolerance changes the verdict.  The report states every "
+            "overridden tolerance next to the criteria default, with the reason "
+            "below.",
+            "warn",
+        )
+        reason = QLineEdit(s.get("override_reason", ""))
+        reason.setPlaceholderText("e.g. purchaser agreement, ref. letter / MoM no.")
+
+        def write_reason(text):
+            if text.strip():
+                s["override_reason"] = text.strip()
+            else:
+                s.pop("override_reason", None)
+            refresh()
+
+        reason.textChanged.connect(write_reason)
+        ob.addWidget(warn)
+        ob.addWidget(ui.row("Head", tol_head, "%"))
+        ob.addWidget(ui.row("Shut-off head", tol_shut, "%"))
+        ob.addWidget(ui.row("Power", tol_pow, "%"))
+        ob.addWidget(ui.row("", eff_guaranteed))
+        ob.addWidget(ui.row("Efficiency", tol_eff, "%"))
+        ob.addWidget(ui.row("Reason", reason))
+        ob.addWidget(ui.row("", reset))
+
+        def show_override(on: bool):
+            toggle.setArrowType(Qt.DownArrow if on else Qt.RightArrow)
+            override_box.setVisible(on)
+
+        toggle.toggled.connect(show_override)
+        is_overridden = bool(getattr(getattr(self, "_last", None), "overridden", False))
+        toggle.setChecked(is_overridden)
+        show_override(is_overridden)
+
+        dlg.add(toggle)
+        dlg.add(override_box)
         refresh()
         dlg.resize(700, 640)
         return dlg

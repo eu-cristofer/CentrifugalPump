@@ -27,7 +27,7 @@
   "check_a": [
    "compliance",
    "ok",
-   "B-34004A · ✅ APPROVED",
+   "B-34004A · APPROVED ✓",
    [
     [
      "Head",
@@ -119,7 +119,7 @@
   "report": [
    "report_export",
    "ok",
-   "1 pump · APPROVED"
+   "1 pump · APPROVED ✓"
   ],
   "test_a": [
    "test_points",
@@ -212,7 +212,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "B-2351105A · ❌ 1 out of tolerance",
+   "B-2351105A · REJECTED ✗: 1 out of tolerance",
    [
     [
      "Head",
@@ -274,7 +274,7 @@
   "report": [
    "report_export",
    "reject",
-   "1 pump · REJECTED"
+   "1 pump · REJECTED ✗"
   ],
   "test_a": [
    "test_points",
@@ -286,7 +286,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "B-2351105A · ❌ 1 out of tolerance",
+   "B-2351105A · REJECTED ✗: 1 out of tolerance",
    [
     [
      "Head",
@@ -348,7 +348,7 @@
   "report": [
    "report_export",
    "reject",
-   "1 pump · REJECTED"
+   "1 pump · REJECTED ✗"
   ],
   "test_a": [
    "test_points",
@@ -360,7 +360,7 @@
   "check_a": [
    "compliance",
    "ok",
-   "P-1001A · ✅ APPROVED",
+   "P-1001A · APPROVED ✓",
    [
     [
      "Head",
@@ -422,7 +422,7 @@
   "report": [
    "report_export",
    "ok",
-   "1 pump · APPROVED"
+   "1 pump · APPROVED ✓"
   ],
   "test_a": [
    "test_points",

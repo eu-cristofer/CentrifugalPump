@@ -73,6 +73,25 @@ def load_recent() -> list[str]:
     return [p for p in raw if Path(p).exists()]
 
 
+def recent_label(path: Path) -> str:
+    """Two-line label of a recent project: file name, then folder · modified date.
+
+    >>> recent_label(Path("/nowhere/x.pumpflow")).splitlines()[0]
+    'x.pumpflow'
+    """
+    import datetime as _dt
+
+    try:
+        stamp = _dt.datetime.fromtimestamp(path.stat().st_mtime).strftime(
+            "%Y-%m-%d %H:%M"
+        )
+    except OSError:
+        stamp = ""
+    folder = path.parent.name or str(path.parent)
+    detail = f"{folder}  ·  {stamp}" if stamp else folder
+    return f"{path.name}\n{detail}"
+
+
 def save_recent(path: Path) -> None:
     """
     Prepend *path* to the persisted recent-files list.
@@ -186,7 +205,10 @@ class WelcomeDialog(QDialog):
         recent = load_recent()
         if recent:
             for path_str in recent:
-                btn = QPushButton(Path(path_str).name, objectName="RecentItem")
+                btn = QPushButton(
+                    recent_label(Path(path_str)).replace("&", "&&"),
+                    objectName="RecentItem",
+                )
                 btn.setToolTip(path_str)
                 btn.clicked.connect(
                     lambda _=False, p=path_str: self._pick_file(Path(p))
@@ -219,7 +241,8 @@ class WelcomeDialog(QDialog):
             if not ex_path.exists():
                 continue
             # Button row
-            btn = QPushButton(title, objectName="ExampleItem")
+            # "&" would be a mnemonic ("Curve & Report" shows "Curve _Report")
+            btn = QPushButton(title.replace("&", "&&"), objectName="ExampleItem")
             btn.clicked.connect(lambda _=False, p=ex_path: self._pick_example(p))
             lay.addWidget(btn)
             # Subdued description beneath the button
@@ -248,7 +271,8 @@ class WelcomeDialog(QDialog):
         btn_open = QPushButton("Open file…", objectName="ToolButton")
         btn_open.clicked.connect(self._open_file_dialog)
 
-        btn_skip = QPushButton("Skip", objectName="ToolButton")
+        btn_skip = QPushButton("Demo pipeline", objectName="ToolButton")
+        btn_skip.setToolTip("Start with the built-in demo pipeline (same as closing)")
         btn_skip.clicked.connect(self.reject)
 
         lay.addWidget(btn_new)

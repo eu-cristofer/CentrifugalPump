@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, List
 
 from PySide6.QtCore import QRectF, Qt, QPointF
-from PySide6.QtGui import QBrush, QColor, QPainterPath, QPen
+from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainterPath, QPen
 from PySide6.QtWidgets import QGraphicsObject, QGraphicsItem, QGraphicsDropShadowEffect
 
 from . import theme
@@ -28,6 +28,20 @@ _STATE_COLOR = {
     "error": theme.REJECT_RED,
     "reject": theme.REJECT_RED,
 }
+
+# State glyph drawn inside the dot, so state never relies on colour alone.
+_STATE_GLYPH = {"ok": "✓", "invalid": "!", "error": "✗", "reject": "✗"}
+
+# Verdict pill: (fill, text) per tone.  Amber takes dark text for contrast.
+_TONE = {
+    "ok": (theme.OK_GREEN, theme.TITLE_TEXT),
+    "fail": (theme.REJECT_RED, theme.TITLE_TEXT),
+    "warn": (theme.AMBER, theme.BODY_TEXT),
+}
+
+# Below this zoom the port labels and status text are unreadable: draw only the
+# title and a large verdict (or state glyph) instead.
+LOW_DETAIL_LOD = 0.75
 
 
 class NodeItem(QGraphicsObject):
@@ -141,6 +155,11 @@ class NodeItem(QGraphicsObject):
             self.logic.title,
         )
 
+        lod = option.levelOfDetailFromTransform(painter.worldTransform())
+        if lod < LOW_DETAIL_LOD:
+            self._paint_overview(painter, w, h)
+            return
+
         # port labels
         painter.setFont(theme.body_font())
         painter.setPen(QPen(theme.SUBTLE_TEXT))
@@ -159,24 +178,105 @@ class NodeItem(QGraphicsObject):
                 self.logic.port_label(name),
             )
 
-        # status line + state dot
+        # status line: verdict pill (+ qualifier chips) or a state glyph, then text
         sy = h - 26
         painter.setPen(QPen(theme.DIVIDER))
         painter.drawLine(QPointF(10, sy), QPointF(w - 10, sy))
 
         state = self.logic.state
-        dot = _STATE_COLOR.get(state, theme.SUBTLE_TEXT)
-        painter.setBrush(QBrush(dot))
-        painter.setPen(Qt.NoPen)
-        painter.drawEllipse(QPointF(16, sy + 13), 4, 4)
+        cy = sy + 13
+        x = 10.0
+        badge = getattr(self.logic, "badge", None)
+        if badge:
+            x = self._paint_pill(painter, x, cy, badge[0], badge[1], 16.0)
+            for note in getattr(self.logic, "badge_notes", ()):
+                x = self._paint_pill(painter, x + 3, cy, note, "warn", 16.0, outline=True)
+            x += 5
+        else:
+            self._paint_state_glyph(painter, QPointF(17, cy), 6.0, state)
+            x = 28.0
 
         painter.setPen(QPen(theme.BODY_TEXT if state == "ok" else theme.SUBTLE_TEXT))
         painter.setFont(theme.body_font())
-        painter.drawText(
-            QRectF(28, sy + 4, w - 36, 18),
-            Qt.AlignVCenter | Qt.AlignLeft,
-            _elide(self.logic.status, 30),
-        )
+        avail = w - 8 - x
+        if avail > 12:
+            text = QFontMetricsF(painter.font()).elidedText(
+                _status_beside(self.logic.status, badge), Qt.ElideRight, avail
+            )
+            painter.drawText(
+                QRectF(x, sy + 4, avail, 18), Qt.AlignVCenter | Qt.AlignLeft, text
+            )
+
+    # -- painting helpers --------------------------------------------------
+    def _paint_state_glyph(self, painter, center: QPointF, r: float, state: str):
+        """A filled dot carrying a glyph (✓ ! ✗); idle is a hollow ring."""
+        color = _STATE_COLOR.get(state, theme.SUBTLE_TEXT)
+        glyph = _STATE_GLYPH.get(state)
+        if glyph is None:
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(color, max(1.2, r / 4)))
+            painter.drawEllipse(center, r - 1, r - 1)
+            return
+        painter.setBrush(QBrush(color))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(center, r, r)
+        font = QFont(theme.body_font())
+        font.setPixelSize(max(1, int(r * 1.5)))
+        font.setBold(True)
+        painter.setFont(font)
+        painter.setPen(QPen(theme.BODY_TEXT if state == "invalid" else theme.TITLE_TEXT))
+        painter.drawText(QRectF(center.x() - r, center.y() - r, 2 * r, 2 * r),
+                         Qt.AlignCenter, glyph)
+
+    def _paint_pill(
+        self, painter, x, cy, text, tone, height, outline=False, center=False
+    ) -> float:
+        """Draw a rounded verdict pill at ``x`` (or centred); return its right edge."""
+        fill, ink = _TONE.get(tone, _TONE["warn"])
+        font = QFont(theme.body_font())
+        font.setPixelSize(max(1, int(height * 0.58)))
+        font.setBold(True)
+        fm = QFontMetricsF(font)
+        room = theme.NODE_W - 8 - x
+        label = fm.elidedText(text, Qt.ElideRight, max(0.0, room - height * 0.8))
+        width = min(fm.horizontalAdvance(label) + height * 0.8, room)
+        if width <= height * 0.8:
+            return x
+        if center:
+            x = (theme.NODE_W - width) / 2
+        rect = QRectF(x, cy - height / 2, width, height)
+        if outline:
+            painter.setBrush(QBrush(theme.NODE_BG))
+            painter.setPen(QPen(fill, 1.2))
+            ink = theme.BODY_TEXT
+        else:
+            painter.setBrush(QBrush(fill))
+            painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(rect, height / 2, height / 2)
+        painter.setFont(font)
+        painter.setPen(QPen(ink))
+        painter.drawText(rect, Qt.AlignCenter, label)
+        return rect.right()
+
+    def _paint_overview(self, painter, w: float, h: float) -> None:
+        """Zoomed out: the body shows only the verdict (or a large state glyph)."""
+        top = theme.TITLE_H
+        body_h = h - top
+        cy = top + body_h / 2
+        badge = getattr(self.logic, "badge", None)
+        if badge:
+            pill_h = min(body_h * 0.42, 34.0)
+            notes = getattr(self.logic, "badge_notes", ())
+            if notes:
+                cy -= pill_h * 0.4
+            self._paint_pill(painter, 10, cy, badge[0], badge[1], pill_h, center=True)
+            if notes:
+                self._paint_pill(painter, 10, cy + pill_h * 0.95, " · ".join(notes),
+                                 "warn", pill_h * 0.7, outline=True, center=True)
+        else:
+            self._paint_state_glyph(
+                painter, QPointF(w / 2, cy), min(body_h * 0.25, 16.0), self.logic.state
+            )
 
     def refresh(self) -> None:
         self.update()
@@ -190,6 +290,15 @@ class NodeItem(QGraphicsObject):
         super().mouseDoubleClickEvent(event)
 
 
-def _elide(text: str, n: int) -> str:
-    text = (text or "").replace("\n", " ")
-    return text if len(text) <= n else text[: n - 1] + "…"
+def _status_beside(status: str, badge) -> str:
+    """The status line without the segment the verdict pill already shows.
+
+    ``"B-1A · APPROVED ✓ (provisional)"`` beside an ``APPROVED`` pill reads
+    ``"B-1A"``; segments are the `` · `` separated parts of the status.
+    """
+    text = (status or "").replace("\n", " ")
+    if not badge:
+        return text
+    word = badge[0]
+    kept = [seg for seg in text.split(" · ") if not seg.strip().startswith(word)]
+    return " · ".join(kept) if kept else ""

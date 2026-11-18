@@ -397,6 +397,11 @@ class RatedPointInputNode(BaseNode):
         tag = ui.line_edit(s["tag"], None, "service / datasheet TAG")
         tag.textChanged.connect(lambda v: (s.__setitem__("tag", v), apply()))
         std = ui.line_edit(s["standard"], None)
+        std.setToolTip(
+            "Text printed as the applicable standard on the report cover.\n"
+            "It follows Standard / edition and Client overlay; edit it to add\n"
+            "documents (e.g. a datasheet revision). It does not change the criteria."
+        )
         std.textChanged.connect(lambda v: (s.__setitem__("standard", v), apply()))
 
         # ---- ACCEPTANCE CRITERIA — edition + client overlay ----
@@ -561,6 +566,7 @@ class RatedPointInputNode(BaseNode):
         dlg.add(ui.row("Service TAG", tag))
         dlg.add(ui.row("Standard / edition", edition_combo))
         dlg.add(ui.row("Client overlay", client_combo))
+        dlg.add(ui.row("Label on report cover", std))
         dlg.add(
             ui.section_with_info(
                 "API 610 pump type", "API 610 pump type", PUMP_TYPE_HELP
@@ -568,7 +574,6 @@ class RatedPointInputNode(BaseNode):
         )
         dlg.add(ui.row("Pump type", type_combo))
         dlg.add(ui.row("", type_hint))
-        dlg.add(ui.row("Standard", std))
         dlg.add(ui.hline())
         dlg.add(ui.section("Rated duty"))
         dlg.add(q_field.row("Capacity  Q"))

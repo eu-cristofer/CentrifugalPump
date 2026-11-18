@@ -94,6 +94,9 @@ jobs:
           tests/test_units.py
           tests/test_units_gui.py
           tests/test_viscosity.py
+          tests/test_verdict_consistency.py
+          tests/test_ui_round2_gui.py
+          tests/test_canvas_verdict_gui.py
 
   mypy:
     runs-on: ubuntu-latest

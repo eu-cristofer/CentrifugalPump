@@ -595,3 +595,18 @@ msgstr ""
 
 msgid "vibration vs. flow curve"
 msgstr ""
+
+msgid "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+msgstr "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+
+msgid "shut-off head"
+msgstr "shut-off head"
+
+msgid "not set"
+msgstr "not set"
+
+msgid "Reason"
+msgstr "Reason"
+
+msgid "not given"
+msgstr "not given"

@@ -55,6 +55,7 @@ from .report import (
     npsh_points_table,
     npsh_summary_rows,
     performance_verdict,
+    tolerance_override_sentence,
     signature_block,
     standard_sentence,
     unverified_sentence,
@@ -302,6 +303,11 @@ class LatexReportGenerator:
                     % (latex_escape(_("Overall verdict")), latex_escape(verdict))
                     + "\n"
                 )
+            override_text = tolerance_override_sentence(
+                _, entry.get("tolerance_override"), entry.get("tolerance_override_reason", "")
+            )
+            if override_text:
+                out.append(latex_escape(override_text) + "\n")
             out.append(self._summary(entry.get("test_summary") or {}, acceptance))
             if entry.get(VISCOSITY_KEY):
                 out.append(

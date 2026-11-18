@@ -238,6 +238,12 @@ class NPSHNode(BaseNode):
         )
         st = getattr(res, "status", "info")
         self.state = {"pass": "ok", "fail": "reject"}.get(st, "idle")
+        if st in ("pass", "fail"):
+            self.set_badge(
+                "PASSED" if st == "pass" else "FAILED",
+                "ok" if st == "pass" else "fail",
+                provisional=not getattr(res, "verified", True),
+            )
         return {"NPSHResult": sig}
 
     # -- dialog ------------------------------------------------------------

@@ -69,8 +69,10 @@ rejection unless the purchase order specified an efficiency tolerance.  N-553 re
 does that only for drivers of **1 MW or more** (−0 %).
 
 In the workbench the Compliance node shows efficiency as `info` and leaves it out of the
-verdict.  Tick *Efficiency is guaranteed* and enter the tolerance only when the contract
-says so.
+verdict.  Open *Override acceptance criteria…*, tick *Efficiency is guaranteed* and enter
+the tolerance only when the contract says so, with the contract reference as the
+*Reason*.  Any override puts an `OVERRIDDEN` chip on the node, and the report lists each
+changed tolerance next to the criteria default, with your reason.
 
 ## 4 · Shut-off head and the rising curve
 
@@ -222,6 +224,8 @@ At the end:
   node).  **NOT FULLY ASSESSED** means a required check could not be computed: find out
   why (a missing column?) before signing.
 - [ ] Efficiency reported; judged only if guaranteed.
+- [ ] No `OVERRIDDEN` chip on a Compliance node unless the change is agreed in writing,
+  and its reason is filled in (the report prints "Reason: not given" otherwise).
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
 - [ ] Mechanical run: duration, stabilisation, vibration (MRT Log → MRT Check).
 - [ ] Report exported (Word / PDF), open points listed, signatures if required.

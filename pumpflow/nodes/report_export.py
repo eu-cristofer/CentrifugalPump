@@ -49,6 +49,32 @@ _DEFAULT_EQUIP = ["Manufacturer", "Model", "Serial No.", "Type", "Driver", "Test
 _COVER_KEYS = ("project", "client", "location", "test_date", "revision")
 
 
+def overall_verdict_text(checks) -> str:
+    """Consolidated verdict of several pumps, in the Compliance node's words.
+
+    REJECTED if any pump is rejected, else NOT FULLY ASSESSED if any is, else
+    APPROVED; "provisional" / "tolerances overridden" are kept when any pump
+    carries them.  ``pending`` when no pump has a performance verdict yet.
+    """
+    if not checks:
+        return "pending"
+    labels = [c.verdict_label for c in checks]
+    if "REJECTED" in labels:
+        text = "REJECTED ✗"
+    elif "NOT FULLY ASSESSED" in labels:
+        text = "NOT FULLY ASSESSED ⚠"
+    else:
+        text = "APPROVED ✓"
+    qualifiers = []
+    if any(c.unverified for c in checks):
+        qualifiers.append("provisional")
+    if any(c.overridden for c in checks):
+        qualifiers.append("tolerances overridden")
+    if qualifiers:
+        text += " (" + ", ".join(qualifiers) + ")"
+    return text
+
+
 class ReportExportNode(BaseNode):
     kind = "report_export"
     title = "Report Export"
@@ -138,9 +164,20 @@ class ReportExportNode(BaseNode):
         checks = [b.compliance for b in branches if b.compliance is not None]
         overall = bool(checks) and all(c.overall_pass for c in checks)
         n = len(branches)
-        verdict = "APPROVED" if overall else ("REJECTED" if checks else "pending")
-        self.status = f"{n} pump{'s' if n > 1 else ''} · {verdict}"
+        self.status = f"{n} pump{'s' if n > 1 else ''} · {overall_verdict_text(checks)}"
         self.state = "ok" if overall else ("reject" if checks else "idle")
+        if checks:
+            labels = [c.verdict_label for c in checks]
+            label = next(
+                (v for v in ("REJECTED", "NOT FULLY ASSESSED") if v in labels),
+                "APPROVED",
+            )
+            self.set_badge(
+                label,
+                {"APPROVED": "ok", "NOT FULLY ASSESSED": "warn"}.get(label, "fail"),
+                provisional=any(c.unverified for c in checks),
+                overridden=any(c.overridden for c in checks),
+            )
         return {}
 
     def port_label(self, name: str) -> str:
@@ -305,16 +342,18 @@ class ReportExportNode(BaseNode):
                 return
             lines = []
             for b in branches:
-                verdict = "—"
-                if b.compliance is not None:
-                    verdict = "APPROVED ✓" if b.compliance.overall_pass else "REJECTED ✗"
-                has = "".join(
-                    m for m, ok in [
-                        ("C", b.corrected), ("F", b.fitted), ("V", b.compliance),
-                        ("M", b.mechanical), ("N", b.npsh),
+                verdict = (
+                    b.compliance.verdict_text if b.compliance is not None
+                    else "no performance verdict"
+                )
+                has = " · ".join(
+                    label for label, ok in [
+                        ("Corrected", b.corrected), ("Fitted", b.fitted),
+                        ("Verdict", b.compliance), ("MRT", b.mechanical),
+                        ("NPSH", b.npsh),
                     ] if ok
                 )
-                lines.append(f"{b.pump_tag:<14} [{has:<5}]  {verdict}")
+                lines.append(f"{b.pump_tag}  —  {verdict}\n    sections: {has or 'none'}")
             pumps_lbl.setText("\n".join(lines))
             banner.show_message(self.status, "ok" if self.state == "ok" else "info")
 

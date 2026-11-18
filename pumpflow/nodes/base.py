@@ -7,7 +7,9 @@ ports, owns its ``settings`` dict, and implements :meth:`compute` — which read
 the payloads gathered from upstream and returns a ``{output_port: payload}``
 dict.  It also sets a one-line :attr:`status` and a :attr:`state`
 (``idle`` / ``ok`` / ``invalid`` / ``error`` / ``reject``) that the canvas node
-renders (UI_SPEC §3).
+renders (UI_SPEC §3).  Nodes that judge something also set :attr:`badge`, the
+verdict pill painted on the canvas (``(text, tone)``, tone ``ok`` / ``fail`` /
+``warn``), and :attr:`badge_notes` (``PROVISIONAL``, ``OVERRIDDEN``).
 """
 
 from __future__ import annotations
@@ -39,6 +41,8 @@ class BaseNode:
         self.status: str = "Not configured"
         self.state: str = "idle"
         self.error: str = ""
+        self.badge: Optional[tuple] = None  # (text, tone): canvas verdict pill
+        self.badge_notes: tuple = ()  # qualifier chips beside the pill
         self.item = None  # set by NodeItem
 
     # -- overridable -------------------------------------------------------
@@ -59,6 +63,8 @@ class BaseNode:
     # -- runtime -----------------------------------------------------------
     def run(self, inputs: Dict[str, list]) -> None:
         self.error = ""
+        self.badge = None
+        self.badge_notes = ()
         outputs = self.compute(inputs) or {}
         self.outputs_cache = outputs
 
@@ -66,7 +72,19 @@ class BaseNode:
         self.error = message
         self.status = message
         self.state = "error"
+        self.badge = None
+        self.badge_notes = ()
         self.outputs_cache = {}
+
+    def set_badge(self, text: str, tone: str, provisional=False, overridden=False):
+        """Set the canvas verdict pill (tone ``ok`` / ``fail`` / ``warn``)."""
+        self.badge = (text, tone)
+        notes = []
+        if overridden:
+            notes.append("OVERRIDDEN")
+        if provisional:
+            notes.append("PROVISIONAL")
+        self.badge_notes = tuple(notes)
 
     def emit_nothing(self, status: str, state: str = "invalid") -> Dict[str, object]:
         """Helper: clear outputs and show an amber/idle status (UI_SPEC §7)."""

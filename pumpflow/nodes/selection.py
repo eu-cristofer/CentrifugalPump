@@ -59,7 +59,7 @@ def _value_text(cand) -> str:
 class SelectionNode(BaseNode):
     kind = "selection"
     title = "Pump Selection"
-    glyph = "▤"
+    glyph = "⊕"
     is_source = True
     inputs = [PortSpec("FluidSpec", "FluidSpec")]
     outputs = [PortSpec("RatedPoint", "RatedPoint")]

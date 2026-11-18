@@ -17,9 +17,12 @@ from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
+    QFrame,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -28,7 +31,7 @@ from . import units
 from .canvas.scene import GraphScene
 from .canvas.view import GraphView
 from .nodes import make_node
-from .nodes.registry import NODE_KINDS
+from .nodes.registry import grouped_node_kinds
 from .nodes.test_points import canonical_columns, testset_settings
 from .persistence import (
     json_from_signals,
@@ -90,12 +93,14 @@ class MainWindow(QMainWindow):
         self._act(m_file, "Quit", self.close, "Ctrl+Q")
 
         m_add = bar.addMenu("&Add node")
-        for kind, title, glyph in NODE_KINDS:
-            self._act(
-                m_add,
-                f"{glyph}  {title}",
-                lambda _=False, k=kind: self.add_node_centered(k),
-            )
+        for group, kinds in grouped_node_kinds():
+            m_add.addSection(group.replace("&", "&&"))
+            for kind, title, glyph in kinds:
+                self._act(
+                    m_add,
+                    f"{glyph}  {title}",
+                    lambda _=False, k=kind: self.add_node_centered(k),
+                )
 
         m_canvas = bar.addMenu("&Canvas")
         self._act(m_canvas, "Recompute graph", self.scene.evaluate, "F5")
@@ -315,18 +320,27 @@ class MainWindow(QMainWindow):
 
     # --------------------------------------------------------------- toolbox
     def _build_toolbox(self) -> None:
-        dock = QDockWidget("Widgets", self)
+        dock = QDockWidget("Nodes", self)
+        dock.setObjectName("NodesDock")
         dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         panel = QWidget(objectName="Toolbox")
         lay = QVBoxLayout(panel)
-        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setContentsMargins(0, 4, 0, 8)
         lay.setSpacing(0)
-        for kind, title, glyph in NODE_KINDS:
-            btn = QPushButton(f"{glyph}   {title}", objectName="ToolboxItem")
-            btn.clicked.connect(lambda _=False, k=kind: self.add_node_centered(k))
-            lay.addWidget(btn)
+        for group, kinds in grouped_node_kinds():
+            lay.addWidget(QLabel(group.upper(), objectName="ToolboxGroup"))
+            for kind, title, glyph in kinds:
+                btn = QPushButton(f"{glyph}   {title}", objectName="ToolboxItem")
+                btn.setToolTip(f"Add a {title} node at the centre of the view")
+                btn.clicked.connect(lambda _=False, k=kind: self.add_node_centered(k))
+                lay.addWidget(btn)
         lay.addStretch(1)
-        dock.setWidget(panel)
+        scroll = QScrollArea(objectName="ToolboxScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidget(panel)
+        dock.setWidget(scroll)
         dock.setMinimumWidth(210)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
 

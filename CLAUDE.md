@@ -11,17 +11,19 @@ The repo is **two stacked subsystems**:
 - **[`pump/`](pump/)**: the headless physics **library** (units, fluids, points, curves, acceptance, NPSH, mechanical run, system curve, selection, reporting). It is the source of truth for all physics and every verdict.
 - **[`pumpflow/`](pumpflow/)**: a **PySide6 visual workbench** (node canvas). It re-implements **no** physics; the `pumpflow/binding/` package is the *only* place that calls into `pump`.
 
-[`UI_SPEC.md`](UI_SPEC.md) is the authoritative spec for `pumpflow`; the code cites it as `UI_SPEC §N`.
+[`docs/UI_SPEC.md`](docs/UI_SPEC.md) is the authoritative spec for `pumpflow`; the code cites it as `UI_SPEC §N`.
 
 ## Common commands
 
 ```bash
 pip install -e ".[dev,gui]"          # library + workbench + pytest / black / mypy
 pip install -e ".[docs]"             # + sphinx / furo / myst-parser
+mamba env create -f environment.yml  # optional conda env "pump" (channels live in .condarc, not the yml)
 
 pytest                               # tests/ + pump/ doctests (+ notebooks in tests/test_notebooks.py)
 pytest tests/test_acceptance.py      # one file
 pytest -k verdict                    # by keyword
+pytest tests/test_affinity.py::test_to_speed_round_trip_is_identity   # one test
 
 black <file>                         # only on black-clean files (CI checks a listed set)
 mypy pump --ignore-missing-imports   # CI job, non-blocking until its backlog is fixed
@@ -70,8 +72,8 @@ docx from `pump/templates/template_{en,pt}.docx`, plus LaTeX/PDF and self-contai
 A thin reactive layer on PySide6 `QGraphicsView`:
 
 - **`signals.py`**: immutable dataclass payloads carrying Pint quantities (`RatedPoint`, `TestPointSet`, `CorrectedCurve`, `FittedModel`, `ComplianceResult`, `NPSHSet`, …).  Nodes emit fresh instances.
-- **`binding/`**: the **only** adapter into `pump` (signals ↔ library objects, display floats), split by topic: `_common`, `curves`, `acceptance`, `reports`, `engineering`; `from pumpflow.binding import X` re-exports everything.  It holds no physics or verdict logic.
-- **`nodes/`**: 17 node kinds (`BaseNode` subclasses; `registry.py` maps `kind` → class).  `compute(inputs) -> {port: payload}` is the Qt-agnostic core; `create_dialog` builds the property window from helpers in `nodes/ui.py` (`UnitField`, `PressureField`, `BeforeAfterTable`, `info_button`, …).
+- **`binding/`**: the **only** adapter into `pump` (signals ↔ library objects, display floats), split by topic: `_common`, `curves`, `acceptance`, `reports`, `engineering`, `summary` (Annex M test data summary); `from pumpflow.binding import X` re-exports everything.  It holds no physics or verdict logic.
+- **`nodes/`**: 18 node kinds (`BaseNode` subclasses; `registry.py` maps `kind` → class).  `compute(inputs) -> {port: payload}` is the Qt-agnostic core; `create_dialog` builds the property window from helpers in `nodes/ui.py` (`UnitField`, `PressureField`, `BeforeAfterTable`, `info_button`, …).
 - **`canvas/`**: `GraphScene` (wiring, topological `evaluate()`, `to_dict`/`load_dict`).
 - **`persistence.py` + `settings_codec.py`**: `.pumpflow` **schema v2**, where every quantity is `{"value","unit"}` (ADR 0011), with a lossless v1 → v2 migration.  Optional fields use `OptDisp` and are **omitted when unset**, so older files re-save byte-identical.  Do not add always-present default keys to an existing node's settings: it breaks the round-trip tests.
 - **`units.py`**: the display-unit menus and presets (SI/US).  **`explain.py`**: formula tooltips.  **`export_cli.py`**: headless export.  **`app.py`**: `MainWindow`.
@@ -87,6 +89,8 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 - Don't mutate curves in place; transforms and signals return new instances.
 - `pumpflow` must not re-implement physics or verdicts.
 - Regression fixture: `examples/user/B-34004A_MRT_reference.pumpflow` must keep exporting with the same verdicts (`python -m pumpflow.export_cli …`); `tests/fixtures/v1/expected.json` pins node statuses.  Change it only for an intended, documented change.
+- `examples/sample_project.pumpflow` must equal `pumpflow.sample_data.sample_project_doc()` (`tests/test_persistence_roundtrip.py`); regenerate it from that builder, never hand-edit the JSON.
+- `AGENTS.md` predates the `binding/` package split and the `[dev,gui]` install; where it disagrees with this file, this file wins.
 - **Confidential material never goes into git**: the customer PDFs (`examples/user/*.PDF`) and the licensed standard texts (`marker-output/`, git-ignored).  Quote only clause numbers and short phrases from standards in tracked files.  The GitHub repo is private; an anonymised public copy is planned.
 - Training material (`docs/training/`, `docs/concepts/`, the TR/UC notebooks) is updated with every rule change.
 
