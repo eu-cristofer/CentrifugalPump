@@ -1,0 +1,778 @@
+{
+  "meta": {
+    "unit_preset": "SI",
+    "schema_version": 2
+  },
+  "nodes": [
+    {
+      "id": "fluid_rated",
+      "kind": "fluid",
+      "x": -900.0,
+      "y": -120.0,
+      "settings": {
+        "source": "manual",
+        "name": "Wash water (rated)",
+        "temp": {
+          "value": 53.0,
+          "unit": "°C"
+        },
+        "dens": {
+          "value": 999.0,
+          "unit": "kg/m**3"
+        },
+        "visc": {
+          "value": 0.52,
+          "unit": "cSt"
+        }
+      }
+    },
+    {
+      "id": "rated",
+      "kind": "rated_point",
+      "x": -620.0,
+      "y": -120.0,
+      "settings": {
+        "tag": "B-34004",
+        "service": "Wash water",
+        "standard": "API 610 8th + N-553C + API 682 3rd",
+        "q": {
+          "value": 9.8,
+          "unit": "m**3/h"
+        },
+        "head": {
+          "value": 333.8,
+          "unit": "m"
+        },
+        "n": {
+          "value": 10212.0,
+          "unit": "rpm"
+        },
+        "power": {
+          "value": 26.9,
+          "unit": "kW"
+        },
+        "eff": {
+          "value": 32.7,
+          "unit": "percent"
+        },
+        "head_shutoff": {
+          "value": 357.37,
+          "unit": "m"
+        },
+        "npsha": {
+          "value": 2.4,
+          "unit": "m"
+        },
+        "dens_rel": 0.999,
+        "dens_unit": "kg/m³",
+        "visc": {
+          "value": 0.52,
+          "unit": "cSt"
+        },
+        "parallel": false,
+        "fluid_name": "Rated fluid",
+        "fluid_choice": "",
+        "d_imp": {
+          "value": 128.0,
+          "unit": "mm"
+        },
+        "d_max": {
+          "value": 131.0,
+          "unit": "mm"
+        },
+        "d_min": {
+          "value": 125.0,
+          "unit": "mm"
+        },
+        "standard_key": "api610:8",
+        "client": "n553",
+        "pump_type": "OH6"
+      }
+    },
+    {
+      "id": "report",
+      "kind": "report_export",
+      "x": 560.0,
+      "y": 340.0,
+      "settings": {
+        "language": "en",
+        "template_path": "",
+        "out_dir": "",
+        "filename": "B-34004B_witness_2026-11-19",
+        "equipment": {
+          "Manufacturer": "Sundyne",
+          "Model": "LMV311 (OH6)",
+          "Serial No.": "— fill in (B-34004B nameplate) —",
+          "Type": "Integrally geared, overhung in-line",
+          "Driver": "WEG motor 37 kW @ 3557 rpm; gearbox 2.871",
+          "Test bench": "Sundyne, Arvada CO"
+        },
+        "project": "B-34004B — FAT witness (sample data from twin unit B-34004A)",
+        "client": "",
+        "location": "Sundyne, Arvada CO (USA)",
+        "test_date": "2026-11-19",
+        "revision": "0",
+        "signatories": [
+          {
+            "role": "Vendor",
+            "name": ""
+          },
+          {
+            "role": "Inspector",
+            "name": ""
+          },
+          {
+            "role": "Client witness",
+            "name": ""
+          }
+        ],
+        "formats": [
+          "docx",
+          "tex",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "note",
+      "kind": "markdown_note",
+      "x": -1180.0,
+      "y": 160.0,
+      "settings": {
+        "title": "B-34004B witness — 2026-11-19",
+        "body": "# B-34004B FAT — witness 2026-11-19\n\n> ⚠ **SAMPLE DATA.** Test Points, MRT Log and NPSH are pre-filled with the\n> **B-34004A** certified results (Sundyne, 12/13/2011) so every node computes.\n> Overwrite each row with today's B readings. Until then, every verdict on this\n> canvas is A's, not B's.\n\n**Datasheet:** I-FD-5290.00-22315-311-SWM-001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n**Criteria:** API 610 8th + N-553 (Rated Point). Report cover: fill Serial No. in Report Export.\n\n## Data entry (same conventions as A)\nType the vendor's numbers **as printed**; every column keeps its own unit.\n- Q [US GPM] · P_suc [psi g] = 0 · P_dis [psi g] = ΔP · T [°F] = suction temperature\n- N [rpm] = **pump** speed = motor rpm × 2.871 (gearbox)\n- P [hp] = **motor output** (Sundyne \"MOTOR HP\")\n- Vibration Test Points columns: gearbox housing, in/s RMS (overall and filtered)\n\n## Checklist\n1. Instrument calibration certificates; gearbox ratio 2.871; record B serial no.\n2. Performance: overwrite **Test Points** row by row; watch the Head / η columns.\n3. **Compliance**: head, power, shut-off (η is information only); test speed within 3 % of 10 212 rpm.\n4. **NPSH**: enter B's NPSH3 points (or delete the rows if not tested).\n5. **MRT Log**: 4 h at design flow, log every 15 min; **MRT Check** for vibration, stabilisation, duration.\n6. **Report Export** ▸ Export all (docx + tex + pdf). Save the project.\n\n## A results, for comparison (what \"normal\" looked like)\n| Item | A | Watch on B |\n|---|---|---|\n| Head at rated | +1.72 % (band −2/+2 % above 300 m) | tight: small drop → fail |\n| Vibration overall (gearbox) | 3.5–3.8 mm/s RMS | above the 8th-ed. 3.0 mm/s limit on A |\n| MRT power | 28.6–29.7 kW | design max 33.1 kW |\n| Lube oil / sump | 42–44 psig / 116–124 °F | |\n| Seal cavity | 64.9–69.3 psig | |\n| NPSH3 at rated | 1.08 m (quoted 1.24 m) | |\n\n## Open points carried from A\n- Datasheet calls N-553 **rev C**; the overlay used is rev E 7.3 — confirm the NPSH rule.\n- SG: datasheet 0.999, Sundyne's conversion 0.990 and 0.50 cSt.\n- Vibration readings: Sundyne states RMS although FFT printouts read \"pk\" — confirm for B.\n",
+        "report": true
+      }
+    },
+    {
+      "id": "test_b",
+      "kind": "test_points",
+      "x": -620.0,
+      "y": 160.0,
+      "settings": {
+        "pump_tag": "B-34004B",
+        "fluid_choice": "",
+        "columns": {
+          "q": "gal/min",
+          "p_suc": "psi",
+          "p_dis": "psi",
+          "temp_c": "°F",
+          "n": "rpm",
+          "power": "hp",
+          "head": "m",
+          "eff": "percent",
+          "vib_gb": "in/s",
+          "vib_gb_f": "in/s"
+        },
+        "pressure_ref": "g",
+        "rows": [
+          {
+            "q": 15.2,
+            "p_suc": 0.0,
+            "p_dis": 524.7,
+            "temp_c": 130.0,
+            "n": 10301.0,
+            "power": 25.41,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.151,
+            "vib_gb_f": 0.079
+          },
+          {
+            "q": 29.4,
+            "p_suc": 0.0,
+            "p_dis": 522.1,
+            "temp_c": 129.0,
+            "n": 10301.0,
+            "power": 28.83,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.139,
+            "vib_gb_f": 0.083
+          },
+          {
+            "q": 34.8,
+            "p_suc": 0.0,
+            "p_dis": 513.4,
+            "temp_c": 129.0,
+            "n": 10301.0,
+            "power": 30.56,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.148,
+            "vib_gb_f": 0.086
+          },
+          {
+            "q": 43.5,
+            "p_suc": 0.0,
+            "p_dis": 486.5,
+            "temp_c": 127.0,
+            "n": 10301.0,
+            "power": 33.36,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.148,
+            "vib_gb_f": 0.084
+          },
+          {
+            "q": 47.9,
+            "p_suc": 0.0,
+            "p_dis": 459.5,
+            "temp_c": 126.0,
+            "n": 10301.0,
+            "power": 35.09,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.151,
+            "vib_gb_f": 0.087
+          },
+          {
+            "q": 52.2,
+            "p_suc": 0.0,
+            "p_dis": 431.7,
+            "temp_c": 126.0,
+            "n": 10301.0,
+            "power": 36.61,
+            "head": null,
+            "eff": null,
+            "vib_gb": 0.14,
+            "vib_gb_f": 0.088
+          }
+        ]
+      }
+    },
+    {
+      "id": "corr_b",
+      "kind": "correction",
+      "x": -320.0,
+      "y": 160.0,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": {
+          "value": 10212.0,
+          "unit": "rpm"
+        },
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3,
+        "fluid_choice": ""
+      }
+    },
+    {
+      "id": "fit_b",
+      "kind": "curve_fit",
+      "x": -40.0,
+      "y": 160.0,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160,
+        "show_preview": true
+      }
+    },
+    {
+      "id": "plot_b",
+      "kind": "performance_plot",
+      "x": 240.0,
+      "y": 50.0,
+      "settings": {
+        "show_poly": true,
+        "show_spline": true,
+        "show_points": true,
+        "head_ylim": null,
+        "power_ylim": null,
+        "eff_ylim": null
+      }
+    },
+    {
+      "id": "check_b",
+      "kind": "compliance",
+      "x": 240.0,
+      "y": 270.0,
+      "settings": {
+        "tolerances": {}
+      }
+    },
+    {
+      "id": "mrt_b",
+      "kind": "mechanical_run",
+      "x": -620.0,
+      "y": 860.0,
+      "settings": {
+        "pump_tag": "B-34004B",
+        "columns": [
+          {
+            "name": "Flow",
+            "dimension": "capacity",
+            "unit": "gal/min",
+            "role": "flow"
+          },
+          {
+            "name": "ΔP",
+            "dimension": "pressure",
+            "unit": "psi",
+            "role": "differential_pressure"
+          },
+          {
+            "name": "Power",
+            "dimension": "power",
+            "unit": "kW",
+            "role": "power"
+          },
+          {
+            "name": "Vib filtered",
+            "dimension": "vibration_velocity",
+            "unit": "in/s",
+            "role": "vibration_filtered"
+          },
+          {
+            "name": "Vib unfiltered",
+            "dimension": "vibration_velocity",
+            "unit": "in/s",
+            "role": "vibration_unfiltered"
+          },
+          {
+            "name": "Lube oil",
+            "dimension": "pressure",
+            "unit": "psi",
+            "role": "oil_pressure"
+          },
+          {
+            "name": "Sump",
+            "dimension": "temperature",
+            "unit": "°F",
+            "role": "oil_temperature"
+          },
+          {
+            "name": "Seal cavity",
+            "dimension": "pressure",
+            "unit": "psi",
+            "role": "seal_pressure"
+          }
+        ],
+        "rows": [
+          {
+            "time": "06:00",
+            "values": {
+              "Flow": 43.53,
+              "ΔP": 487.32,
+              "Power": 29.72,
+              "Vib filtered": 0.04,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 44.0,
+              "Sump": 116.0,
+              "Seal cavity": 69.34
+            }
+          },
+          {
+            "time": "06:15",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 486.45,
+              "Power": 29.42,
+              "Vib filtered": 0.04,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 44.0,
+              "Sump": 120.0,
+              "Seal cavity": 66.77
+            }
+          },
+          {
+            "time": "06:30",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 484.71,
+              "Power": 29.08,
+              "Vib filtered": 0.04,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 65.89
+            }
+          },
+          {
+            "time": "06:45",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 485.58,
+              "Power": 28.78,
+              "Vib filtered": 0.04,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 65.82
+            }
+          },
+          {
+            "time": "07:00",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 485.58,
+              "Power": 28.71,
+              "Vib filtered": 0.04,
+              "Vib unfiltered": 0.16,
+              "Lube oil": 42.0,
+              "Sump": 122.0,
+              "Seal cavity": 66.11
+            }
+          },
+          {
+            "time": "07:15",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 484.71,
+              "Power": 28.61,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 122.0,
+              "Seal cavity": 65.15
+            }
+          },
+          {
+            "time": "07:30",
+            "values": {
+              "Flow": 43.47,
+              "ΔP": 485.58,
+              "Power": 28.76,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 122.0,
+              "Seal cavity": 65.38
+            }
+          },
+          {
+            "time": "07:45",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 484.71,
+              "Power": 28.83,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 64.94
+            }
+          },
+          {
+            "time": "08:00",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 485.58,
+              "Power": 28.86,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.14,
+              "Lube oil": 42.0,
+              "Sump": 120.0,
+              "Seal cavity": 65.16
+            }
+          },
+          {
+            "time": "08:15",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 485.58,
+              "Power": 29.15,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 66.09
+            }
+          },
+          {
+            "time": "08:30",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 486.59,
+              "Power": 29.11,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 65.45
+            }
+          },
+          {
+            "time": "08:45",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 486.45,
+              "Power": 29.08,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 121.0,
+              "Seal cavity": 65.67
+            }
+          },
+          {
+            "time": "09:00",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 486.45,
+              "Power": 29.03,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.16,
+              "Lube oil": 42.0,
+              "Sump": 122.0,
+              "Seal cavity": 65.89
+            }
+          },
+          {
+            "time": "09:15",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 486.45,
+              "Power": 28.98,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 123.0,
+              "Seal cavity": 66.11
+            }
+          },
+          {
+            "time": "09:30",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 487.32,
+              "Power": 29.03,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.15,
+              "Lube oil": 42.0,
+              "Sump": 122.0,
+              "Seal cavity": 65.67
+            }
+          },
+          {
+            "time": "09:45",
+            "values": {
+              "Flow": 43.51,
+              "ΔP": 487.32,
+              "Power": 29.08,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.14,
+              "Lube oil": 42.0,
+              "Sump": 123.0,
+              "Seal cavity": 65.53
+            }
+          },
+          {
+            "time": "10:00",
+            "values": {
+              "Flow": 43.49,
+              "ΔP": 487.32,
+              "Power": 29.11,
+              "Vib filtered": 0.05,
+              "Vib unfiltered": 0.14,
+              "Lube oil": 42.0,
+              "Sump": 124.0,
+              "Seal cavity": 65.65
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mrt_b_check",
+      "kind": "mechanical_run_check",
+      "x": -620.0,
+      "y": 1060.0,
+      "settings": {
+        "overrides": {
+          "min_duration": null,
+          "role_max": {},
+          "stabilisation": {}
+        }
+      }
+    },
+    {
+      "id": "npsh_b",
+      "kind": "npsh",
+      "x": -20.0,
+      "y": 860.0,
+      "settings": {
+        "pump_tag": "B-34004B",
+        "mode": "points",
+        "degree": 2,
+        "columns": {
+          "q": "gal/min",
+          "npshr": "ft"
+        },
+        "rows": [
+          {
+            "q": 15.2,
+            "npshr": 2.7
+          },
+          {
+            "q": 29.4,
+            "npshr": 2.9
+          },
+          {
+            "q": 34.8,
+            "npshr": 3.3
+          },
+          {
+            "q": 43.5,
+            "npshr": 4.1
+          },
+          {
+            "q": 47.9,
+            "npshr": 3.3
+          }
+        ],
+        "calc_p": {
+          "value": 1.2,
+          "unit": "bar",
+          "ref": "a"
+        },
+        "calc_temp": {
+          "value": 20.0,
+          "unit": "°C"
+        },
+        "calc_z": {
+          "value": 0.0,
+          "unit": "m"
+        },
+        "overrides": {
+          "min_ratio": null,
+          "min_margin": null
+        },
+        "npshr_quoted": {
+          "value": 4.06,
+          "unit": "ft"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src_node": "fluid_rated",
+      "src_port": "FluidSpec",
+      "dst_node": "rated",
+      "dst_port": "FluidSpec"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "corr_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "test_b",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_b",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_b",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_b",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "plot_b",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "plot_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "check_b",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "check_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "corr_b",
+      "src_port": "CorrectedCurve",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "check_b",
+      "src_port": "ComplianceResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "report",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "mrt_b_check",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "mrt_b_check",
+      "src_port": "MechanicalRunResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "npsh_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "npsh_b",
+      "src_port": "NPSHResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "test_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "npsh_b",
+      "src_port": "NPSHResult",
+      "dst_node": "plot_b",
+      "dst_port": "NPSHResult"
+    },
+    {
+      "src_node": "mrt_b",
+      "src_port": "MechanicalRunSet",
+      "dst_node": "mrt_b_check",
+      "dst_port": "MechanicalRunSet"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "mrt_b_check",
+      "dst_port": "FittedModel"
+    }
+  ],
+  "view": {
+    "zoom": 0.8,
+    "cx": -100.0,
+    "cy": 200.0
+  }
+}
