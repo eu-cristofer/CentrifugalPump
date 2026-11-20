@@ -10,13 +10,13 @@ The reactive node-graph scene.
   (multi-connection inputs) per UI_SPEC §3
 - runs a topological **recompute** of the logic graph whenever anything
   changes, so editing an upstream value live-updates every downstream node
-  (UI_SPEC §3 / §7)
+  (UI_SPEC §3 / §7); the ordering and run loop are the Qt-free functions in
+  :mod:`pumpflow.engine`
 - (de)serializes the whole canvas for ``.pumpflow`` project files (UI_SPEC §6.1)
 """
 
 from __future__ import annotations
 
-from collections import defaultdict, deque
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QPointF, Qt, Signal
@@ -27,6 +27,7 @@ from .edge_item import EdgeItem
 from .node_item import NodeItem
 from .port_item import PortItem
 from .. import persistence, settings_codec, units
+from ..engine import evaluate_in_order, topo_order
 
 
 class GraphScene(QGraphicsScene):
@@ -136,32 +137,12 @@ class GraphScene(QGraphicsScene):
 
     # ------------------------------------------------------ reactive eval
     def _topo_order(self) -> List[NodeItem]:
-        index = {n: i for i, n in enumerate(self.nodes)}
-        indeg = {n: 0 for n in self.nodes}
-        succ = defaultdict(list)
-        for edge in self.edges:
-            if edge.source is None or edge.target is None:
-                continue
-            up = edge.source.node
-            down = edge.target.node
-            succ[up].append(down)
-            indeg[down] += 1
-        queue = deque(sorted((n for n in self.nodes if indeg[n] == 0), key=index.get))
-        order, seen = [], set()
-        while queue:
-            n = queue.popleft()
-            if n in seen:
-                continue
-            seen.add(n)
-            order.append(n)
-            for m in succ[n]:
-                indeg[m] -= 1
-                if indeg[m] == 0:
-                    queue.append(m)
-        for n in self.nodes:  # any leftover (cycles) appended stably
-            if n not in seen:
-                order.append(n)
-        return order
+        links = [
+            (edge.source.node, edge.target.node)
+            for edge in self.edges
+            if edge.source is not None and edge.target is not None
+        ]
+        return topo_order(self.nodes, links)
 
     def _gather_inputs(self, item: NodeItem) -> Dict[str, list]:
         bundle: Dict[str, list] = {spec.name: [] for spec in item.logic.inputs}
@@ -177,13 +158,9 @@ class GraphScene(QGraphicsScene):
 
     def evaluate(self) -> None:
         """Recompute every node in topological order and refresh the canvas."""
-        for item in self._topo_order():
-            inputs = self._gather_inputs(item)
-            try:
-                item.logic.run(inputs)
-            except Exception as exc:  # surface as a node error (UI_SPEC §7)
-                item.logic.set_error(str(exc))
-            item.refresh()
+        evaluate_in_order(
+            self._topo_order(), self._gather_inputs, after=lambda item: item.refresh()
+        )
 
     # ------------------------------------------------------ serialization
     def to_dict(self) -> dict:

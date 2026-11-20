@@ -6,8 +6,8 @@ Usage::
     python -m pumpflow.export_cli PROJECT.pumpflow [--formats docx,tex,pdf,html]
         [--lang en|pt] [--out DIR] [--stem NAME] [--template template.docx]
 
-Loads the project into a real (offscreen) canvas, evaluates the whole graph
-exactly as the GUI does, prints every node's status, and writes the report
+Loads the project into the Qt-free graph engine (:class:`pumpflow.engine.Graph`),
+evaluates the whole graph exactly as the GUI does, prints every node's status, and writes the report
 from the project's Report Export node (cover fields, signatories and the
 Markdown notes tagged "Include in report" become the cover, the "Deviations
 and open points" section and the signature block). Exits with status 1 when a
@@ -20,6 +20,16 @@ import argparse
 import os
 import sys
 from pathlib import Path
+
+
+def build_graph(project: str):
+    """Load ``project`` into an evaluated :class:`pumpflow.engine.Graph` (no Qt)."""
+    from .engine import Graph
+    from .persistence import read_json
+
+    graph = Graph.from_dict(read_json(project))
+    graph.evaluate()
+    return graph
 
 
 def build_scene(project: str):
@@ -37,19 +47,34 @@ def build_scene(project: str):
     return app, scene
 
 
-def report_inputs(scene):
-    """``(rated, branches, settings)`` from the project's Report Export node."""
-    items = [n for n in scene.nodes if n.logic.kind == "report_export"]
-    if not items:
+def _logic_nodes(container) -> list:
+    """The ``BaseNode`` logic objects of a Graph or a GraphScene."""
+    return [getattr(n, "logic", n) for n in container.nodes]
+
+
+def report_inputs(container):
+    """``(rated, branches, settings)`` from the project's Report Export node.
+
+    ``container`` is a :class:`~pumpflow.engine.Graph` or a ``GraphScene``.
+    """
+    found = [
+        n for n in container.nodes if getattr(n, "logic", n).kind == "report_export"
+    ]
+    if not found:
         raise SystemExit("No Report Export node in this project.")
-    item = items[0]
-    rated, branches = item.logic._bundle(scene._gather_inputs(item))
-    return rated, branches, item.logic.settings
+    node = found[0]
+    logic = getattr(node, "logic", node)
+    if hasattr(container, "gather_inputs"):
+        inputs = container.gather_inputs(node)
+    else:
+        inputs = container._gather_inputs(node)
+    rated, branches = logic._bundle(inputs)
+    return rated, branches, logic.settings
 
 
-def report_notes(scene) -> list:
+def report_notes(container) -> list:
     """Settings of every Markdown Note node (those tagged ``report`` feed the report)."""
-    return [n.logic.settings for n in scene.nodes if n.logic.kind == "markdown_note"]
+    return [lg.settings for lg in _logic_nodes(container) if lg.kind == "markdown_note"]
 
 
 def main(argv=None) -> int:
@@ -82,16 +107,15 @@ def main(argv=None) -> int:
 
     from .binding import REPORT_FORMATS, assemble_report_data, export_reports
 
-    _app, scene = build_scene(args.project)
+    graph = build_graph(args.project)
 
     errors_in_graph = False
     print(f"Project: {args.project}")
-    for item in scene.nodes:
-        lg = item.logic
+    for lg in _logic_nodes(graph):
         print(f"  {lg.node_id:14s} {lg.kind:17s} {lg.state:8s} {lg.status}")
         errors_in_graph |= lg.state == "error"
 
-    rated, branches, s = report_inputs(scene)
+    rated, branches, s = report_inputs(graph)
     if rated is None:
         print("ERROR: Report Export has no Rated Point.", file=sys.stderr)
         return 1
@@ -120,7 +144,7 @@ def main(argv=None) -> int:
         branches,
         s.get("equipment", {}),
         settings=s,
-        notes=report_notes(scene),
+        notes=report_notes(graph),
     )
     paths, errors = export_reports(
         data,

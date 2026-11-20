@@ -96,6 +96,8 @@ jobs:
           tests/test_viscosity.py
           tests/test_verdict_consistency.py
           tests/test_ui_round2_gui.py
+          tests/test_engine.py
+          pumpflow/engine.py
           tests/test_canvas_verdict_gui.py
 
   mypy:

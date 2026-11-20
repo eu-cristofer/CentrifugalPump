@@ -51,7 +51,7 @@ Each run MUST:
 
 ## Tracker
 
-- [ ] [Sprint 1 — Headless graph engine](sprint-1.md)
+- [x] [Sprint 1 — Headless graph engine](sprint-1.md) — done 2026-11-20
 - [ ] [Sprint 2 — Node logic importable without Qt](sprint-2.md)
 - [ ] [Sprint 3 — JSON API for the browser (`pumpflow.webapi`)](sprint-3.md)
 - [ ] [Sprint 4 — Web scaffold + offline Pyodide spike (parity gate)](sprint-4.md)
