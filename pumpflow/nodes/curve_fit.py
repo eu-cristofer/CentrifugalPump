@@ -11,12 +11,9 @@ from __future__ import annotations
 from typing import Dict
 
 import numpy as np
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
 from ..binding import fit_model
 from .base import BaseNode, PortSpec
-from . import ui
-from .plotting import build_figure
 
 
 class CurveFitNode(BaseNode):
@@ -47,6 +44,12 @@ class CurveFitNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+        from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout, QHBoxLayout
+
+        from . import ui
+        from .plotting import build_figure
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent, "Curve Fit",
@@ -56,7 +59,6 @@ class CurveFitNode(BaseNode):
             maximizable=True,
         )
         banner = ui.Banner()
-        from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout, QHBoxLayout
         coeff_lbl = QLabel(objectName="MonoBlock")
         coeff_lbl.setWordWrap(True)
         canvas_holder = {"canvas": None}

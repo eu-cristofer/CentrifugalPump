@@ -13,22 +13,13 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import (
-    QHeaderView, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
-    QToolButton, QVBoxLayout, QWidget,
-)
-
 from pump import Q_
 
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
 from pump.design import color as token_color
 
-from ..style import qcolor, ui_font
 from .base import BaseNode, PortSpec
-from . import ui
 
 _HEADERS = [
     "Parameter", "Actual", "Predicted", "Min", "Max", "Deviation", "Tol.", "Verdict",
@@ -86,6 +77,16 @@ class ComplianceCheckNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QFont
+        from PySide6.QtWidgets import (
+            QHeaderView, QLabel, QLineEdit, QPushButton, QTableWidget,
+            QToolButton, QVBoxLayout, QWidget,
+        )
+
+        from ..style import ui_font
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent, "API 610 Compliance Check",
@@ -282,7 +283,11 @@ class _Fallback:
     client = None
 
 
-def _append_param(table: QTableWidget, p) -> None:
+def _append_param(table, p) -> None:
+    from PySide6.QtWidgets import QTableWidgetItem
+
+    from ..style import qcolor
+
     r = table.rowCount()
     table.insertRow(r)
     notes = []

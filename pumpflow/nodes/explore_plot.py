@@ -27,14 +27,12 @@ from __future__ import annotations
 from typing import Dict, List
 
 import numpy as np
-from PySide6.QtCore import Qt
 
 from pump.design import color as token_color
 
 from .. import units
 from ..binding import row_efficiency, row_head
 from .base import BaseNode, PortSpec
-from . import ui
 
 # A small, colour-blind-friendly cycle keyed per dataset/branch.
 _PALETTE = [
@@ -112,6 +110,8 @@ class ExploreChartNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from . import ui
+
         dlg = ui.PropertyDialog(
             parent,
             "Performance Explorer",
@@ -213,6 +213,7 @@ class ExploreChartNode(BaseNode):
         Fit), with a dashed Q-marker on all three panes.  The Δ columns give each
         model's relative deviation from the first model (``—`` for the first
         model itself, so a single model shows ``—`` throughout)."""
+        from PySide6.QtCore import Qt
         from PySide6.QtWidgets import (
             QHeaderView,
             QLabel,
@@ -224,6 +225,7 @@ class ExploreChartNode(BaseNode):
         )
         from PySide6.QtGui import QColor
         from ..numfmt import fmt
+        from . import ui
 
         models = list(getattr(self, "_models", []))
 
@@ -360,6 +362,8 @@ class ExploreChartNode(BaseNode):
 
     # -- drawing helpers ---------------------------------------------------
     def _plot_all(self, pg, p_h, p_p, p_e) -> None:
+        from PySide6.QtCore import Qt
+
         # fitted-curve overlays (polynomial + optional spline)
         for i, m in enumerate(getattr(self, "_models", [])):
             color = _PALETTE[i % len(_PALETTE)]
@@ -438,6 +442,8 @@ class ExploreChartNode(BaseNode):
                 )
 
     def _curve(self, pg, ax, xs, coeffs, spline, pen, color, name) -> None:
+        from PySide6.QtCore import Qt
+
         if coeffs is not None and len(coeffs):
             ax.plot(xs, np.polyval(coeffs, xs), pen=pen, name=name)
         if spline is not None:

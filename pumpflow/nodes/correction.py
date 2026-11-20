@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtWidgets import QLabel
-
 from pump import Q_
 
 from .. import explain, units
@@ -20,7 +18,6 @@ from ..binding import BindingError, correct_curve, make_fluid
 from ..signals import RatedPoint, TestPointSet
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
-from . import ui
 
 _DEFAULT_LABEL = "Rated fluid"
 
@@ -125,6 +122,10 @@ class SpeedCorrectionNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import QLabel
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,
@@ -273,4 +274,3 @@ class SpeedCorrectionNode(BaseNode):
         refresh()
         dlg.resize(660, 560)
         return dlg
-

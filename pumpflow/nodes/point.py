@@ -20,8 +20,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
-
 from pump import Q_, Pressure
 
 from .. import units
@@ -29,7 +27,6 @@ from ..binding import head_from_pressures
 from ..signals import PointSample
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
-from . import ui
 
 
 def _p_label(s) -> str:
@@ -156,6 +153,10 @@ class PointNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import QVBoxLayout, QWidget
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

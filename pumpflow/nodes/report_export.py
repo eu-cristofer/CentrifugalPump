@@ -25,12 +25,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict, List
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QFileDialog, QHeaderView, QLabel, QMessageBox, QPushButton, QTableWidget,
-    QTableWidgetItem,
-)
-
 from ..binding import (
     DEFAULT_SIGNATORY_ROLES, REPORT_FORMATS, SUMMARY_FIELDS, SUMMARY_FORMATS,
     assemble_report_data, export_reports, export_test_summary, test_data_summaries,
@@ -43,7 +37,6 @@ from ..signals import (
     RatedPoint,
 )
 from .base import BaseNode, PortSpec
-from . import ui
 
 _DEFAULT_EQUIP = ["Manufacturer", "Model", "Serial No.", "Type", "Driver", "Test bench"]
 _COVER_KEYS = ("project", "client", "location", "test_date", "revision")
@@ -185,6 +178,14 @@ class ReportExportNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import (
+            QFileDialog, QHeaderView, QLabel, QMessageBox, QPushButton, QTableWidget,
+            QTableWidgetItem,
+        )
+
+        from . import ui
+
         self._ensure_defaults()
         s = self.settings
         dlg = ui.PropertyDialog(
@@ -617,7 +618,9 @@ def _bundle_json(rated: RatedPoint, branches, equipment: dict) -> dict:
     return doc
 
 
-def _btn(text, fn, primary: bool = False) -> QPushButton:
+def _btn(text, fn, primary: bool = False):
+    from PySide6.QtWidgets import QPushButton
+
     b = QPushButton(text)
     b.setObjectName("PrimaryButton" if primary else "ToolButton")
     b.clicked.connect(fn)
@@ -625,6 +628,8 @@ def _btn(text, fn, primary: bool = False) -> QPushButton:
 
 
 def _pick_file(dlg, line_edit, s, key):
+    from PySide6.QtWidgets import QFileDialog
+
     path, _ = QFileDialog.getOpenFileName(dlg, "Choose template", "", "Word (*.docx)")
     if path:
         line_edit.setText(path)
@@ -632,6 +637,8 @@ def _pick_file(dlg, line_edit, s, key):
 
 
 def _pick_dir(dlg, line_edit, s):
+    from PySide6.QtWidgets import QFileDialog
+
     folder = QFileDialog.getExistingDirectory(dlg, "Choose output folder")
     if folder:
         line_edit.setText(folder)

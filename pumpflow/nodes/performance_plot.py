@@ -22,16 +22,10 @@ from __future__ import annotations
 import io
 from typing import Dict, Optional
 
-from PySide6.QtWidgets import QFileDialog, QLabel, QSizePolicy, QVBoxLayout, QWidget
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
-
 from pump.design import color as token_color
 
 from .. import units
 from .base import BaseNode, PortSpec
-from . import ui
-from .plotting import build_figure
 
 # (plot key, units dimension, settings key, unit settings key, default [lo, hi] in canonical units)
 _YLIMS = (
@@ -107,6 +101,8 @@ class PerformancePlotNode(BaseNode):
         return out
 
     def _render_png(self) -> Optional[io.BytesIO]:
+        from .plotting import build_figure
+
         fitted = getattr(self, "_fitted", None)
         if fitted is None:
             return None
@@ -124,6 +120,21 @@ class PerformancePlotNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import (
+            QFileDialog,
+            QLabel,
+            QSizePolicy,
+            QVBoxLayout,
+            QWidget,
+        )
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qtagg import (
+            NavigationToolbar2QT as NavigationToolbar,
+        )
+
+        from . import ui
+        from .plotting import build_figure
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent, "Performance Plot",

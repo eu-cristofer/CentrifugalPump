@@ -98,6 +98,7 @@ jobs:
           tests/test_ui_round2_gui.py
           tests/test_engine.py
           pumpflow/engine.py
+          tests/test_qt_free_engine.py
           tests/test_canvas_verdict_gui.py
 
   mypy:

@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import Dict
 
 from .base import BaseNode
-from . import ui
 
 _DEFAULT_BODY = "# Note\n\nDescribe the case here…"
 
@@ -47,6 +46,8 @@ class MarkdownNoteNode(BaseNode):
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
         from PySide6.QtWidgets import QPlainTextEdit, QTextBrowser
+
+        from . import ui
 
         s = self.settings
         dlg = ui.PropertyDialog(

@@ -22,18 +22,6 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QHeaderView,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
-
 from pump import Q_
 from pump.mechanical_run import ROLES, Channel, MechanicalRunLog, RunReading
 
@@ -42,7 +30,6 @@ from ..numfmt import parse_decimal
 from ..settings_codec import DURATION_LABELS, ROLE_DIMENSIONS, delta_pint
 from ..signals import MechanicalRunSet
 from .base import BaseNode, PortSpec
-from . import ui
 
 _TIME = re.compile(r"^\d{1,2}:\d{2}$")
 _DIMENSIONS = [
@@ -273,6 +260,20 @@ class MechanicalRunNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import QTimer
+        from PySide6.QtGui import QGuiApplication
+        from PySide6.QtWidgets import (
+            QHBoxLayout,
+            QHeaderView,
+            QPushButton,
+            QTableWidget,
+            QTableWidgetItem,
+            QVBoxLayout,
+            QWidget,
+        )
+
+        from . import ui
+
         s = self.settings
         s.setdefault("columns", _default_columns())
         s.setdefault("rows", [])

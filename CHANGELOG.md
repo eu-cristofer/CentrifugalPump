@@ -17,6 +17,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Sprint 1: `pumpflow.engine` — Qt-free graph engine (`Graph`, `topo_order`,
     `evaluate_in_order`) shared by the canvas and `export_cli`, which no longer
     needs a `QApplication`.
+  - Sprint 2: node modules import PySide6 / pyqtgraph / matplotlib Qt backends only
+    inside their dialogs, so the engine runs where Qt does not exist (Pyodide);
+    `tests/test_qt_free_engine.py` guards it.
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

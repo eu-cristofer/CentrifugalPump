@@ -22,24 +22,11 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPixmap
-from PySide6.QtWidgets import (
-    QCheckBox,
-    QGridLayout,
-    QHeaderView,
-    QLabel,
-    QTableWidget,
-    QTableWidgetItem,
-    QWidget,
-)
-
 from pump.mechanical_run import ROLES
 
 from .. import units
 from ..binding import check_mechanical_run
 from ..settings_codec import ROLE_DIMENSIONS
-from ..style import qcolor
 from .base import BaseNode, PortSpec
 from .mechanical_run import (
     _cell,
@@ -48,7 +35,6 @@ from .mechanical_run import (
     overrides_to_quantities,
     verdict_label,
 )
-from . import ui
 
 
 def _empty_overrides() -> dict:
@@ -125,6 +111,21 @@ class MechanicalRunCheckNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QPixmap
+        from PySide6.QtWidgets import (
+            QCheckBox,
+            QGridLayout,
+            QHeaderView,
+            QLabel,
+            QTableWidget,
+            QTableWidgetItem,
+            QWidget,
+        )
+
+        from ..style import qcolor
+        from . import ui
+
         s = self.settings
         ov0 = s.setdefault("overrides", _empty_overrides())
         ov0.setdefault("min_duration", None)

@@ -18,14 +18,11 @@ from __future__ import annotations
 import warnings
 from typing import Dict
 
-from PySide6.QtWidgets import QLabel
-
 from pump import Q_
 
 from .. import units
 from ..binding import BindingError, diameter_for_rated, trim_curve
 from .base import BaseNode, PortSpec
-from . import ui
 
 
 class TrimNode(BaseNode):
@@ -127,6 +124,10 @@ class TrimNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import QLabel
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

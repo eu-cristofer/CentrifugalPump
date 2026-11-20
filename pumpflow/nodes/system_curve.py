@@ -16,8 +16,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtWidgets import QLabel
-
 from pump import Q_
 
 from .. import units
@@ -25,7 +23,6 @@ from ..binding import BindingError
 from ..binding import make_system_curve
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
-from . import ui
 
 _MODES = [
     ("Static head + k·Q^n", "static_k"),
@@ -148,6 +145,10 @@ class SystemCurveNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import QLabel
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

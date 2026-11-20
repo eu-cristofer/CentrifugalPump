@@ -22,8 +22,6 @@ from __future__ import annotations
 from typing import Dict
 
 import numpy as np
-from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from pump import Q_, Water
 
@@ -37,7 +35,6 @@ from .. import units
 from pump.design import color as token_color
 
 from .base import BaseNode, PortSpec
-from . import ui
 
 
 class FluidNode(BaseNode):
@@ -123,6 +120,11 @@ class FluidNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import QTimer
+        from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

@@ -16,24 +16,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict
 
-from PySide6.QtWidgets import (
-    QAbstractItemView,
-    QFileDialog,
-    QHBoxLayout,
-    QHeaderView,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QWidget,
-)
-
 from pump import Q_
 
 from .. import units
 from ..binding import BindingError, make_fluid, rated_from_candidate, select_pumps
 from .base import BaseNode, PortSpec
-from . import ui
 
 _COLUMNS = [
     "#",
@@ -144,6 +131,20 @@ class SelectionNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import (
+            QAbstractItemView,
+            QFileDialog,
+            QHBoxLayout,
+            QHeaderView,
+            QLabel,
+            QPushButton,
+            QTableWidget,
+            QTableWidgetItem,
+            QWidget,
+        )
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

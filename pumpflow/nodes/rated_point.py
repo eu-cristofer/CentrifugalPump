@@ -26,8 +26,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtWidgets import QLabel
-
 from pump import Q_
 
 from .. import units
@@ -41,7 +39,6 @@ from ..settings_codec import parse_standard_text
 from ..signals import RatedPoint
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
-from . import ui
 
 _DEFAULT_LABEL = "Custom (entered below)"
 
@@ -253,6 +250,10 @@ class RatedPointInputNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtWidgets import QLabel
+
+        from . import ui
+
         s = self.settings
         dlg = ui.PropertyDialog(
             parent,

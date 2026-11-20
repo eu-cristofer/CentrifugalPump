@@ -16,18 +16,6 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QColor, QGuiApplication
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QHeaderView,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
-
 from pump import Q_, Pressure
 
 from .. import explain, units
@@ -36,10 +24,8 @@ from ..numfmt import fmt, parse_decimal
 from ..persistence import testset_from_json, testset_pressure_unit
 from ..sample_data import SINGLE_PUMP_JSON
 from ..signals import BenchGeometry, TestPointSet, TestRow
-from ..style import qcolor
 from .base import BaseNode, PortSpec
 from .fluidpick import choice_options, current_choice, resolve_fluid
-from . import ui
 from pump.vibration import ALL_VIBRATION_KEYS, location_of_key, vibration_keys
 
 _NAMES = ["Q", "P_suc", "P_dis", "T_water", "N", "P", "Head", "η"]
@@ -308,6 +294,20 @@ class TestPointsTableNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import QTimer
+        from PySide6.QtGui import QGuiApplication
+        from PySide6.QtWidgets import (
+            QHBoxLayout,
+            QHeaderView,
+            QPushButton,
+            QTableWidget,
+            QTableWidgetItem,
+            QVBoxLayout,
+            QWidget,
+        )
+
+        from . import ui
+
         s = self.settings
         s["columns"] = {**canonical_columns(), **(s.get("columns") or {})}
         s.setdefault("pressure_ref", "g")
@@ -737,8 +737,13 @@ class TestPointsTableNode(BaseNode):
 
 
 def _set_ro(
-    table: QTableWidget, row: int, col: int, text: str, tooltip: str = ""
+    table, row: int, col: int, text: str, tooltip: str = ""
 ) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QTableWidgetItem
+
+    from ..style import qcolor
+
     item = QTableWidgetItem(text)
     item.setFlags(Qt.ItemIsEnabled)
     item.setForeground(qcolor("table-computed-text"))

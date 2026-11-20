@@ -37,17 +37,6 @@ from __future__ import annotations
 import copy
 from typing import Dict, Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
-
 from pump import Pressure, Q_
 
 from .. import explain, units
@@ -55,7 +44,6 @@ from ..binding import check_npsh_set, npsha_from_suction
 from ..numfmt import parse_decimal
 from ..signals import NPSHSet
 from .base import BaseNode, PortSpec
-from . import ui
 
 _MODES = [("Direct NPSHr points", "points"), ("NPSHa calculator", "calculator")]
 
@@ -248,6 +236,19 @@ class NPSHNode(BaseNode):
 
     # -- dialog ------------------------------------------------------------
     def create_dialog(self, parent, on_change):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import (
+            QHBoxLayout,
+            QLabel,
+            QPushButton,
+            QTableWidget,
+            QTableWidgetItem,
+            QVBoxLayout,
+            QWidget,
+        )
+
+        from . import ui
+
         s = self.settings
         for k, v in self.default_settings().items():
             s.setdefault(k, copy.deepcopy(v))
