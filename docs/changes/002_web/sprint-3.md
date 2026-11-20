@@ -14,7 +14,7 @@ browser shows comes from here; the browser never computes.
   - `evaluate(doc: dict) -> dict` — `Graph.from_dict(doc)`, evaluate, return
     `{"nodes": {id: {"kind", "state", "status", "badge": [text, tone] | None,
     "notes": [...], "view": {...}}}, "errors": [...]}`.
-  - `node_view(node) -> dict` — per-kind display data for the witness kinds, built
+  - `node_view(graph, node) -> dict` (graph needed for the Performance Plot inputs) — per-kind display data for the witness kinds, built
     from the node's `outputs_cache` and settings, e.g.:
     - test_points: per-row computed head / efficiency (display units of the node);
     - correction / curve_fit: corrected points and fitted curve series

@@ -20,6 +20,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Sprint 2: node modules import PySide6 / pyqtgraph / matplotlib Qt backends only
     inside their dialogs, so the engine runs where Qt does not exist (Pyodide);
     `tests/test_qt_free_engine.py` guards it.
+  - Sprint 3: `pumpflow.webapi` — the JSON boundary for the browser: `catalog`,
+    `evaluate` (states, statuses, verdict badges and per-kind views: test-point
+    heads, fitted series, compliance rows, NPSH, MRT checks), `default_settings`,
+    `export_report` (docx, html, xlsx test summary; LaTeX/PDF stay desktop-only).
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

@@ -53,7 +53,7 @@ Each run MUST:
 
 - [x] [Sprint 1 — Headless graph engine](sprint-1.md) — done 2026-11-20
 - [x] [Sprint 2 — Node logic importable without Qt](sprint-2.md) — done 2026-11-20
-- [ ] [Sprint 3 — JSON API for the browser (`pumpflow.webapi`)](sprint-3.md)
+- [x] [Sprint 3 — JSON API for the browser (`pumpflow.webapi`)](sprint-3.md) — done 2026-11-20
 - [ ] [Sprint 4 — Web scaffold + offline Pyodide spike (parity gate)](sprint-4.md)
 - [ ] [Sprint 5 — Canvas: open, view, wire, save](sprint-5.md)
 - [ ] [Sprint 6 — Witness forms I: Rated Point, Fluid, Test Points, Correction, Fit, Compliance](sprint-6.md)
