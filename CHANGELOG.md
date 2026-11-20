@@ -28,6 +28,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     runs offline in Pyodide 314.0.7 inside a Web Worker (32 MB vendored bundle:
     `npm --prefix web run vendor`); `npm --prefix web run parity` proves Pyodide =
     desktop on 11 projects (states, statuses, badges, compliance limits).
+  - Sprint 5: web canvas (React Flow): open / drag-and-drop, move, add from the
+    grouped toolbox, wire with type checks (single inputs replace their edge),
+    delete, undo/redo, save `.pumpflow` (the desktop opens it unchanged); verdict
+    pills, state glyphs and the zoomed-out overview as on the desktop.
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

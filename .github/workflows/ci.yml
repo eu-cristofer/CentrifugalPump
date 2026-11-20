@@ -101,6 +101,7 @@ jobs:
           tests/test_qt_free_engine.py
           tests/test_webapi.py
           pumpflow/webapi.py
+          tests/test_web_saved_fixture.py
           tests/test_canvas_verdict_gui.py
 
   mypy:

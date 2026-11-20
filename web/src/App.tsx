@@ -1,52 +1,145 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import Canvas, { type CanvasHandle } from "./canvas/Canvas";
+import Toolbox from "./canvas/Toolbox";
 import type { Engine } from "./engine/client";
 import { spawnEngine } from "./engine/spawn";
-import type { EvaluateResult, Progress, PumpflowDoc } from "./engine/types";
+import type { CatalogEntry, Progress, PumpflowDoc } from "./engine/types";
+import { readProjectFile, saveProjectText } from "./project/files";
+import { serializeDocument, useProject } from "./project/store";
+
+const EMPTY_DOC: PumpflowDoc = {
+  meta: { unit_preset: "SI", schema_version: 2 },
+  nodes: [],
+  edges: [],
+};
 
 export default function App() {
-  const engineRef = useRef<Engine | null>(null);
+  const [engine, setEngine] = useState<Engine | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [ready, setReady] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [result, setResult] = useState<EvaluateResult | null>(null);
+  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(null);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
+  const canvasRef = useRef<CanvasHandle>(null);
+  const { state, dispatch, result, evalError } = useProject(catalog ? engine : null);
+  const { doc, name, dirty, past, future, openId } = state;
 
   useEffect(() => {
-    const engine = spawnEngine(setProgress);
-    engineRef.current = engine;
-    engine.ready.then(
-      () => setReady(true),
-      (err: unknown) => setError(String(err)),
-    );
+    let live = true;
+    const e = spawnEngine(setProgress);
+    setEngine(e);
+    e.ready
+      .then(() => e.catalog())
+      .then(
+        (c) => live && setCatalog(c),
+        (err: unknown) => live && setError(String(err)),
+      );
     return () => {
-      engine.dispose();
-      engineRef.current = null;
+      live = false;
+      e.dispose();
+      setEngine(null);
     };
   }, []);
 
-  const openFile = useCallback(async (file: File) => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    setError("");
+  const openDoc = useCallback(
+    async (file: File) => {
+      if (dirty && !window.confirm("Discard unsaved changes?")) return;
+      try {
+        const next = await readProjectFile(file);
+        setError("");
+        setMessage("");
+        dispatch({ type: "open", doc: next, name: file.name });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [dirty, dispatch],
+  );
+
+  const save = useCallback(async () => {
+    if (!doc) return;
     try {
-      const doc = JSON.parse(await file.text()) as PumpflowDoc;
-      setFileName(file.name);
-      setResult(await engine.evaluate(doc));
+      const saved = await saveProjectText(
+        serializeDocument(doc, canvasRef.current?.view()),
+        name || "project",
+      );
+      if (saved) {
+        dispatch({ type: "markSaved" });
+        setMessage(`Saved ${saved}`);
+      }
     } catch (err) {
-      setResult(null);
       setError(String(err));
     }
-  }, []);
+  }, [doc, name, dispatch]);
 
-  const rows = result
-    ? Object.entries(result.nodes).sort(([a], [b]) => a.localeCompare(b))
-    : [];
+  const addNode = useCallback(
+    async (kind: string) => {
+      if (!engine || !doc) return;
+      try {
+        const settings = await engine.defaultSettings(kind);
+        const c = canvasRef.current?.center() ?? { x: 0, y: 0 };
+        dispatch({ type: "add", kind, settings, x: Math.round(c.x), y: Math.round(c.y) });
+      } catch (err) {
+        setError(String(err));
+      }
+    },
+    [engine, doc, dispatch],
+  );
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        dispatch({ type: e.shiftKey ? "redo" : "undo" });
+      } else if (key === "y") {
+        e.preventDefault();
+        dispatch({ type: "redo" });
+      } else if (key === "s") {
+        e.preventDefault();
+        void save();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dispatch, save]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const guard = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [dirty]);
+
   const pct = progress ? Math.round((progress.loaded / progress.total) * 100) : 0;
 
+  if (!catalog) {
+    return (
+      <main className="page">
+        <h1>PumpFlow Web</h1>
+        {!error && (
+          <div className="loading">
+            <div className="bar">
+              <div className="bar-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <p>Starting the Python engine{progress ? ` (${progress.stage}, ${pct}%)` : ""}</p>
+          </div>
+        )}
+        {error && <p className="error-text">{error}</p>}
+      </main>
+    );
+  }
+
   return (
-    <main
-      className={dragging ? "page dragging" : "page"}
+    <div
+      className={dragging ? "editor dragging" : "editor"}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -56,68 +149,76 @@ export default function App() {
         e.preventDefault();
         setDragging(false);
         const file = e.dataTransfer.files[0];
-        if (file && ready) void openFile(file);
+        if (file) void openDoc(file);
       }}
     >
-      <h1>PumpFlow Web</h1>
-
-      {!ready && !error && (
-        <div className="loading">
-          <div className="bar">
-            <div className="bar-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <p>Starting the Python engine{progress ? ` (${progress.stage}, ${pct}%)` : ""}</p>
-        </div>
-      )}
-
-      {error && <p className="error-text">{error}</p>}
-
-      {ready && (
-        <label className="open">
-          Open .pumpflow
+      <header className="topbar">
+        <strong className="brand">PumpFlow</strong>
+        <label className="btn">
+          Open
           <input
             type="file"
             accept=".pumpflow,application/json"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) void openFile(file);
+              if (file) void openDoc(file);
               e.target.value = "";
             }}
           />
         </label>
-      )}
+        <button type="button" className="btn" disabled={!doc} onClick={() => void save()}>
+          Save
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={past.length === 0}
+          onClick={() => dispatch({ type: "undo" })}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={future.length === 0}
+          onClick={() => dispatch({ type: "redo" })}
+        >
+          Redo
+        </button>
+        <span className="file-name">
+          {name}
+          {dirty ? " •" : ""}
+        </span>
+        <span className="topbar-message">{error || evalError || message}</span>
+      </header>
 
-      {result && (
-        <>
-          <p className="summary">
-            {fileName} · {rows.length} nodes · {result.errors.length} errors
-          </p>
-          <table>
-            <thead>
-              <tr>
-                <th>Node</th>
-                <th>Kind</th>
-                <th>State</th>
-                <th>Status</th>
-                <th>Badge</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([id, node]) => (
-                <tr key={id}>
-                  <td>{id}</td>
-                  <td>{node.kind}</td>
-                  <td className={`state-${node.state}`}>{node.state}</td>
-                  <td>{node.status}</td>
-                  <td className={node.badge ? `tone-${node.badge[1]}` : undefined}>
-                    {node.badge ? node.badge[0] : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-    </main>
+      <div className="workspace">
+        {doc ? (
+          <>
+            <Toolbox catalog={catalog} onAdd={(kind) => void addNode(kind)} />
+            <Canvas
+              doc={doc}
+              catalog={catalog}
+              result={result}
+              openId={openId}
+              dispatch={dispatch}
+              onOpenNode={() => setMessage("Forms arrive in the next version")}
+              handle={canvasRef}
+            />
+          </>
+        ) : (
+          <div className="welcome">
+            <p>Open a .pumpflow project, or drop one anywhere on this page.</p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => dispatch({ type: "open", doc: EMPTY_DOC, name: "untitled.pumpflow" })}
+            >
+              New empty project
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
