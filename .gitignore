@@ -232,3 +232,9 @@ graphify-out/**
 # Licensed standards text (keep local, never publish)
 marker-output/
 pump/graphify-out/
+
+# 002_web: generated / vendored
+web/node_modules/
+web/public/py/
+web/dist/
+web/src/tokens.css

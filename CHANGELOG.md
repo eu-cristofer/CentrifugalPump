@@ -24,6 +24,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     `evaluate` (states, statuses, verdict badges and per-kind views: test-point
     heads, fitted series, compliance rows, NPSH, MRT checks), `default_settings`,
     `export_report` (docx, html, xlsx test summary; LaTeX/PDF stay desktop-only).
+  - Sprint 4: `web/` (Vite + React + TypeScript).  The unchanged Python engine
+    runs offline in Pyodide 314.0.7 inside a Web Worker (32 MB vendored bundle:
+    `npm --prefix web run vendor`); `npm --prefix web run parity` proves Pyodide =
+    desktop on 11 projects (states, statuses, badges, compliance limits).
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct
