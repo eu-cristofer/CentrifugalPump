@@ -141,4 +141,5 @@ purchaser specified a tolerance.
 
 **Status:** delivered by project
 [001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints). Next steps: [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
+In progress: [002_web](docs/changes/002_web/README.md), the offline browser version (witness flow first).
 

@@ -1,5 +1,7 @@
 # Plan Evaluation: iOS Version
 
+> **Note:** Decision 2026-11-20: iOS native dropped in favour of the offline web version, [docs/changes/002_web](../docs/changes/002_web/README.md).
+
 ## Executive Summary
 
 **Impractical, Not Recommended.**

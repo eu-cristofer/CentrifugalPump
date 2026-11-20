@@ -11,6 +11,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Project 002_web registered** ([docs/changes/002_web](docs/changes/002_web/README.md)):
+  PumpFlow in the browser, offline, with the unchanged Python engine in Pyodide
+  (witness flow first; React Flow + TypeScript; 9 sprints).
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

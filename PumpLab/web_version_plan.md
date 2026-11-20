@@ -1,5 +1,7 @@
 # Plan Evaluation: Web Version
 
+> **Note:** Superseded by [docs/changes/002_web](../docs/changes/002_web/README.md) (2026-11-20): no server; the Python engine runs in the browser (Pyodide), offline.
+
 ## Executive Summary
 
 **Feasible, High Effort, High Reward.**
