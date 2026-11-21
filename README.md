@@ -141,6 +141,12 @@ purchaser specified a tolerance.
 
 **Status:** delivered by project
 [001_masterpiece](docs/changes/001_masterpiece/README.md) (14 sprints). Next steps: [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
-In progress: [002_web](docs/changes/002_web/README.md), the offline browser version (witness flow first).
+Delivered: [002_web](docs/changes/002_web/README.md), the offline browser version (witness flow first).
 How to build, serve and install it: [docs/web.md](docs/web.md).
+
+```bash
+npm --prefix web ci && npm --prefix web run vendor   # once; vendor needs the network
+npm --prefix web run build                           # offline app in web/dist
+python -m http.server -d web/dist 8080               # open the localhost address, port 8080
+```
 

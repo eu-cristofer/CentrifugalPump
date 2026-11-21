@@ -205,6 +205,39 @@ into one consolidated report (the A/B two-pump case).
   notes, the reference notebook (`examples/pump_api610_performance 1.ipynb`) still
   reimplements the workflow standalone; the library is being evolved to host it.
 
+### 2.3 Web version: engine, webapi, worker
+
+The browser runs the same Python.  Graph evaluation lives in `pumpflow/engine.py`, which
+imports no Qt, so the desktop canvas, `export_cli`, the tests and the browser share it.
+`pumpflow/webapi.py` is the JSON boundary; the TypeScript side only draws and edits
+settings, and never computes (ADR [0013](adr/0013-web-version-pyodide.md), UI_SPEC §13).
+
+```mermaid
+flowchart LR
+    subgraph BROWSER["Browser (offline bundle, web/)"]
+        UI["UI thread<br/>React Flow canvas · forms · charts"]
+        subgraph WORKER["Web Worker (boot.js)"]
+            PYO["Pyodide<br/>unchanged Python"]
+        end
+    end
+    UI <-->|"JSON messages"| WORKER
+    PYO --> WEBAPI["pumpflow.webapi<br/>evaluate · export_report · default_settings"]
+    WEBAPI --> ENGINE["pumpflow.engine.Graph"]
+    ENGINE --> NODES["nodes.compute()"]
+    NODES --> BIND["pumpflow.binding"]
+    BIND --> PUMP["pump (physics, verdicts)"]
+
+    SCENE["Desktop GraphScene<br/>(Qt canvas)"] --> ENGINE
+    CLI["pumpflow.export_cli"] --> ENGINE
+```
+
+- **Same answers, enforced.** `npm --prefix web run parity` evaluates the fixture projects
+  in Pyodide and in a normal Python interpreter and fails on any difference; the CI job
+  `web` runs it on every push.
+- **Offline.** `npm --prefix web run vendor` fills `web/public/py` (Pyodide, wheels and
+  the project wheel); the build adds a service worker that caches everything.
+- **Desktop-only.** LaTeX and PDF reports (they need a LaTeX installation).
+
 ---
 
 ## 3. Core domains & design patterns
@@ -225,8 +258,8 @@ into one consolidated report (the A/B two-pump case).
 - **Patterns:** **Template Method** (`generate_report` orchestrates `_add_*` steps) · **Strategy** (gettext locale selection) · tolerance-tier **rule table** (`_get_shutoff_tolerance`).
 
 ### Domain D — Reactive dataflow engine (pumpflow core)
-- **Classes:** `GraphScene`, `BaseNode`, `PortSpec`, the six signal dataclasses, `registry.make_node`.
-- **Responsibility:** Topologically order nodes (Kahn's algorithm in `_topo_order`), gather upstream `outputs_cache`, run each node, surface per-node state (`idle/ok/invalid/error/reject`).
+- **Classes:** `engine.Graph`, `GraphScene`, `BaseNode`, `PortSpec`, the six signal dataclasses, `registry.make_node`.
+- **Responsibility:** Topologically order nodes (Kahn's algorithm, now in the Qt-free `pumpflow/engine.py`: `Graph`, `topo_order`, `evaluate_in_order`; `GraphScene.evaluate()` delegates to it), gather upstream `outputs_cache`, run each node, surface per-node state (`idle/ok/invalid/error/reject`).
 - **Patterns:** **Pipes-and-Filters** · **Template Method** (`BaseNode.run → compute`) · **Registry** (`_BY_KIND`) · **Factory** (`make_node`) · **Observer/Reactive** (Qt `Signal` + `evaluate()`) · **Immutable Message** (frozen dataclasses, `replace`-based re-emission).
 
 #### Node property dialogs are modeless

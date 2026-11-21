@@ -51,6 +51,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     desktop-only.  Installable offline app: service worker precaches the app and the
     30 MB engine; after the first load it reloads, evaluates and exports with no
     network.  Forms load lazily (no chunk over 500 kB).  See `docs/web.md`.
+  - Sprint 9: CI job `web` (blocking) runs `check`, `parity` and `build` on every
+    push and uploads `web/dist` as the `pumpflow-web` artifact, so CI fails if the
+    browser ever disagrees with the desktop on the fixtures.  New: UI_SPEC §13,
+    the engine / webapi / worker diagram in ARCHITECTURE, ADR 0013 and training
+    note TR-02 (witnessing with the browser).
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

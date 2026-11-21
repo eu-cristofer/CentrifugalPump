@@ -34,6 +34,7 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
 
    training/README
    training/TR-01-witness-performance-test
+   training/TR-02-witness-with-the-browser
 
 .. toctree::
    :maxdepth: 2

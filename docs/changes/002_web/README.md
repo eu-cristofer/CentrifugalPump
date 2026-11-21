@@ -10,7 +10,7 @@ The other node kinds load and evaluate but get no web form yet.
 
 See [MOTIVATION.md](MOTIVATION.md) for the why, the decisions and the risks.
 
-Status: active · Branch: `feat/web` · Baseline commit: `d0d6749`
+Status: ready to archive · Branch: feat/web · Baseline commit: d0d6749
 
 # 002_web — Loop Protocol
 
@@ -59,4 +59,4 @@ Each run MUST:
 - [x] [Sprint 6 — Witness forms I: Rated Point, Fluid, Test Points, Correction, Fit, Compliance](sprint-6.md) — done 2026-11-20
 - [x] [Sprint 7 — Witness forms II: plots, NPSH, MRT Log, MRT Check, Note](sprint-7.md) — done 2026-11-20
 - [x] [Sprint 8 — Reports in the browser + installable offline app](sprint-8.md) — done 2026-11-20 (hosting choice still open, see MOTIVATION.md)
-- [ ] [Sprint 9 — CI parity job, docs and training](sprint-9.md)
+- [x] [Sprint 9 — CI parity job, docs and training](sprint-9.md) — done 2026-11-20

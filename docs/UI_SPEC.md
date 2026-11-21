@@ -545,3 +545,37 @@ enough.
 - **Welcome**: "Demo pipeline" (formerly "Skip") builds the built-in demo, as
   closing the window does; "&" in example titles is escaped; each recent
   project shows its file name, folder and modified date.
+
+## 13. Web version (002_web)
+
+The browser version runs the same Python (`pump` and the node logic) in Pyodide.  This
+section lists only what differs from the desktop workbench.  Build, serve and install are
+in [`docs/web.md`](web.md); the design is in ADR [0013](adr/0013-web-version-pyodide.md).
+
+- **Scope.** Twelve witness kinds have a form: Rated Point, Fluid, Test Points, Speed
+  correction, Curve fit, Performance plot, Compliance, NPSH, MRT Log, MRT Check, Report
+  Export and Note.  The other kinds (Point, Trim, Performance Explorer, System Curve,
+  Operating Point, Pump Selection) open and evaluate, and show "Edit this node in the
+  desktop app".
+- **Layout.** Double-clicking a node opens its form in a **side panel**, not a window.
+  Under 900 px wide the panel takes the full screen.  Under 700 px the toolbox collapses.
+- **Same vocabulary.** Verdict pills, chips (OVERRIDDEN, PROVISIONAL), state glyphs and the
+  zoomed-out overview are as in §11; toolbox groups and node glyphs are as in §12.  Labels,
+  units, parsing and display strings come from Python, so they match the desktop.
+- **Reports.** Word (`.docx`), HTML and the test data summary (`.xlsx`) are exported in the
+  browser.  "Print to PDF" opens the HTML report and the browser's print dialog.  The
+  LaTeX and PDF report is **desktop only**.
+- **Projects.** The same `.pumpflow` files: open, save, drag and drop.  The desktop opens a
+  file saved by the browser unchanged.
+- **Offline rule.** After the first load the app makes no network request.  The Python
+  engine and the wheels are vendored in the bundle; there is no CDN, no
+  analytics and no remote content.  The top bar shows "Ready offline" once the browser has
+  stored the app.
+- **One-engine rule.** TypeScript never computes a quantity or a verdict.  It sends a
+  `.pumpflow` document to `pumpflow.webapi` and displays what comes back; `webapi` is the
+  only boundary.
+- **Parity gate.** `npm --prefix web run parity` evaluates the fixture projects in Pyodide
+  and in desktop Python and fails on any difference in states, statuses, badges or
+  compliance limits.  CI runs it on every push (job `web`).
+- **Design tokens** apply as in §12: colours, radii and font sizes come from
+  `pump/design/tokens.json`; the web theme is light only.

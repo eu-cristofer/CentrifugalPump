@@ -32,6 +32,13 @@ sphinx-build -b html docs docs/_build/html
 python -m pumpflow                   # the workbench
 python -m pumpflow.export_cli examples/user/B-34004A_MRT_reference.pumpflow --out /tmp/r   # headless report export
 python use_cases/build_notebooks.py  # regenerate the generated notebooks (edit the script, not the .ipynb)
+
+npm --prefix web ci                  # the web version (Node 22): install
+npm --prefix web run vendor          # fill web/public/py (Pyodide, wheels, project wheel; the only networked step)
+npm --prefix web run dev             # dev server
+npm --prefix web run check           # typecheck + lint + vitest
+npm --prefix web run parity          # Pyodide = desktop on the fixture projects
+npm --prefix web run build           # web/dist, the offline app (see docs/web.md)
 ```
 
 `pytest` collects `tests/` plus `pump/` docstrings; it does **not** crawl `pumpflow/` (a Qt package). `pumpflow/nodes/test_points.py` is a Qt widget, not a test. GUI tests run Qt offscreen (`QT_QPA_PLATFORM=offscreen`). Do not open Qt windows and call `processEvents()` in tests after a modeless child window was left open: it can segfault.
@@ -74,7 +81,10 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 - **`signals.py`**: immutable dataclass payloads carrying Pint quantities (`RatedPoint`, `TestPointSet`, `CorrectedCurve`, `FittedModel`, `ComplianceResult`, `NPSHSet`, …).  Nodes emit fresh instances.
 - **`binding/`**: the **only** adapter into `pump` (signals ↔ library objects, display floats), split by topic: `_common`, `curves`, `acceptance`, `reports`, `engineering`, `summary` (Annex M test data summary); `from pumpflow.binding import X` re-exports everything.  It holds no physics or verdict logic.
 - **`nodes/`**: 18 node kinds (`BaseNode` subclasses; `registry.py` maps `kind` → class).  `compute(inputs) -> {port: payload}` is the Qt-agnostic core; `create_dialog` builds the property window from helpers in `nodes/ui.py` (`UnitField`, `PressureField`, `BeforeAfterTable`, `info_button`, …).
-- **`canvas/`**: `GraphScene` (wiring, topological `evaluate()`, `to_dict`/`load_dict`).
+- **`canvas/`**: `GraphScene` (wiring, topological `evaluate()`, `to_dict`/`load_dict`); it evaluates through `engine`.
+- **`engine.py`**: the Qt-free graph (`Graph`, `topo_order`, `evaluate_in_order`) shared by the canvas, `export_cli`, the tests and the web.  Nodes import Qt only inside `create_dialog` (`tests/test_qt_free_engine.py` guards it).
+- **`webapi.py`**: the plain-JSON boundary for the browser (`catalog`, `evaluate`, `default_settings`, `export_report`).  TypeScript never computes; it renders what `webapi` returns.
+- **`web/`** (project 002_web, ADR 0013): React Flow + TypeScript front end; the Python runs in Pyodide in a Web Worker.  The offline bundle in `web/public/py` is git-ignored.  Witness kinds have side-panel forms; LaTeX/PDF stays desktop-only.  CI job `web` runs check, parity and build.
 - **`persistence.py` + `settings_codec.py`**: `.pumpflow` **schema v2**, where every quantity is `{"value","unit"}` (ADR 0011), with a lossless v1 → v2 migration.  Optional fields use `OptDisp` and are **omitted when unset**, so older files re-save byte-identical.  Do not add always-present default keys to an existing node's settings: it breaks the round-trip tests.
 - **`units.py`**: the display-unit menus and presets (SI/US).  **`explain.py`**: formula tooltips.  **`export_cli.py`**: headless export.  **`app.py`**: `MainWindow`.
 
@@ -92,12 +102,13 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 - `examples/sample_project.pumpflow` must equal `pumpflow.sample_data.sample_project_doc()` (`tests/test_persistence_roundtrip.py`); regenerate it from that builder, never hand-edit the JSON.
 - `AGENTS.md` predates the `binding/` package split and the `[dev,gui]` install; where it disagrees with this file, this file wins.
 - **Confidential material never goes into git**: the customer PDFs (`examples/user/*.PDF`) and the licensed standard texts (`marker-output/`, git-ignored).  Quote only clause numbers and short phrases from standards in tracked files.  The GitHub repo is private; an anonymised public copy is planned.
+- After changing Python used by the web, run `npm --prefix web run vendor` (the wheel in `web/public/py` is rebuilt only by vendor) and `npm --prefix web run parity`.
 - Training material (`docs/training/`, `docs/concepts/`, the TR/UC notebooks) is updated with every rule change.
 
 ## Workflow
 
 - Larger work is planned as sprint projects with the `sprint-loop` skill under [docs/changes/](docs/changes/) (`001_masterpiece` is complete).  Open items live in [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
-- Architecture decisions are in [docs/adr/](docs/adr/) (latest: 0012, the single verdict engine).  The use-case registry is [docs/product/use-cases.md](docs/product/use-cases.md), with worked notebooks in [use_cases/](use_cases/).
+- Architecture decisions are in [docs/adr/](docs/adr/) (latest: 0013, the web version in Pyodide; 0012, the single verdict engine).  The use-case registry is [docs/product/use-cases.md](docs/product/use-cases.md), with worked notebooks in [use_cases/](use_cases/).
 - Commit attribution and "commit/push only when asked" follow the session instructions.
 
 ## graphify

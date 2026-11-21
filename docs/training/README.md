@@ -10,6 +10,7 @@ Self-paced training for engineers who witness API 610 pump Factory Acceptance Te
 | Module | Topic | Notebook | Time |
 |---|---|---|---|
 | [TR-01](TR-01-witness-performance-test.md) | Witnessing an API 610 performance test: which tolerances apply, how to judge head, power, shut-off, efficiency, NPSH and vibration, and the traps | [`TR-01_witness_training.ipynb`](../../use_cases/TR-01_witness_training.ipynb) | about 2 h |
+| [TR-02](TR-02-witness-with-the-browser.md) | Witnessing with the browser version: install once, work offline at the bench, export the reports | none (hands-on) | about 30 min |
 
 ## Before you start
 
