@@ -32,6 +32,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     grouped toolbox, wire with type checks (single inputs replace their edge),
     delete, undo/redo, save `.pumpflow` (the desktop opens it unchanged); verdict
     pills, state glyphs and the zoomed-out overview as on the desktop.
+  - Sprint 6: web forms (side panel, double-click a node) for Rated Point,
+    Fluid, Test Points (grid with per-column units, live Head/η from Python, paste,
+    bench geometry disabled until applied), Speed correction, Curve fit and
+    Compliance (verdict, parameter table, override section with Reason).  Unit
+    conversions, parsing and display strings come from Python; the desktop now
+    shares `pump_type_hint`, `paste_rows`, `banner_message`, `viscous_summary`
+    and `param_cells` with the web.
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

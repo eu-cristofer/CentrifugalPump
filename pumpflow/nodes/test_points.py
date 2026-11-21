@@ -225,6 +225,93 @@ def parse_paste_header(cells: List[str]):
     return parsed
 
 
+def paste_rows(
+    text: str,
+    columns: dict,
+    pressure_ref: str = "g",
+    shown_keys=None,
+) -> Optional[dict]:
+    """Parse spreadsheet text (tab or ``;`` separated, decimal comma or dot).
+
+    Qt-free core of the Paste button (and of ``webapi.parse_paste``).  A first
+    line made only of unit headers (``"Q [gpm]"``, ``"P_dis [psi g]"``) sets the
+    column units and the pressure reference; otherwise the lines are data in the
+    hydraulic column order.  Pressure cells under a header whose unit differs from
+    the shared pressure unit are converted.
+
+    Returns ``None`` for blank text, else ``{"rows", "columns", "pressure_ref",
+    "vibration", "warnings"}``: ``columns`` is the full label map after the
+    paste, ``vibration`` is true when a vibration column was pasted, and
+    ``warnings`` names pasted vibration locations that ``shown_keys`` (the table's
+    columns, when given) does not display.
+    """
+    if not text or not text.strip():
+        return None
+    cols = {**canonical_columns(), **(columns or {})}
+    ref = pressure_ref
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+
+    def split(line: str) -> List[str]:
+        return line.replace(";", "\t").split("\t")
+
+    hdr = parse_paste_header(split(lines[0]))
+    hdr_labels: Dict[str, str] = {}
+    if hdr:
+        col_keys = [h[0] for h in hdr]
+        data_lines = lines[1:]
+        for key, label, hdr_ref in hdr:
+            if label is not None:
+                hdr_labels[key] = label
+            if hdr_ref is not None:
+                ref = hdr_ref
+        # Pressures share one unit: the first labelled pressure header wins.
+        p_target = next(
+            (hdr_labels[k] for k in col_keys if k in _PRESSURE_KEYS and k in hdr_labels),
+            cols["p_suc"],
+        )
+        for key, label in hdr_labels.items():
+            cols[key] = p_target if key in _PRESSURE_KEYS else label
+        if any(k in _PRESSURE_KEYS for k in col_keys):
+            cols["p_suc"] = cols["p_dis"] = p_target
+    else:
+        col_keys = list(_KEYS)
+        data_lines = lines
+        p_target = cols["p_suc"]
+
+    new_rows = []
+    for line in data_lines:
+        cells = split(line)
+        rd = {k: None for k in _ALL_KEYS[:8]}  # hydraulic keys only
+        for c, key in enumerate(col_keys):
+            if c < len(cells):
+                v = parse_decimal(cells[c], None)
+                if (
+                    v is not None
+                    and key in _PRESSURE_KEYS
+                    and key in hdr_labels
+                    and hdr_labels[key] != p_target
+                ):
+                    v = units.convert_display(v, "pressure", hdr_labels[key], p_target)
+                rd[key] = v
+        new_rows.append(rd)
+    warnings: List[str] = []
+    if shown_keys is not None:
+        hidden = [k for k in col_keys if k in _VIB_KEYS and k not in shown_keys]
+        if hidden:
+            warnings.append(
+                "Pasted vibration for locations of another pump type "
+                f"({', '.join(hidden)}): kept in the data; reopen the "
+                "table to see their columns."
+            )
+    return {
+        "rows": new_rows,
+        "columns": cols,
+        "pressure_ref": ref,
+        "vibration": any(k in _VIB_KEYS for k in col_keys),
+        "warnings": warnings,
+    }
+
+
 class TestPointsTableNode(BaseNode):
     kind = "test_points"
     title = "Test Points Table"
@@ -617,74 +704,25 @@ class TestPointsTableNode(BaseNode):
             ref_combo.blockSignals(False)
 
         def paste():
-            text = QGuiApplication.clipboard().text()
-            if not text.strip():
+            res = paste_rows(
+                QGuiApplication.clipboard().text(),
+                cols,
+                s["pressure_ref"],
+                col_keys_all,
+            )
+            if res is None or not res["rows"]:
                 return
-            lines = [ln for ln in text.splitlines() if ln.strip()]
-
-            def split(line: str) -> List[str]:
-                return line.replace(";", "\t").split("\t")
-
-            hdr = parse_paste_header(split(lines[0]))
-            hdr_labels: Dict[str, str] = {}
-            if hdr:
-                col_keys = [h[0] for h in hdr]
-                data_lines = lines[1:]
-                for key, label, ref in hdr:
-                    if label is not None:
-                        hdr_labels[key] = label
-                    if ref is not None:
-                        s["pressure_ref"] = ref
-                # Pressures share one unit: the first labelled pressure header wins.
-                p_target = next(
-                    (hdr_labels[k] for k in col_keys if k in _PRESSURE_KEYS and k in hdr_labels),
-                    cols["p_suc"],
-                )
-                for key, label in hdr_labels.items():
-                    cols[key] = p_target if key in _PRESSURE_KEYS else label
-                if any(k in _PRESSURE_KEYS for k in col_keys):
-                    cols["p_suc"] = cols["p_dis"] = p_target
-            else:
-                col_keys = list(_KEYS)
-                data_lines = lines
-                p_target = cols["p_suc"]
-
-            new_rows = []
-            for line in data_lines:
-                cells = split(line)
-                rd = blank_row()
-                for c, key in enumerate(col_keys):
-                    if c < len(cells):
-                        v = parse_decimal(cells[c], None)
-                        if (
-                            v is not None
-                            and key in _PRESSURE_KEYS
-                            and key in hdr_labels
-                            and hdr_labels[key] != p_target
-                        ):
-                            v = units.convert_display(
-                                v, "pressure", hdr_labels[key], p_target
-                            )
-                        rd[key] = v
-                new_rows.append(rd)
-            if new_rows:
-                s["rows"] = new_rows
-                if any(k in _VIB_KEYS for k in col_keys):
-                    vib_chk.setChecked(True)
-                hidden = [
-                    k for k in col_keys if k in _VIB_KEYS and k not in col_keys_all
-                ]
-                if hidden:
-                    banner.show_message(
-                        "Pasted vibration for locations of another pump type "
-                        f"({', '.join(hidden)}): kept in the data; reopen the "
-                        "table to see their columns.",
-                        "warn",
-                    )
-                sync_header_widgets()
-                update_headers()
-                fill()
-                recompute_status()
+            cols.update(res["columns"])
+            s["pressure_ref"] = res["pressure_ref"]
+            s["rows"] = res["rows"]
+            if res["vibration"]:
+                vib_chk.setChecked(True)
+            if res["warnings"]:
+                banner.show_message(" ".join(res["warnings"]), "warn")
+            sync_header_widgets()
+            update_headers()
+            fill()
+            recompute_status()
 
         bar = QWidget()
         bl = QHBoxLayout(bar)

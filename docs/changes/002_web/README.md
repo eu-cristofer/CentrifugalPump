@@ -56,7 +56,7 @@ Each run MUST:
 - [x] [Sprint 3 — JSON API for the browser (`pumpflow.webapi`)](sprint-3.md) — done 2026-11-20
 - [x] [Sprint 4 — Web scaffold + offline Pyodide spike (parity gate)](sprint-4.md) — done 2026-11-20 (PARITY OK on 11 projects; Chrome boot 3.5 s)
 - [x] [Sprint 5 — Canvas: open, view, wire, save](sprint-5.md) — done 2026-11-20
-- [ ] [Sprint 6 — Witness forms I: Rated Point, Fluid, Test Points, Correction, Fit, Compliance](sprint-6.md)
+- [x] [Sprint 6 — Witness forms I: Rated Point, Fluid, Test Points, Correction, Fit, Compliance](sprint-6.md) — done 2026-11-20
 - [ ] [Sprint 7 — Witness forms II: plots, NPSH, MRT Log, MRT Check, Note](sprint-7.md)
 - [ ] [Sprint 8 — Reports in the browser + installable offline app](sprint-8.md)
 - [ ] [Sprint 9 — CI parity job, docs and training](sprint-9.md)

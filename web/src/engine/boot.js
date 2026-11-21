@@ -17,7 +17,12 @@ import matplotlib
 matplotlib.use("Agg")
 import pumpflow.webapi as _w
 
-_ALLOWED = {"catalog", "evaluate", "default_settings", "export_report"}
+_ALLOWED = {
+    "catalog", "evaluate", "default_settings", "export_report",
+    "decode_settings", "encode_settings", "unit_options", "convert", "explain",
+    "standards", "clients", "standard_label", "water_density", "water_properties",
+    "pump_types", "pump_type_hint", "atmosphere", "parse_paste",
+}
 
 def _call(fn, args_json):
     if fn not in _ALLOWED:

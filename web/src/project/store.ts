@@ -42,6 +42,7 @@ export type Action =
   | { type: "open"; doc: PumpflowDoc; name: string }
   | { type: "move"; moves: Array<{ id: string; x: number; y: number }> }
   | { type: "add"; kind: string; settings: Record<string, unknown>; x: number; y: number }
+  | { type: "setSettings"; id: string; settings: Record<string, unknown> }
   | { type: "remove"; nodeIds: string[]; edges: DocEdge[] }
   | { type: "connect"; edge: DocEdge; catalog: CatalogEntry[] }
   | { type: "disconnect"; edge: DocEdge }
@@ -91,6 +92,16 @@ export function reduce(state: ProjectState, action: Action): ProjectState {
         settings: action.settings,
       };
       return commit(state, { ...state.doc, nodes: [...old, node] });
+    }
+    case "setSettings": {
+      if (!state.doc) return state;
+      let changed = false;
+      const nodes = docNodes(state.doc).map((n) => {
+        if (n.id !== action.id || n.settings === action.settings) return n;
+        changed = true;
+        return { ...n, settings: action.settings };
+      });
+      return changed ? commit(state, { ...state.doc, nodes }) : state;
     }
     case "remove": {
       if (!state.doc) return state;

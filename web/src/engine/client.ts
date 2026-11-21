@@ -5,8 +5,11 @@ import type {
   ExportFormat,
   ExportResult,
   FnName,
+  PasteResult,
   Progress,
   PumpflowDoc,
+  Settings,
+  WaterProperties,
   WorkerOut,
 } from "./types";
 
@@ -91,6 +94,72 @@ export class Engine {
     lang: string | null = null,
   ): Promise<ExportResult> {
     return this.call("export_report", doc, fmt, lang);
+  }
+
+  decodeSettings(kind: string, encoded: Settings): Promise<Settings> {
+    return this.call("decode_settings", kind, encoded);
+  }
+
+  encodeSettings(kind: string, runtime: Settings): Promise<Settings> {
+    return this.call("encode_settings", kind, runtime);
+  }
+
+  unitOptions(dimension: string): Promise<Array<[string, string]>> {
+    return this.call("unit_options", dimension);
+  }
+
+  convert(
+    value: number,
+    from: string,
+    to: string,
+    dimension: string,
+    densRel: number | null = null,
+  ): Promise<number | null> {
+    return this.call("convert", value, from, to, dimension, densRel);
+  }
+
+  explain(key: string): Promise<string> {
+    return this.call("explain", key);
+  }
+
+  standards(): Promise<Array<[string, string]>> {
+    return this.call("standards");
+  }
+
+  clients(): Promise<Array<[string, string]>> {
+    return this.call("clients");
+  }
+
+  standardLabel(key: string, client: string | null = null): Promise<string> {
+    return this.call("standard_label", key, client);
+  }
+
+  waterDensity(tempC: number): Promise<number> {
+    return this.call("water_density", tempC);
+  }
+
+  waterProperties(tempC: number): Promise<WaterProperties> {
+    return this.call("water_properties", tempC);
+  }
+
+  pumpTypes(): Promise<Array<[string, string]>> {
+    return this.call("pump_types");
+  }
+
+  pumpTypeHint(code: string): Promise<string> {
+    return this.call("pump_type_hint", code);
+  }
+
+  atmosphere(unit: string): Promise<number> {
+    return this.call("atmosphere", unit);
+  }
+
+  parsePaste(
+    text: string,
+    columns: Record<string, string>,
+    pressureRef: string,
+  ): Promise<PasteResult> {
+    return this.call("parse_paste", text, columns, pressureRef);
   }
 
   dispose(): void {

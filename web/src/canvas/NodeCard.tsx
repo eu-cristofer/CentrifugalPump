@@ -16,7 +16,7 @@ export type NodeCardData = {
 };
 export type PumpNode = Node<NodeCardData, "pump">;
 
-function Pill({
+export function Pill({
   text,
   tone,
   big = false,
@@ -38,7 +38,7 @@ function Pill({
   );
 }
 
-function StateDot({ state, big = false }: { state: NodeResult["state"]; big?: boolean }) {
+export function StateDot({ state, big = false }: { state: NodeResult["state"]; big?: boolean }) {
   const glyph = STATE_GLYPH[state];
   const color = stateColor(state);
   return (

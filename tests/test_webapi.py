@@ -110,6 +110,7 @@ def test_compliance_view_matches_desktop_result(doc_a, result_a):
         "note",
         "extrapolated",
         "verified",
+        "cells",
     }
 
 
@@ -141,7 +142,8 @@ def test_other_views(result_a):
     corr = nodes["corr_a"]["view"]
     assert corr["before_after"] and corr["target_speed"]["unit"]
 
-    assert nodes["rated"]["view"] == {}
+    rated = nodes["rated"]["view"]  # a Fluid node is wired in the reference file
+    assert rated["fluids"] == [rated["choice"]] == [rated["override"]["name"]]
     assert nodes["note"]["view"] == {}
     assert nodes["mrt_b_check"]["view"] == {}  # idle node: no result, no view
 
@@ -253,3 +255,354 @@ def test_imports_and_evaluates_without_qt():
     )
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip().endswith("APPROVED ✓")
+
+
+# ------------------------------------------------------------ form helpers
+def test_settings_round_trip_every_node(doc_a):
+    for node in doc_a["nodes"]:
+        stored = node["settings"]
+        runtime = webapi.decode_settings(node["kind"], stored)
+        json.dumps(runtime, allow_nan=False)
+        assert webapi.encode_settings(node["kind"], runtime) == stored, node["id"]
+
+
+def test_decode_settings_is_the_runtime_shape(doc_a):
+    rated = next(n for n in doc_a["nodes"] if n["kind"] == "rated_point")
+    rt = webapi.decode_settings("rated_point", rated["settings"])
+    assert isinstance(rt["q"], float) and rt["q_unit"]
+    assert not isinstance(rated["settings"]["q"], float)  # the input is untouched
+
+
+def test_unit_options_and_convert_agree_with_units():
+    from pumpflow import units
+
+    opts = webapi.unit_options("capacity")
+    assert ["m\u00b3/h", "m**3/h"] in opts
+    assert [o[0] for o in opts] == [lbl for lbl, _ in units.UNIT_OPTIONS["capacity"]]
+    assert webapi.convert(100, "m\u00b3/h", "US GPM", "capacity") == pytest.approx(
+        440.287, rel=1e-4
+    )
+    assert webapi.convert(100, "m\u00b3/h", "m\u00b3/h", "capacity") == 100
+    assert webapi.convert(5.0, "cSt", "cP", "viscosity", 0.8) == pytest.approx(
+        units.convert_display(5.0, "viscosity", "cSt", "cP", 0.8)
+    )
+    assert webapi.convert(1, "nope", "bar", "pressure") is None
+    with pytest.raises(KeyError):
+        webapi.unit_options("no_such_dimension")
+
+
+def test_explain_standards_clients_labels():
+    assert "Total head" in webapi.explain("head")
+    assert webapi.explain("no_such_key") == ""
+    pt = webapi.explain("pump_type")
+    assert pt.startswith("API 610 pump type\n") and "<" not in pt and "OH1" in pt
+    assert webapi.explain("impeller_diameter").startswith("Impeller diameter\n")
+    stds, cls = webapi.standards(), webapi.clients()
+    assert stds and all(len(x) == 2 for x in stds)
+    assert ["api610:12", webapi.standard_label("api610:12")] in stds
+    assert cls and webapi.standard_label(
+        stds[0][0], cls[0][0]
+    ) != webapi.standard_label(stds[0][0])
+    assert webapi.standard_label("api610:12", "") == webapi.standard_label("api610:12")
+    json.dumps([stds, cls], allow_nan=False)
+
+
+def test_water_and_pump_type_helpers():
+    assert webapi.water_density(20) == pytest.approx(998.2, abs=0.1)
+    w = webapi.water_properties(20)
+    assert w["density"] == webapi.water_density(20)
+    assert w["kinematic_cst"] == pytest.approx(1.0, abs=0.05)
+    assert w["dynamic_cp"] == pytest.approx(1.0, abs=0.05)
+    codes = [c for c, _ in webapi.pump_types()]
+    assert "OH1" in codes and "VS7" in codes
+    assert "Table 9" in webapi.pump_type_hint("VS1")
+    assert "Table 8" in webapi.pump_type_hint("BB2")
+    assert webapi.pump_type_hint("").startswith("Not set")
+
+
+def test_rated_point_and_fluid_views(doc_a):
+    # a wired water fluid overrides the rated fluid and is listed by name
+    doc = json.loads(json.dumps(doc_a))
+    fl = webapi.default_settings("fluid")
+    fl.update({"source": "water", "name": "Test water"})
+    doc["nodes"].append(
+        {"id": "fluid-9", "kind": "fluid", "x": 0, "y": 0, "settings": fl}
+    )
+    rated = next(n for n in doc["nodes"] if n["kind"] == "rated_point")
+    rated["settings"]["fluid_choice"] = "Test water"
+    doc["edges"].append(
+        {
+            "src_node": "fluid-9",
+            "src_port": "FluidSpec",
+            "dst_node": rated["id"],
+            "dst_port": "FluidSpec",
+        }
+    )
+    nodes = webapi.evaluate(doc)["nodes"]
+    fv = nodes["fluid-9"]["view"]
+    assert fv["source"] == "water" and fv["viscosity_cp"] == pytest.approx(
+        0.89, abs=0.01
+    )
+    rv = nodes[rated["id"]]["view"]
+    assert rv["fluids"][-1] == "Test water" and rv["choice"] == "Test water"
+    assert rv["override"]["name"] == "Test water"
+    assert rv["standard_key"].startswith("api610:") and isinstance(rv["client"], str)
+    assert rv["override"]["density_kgm3"] == pytest.approx(fv["density_kgm3"])
+
+
+@pytest.mark.parametrize("kind", ["rated_point", "fluid"])
+def test_web_edited_settings_decode_and_evaluate(kind):
+    # edit "the web way": decode defaults, patch runtime keys, encode, evaluate
+    rt = webapi.decode_settings(kind, webapi.default_settings(kind))
+    if kind == "rated_point":
+        rt.update({"q": 440.287, "q_unit": "US GPM", "pump_type": "BB2"})
+        rt["standard_key"], rt["client"] = "api610:12", ""
+        rt["standard"] = webapi.standard_label("api610:12")
+    else:
+        rt.update({"source": "water", "temp": 77.0, "temp_unit": "\u00b0F"})
+    enc = webapi.encode_settings(kind, rt)
+    assert webapi.decode_settings(kind, enc) == rt
+    doc = {"meta": {"schema_version": 2}, "nodes": [], "edges": []}
+    doc["nodes"].append(
+        {"id": kind + "-1", "kind": kind, "x": 0, "y": 0, "settings": enc}
+    )
+    out = webapi.evaluate(doc)["nodes"][kind + "-1"]
+    assert out["state"] == "ok", out["status"]
+
+
+# ------------------------------------------- witness forms II (sprint 6 part B)
+def _web_edit(doc, node_id, patch):
+    """Edit one node "the web way": decode, patch runtime keys, encode, evaluate."""
+    doc = json.loads(json.dumps(doc))
+    node = next(n for n in doc["nodes"] if n["id"] == node_id)
+    rt = webapi.decode_settings(node["kind"], node["settings"])
+    patch(rt)
+    node["settings"] = webapi.encode_settings(node["kind"], rt)
+    return doc, webapi.evaluate(doc)["nodes"]
+
+
+def test_atmosphere_agrees_with_units():
+    from pumpflow import units
+
+    assert webapi.atmosphere("bar") == pytest.approx(1.01325)
+    assert webapi.atmosphere("psi") == pytest.approx(units.atm_in("psi"))
+
+
+def test_parse_paste_header_and_rows():
+    cols = {"p_suc": "bar", "p_dis": "bar", "q": "m³/h"}
+    text = (
+        "Q [US GPM]\tP_suc [psi g]\tP_dis [psi g]\tN\n"
+        "440,287\t14,5\t145\t1750\n"
+        "0\t14.5\t160\t1750\n"
+    )
+    out = webapi.parse_paste(text, cols, "a")
+    assert out["columns"]["q"] == "US GPM"
+    assert out["columns"]["p_suc"] == out["columns"]["p_dis"] == "psi"
+    assert out["pressure_ref"] == "g" and out["vibration"] is False
+    assert len(out["rows"]) == 2
+    assert out["rows"][0]["q"] == pytest.approx(440.287)  # decimal comma
+    assert out["rows"][0]["p_dis"] == 145 and out["rows"][0]["head"] is None
+    assert out["rows"][0]["n"] == 1750
+    json.dumps(out, allow_nan=False)
+
+    # header-less lines are data in the hydraulic column order; units unchanged
+    plain = webapi.parse_paste("100;1,0;5,0;25;1750;30\n", cols, "g")
+    assert plain["columns"]["q"] == "m³/h" and plain["pressure_ref"] == "g"
+    assert plain["rows"][0] == {
+        "q": 100,
+        "p_suc": 1.0,
+        "p_dis": 5.0,
+        "temp_c": 25,
+        "n": 1750,
+        "power": 30,
+        "head": None,
+        "eff": None,
+    }
+    assert webapi.parse_paste("  \n", cols, "g")["rows"] == []
+
+    # pressure cells under a header with a different unit follow the first one
+    mixed = webapi.parse_paste("P_suc [bar]\tP_dis [kPa]\n1\t500\n", {}, "g")
+    assert mixed["columns"]["p_suc"] == mixed["columns"]["p_dis"] == "bar"
+    assert mixed["rows"][0]["p_dis"] == pytest.approx(5.0)
+
+
+def test_test_points_view_form_fields(result_a):
+    v = result_a["nodes"]["test_a"]["view"]
+    assert v["fluids"] == [v["choice"]] or v["choice"] == "__default__"
+    assert isinstance(v["has_shutoff"], bool)
+    assert v["vib_label"].startswith("Vibration columns (RMS")
+    assert all({"key", "title", "tooltip"} <= set(c) for c in v["vib_columns"])
+    c = result_a["nodes"]["corr_a"]["view"]
+    assert c["has_rated"] is True and c["viscous_text"] == "—"
+    assert c["banner"]["level"] in ("info", "warn", "error")
+
+
+def test_compliance_view_cells_and_default_tolerances(doc_a, result_a):
+    from pumpflow.nodes.compliance import param_cells
+
+    view = result_a["nodes"]["check_a"]["view"]
+    graph = Graph.from_dict(doc_a)
+    graph.evaluate()
+    desktop = graph.node_by_id("check_a").outputs_cache["ComplianceResult"]
+    assert [r["cells"] for r in view["rows"]] == [
+        param_cells(p) for p in desktop.parameters
+    ]
+    head = next(r for r in view["rows"] if r["name"] == "Head")
+    assert head["cells"][0] == "Head" and head["cells"][7] == "✅"
+    assert set(view["default_tolerances"]) == {
+        "head",
+        "shutoff",
+        "power",
+        "efficiency",
+    }
+    assert view["default_tolerances"]["head"] == desktop.default_tolerances["head"]
+
+
+def test_web_edited_compliance_override_and_reset(doc_a):
+    # a head tolerance and a reason, exactly as the form writes them
+    def override(rt):
+        base = webapi.evaluate(doc_a)["nodes"]["check_a"]["view"]["default_tolerances"]
+        rt["tolerances"] = {
+            "head": 0.10,
+            "shutoff": base["shutoff"],
+            "power": base["power"],
+            "efficiency": base["efficiency"],
+        }
+        rt["override_reason"] = "purchaser agreement"
+
+    doc, nodes = _web_edit(doc_a, "check_a", override)
+    view = nodes["check_a"]["view"]
+    assert view["overridden"] is True
+    assert view["override_reason"] == "purchaser agreement"
+    assert view["tolerances"]["head"] == 0.10
+    assert nodes["check_a"]["badge"][0] in (
+        "APPROVED",
+        "REJECTED",
+        "NOT FULLY ASSESSED",
+    )
+
+    # "Reset to the acceptance criteria": tolerances {} and no reason
+    def reset(rt):
+        rt["tolerances"] = {}
+        rt.pop("override_reason", None)
+
+    doc2, nodes2 = _web_edit(doc, "check_a", reset)
+    v2 = nodes2["check_a"]["view"]
+    assert v2["overridden"] is False and v2["override_reason"] == ""
+    assert (
+        nodes2["check_a"]["state"]
+        == webapi.evaluate(doc_a)["nodes"]["check_a"]["state"]
+    )
+    node = next(n for n in doc2["nodes"] if n["id"] == "check_a")
+    assert "override_reason" not in node["settings"]
+
+
+def test_web_edited_correction_and_curve_fit(doc_a, result_a):
+    base = result_a["nodes"]
+    doc, nodes = _web_edit(
+        doc_a,
+        "corr_a",
+        lambda rt: rt.update(
+            {"lock_to_rated": False, "target_speed": 1800.0, "target_speed_unit": "rpm"}
+        ),
+    )
+    assert nodes["corr_a"]["state"] == "ok", nodes["corr_a"]["status"]
+    assert nodes["corr_a"]["view"]["target_speed"]["value"] == pytest.approx(1800.0)
+    assert nodes["fit_a"]["state"] in ("ok", "reject", "idle")
+
+    doc, nodes = _web_edit(
+        doc_a, "fit_a", lambda rt: rt.update({"degree": 2, "spline": False})
+    )
+    assert nodes["fit_a"]["state"] == base["fit_a"]["state"]
+    fv = nodes["fit_a"]["view"]
+    assert fv["degree"] == 2 and fv["spline"] is None
+    assert fv["r2_text"].startswith("R²(") and "Head" in fv["coeff_text"]
+
+
+def test_web_edited_test_points_unit_change_keeps_the_physics(doc_a, result_a):
+    # change the Q column to US GPM (values converted in Python, as the form does)
+    def to_gpm(rt):
+        for r in rt["rows"]:
+            if r.get("q") is not None:
+                r["q"] = webapi.convert(
+                    r["q"], rt["columns"]["q"], "US GPM", "capacity"
+                )
+        rt["columns"]["q"] = "US GPM"
+
+    doc, nodes = _web_edit(doc_a, "test_a", to_gpm)
+    before = result_a["nodes"]["test_a"]["view"]
+    after = nodes["test_a"]["view"]
+    assert [r["head"] for r in after["rows"]] == pytest.approx(
+        [r["head"] for r in before["rows"]]
+    )
+    assert nodes["check_a"]["status"] == result_a["nodes"]["check_a"]["status"]
+
+    # pressure reference g -> a: values shifted by the atmosphere, heads unchanged
+    def to_abs(rt):
+        atm = webapi.atmosphere(rt["columns"]["p_suc"])
+        for r in rt["rows"]:
+            for k in ("p_suc", "p_dis"):
+                if r.get(k) is not None:
+                    r[k] = r[k] + atm
+        rt["pressure_ref"] = "a"
+
+    _, nodes_a = _web_edit(doc_a, "test_a", to_abs)
+    assert [r["head"] for r in nodes_a["test_a"]["view"]["rows"]] == pytest.approx(
+        [r["head"] for r in before["rows"]], rel=1e-6
+    )
+
+
+def test_web_edited_bench_geometry_stored_as_unset_when_off(doc_a):
+    def geo_on(rt):
+        rt.update({"suction_id": 200.0, "suction_id_unit": "mm", "suction_z": 0.0})
+        rt.update(
+            {"discharge_id": 150.0, "discharge_id_unit": "mm", "discharge_z": 1.5}
+        )
+
+    doc, nodes = _web_edit(doc_a, "test_a", geo_on)
+    assert nodes["test_a"]["state"] == "ok"
+    assert nodes["test_a"]["view"]["rows"][0]["components"] is not None
+
+    def geo_off(rt):
+        for k in ("suction_id", "discharge_id", "suction_z", "discharge_z"):
+            rt[k] = None
+
+    doc2, nodes2 = _web_edit(doc, "test_a", geo_off)
+    node = next(n for n in doc2["nodes"] if n["id"] == "test_a")
+    assert not any(k in node["settings"] for k in ("suction_id", "suction_z"))
+    assert nodes2["test_a"]["view"]["rows"][0]["components"] is None
+
+
+def test_b34004b_rows_typed_through_the_form_equal_the_committed_file():
+    # Witness scenario: B's performance rows typed cell by cell (decimal comma, as
+    # the browser grid accepts them) into a blank table give the committed verdicts.
+    from pumpflow.numfmt import parse_decimal
+
+    committed = read_json(str(B34004B))
+    want = webapi.evaluate(committed)["nodes"]
+    doc = json.loads(json.dumps(committed))
+    node = next(n for n in doc["nodes"] if n["id"] == "test_b")
+    rt = webapi.decode_settings("test_points", node["settings"])
+    typed = []
+    for row in rt["rows"]:
+        blank = {k: None for k in ("q", "p_suc", "p_dis", "temp_c", "n", "power")}
+        for key in blank:
+            text = f"{row[key]!r}".replace(".", ",")  # what a user types
+            blank[key] = parse_decimal(text, None)
+        blank.update({"head": None, "eff": None})
+        typed.append(blank)
+    for t_row, r_row in zip(typed, rt["rows"]):
+        for key, val in t_row.items():
+            if r_row.get(key) is not None:
+                assert val == pytest.approx(r_row[key])
+    rt["rows"] = typed
+    node["settings"] = webapi.encode_settings("test_points", rt)
+    got = webapi.evaluate(doc)["nodes"]
+    for node_id in ("test_b", "corr_b", "fit_b", "check_b", "report"):
+        assert got[node_id]["state"] == want[node_id]["state"], node_id
+        assert got[node_id]["status"] == want[node_id]["status"], node_id
+        assert got[node_id]["badge"] == want[node_id]["badge"], node_id
+    assert got["check_b"]["view"] == want["check_b"]["view"]
+    assert got["test_b"]["view"]["rows"] == pytest.approx(
+        want["test_b"]["view"]["rows"]
+    )

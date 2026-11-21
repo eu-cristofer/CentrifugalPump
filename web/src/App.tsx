@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Canvas, { type CanvasHandle } from "./canvas/Canvas";
 import Toolbox from "./canvas/Toolbox";
+import FormPanel from "./forms/FormPanel";
 import type { Engine } from "./engine/client";
 import { spawnEngine } from "./engine/spawn";
 import type { CatalogEntry, Progress, PumpflowDoc } from "./engine/types";
@@ -20,6 +21,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [openForm, setOpenForm] = useState<string | null>(null);
   const canvasRef = useRef<CanvasHandle>(null);
   const { state, dispatch, result, evalError } = useProject(catalog ? engine : null);
   const { doc, name, dirty, past, future, openId } = state;
@@ -48,6 +50,7 @@ export default function App() {
         const next = await readProjectFile(file);
         setError("");
         setMessage("");
+        setOpenForm(null);
         dispatch({ type: "open", doc: next, name: file.name });
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -202,9 +205,20 @@ export default function App() {
               result={result}
               openId={openId}
               dispatch={dispatch}
-              onOpenNode={() => setMessage("Forms arrive in the next version")}
+              onOpenNode={setOpenForm}
               handle={canvasRef}
             />
+            {engine && openForm && (
+              <FormPanel
+                engine={engine}
+                doc={doc}
+                catalog={catalog}
+                result={result}
+                nodeId={openForm}
+                dispatch={dispatch}
+                onClose={() => setOpenForm(null)}
+              />
+            )}
           </>
         ) : (
           <div className="welcome">

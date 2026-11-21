@@ -22,6 +22,54 @@ from .fluidpick import choice_options, current_choice, resolve_fluid
 _DEFAULT_LABEL = "Rated fluid"
 
 
+def banner_message(state: str, status: str, has_rated: bool, has_fluid: bool, visc) -> tuple:
+    """``(text, level)`` of the dialog banner (shared with the web form).
+
+    ``visc`` is the HI 9.6.7 factors dict of the corrected curve, or ``None``.
+    """
+    if state == "ok" and not has_rated and has_fluid:
+        msg, level = (
+            "No rated point — forced speed correction, density corrected "
+            "to the connected Fluid node.",
+            "info",
+        )
+    elif state == "ok" and not has_rated:
+        msg, level = (
+            "No rated point connected — forced speed correction "
+            "(manual target speed, density correction skipped).",
+            "info",
+        )
+    elif state == "ok" and has_fluid:
+        msg, level = (
+            "Correcting to the fluid from the connected Fluid node "
+            "(overrides the rated fluid).",
+            "info",
+        )
+    else:
+        msg, level = (
+            "" if state == "ok" else status,
+            "info" if state in ("ok", "idle") else "error",
+        )
+    if visc and visc["B"] >= 40.0:
+        msg, level = (
+            f"Viscosity parameter B = {visc['B']:.1f} is outside the "
+            "HI 9.6.7 method validity (B < 40); factors are extrapolated.",
+            "warn",
+        )
+    return msg, level
+
+
+def viscous_summary(visc) -> str:
+    """The "HI 9.6.7 factors" line of the dialog (``"—"`` without a correction)."""
+    if not visc:
+        return "—"
+    note = "" if visc["B"] > 1.0 else "  (B ≤ 1: no correction)"
+    return (
+        f"B = {visc['B']:.2f} · C_Q = {visc['C_Q']:.3f} · "
+        f"C_H = {visc['C_H']:.3f} · C_η = {visc['C_eta']:.3f}{note}"
+    )
+
+
 class SpeedCorrectionNode(BaseNode):
     kind = "correction"
     title = "Speed / Affinity Correction"
@@ -192,44 +240,9 @@ class SpeedCorrectionNode(BaseNode):
             vi.setEnabled(bool(s["apply_density"]) and (has_rated or has_fluid))
             corrected = getattr(self, "_last", None) if self.state == "ok" else None
             visc = getattr(corrected, "viscous", None) if corrected else None
-            if self.state == "ok" and not has_rated and has_fluid:
-                msg, level = (
-                    "No rated point — forced speed correction, density corrected "
-                    "to the connected Fluid node.",
-                    "info",
-                )
-            elif self.state == "ok" and not has_rated:
-                msg, level = (
-                    "No rated point connected — forced speed correction "
-                    "(manual target speed, density correction skipped).",
-                    "info",
-                )
-            elif self.state == "ok" and has_fluid:
-                msg, level = (
-                    "Correcting to the fluid from the connected Fluid node "
-                    "(overrides the rated fluid).",
-                    "info",
-                )
-            else:
-                msg, level = (
-                    "" if self.state == "ok" else self.status,
-                    "info" if self.state in ("ok", "idle") else "error",
-                )
-            if visc and visc["B"] >= 40.0:
-                msg, level = (
-                    f"Viscosity parameter B = {visc['B']:.1f} is outside the "
-                    "HI 9.6.7 method validity (B < 40); factors are extrapolated.",
-                    "warn",
-                )
+            msg, level = banner_message(self.state, self.status, has_rated, has_fluid, visc)
             banner.show_message(msg, level)
-            if visc:
-                note = "" if visc["B"] > 1.0 else "  (B ≤ 1: no correction)"
-                visc_info.setText(
-                    f"B = {visc['B']:.2f} · C_Q = {visc['C_Q']:.3f} · "
-                    f"C_H = {visc['C_H']:.3f} · C_η = {visc['C_eta']:.3f}{note}"
-                )
-            else:
-                visc_info.setText("—")
+            visc_info.setText(viscous_summary(visc))
             grid.fill(corrected.before_after if corrected else (), ("measured", "corrected"))
 
         def set_lock(v):

@@ -283,13 +283,11 @@ class _Fallback:
     client = None
 
 
-def _append_param(table, p) -> None:
-    from PySide6.QtWidgets import QTableWidgetItem
+def param_cells(p) -> list:
+    """The nine display cells of one parameter row (``_HEADERS`` order), as text.
 
-    from ..style import qcolor
-
-    r = table.rowCount()
-    table.insertRow(r)
+    Shared by the dialog table and the web form so both show the same strings.
+    """
     notes = []
     if not getattr(p, "verified", True):
         notes.append("unverified")
@@ -299,7 +297,7 @@ def _append_param(table, p) -> None:
         notes.append(p.note)
     info = getattr(p, "informational", False)
     evaluated = getattr(p, "evaluated", True)
-    cells = [
+    return [
         p.name, fmt(p.actual),
         fmt(p.predicted) if p.predicted is not None else "—",
         fmt(p.minimum) if p.minimum is not None else "—",
@@ -309,6 +307,18 @@ def _append_param(table, p) -> None:
         "info" if info else ("n/e ⚠" if not evaluated else ("✅" if p.passed else "❌")),
         " · ".join(notes),
     ]
+
+
+def _append_param(table, p) -> None:
+    from PySide6.QtWidgets import QTableWidgetItem
+
+    from ..style import qcolor
+
+    r = table.rowCount()
+    table.insertRow(r)
+    info = getattr(p, "informational", False)
+    cells = param_cells(p)
+    notes = bool(cells[8])
     for c, text in enumerate(cells):
         item = QTableWidgetItem(str(text))
         if c == 0:

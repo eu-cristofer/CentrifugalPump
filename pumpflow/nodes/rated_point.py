@@ -94,6 +94,22 @@ def _standard_keys(s: Dict):
     return key, client or ""
 
 
+def pump_type_hint(code) -> str:
+    """Vibration locations and limit table of an API 610 pump type (field hint).
+
+    Shared by the desktop dialog and :func:`pumpflow.webapi.pump_type_hint`.
+    """
+    from pump.vibration import limit_group, locations_for
+
+    code = code or None
+    locs = ", ".join(loc.label for loc in locations_for(code))
+    if not code:
+        return f"Not set: vibration inputs default to {locs}."
+    vs = limit_group(code) == "vs"
+    table = "Table 9 / 2-6 (VS)" if vs else "Table 8 / 2-5 (OH, BB)"
+    return f"Vibration measured at: {locs} · limits: API 610 {table}"
+
+
 class RatedPointInputNode(BaseNode):
     kind = "rated_point"
     title = "Rated Point Input"
@@ -429,7 +445,7 @@ class RatedPointInputNode(BaseNode):
         client_combo.currentIndexChanged.connect(lambda _=None: on_standard_change())
 
         # ---- API 610 PUMP TYPE — vibration locations and limits ----
-        from pump.vibration import PUMP_TYPES, limit_group, locations_for
+        from pump.vibration import PUMP_TYPES
 
         type_combo = ui.combo(
             [("— not set —", "")]
@@ -443,14 +459,7 @@ class RatedPointInputNode(BaseNode):
         type_hint.setObjectName("FieldHint")
 
         def describe_type():
-            code = type_combo.currentData() or None
-            locs = ", ".join(loc.label for loc in locations_for(code))
-            table = "Table 9 / 2-6 (VS)" if limit_group(code) == "vs" else "Table 8 / 2-5 (OH, BB)"
-            type_hint.setText(
-                f"Vibration measured at: {locs} · limits: API 610 {table}"
-                if code
-                else f"Not set: vibration inputs default to {locs}."
-            )
+            type_hint.setText(pump_type_hint(type_combo.currentData() or None))
 
         def on_type_change():
             code = type_combo.currentData() or ""

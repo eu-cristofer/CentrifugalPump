@@ -49,12 +49,19 @@ Public functions
 
         {"pump_tag": str, "n_rows": int, "head_unit": str, "eff_unit": str,
          "rows": [{"head": float | None, "eff": float | None,
-                   "components": {"pressure","velocity","elevation","total"} | None}]}
+                   "components": {"pressure","velocity","elevation","total"} | None}],
+         "fluids": [name], "choice": str, "has_shutoff": bool,
+         "test_fluid": {"name", "density_kgm3"} | None,
+         "pump_type": str, "vib_label": str,
+         "vib_columns": [{"key", "title", "tooltip"}]}
 
     correction::
 
-        {"pump_tag": str, "target_speed": {"value","unit"},
-         "viscous": {"B","C_Q","C_H","C_eta"} | None,
+        {"fluids": [name], "choice": str, "has_rated": bool, "has_fluid": bool,
+         # and, once the node has a result:
+         "pump_tag": str, "target_speed": {"value","unit"},
+         "viscous": {"B","C_Q","C_H","C_eta"} | None, "viscous_text": str,
+         "banner": {"text": str, "level": "info" | "warn" | "error"},
          "before_after": [{"measured": {...}, "corrected": {...}}]}
 
     curve_fit (and the series part of performance_plot, as ``fit``)::
@@ -65,15 +72,20 @@ Public functions
          "spline": {same keys} | None,
          "coefficients": {"head": [], "power": [], "eff": []}}
 
+    The ``curve_fit`` view also has ``r2_text`` (``"R²(head)=0.9988  ·  ..."``) and
+    ``coeff_text`` (the desktop coefficient block).
+
     compliance::
 
         {"pump_tag": str, "verdict_text": str, "verdict_label": str,
          "overall_pass": bool, "criteria_label": str, "overridden": bool,
          "override_reason": str, "unverified": [str], "not_evaluated": [str],
          "parallel_ok": bool | None, "tolerances": dict,
+         "default_tolerances": {"head","shutoff","power","efficiency"},
          "rows": [{"name", "actual", "predicted", "min", "max", "deviation",
                    "tol", "verdict": "pass" | "fail" | "info" | "n/e",
-                   "note", "extrapolated", "verified"}]}
+                   "note", "extrapolated", "verified",
+                   "cells": [9 strings, the desktop table cells]}]}
 
     npsh::
 
@@ -105,6 +117,52 @@ Public functions
 ``default_settings(kind: str) -> dict``
     The encoded (schema v2) settings of a fresh node of ``kind``.
 
+``decode_settings(kind: str, encoded: dict) -> dict``
+    Encoded (schema v2) node settings -> the runtime shape the desktop dialogs
+    edit (``settings_codec.decode``), JSON-safe.  E.g. a rated point's
+    ``{"q": {"value","unit"}}`` becomes ``"q": 833.0, "q_unit": "m³/h"``.
+
+``encode_settings(kind: str, runtime: dict) -> dict``
+    The inverse (``settings_codec.encode``), JSON-safe.  The web writes node
+    settings only through this, so documents stay byte-compatible with the desktop.
+
+``unit_options(dimension: str) -> [[label, pint_str], ...]``
+    The display units of a dimension (``pumpflow.units.UNIT_OPTIONS``).
+
+``convert(value, from_label, to_label, dimension, dens_rel=None) -> float | None``
+    ``pumpflow.units.convert_display``; ``dens_rel`` (relative density) is needed
+    for viscosity.  ``None`` when the value cannot be converted.
+
+``explain(key: str) -> str``
+    The info text ``"<title>\\n<text>"`` of a ``pumpflow.explain`` key, or of
+    ``pump_type`` / ``impeller_diameter`` (the Rated Point help); ``""`` if unknown.
+
+``standards() -> [[key, label]]`` / ``clients() -> [[key, label]]``
+    The acceptance editions and client overlays; ``standard_label(key, client=None)``
+    is the report-cover label of an edition plus overlay.
+
+``atmosphere(unit: str) -> float``
+    Standard atmosphere expressed in the pressure display unit ``unit``
+    (``pumpflow.units.atm_in``): the g <-> a shift of a Test Points column.
+
+``parse_paste(text, columns=None, pressure_ref="g") -> dict``
+    The Test Points paste (``nodes.test_points.paste_rows``): spreadsheet text with
+    an optional unit-header line becomes ``{"rows": [...], "columns": {key: label},
+    "pressure_ref": "g" | "a", "vibration": bool, "warnings": [str]}``; ``rows``
+    is empty for blank text.
+
+``water_density(temp_c: float) -> float``
+    kg/m3 of water at ``temp_c`` degC.  ``water_properties(temp_c) -> dict`` adds
+    ``{"density", "kinematic_cst", "dynamic_cp"}``.
+
+``pump_types() -> [[code, description]]`` and ``pump_type_hint(code) -> str``
+    The API 610 pump types and the vibration-location sentence of the Rated Point form.
+
+Extra views (read after ``evaluate``): ``rated_point`` ->
+``{"standard_key": str, "client": str, "fluids": [name], "choice": str, "override": {"name","density_rel",
+"density_kgm3","viscosity_cst"} | None}`` and ``fluid`` -> ``{"name","source",
+"density_kgm3","density_rel","viscosity_cst","viscosity_cp" | None}``.
+
 ``export_report(doc: dict, fmt: str, lang: str | None = None) -> dict``
     ``{"filename": str, "mime": str, "base64": str}`` for ``fmt`` in ``docx``,
     ``html`` and ``summary_xlsx`` (the API 610 test data summary).  ``tex`` and
@@ -129,7 +187,27 @@ from . import settings_codec
 from .engine import Graph
 from .nodes.registry import grouped_node_kinds, make_node
 
-__all__ = ["catalog", "evaluate", "node_view", "default_settings", "export_report"]
+__all__ = [
+    "catalog",
+    "evaluate",
+    "node_view",
+    "default_settings",
+    "export_report",
+    "decode_settings",
+    "encode_settings",
+    "unit_options",
+    "convert",
+    "explain",
+    "standards",
+    "clients",
+    "standard_label",
+    "water_density",
+    "water_properties",
+    "pump_types",
+    "pump_type_hint",
+    "atmosphere",
+    "parse_paste",
+]
 
 #: Kinds with a web form (the witness kinds).
 WEB_FORM_KINDS = frozenset(
@@ -224,23 +302,82 @@ def _view_test_points(graph: Graph, node) -> dict:
             )
         except Exception:
             rows.append({"head": None, "eff": None, "components": None})
+    from pump.vibration import location_of_key, locations_for
+
+    from .nodes.fluidpick import current_choice, resolve_fluid
+    from .nodes.test_points import vibration_column_title, vibration_columns
+
+    fluids = list(getattr(node, "_fluids", []) or [])
+    chosen = resolve_fluid(fluids, s.get("fluid_choice"))
+    pump_type = getattr(node, "_pump_type", None)
+    where = ", ".join(loc.label for loc in locations_for(pump_type))
+    vib_columns = []
+    for k in vibration_columns(pump_type, s.get("rows") or []):
+        loc, filtered = location_of_key(k)
+        vib_columns.append(
+            {
+                "key": k,
+                "title": vibration_column_title(k),
+                "tooltip": (
+                    f"{loc.label}: "
+                    f"{'filtered (largest discrete frequency)' if filtered else 'overall'}"
+                    f" bearing-housing velocity, RMS. {loc.where}"
+                ),
+            }
+        )
+    try:
+        has_shutoff = bool(node.to_signal(density).has_shutoff())
+    except Exception:
+        has_shutoff = True
     return {
         "pump_tag": str(s.get("pump_tag", "")).strip(),
         "n_rows": len(rows),
         "head_unit": cols.get("head", "m"),
         "eff_unit": cols.get("eff", "%"),
         "rows": rows,
+        "fluids": [f.name for f in fluids],
+        "choice": current_choice(fluids, s.get("fluid_choice")),
+        "has_shutoff": has_shutoff,
+        "test_fluid": (
+            None
+            if chosen is None
+            else {"name": chosen.name, "density_kgm3": _f(chosen.density, "kg/m**3")}
+        ),
+        "pump_type": pump_type or "",
+        "vib_label": (
+            f"Vibration columns (RMS, overall / filtered) · "
+            f"{pump_type or 'pump type not set'}: {where}"
+        ),
+        "vib_columns": vib_columns,
     }
 
 
 def _view_correction(graph: Graph, node) -> dict:
+    from .nodes.correction import banner_message, viscous_summary
+    from .nodes.fluidpick import current_choice
+
+    fluids = list(getattr(node, "_fluids", []) or [])
+    has_rated = bool(getattr(node, "_has_rated", True))
+    has_fluid = bool(getattr(node, "_has_fluid", False))
+    base = {
+        "fluids": [f.name for f in fluids],
+        "choice": current_choice(fluids, node.settings.get("fluid_choice")),
+        "has_rated": has_rated,
+        "has_fluid": has_fluid,
+    }
     cc = _first_output(node, "CorrectedCurve")
     if cc is None:
-        return {}
+        return base
+    text, level = banner_message(
+        node.state, node.status, has_rated, has_fluid, cc.viscous
+    )
     return {
+        **base,
         "pump_tag": cc.pump_tag,
         "target_speed": cc.target_speed,
         "viscous": cc.viscous,
+        "viscous_text": viscous_summary(cc.viscous),
+        "banner": {"text": text, "level": level},
         "before_after": list(cc.before_after or ()),
     }
 
@@ -307,14 +444,21 @@ def _view_curve_fit(graph: Graph, node) -> dict:
     fitted = _first_output(node, "FittedModel")
     if fitted is None:
         return {}
+    from .nodes.curve_fit import _coeff_text
+
     s = node.settings
-    return _fit_series(fitted, int(s.get("resolution", 160)), bool(s.get("spline")))
+    out = _fit_series(fitted, int(s.get("resolution", 160)), bool(s.get("spline")))
+    out["r2_text"] = "  ·  ".join(f"R²({k})={v:.4f}" for k, v in fitted.r2.items())
+    out["coeff_text"] = _coeff_text(fitted)
+    return out
 
 
 def _view_compliance(graph: Graph, node) -> dict:
     res = _first_output(node, "ComplianceResult")
     if res is None:
         return {}
+    from .nodes.compliance import param_cells
+
     rows = []
     for p in res.parameters:
         if p.informational:
@@ -336,6 +480,7 @@ def _view_compliance(graph: Graph, node) -> dict:
                 "note": p.note,
                 "extrapolated": p.extrapolated,
                 "verified": p.verified,
+                "cells": param_cells(p),
             }
         )
     return {
@@ -350,6 +495,7 @@ def _view_compliance(graph: Graph, node) -> dict:
         "not_evaluated": list(res.not_evaluated),
         "parallel_ok": res.parallel_ok,
         "tolerances": dict(res.tolerances or {}),
+        "default_tolerances": dict(res.default_tolerances or {}),
         "rows": rows,
     }
 
@@ -477,7 +623,52 @@ def _view_performance_plot(graph: Graph, node) -> dict:
     }
 
 
+def _view_rated_point(graph: Graph, node) -> dict:
+    from .nodes.fluidpick import current_choice
+
+    from .nodes.rated_point import _standard_keys
+
+    fluids = list(getattr(node, "_fluids", []) or [])
+    ov = getattr(node, "_fluid_override", None)
+    standard_key, client = _standard_keys(node.settings)
+    return {
+        "standard_key": standard_key,
+        "client": client,
+        "fluids": [f.name for f in fluids],
+        "choice": current_choice(fluids, node.settings.get("fluid_choice")),
+        "override": (
+            None
+            if ov is None
+            else {
+                "name": ov.name,
+                "density_rel": ov.density_rel,
+                "density_kgm3": _f(ov.density, "kg/m**3"),
+                "viscosity_cst": _f(ov.viscosity, "cSt"),
+            }
+        ),
+    }
+
+
+def _view_fluid(graph: Graph, node) -> dict:
+    spec = _first_output(node, "FluidSpec")
+    if spec is None:
+        return {}
+    cp = None
+    if spec.source == "water" and spec.temperature is not None:
+        cp = water_properties(_f(spec.temperature, "degC"))["dynamic_cp"]
+    return {
+        "name": spec.name,
+        "source": spec.source,
+        "density_kgm3": _f(spec.density, "kg/m**3"),
+        "density_rel": spec.density_rel,
+        "viscosity_cst": _f(spec.viscosity, "cSt"),
+        "viscosity_cp": cp,
+    }
+
+
 _VIEWS = {
+    "rated_point": _view_rated_point,
+    "fluid": _view_fluid,
     "test_points": _view_test_points,
     "correction": _view_correction,
     "curve_fit": _view_curve_fit,
@@ -550,6 +741,162 @@ def default_settings(kind: str) -> dict:
     """Encoded (schema v2) settings of a fresh node of ``kind``."""
     node = make_node(kind)
     return _jsonable(settings_codec.encode(kind, node.serialize_settings()))
+
+
+# ------------------------------------------------------- form helpers (sprint 6)
+def decode_settings(kind: str, encoded: dict) -> dict:
+    """Encoded (v2) settings -> runtime settings (the shape the dialogs edit)."""
+    return _jsonable(settings_codec.decode(kind, encoded))
+
+
+def encode_settings(kind: str, runtime: dict) -> dict:
+    """Runtime settings -> encoded (v2) settings, as the desktop would save them."""
+    return _jsonable(settings_codec.encode(kind, runtime))
+
+
+def unit_options(dimension: str) -> list:
+    """``[[label, pint_str], ...]`` display units of ``dimension``."""
+    from .units import UNIT_OPTIONS
+
+    return [[label, pint] for label, pint in UNIT_OPTIONS[dimension]]
+
+
+def convert(
+    value: Any,
+    from_label: str,
+    to_label: str,
+    dimension: str,
+    dens_rel: Optional[float] = None,
+) -> Optional[float]:
+    """``value`` re-expressed from one display unit to another (``None`` on failure)."""
+    from .units import convert_display
+
+    try:
+        out = convert_display(float(value), dimension, from_label, to_label, dens_rel)
+    except (KeyError, TypeError, ValueError, ZeroDivisionError):
+        return None
+    return _jsonable(float(out))
+
+
+def _plain(html_text: str) -> str:
+    """Help text written as simple HTML -> plain text (paragraphs kept)."""
+    import html
+    import re
+
+    t = re.sub(r"</p>\s*", "\n\n", html_text)
+    t = re.sub(r"<br\s*/?>\s*", "\n", t)
+    t = re.sub(r"<[^>]+>", "", t)
+    return re.sub(r"[ \t]*\n[ \t]*", "\n", html.unescape(t)).strip()
+
+
+def explain(key: str) -> str:
+    """The info text of ``key``: ``"<title>\\n<text>"`` (``""`` when there is none).
+
+    Keys are those of ``pumpflow.explain.FORMULAS`` plus the two help texts of the
+    Rated Point dialog, ``pump_type`` and ``impeller_diameter``.
+    """
+    from .explain import tooltip
+
+    try:
+        return tooltip(key)
+    except KeyError:
+        pass
+    from .nodes.rated_point import IMPELLER_DIAMETER_HELP, PUMP_TYPE_HELP
+
+    helps = {
+        "pump_type": ("API 610 pump type", PUMP_TYPE_HELP),
+        "impeller_diameter": ("Impeller diameter", IMPELLER_DIAMETER_HELP),
+    }
+    if key in helps:
+        title, body = helps[key]
+        return f"{title}\n{_plain(body)}"
+    return ""
+
+
+def standards() -> list:
+    """``[[key, label]]`` of the acceptance editions."""
+    from .binding import available_standards
+
+    return [[k, label] for k, label in available_standards()]
+
+
+def clients() -> list:
+    """``[[key, label]]`` of the client overlays."""
+    from .binding import available_clients
+
+    return [[k, label] for k, label in available_clients()]
+
+
+def standard_label(key: str, client: Optional[str] = None) -> str:
+    """Report-cover label of an edition (+ optional client overlay)."""
+    from .binding import standard_label as _label
+
+    return _label(key, client or None)
+
+
+def atmosphere(unit: str) -> float:
+    """Standard atmosphere in the pressure display unit ``unit``."""
+    from .units import atm_in
+
+    return float(atm_in(unit))
+
+
+def parse_paste(
+    text: str, columns: Optional[dict] = None, pressure_ref: str = "g"
+) -> dict:
+    """Test Points paste: spreadsheet text -> rows, column units and pressure ref."""
+    from .nodes.test_points import paste_rows
+
+    res = paste_rows(text, columns or {}, pressure_ref or "g")
+    if res is None:
+        return {
+            "rows": [],
+            "columns": dict(columns or {}),
+            "pressure_ref": pressure_ref or "g",
+            "vibration": False,
+            "warnings": [],
+        }
+    return _jsonable(res)
+
+
+def water_density(temp_c: float) -> float:
+    """Density of water at ``temp_c`` degC in kg/m3."""
+    from .binding import water_density_kgm3
+
+    return float(water_density_kgm3(float(temp_c)))
+
+
+def water_properties(temp_c: float) -> dict:
+    """Density (kg/m3), kinematic (cSt) and dynamic (cP) viscosity of water."""
+    from .binding import (
+        water_density_kgm3,
+        water_dynamic_viscosity_cP,
+        water_kinematic_viscosity_cst,
+    )
+
+    t = float(temp_c)
+    return {
+        "density": float(water_density_kgm3(t)),
+        "kinematic_cst": float(water_kinematic_viscosity_cst(t)),
+        "dynamic_cp": float(water_dynamic_viscosity_cP(t)),
+    }
+
+
+def pump_types() -> list:
+    """``[[code, description]]`` of the API 610 pump types."""
+    from pump.vibration import PUMP_TYPES
+
+    return [[code, desc] for code, desc in PUMP_TYPES.items()]
+
+
+def pump_type_hint(code: Optional[str]) -> str:
+    """Vibration locations and limit table of a pump type (the Rated Point hint)."""
+    from pump.vibration import PUMP_TYPES
+
+    from .nodes.rated_point import pump_type_hint as _hint
+
+    code = (code or "").strip().upper()
+    return _hint(code if code in PUMP_TYPES else None)
 
 
 def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
