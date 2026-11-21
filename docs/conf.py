@@ -32,7 +32,7 @@ extensions = [
 templates_path = ["_templates"]
 # docs/README.md is the human doc hub; index.rst is the Sphinx landing page, so
 # keep the hub out of the rendered site to avoid a duplicate, orphaned page.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md", "changes/002_web/*"]
 
 source_suffix = {
     ".rst": "restructuredtext",

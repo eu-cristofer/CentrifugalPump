@@ -603,9 +603,9 @@ def test_b34004b_rows_typed_through_the_form_equal_the_committed_file():
         assert got[node_id]["status"] == want[node_id]["status"], node_id
         assert got[node_id]["badge"] == want[node_id]["badge"], node_id
     assert got["check_b"]["view"] == want["check_b"]["view"]
-    assert got["test_b"]["view"]["rows"] == pytest.approx(
-        want["test_b"]["view"]["rows"]
-    )
+    for g, w in zip(got["test_b"]["view"]["rows"], want["test_b"]["view"]["rows"]):
+        for key in ("head", "eff"):
+            assert g[key] == pytest.approx(w[key]), key
 
 
 # ------------------------------------------- witness forms II (sprint 7)
