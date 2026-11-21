@@ -88,6 +88,21 @@ export interface ExportResult {
 
 export type Settings = Record<string, unknown>;
 
+/** `report_export` view (after evaluate): the connected pumps and the overall verdict. */
+export interface ReportExportView {
+  has_rated: boolean;
+  /** the text after the pump count in the node status ("pending" before any verdict) */
+  overall_verdict_text: string;
+  pumps: Array<{
+    tag: string;
+    /** null without a performance verdict */
+    verdict_text: string | null;
+    sections: string[];
+    /** has a fitted curve (what the web export needs) */
+    reportable: boolean;
+  }>;
+}
+
 /** `rated_point` view (after evaluate): the wired Fluid nodes and the active override. */
 export interface RatedPointView {
   fluids: string[];

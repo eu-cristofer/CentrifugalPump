@@ -1,12 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import Canvas, { type CanvasHandle } from "./canvas/Canvas";
 import Toolbox from "./canvas/Toolbox";
-import FormPanel from "./forms/FormPanel";
 import type { Engine } from "./engine/client";
 import { spawnEngine } from "./engine/spawn";
 import type { CatalogEntry, Progress, PumpflowDoc } from "./engine/types";
 import { readProjectFile, saveProjectText } from "./project/files";
 import { serializeDocument, useProject } from "./project/store";
+import {
+  type OfflineHandle,
+  type OfflineState,
+  megabytes,
+  offlineLabel,
+  registerServiceWorker,
+} from "./sw/register";
+
+// The property forms (and the charts they draw) load on first use: the first screen
+// needs only the canvas.
+const FormPanel = lazy(() => import("./forms/FormPanel"));
 
 const EMPTY_DOC: PumpflowDoc = {
   meta: { unit_preset: "SI", schema_version: 2 },
@@ -22,6 +32,8 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [openForm, setOpenForm] = useState<string | null>(null);
+  const [offline, setOffline] = useState<OfflineState>({ kind: "none" });
+  const offlineRef = useRef<OfflineHandle | null>(null);
   const canvasRef = useRef<CanvasHandle>(null);
   const { state, dispatch, result, evalError } = useProject(catalog ? engine : null);
   const { doc, name, dirty, past, future, openId } = state;
@@ -40,6 +52,16 @@ export default function App() {
       live = false;
       e.dispose();
       setEngine(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    // production build only: a no-op in dev and in tests
+    const handle = registerServiceWorker(setOffline);
+    offlineRef.current = handle;
+    return () => {
+      handle?.dispose();
+      offlineRef.current = null;
     };
   }, []);
 
@@ -133,6 +155,14 @@ export default function App() {
               <div className="bar-fill" style={{ width: `${pct}%` }} />
             </div>
             <p>Starting the Python engine{progress ? ` (${progress.stage}, ${pct}%)` : ""}</p>
+            {offline.kind === "saving" && (
+              <p>
+                First start: saving PumpFlow for offline use
+                {offline.total > 0
+                  ? ` (${megabytes(offline.loaded)} of ${megabytes(offline.total)})`
+                  : ""}
+              </p>
+            )}
           </div>
         )}
         {error && <p className="error-text">{error}</p>}
@@ -193,6 +223,20 @@ export default function App() {
           {dirty ? " •" : ""}
         </span>
         <span className="topbar-message">{error || evalError || message}</span>
+        {offline.kind !== "none" && (
+          <span className={`offline-state offline-${offline.kind}`} role="status">
+            {offlineLabel(offline)}
+            {offline.kind === "update" && (
+              <button
+                type="button"
+                className="btn offline-update"
+                onClick={() => offlineRef.current?.applyUpdate()}
+              >
+                Reload
+              </button>
+            )}
+          </span>
+        )}
       </header>
 
       <div className="workspace">
@@ -209,15 +253,17 @@ export default function App() {
               handle={canvasRef}
             />
             {engine && openForm && (
-              <FormPanel
-                engine={engine}
-                doc={doc}
-                catalog={catalog}
-                result={result}
-                nodeId={openForm}
-                dispatch={dispatch}
-                onClose={() => setOpenForm(null)}
-              />
+              <Suspense fallback={null}>
+                <FormPanel
+                  engine={engine}
+                  doc={doc}
+                  catalog={catalog}
+                  result={result}
+                  nodeId={openForm}
+                  dispatch={dispatch}
+                  onClose={() => setOpenForm(null)}
+                />
+              </Suspense>
             )}
           </>
         ) : (

@@ -238,3 +238,5 @@ web/node_modules/
 web/public/py/
 web/dist/
 web/src/tokens.css
+web/public/manifest.webmanifest
+web/public/icon.svg

@@ -178,6 +178,19 @@ Public functions
 ``pump_types() -> [[code, description]]`` and ``pump_type_hint(code) -> str``
     The API 610 pump types and the vibration-location sentence of the Rated Point form.
 
+report_export::
+
+        {"has_rated": bool, "overall_verdict_text": str,
+         "pumps": [{"tag": str, "verdict_text": str | None,
+                    "sections": ["Corrected", "Fitted", "Verdict", "MRT", "NPSH"],
+                    "reportable": bool}]}
+
+    ``pumps`` is one entry per connected branch (the desktop "Connected pumps" list);
+    ``verdict_text`` is ``None`` without a performance verdict; ``reportable`` is true
+    when the branch has a fitted curve (what ``export_report`` needs).
+    ``overall_verdict_text`` is ``nodes.report_export.overall_verdict_text`` (the text
+    after the pump count in the node status; ``"pending"`` before any verdict).
+
 Extra views (read after ``evaluate``): ``rated_point`` ->
 ``{"standard_key": str, "client": str, "fluids": [name], "choice": str, "override": {"name","density_rel",
 "density_kgm3","viscosity_cst"} | None}`` and ``fluid`` -> ``{"name","source",
@@ -723,6 +736,41 @@ def _view_fluid(graph: Graph, node) -> dict:
     }
 
 
+def _view_report_export(graph: Graph, node) -> dict:
+    from .nodes.report_export import overall_verdict_text
+
+    rated, branches = node._bundle(graph.gather_inputs(node))
+    pumps = []
+    for b in branches:
+        sections = [
+            label
+            for label, present in (
+                ("Corrected", b.corrected),
+                ("Fitted", b.fitted),
+                ("Verdict", b.compliance),
+                ("MRT", b.mechanical),
+                ("NPSH", b.npsh),
+            )
+            if present is not None
+        ]
+        pumps.append(
+            {
+                "tag": b.pump_tag,
+                "verdict_text": (
+                    b.compliance.verdict_text if b.compliance is not None else None
+                ),
+                "sections": sections,
+                "reportable": b.fitted is not None,
+            }
+        )
+    checks = [b.compliance for b in branches if b.compliance is not None]
+    return {
+        "has_rated": rated is not None,
+        "overall_verdict_text": overall_verdict_text(checks),
+        "pumps": pumps,
+    }
+
+
 _VIEWS = {
     "rated_point": _view_rated_point,
     "fluid": _view_fluid,
@@ -733,6 +781,7 @@ _VIEWS = {
     "npsh": _view_npsh,
     "mechanical_run_check": _view_mrt_check,
     "performance_plot": _view_performance_plot,
+    "report_export": _view_report_export,
 }
 
 

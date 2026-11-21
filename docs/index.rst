@@ -49,6 +49,7 @@ and Mechanical Running Test (FAT) trials. The project is two stacked subsystems:
    ARCHITECTURE
    RUN_AND_TEST
    design-system
+   web
 
 .. toctree::
    :maxdepth: 1

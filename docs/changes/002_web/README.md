@@ -58,5 +58,5 @@ Each run MUST:
 - [x] [Sprint 5 — Canvas: open, view, wire, save](sprint-5.md) — done 2026-11-20
 - [x] [Sprint 6 — Witness forms I: Rated Point, Fluid, Test Points, Correction, Fit, Compliance](sprint-6.md) — done 2026-11-20
 - [x] [Sprint 7 — Witness forms II: plots, NPSH, MRT Log, MRT Check, Note](sprint-7.md) — done 2026-11-20
-- [ ] [Sprint 8 — Reports in the browser + installable offline app](sprint-8.md)
+- [x] [Sprint 8 — Reports in the browser + installable offline app](sprint-8.md) — done 2026-11-20 (hosting choice still open, see MOTIVATION.md)
 - [ ] [Sprint 9 — CI parity job, docs and training](sprint-9.md)

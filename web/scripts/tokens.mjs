@@ -1,5 +1,6 @@
-// Generates src/tokens.css (CSS variables) from pump/design/tokens.json.
-// Build time only.  Usage: node scripts/tokens.mjs
+// Generates src/tokens.css (CSS variables) from pump/design/tokens.json, and the
+// install files public/manifest.webmanifest and public/icon.svg (colours resolved
+// from the same tokens).  Build time only.  Usage: node scripts/tokens.mjs
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,3 +57,39 @@ const css =
 mkdirSync(path.dirname(out), { recursive: true });
 writeFileSync(out, css);
 console.log(`tokens.css: ${lines.length} variables`);
+
+// ---- installable app files (public/ is copied into dist/ by Vite) ----------------
+const color = (name) => {
+  const t = tokens.color.tokens.find((x) => x.name === name);
+  if (!t) throw new Error(`unknown colour token ${name}`);
+  return colorResolve(t.value);
+};
+const bg = color("title-bg");
+const fg = color("title-text");
+const publicDir = path.join(webRoot, "public");
+mkdirSync(publicDir, { recursive: true });
+
+// A pump impeller: ring, four curved vanes and a hub, on the title bar colour.
+const vane = (angle) =>
+  `<path d="M256 256 C300 236 340 190 330 120" transform="rotate(${angle} 256 256)" fill="none" stroke="${fg}" stroke-width="22" stroke-linecap="round"/>`;
+const icon =
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">\n` +
+  `<rect width="512" height="512" fill="${bg}"/>\n` +
+  `<circle cx="256" cy="256" r="170" fill="none" stroke="${fg}" stroke-width="22"/>\n` +
+  [0, 90, 180, 270].map(vane).join("\n") +
+  `\n<circle cx="256" cy="256" r="30" fill="${fg}"/>\n</svg>\n`;
+writeFileSync(path.join(publicDir, "icon.svg"), icon);
+
+const webmanifest = {
+  name: "PumpFlow",
+  short_name: "PumpFlow",
+  description: "API 610 pump test witness workbench, offline in the browser.",
+  start_url: ".",
+  scope: ".",
+  display: "standalone",
+  theme_color: bg,
+  background_color: color("window-bg"),
+  icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+};
+writeFileSync(path.join(publicDir, "manifest.webmanifest"), JSON.stringify(webmanifest, null, 2) + "\n");
+console.log("manifest.webmanifest, icon.svg");

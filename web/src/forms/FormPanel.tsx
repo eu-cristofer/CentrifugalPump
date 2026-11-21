@@ -16,11 +16,12 @@ import NoteForm from "./NoteForm";
 import NpshForm from "./NpshForm";
 import PerformancePlotForm from "./PerformancePlotForm";
 import RatedPointForm from "./RatedPointForm";
+import ReportExportForm from "./ReportExportForm";
 import type { FormProps } from "./forms.types";
 import TestPointsForm from "./TestPointsForm";
 import "./forms.css";
 
-/** Kinds with a web form (all witness kinds but report_export; the rest say "Edit this node in the desktop app."). */
+/** Kinds with a web form (the 12 witness kinds; the rest say "Edit this node in the desktop app."). */
 export const FORMS: Record<string, ComponentType<FormProps>> = {
   rated_point: RatedPointForm,
   fluid: FluidForm,
@@ -33,6 +34,7 @@ export const FORMS: Record<string, ComponentType<FormProps>> = {
   mechanical_run: MrtLogForm,
   mechanical_run_check: MrtCheckForm,
   markdown_note: NoteForm,
+  report_export: ReportExportForm,
 };
 
 export interface FormPanelProps {

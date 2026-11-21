@@ -71,6 +71,7 @@ describe("FormPanel", () => {
     ["mechanical_run", "Pump TAG"],
     ["mechanical_run_check", /awaiting a log/],
     ["markdown_note", "Markdown"],
+    ["report_export", "Language"],
   ])("routes %s to its form", async (kind, marker) => {
     show(kind);
     expect(

@@ -105,6 +105,19 @@ h1 {
   font-size: var(--fs-caption);
 }
 
+.offline-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--header-subtitle);
+  font-size: var(--fs-caption);
+}
+
+.offline-update {
+  padding: 1px 8px;
+  font-size: var(--fs-caption);
+}
+
 .workspace {
   position: relative;
   display: flex;

@@ -68,6 +68,11 @@ export function fakeEngine(): { [K in keyof FormEngine]: ReturnType<typeof vi.fn
         vibration_filtered: "vibration_velocity",
       },
     })),
+    exportReport: vi.fn(async (_doc: unknown, fmt: string, lang: string | null) => ({
+      filename: `Report.${fmt === "summary_xlsx" ? "xlsx" : fmt}`,
+      mime: fmt === "html" ? "text/html" : "application/octet-stream",
+      base64: btoa(fmt === "html" ? `<html><body>report ${lang}</body></html>` : "PK-bytes"),
+    })),
     pumpTypeHint: vi.fn(async (code: string) => (code ? `hint ${code}` : "Not set")),
   };
   return fake as never;

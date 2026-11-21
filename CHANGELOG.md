@@ -45,6 +45,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     NPSH, MRT Log ("Add reading" uses the desktop +15 min rule), MRT Check
     (verdict, per-channel table, overrides) and Note (sanitised Markdown preview,
     no remote content).  The desktop MRT paste is shared (`mechanical_run.paste_rows`).
+  - Sprint 8: Report Export in the browser — Word (.docx), HTML and the test data
+    summary (.xlsx) come from the same Python report code as the desktop (docx text
+    identical to `export_cli`); "Print to PDF" prints the HTML report; LaTeX/PDF stay
+    desktop-only.  Installable offline app: service worker precaches the app and the
+    30 MB engine; after the first load it reloads, evaluates and exports with no
+    network.  Forms load lazily (no chunk over 500 kB).  See `docs/web.md`.
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct

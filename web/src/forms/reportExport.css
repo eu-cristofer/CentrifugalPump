@@ -1,0 +1,95 @@
+/* ---- Report Export form (tokens only) ---- */
+.report-pumps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-pump {
+  padding: 4px 8px;
+  background: var(--mono-bg);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-control);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--mono-text);
+}
+
+.report-pump-sections {
+  display: block;
+  color: var(--subtle-text);
+}
+
+.pair-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pair-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pair-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.pair-remove,
+.pair-add,
+.report-button {
+  padding: 4px 12px;
+  background: var(--surface);
+  color: var(--body-text);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-control);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pair-remove {
+  flex: none;
+  padding: 2px 8px;
+}
+
+.pair-add {
+  align-self: flex-start;
+}
+
+.report-button:hover:not(:disabled),
+.pair-add:hover:not(:disabled),
+.pair-remove:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.report-button:disabled,
+.pair-add:disabled,
+.pair-remove:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  border-color: var(--disabled-border);
+  cursor: default;
+}
+
+.report-button-primary {
+  background: var(--accent);
+  color: var(--surface);
+  border-color: var(--accent);
+}
+
+.report-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-muted {
+  margin: 0;
+  color: var(--subtle-text);
+  font-size: var(--fs-caption);
+}

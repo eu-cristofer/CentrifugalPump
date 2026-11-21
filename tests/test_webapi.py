@@ -706,3 +706,101 @@ def test_parse_mrt_paste_headers_units_and_blank():
     plain = webapi.parse_mrt_paste("06:00;1,5;70\n", cols)  # no header: channel order
     assert plain == [{"time": "06:00", "values": {"Flow": 1.5, "Sump": 70.0}}]
     assert webapi.parse_mrt_paste("   \n", cols) == []
+
+
+# --------------------------------------------------------------- sprint 8: reports
+
+
+def _docx_text(path_or_bytes):
+    """Paragraph and table-cell texts of a .docx (what a reader sees)."""
+    import io
+
+    docx = pytest.importorskip("docx")
+    from docx.oxml.ns import qn
+
+    src = (
+        io.BytesIO(path_or_bytes) if isinstance(path_or_bytes, bytes) else path_or_bytes
+    )
+    d = docx.Document(src)
+    paragraphs = [p.text for p in d.paragraphs]
+    # raw <w:tc> text: python-docx's Table.rows fails on merged cells
+    cells = ["".join(tc.itertext()) for tc in d.element.body.iter(qn("w:tc"))]
+    return paragraphs, cells
+
+
+def test_export_docx_has_the_texts_of_the_cli_docx(doc_a, tmp_path):
+    from pumpflow import export_cli
+
+    code = export_cli.main(
+        [str(B34004A), "--formats", "docx", "--out", str(tmp_path), "--stem", "cli"]
+    )
+    assert code == 0
+    cli_paragraphs, cli_cells = _docx_text(str(tmp_path / "cli.docx"))
+    out = webapi.export_report(doc_a, "docx")
+    web_paragraphs, web_cells = _docx_text(base64.b64decode(out["base64"]))
+    assert cli_paragraphs and any("APPROVED" in p for p in cli_paragraphs)
+    assert web_paragraphs == cli_paragraphs
+    assert web_cells == cli_cells
+
+
+def _with_override(doc):
+    """A copy of ``doc`` whose Compliance node overrides the head tolerance."""
+    import copy
+
+    doc = copy.deepcopy(doc)
+    comp = next(n for n in doc["nodes"] if n["kind"] == "compliance")
+    runtime = webapi.decode_settings("compliance", comp["settings"])
+    runtime["tolerances"] = {**(runtime.get("tolerances") or {}), "head": 7.0}
+    comp["settings"] = webapi.encode_settings("compliance", runtime)
+    return doc
+
+
+def test_export_html_states_the_tolerance_override(doc_a):
+    changed = _with_override(doc_a)
+    res = webapi.evaluate(changed)
+    comp_id = next(n["id"] for n in changed["nodes"] if n["kind"] == "compliance")
+    assert res["nodes"][comp_id]["view"]["overridden"] is True
+
+    html = base64.b64decode(webapi.export_report(changed, "html")["base64"]).decode(
+        "utf-8"
+    )
+    plain = base64.b64decode(webapi.export_report(doc_a, "html")["base64"]).decode(
+        "utf-8"
+    )
+    from pump.utilities.report import TOLERANCE_OVERRIDE_INTRO
+
+    assert TOLERANCE_OVERRIDE_INTRO in html
+    assert TOLERANCE_OVERRIDE_INTRO not in plain
+
+
+def test_report_export_view_lists_the_branches_and_the_overall_verdict(doc_a, result_a):
+    node_id = next(n["id"] for n in doc_a["nodes"] if n["kind"] == "report_export")
+    node = result_a["nodes"][node_id]
+    view = node["view"]
+    assert view["has_rated"] is True
+    assert [p["tag"] for p in view["pumps"]] == ["B-34004A"]
+    pump = view["pumps"][0]
+    assert pump["reportable"] is True
+    assert pump["verdict_text"].startswith("APPROVED")
+    assert {"Fitted", "Verdict"} <= set(pump["sections"])
+    # the overall verdict is the text after the pump count in the node status
+    assert node["status"].endswith(view["overall_verdict_text"])
+    json.dumps(view, allow_nan=False)
+
+
+def test_report_export_view_without_branches():
+    doc = {
+        "meta": {"unit_preset": "SI", "schema_version": 2},
+        "nodes": [
+            {
+                "id": "report_export-1",
+                "kind": "report_export",
+                "x": 0,
+                "y": 0,
+                "settings": webapi.default_settings("report_export"),
+            }
+        ],
+        "edges": [],
+    }
+    view = webapi.evaluate(doc)["nodes"]["report_export-1"]["view"]
+    assert view == {"has_rated": False, "overall_verdict_text": "pending", "pumps": []}

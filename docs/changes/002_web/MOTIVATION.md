@@ -30,14 +30,16 @@ test results) must not leave the machine, so a hosted server is not an option.
 - 2026-11-20 — scope: **witness flow first** (not all 18 node kinds).
 - 2026-11-20 — delivery: **offline bundle** (~30 MB; Pyodide and wheels vendored, no CDN).
 - 2026-11-20 — front end: **React Flow + TypeScript** (Vite build).
+- 2026-11-20 — PDF: the browser prints the HTML report to PDF ("Print to PDF"); the
+  LaTeX PDF stays desktop-only unless a later project changes that.
 
-## Open decisions (not blocking sprints 1–7)
+## Open decisions
 
-- Hosting of the static bundle: private static host, internal server, or a local
-  launcher (`python -m http.server` is enough, but needs Python).  Once loaded, the
-  installed app runs offline.  Decide before sprint 8.
-- PDF: the browser prints the HTML report to PDF; the LaTeX PDF stays desktop-only
-  unless a later project changes that.
+- **Hosting (owner's call).**  The build (`web/dist`) is host-neutral: any static host
+  serving it over HTTPS, or localhost (`python -m http.server -d web/dist`), works, and
+  once loaded the installed app runs offline.  Which host to use (internal server,
+  private static host, or a local launcher) has not been decided.  The app must be
+  served at the origin root (the worker loads `/py/`).
 
 ## Risks
 

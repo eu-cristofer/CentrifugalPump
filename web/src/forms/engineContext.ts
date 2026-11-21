@@ -21,6 +21,7 @@ export type FormEngine = Pick<
   | "nextTime"
   | "mrtOptions"
   | "parseMrtPaste"
+  | "exportReport"
 >;
 
 export const EngineContext = createContext<FormEngine | null>(null);
