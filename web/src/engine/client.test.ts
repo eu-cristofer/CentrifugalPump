@@ -33,6 +33,27 @@ describe("Engine", () => {
     expect(await b).toEqual({ which: "second" });
   });
 
+  it("wraps the MRT helpers (next reading time, options, paste)", async () => {
+    const w = new FakeWorker();
+    const engine = new Engine(w);
+    const rows = [{ time: "06:15" }];
+    const cols = [{ name: "Flow", dimension: "capacity", unit: "m³/h", role: "flow" }];
+    const a = engine.nextTime(rows);
+    const b = engine.mrtOptions();
+    const c = engine.parseMrtPaste("06:00\t1", cols);
+    expect(w.sent.map((m) => [m.fn, m.args])).toEqual([
+      ["next_time", [rows]],
+      ["mrt_options", []],
+      ["parse_mrt_paste", ["06:00\t1", cols]],
+    ]);
+    w.emit({ id: w.sent[0]!.id, ok: true, result: "06:30" });
+    w.emit({ id: w.sent[1]!.id, ok: true, result: { roles: [], dimensions: [], role_dimensions: {} } });
+    w.emit({ id: w.sent[2]!.id, ok: true, result: [] });
+    expect(await a).toBe("06:30");
+    expect((await b).roles).toEqual([]);
+    expect(await c).toEqual([]);
+  });
+
   it("rejects a request when the worker reports an error", async () => {
     const w = new FakeWorker();
     const engine = new Engine(w);

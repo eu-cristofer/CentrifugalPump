@@ -18,6 +18,9 @@ export type FormEngine = Pick<
   | "pumpTypeHint"
   | "atmosphere"
   | "parsePaste"
+  | "nextTime"
+  | "mrtOptions"
+  | "parseMrtPaste"
 >;
 
 export const EngineContext = createContext<FormEngine | null>(null);

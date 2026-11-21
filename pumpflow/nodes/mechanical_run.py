@@ -66,6 +66,92 @@ def _next_time(rows: List[dict]) -> str:
     return "00:00"
 
 
+def _find_col(cols: List[dict], name: str) -> Optional[int]:
+    """Index of the channel a pasted header names (exact, then prefix match)."""
+    f = name.strip().casefold()
+    if not f:
+        return None
+    for i, c in enumerate(cols):
+        if c["name"].casefold() == f:
+            return i
+    for i, c in enumerate(cols):
+        n = c["name"].casefold()
+        if n.startswith(f) or f.startswith(n):
+            return i
+    return None
+
+
+def _resolve_unit(dim: str, cell: str, unit_text: str) -> Optional[str]:
+    """Display label of a pasted header's unit for a channel of dimension ``dim``."""
+    try:
+        key, label, _ref = units.parse_unit_header(cell)
+        if label and units.COLUMN_DIMENSIONS.get(key) == dim:
+            return label
+    except ValueError:
+        pass
+    try:
+        return units._match_unit(dim, unit_text)
+    except (ValueError, KeyError):
+        return None
+
+
+def paste_rows(text: str, cols: List[dict]) -> List[dict]:
+    """MRT Log paste: tab- or ``;``-separated spreadsheet text -> readings.
+
+    An optional header line (first cell not a ``HH:MM`` time) maps the columns to
+    channels by name and may carry units (``"Flow [m³/h]"``); values are then
+    converted into each channel's own unit.  Without a header the columns follow
+    the channel order.  Returns ``[{"time": "HH:MM", "values": {name: float | None}}]``
+    (rows without a valid time are dropped), ``[]`` when nothing is usable.
+    """
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return []
+
+    def split(line: str) -> List[str]:
+        return line.replace(";", "\t").split("\t")
+
+    first = split(lines[0])
+    mapping: List[Optional[int]] = list(range(len(cols)))
+    conv: Dict[int, str] = {}
+    data = lines
+    if _norm_time(first[0]) is None:  # header line
+        data = lines[1:]
+        mapping = []
+        for j, cell in enumerate(first[1:]):
+            name, _, rest = cell.partition("[")
+            unit_text = rest.rstrip("] ").strip()
+            idx = _find_col(cols, name)
+            if idx is None and j < len(cols):
+                idx = j
+            mapping.append(idx)
+            if idx is not None and unit_text:
+                label = _resolve_unit(cols[idx]["dimension"], cell, unit_text)
+                if label and label != cols[idx]["unit"]:
+                    conv[idx] = label
+    new_rows = []
+    for line in data:
+        cells = split(line)
+        t = _norm_time(cells[0])
+        if t is None:
+            continue
+        values: Dict[str, Optional[float]] = {}
+        for j, idx in enumerate(mapping):
+            if idx is None or j + 1 >= len(cells):
+                continue
+            v = parse_decimal(cells[j + 1], None)
+            if v is not None and idx in conv:
+                try:
+                    v = units.convert_display(
+                        v, cols[idx]["dimension"], conv[idx], cols[idx]["unit"]
+                    )
+                except Exception:
+                    pass
+            values[cols[idx]["name"]] = v
+        new_rows.append({"time": t, "values": values})
+    return new_rows
+
+
 def _col_pint(col: dict) -> str:
     return units.pint_str(col["dimension"], col["unit"])
 
@@ -492,78 +578,8 @@ class MechanicalRunNode(BaseNode):
             fill_grid()
             recompute()
 
-        def _find_col(name: str) -> Optional[int]:
-            f = name.strip().casefold()
-            if not f:
-                return None
-            for i, c in enumerate(cols):
-                if c["name"].casefold() == f:
-                    return i
-            for i, c in enumerate(cols):
-                n = c["name"].casefold()
-                if n.startswith(f) or f.startswith(n):
-                    return i
-            return None
-
-        def _resolve_unit(dim: str, cell: str, unit_text: str) -> Optional[str]:
-            try:
-                key, label, _ref = units.parse_unit_header(cell)
-                if label and units.COLUMN_DIMENSIONS.get(key) == dim:
-                    return label
-            except ValueError:
-                pass
-            try:
-                return units._match_unit(dim, unit_text)
-            except (ValueError, KeyError):
-                return None
-
         def paste():
-            text = QGuiApplication.clipboard().text()
-            lines = [ln for ln in text.splitlines() if ln.strip()]
-            if not lines:
-                return
-
-            def split(line: str) -> List[str]:
-                return line.replace(";", "\t").split("\t")
-
-            first = split(lines[0])
-            mapping = list(range(len(cols)))
-            conv: Dict[int, str] = {}
-            data = lines
-            if _norm_time(first[0]) is None:  # header line
-                data = lines[1:]
-                mapping = []
-                for j, cell in enumerate(first[1:]):
-                    name, _, rest = cell.partition("[")
-                    unit_text = rest.rstrip("] ").strip()
-                    idx = _find_col(name)
-                    if idx is None and j < len(cols):
-                        idx = j
-                    mapping.append(idx)
-                    if idx is not None and unit_text:
-                        label = _resolve_unit(cols[idx]["dimension"], cell, unit_text)
-                        if label and label != cols[idx]["unit"]:
-                            conv[idx] = label
-            new_rows = []
-            for line in data:
-                cells = split(line)
-                t = _norm_time(cells[0])
-                if t is None:
-                    continue
-                values: Dict[str, Optional[float]] = {}
-                for j, idx in enumerate(mapping):
-                    if idx is None or j + 1 >= len(cells):
-                        continue
-                    v = parse_decimal(cells[j + 1], None)
-                    if v is not None and idx in conv:
-                        try:
-                            v = units.convert_display(
-                                v, cols[idx]["dimension"], conv[idx], cols[idx]["unit"]
-                            )
-                        except Exception:
-                            pass
-                    values[cols[idx]["name"]] = v
-                new_rows.append({"time": t, "values": values})
+            new_rows = paste_rows(QGuiApplication.clipboard().text(), cols)
             if new_rows:
                 s["rows"] = new_rows
                 fill_grid()

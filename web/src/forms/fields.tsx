@@ -270,6 +270,29 @@ export function useUnitOptions(dimension: string): Array<[string, string]> {
   return opts;
 }
 
+/** A display-unit select of a dimension (a grid column header); picking reports the new label. */
+export function UnitSelect({
+  dimension,
+  unit,
+  ariaLabel,
+  onPick,
+}: {
+  dimension: string;
+  unit: string;
+  ariaLabel: string;
+  onPick: (next: string) => void;
+}) {
+  const options = useUnitOptions(dimension);
+  return (
+    <Select
+      value={unit}
+      options={options.map(([l]): [string, string] => [l, l])}
+      ariaLabel={ariaLabel}
+      onChange={onPick}
+    />
+  );
+}
+
 /**
  * A quantity: number + display-unit select.  Changing the unit converts the shown
  * value in Python and reports both (like the desktop `ui.UnitField`).

@@ -492,3 +492,68 @@
   white-space: pre-wrap;
   overflow-x: auto;
 }
+
+/* ---- witness forms II (sprint 7): plots, MRT, notes ---- */
+.ylim-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+}
+
+.override-role {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+  padding: 6px 8px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-control);
+}
+
+.source-note summary {
+  color: var(--field-label);
+  cursor: pointer;
+}
+
+.note-editor {
+  min-height: 180px;
+  font-family: var(--font-mono);
+  resize: vertical;
+}
+
+.note-preview {
+  min-height: 120px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+
+.note-preview > :first-child {
+  margin-top: 0;
+}
+
+.note-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.note-preview a {
+  color: var(--accent);
+}
+
+.note-preview table {
+  border-collapse: collapse;
+}
+
+.note-preview th,
+.note-preview td {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+}
+
+.note-preview code,
+.note-preview pre {
+  background: var(--mono-bg);
+  color: var(--mono-text);
+  font-family: var(--font-mono);
+}

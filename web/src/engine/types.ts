@@ -159,11 +159,134 @@ export interface CorrectionView {
   before_after?: Array<{ measured: BeforeAfterRow; corrected: BeforeAfterRow }>;
 }
 
-/** `curve_fit` view: the text parts the form shows (the series are for sprint 7). */
-export interface CurveFitView {
+/** One of the points / polynomial / spline blocks of a fit (canonical units: m3/h, m, kW, %). */
+export interface SeriesBlock {
+  q: number[];
+  head: number[];
+  power: number[] | null;
+  eff: number[] | null;
+}
+
+/** The series part of a `curve_fit` view (and `performance_plot.fit`). */
+export interface FitSeries {
+  pump_tag?: string;
+  degree?: number;
+  points: SeriesBlock;
+  poly: SeriesBlock;
+  spline: SeriesBlock | null;
+}
+
+/** `curve_fit` view: the text parts and, once fitted, the series of the preview chart. */
+export type CurveFitView = Partial<FitSeries> & {
   r2?: Record<string, number | null>;
   r2_text?: string;
   coeff_text?: string;
+};
+
+/** NPSHr test points and fitted curve (m3/h, m). */
+export interface NpshSeries {
+  points: { q: number[]; npshr: number[] } | null;
+  curve: { q: number[]; npshr: number[] } | null;
+}
+
+export interface PlotRated {
+  q: number;
+  head: number | null;
+  power: number | null;
+  head_fit: number | null;
+  power_fit: number | null;
+  eff_fit: number | null;
+  in_range: boolean;
+}
+
+export interface PlotShow {
+  poly: boolean;
+  spline: boolean;
+  points: boolean;
+}
+
+/** `performance_plot` view (after evaluate; `{}` while no model is wired). */
+export interface PerformancePlotView {
+  pump_tag: string;
+  fit: FitSeries;
+  rated: PlotRated | null;
+  npsh: (NpshSeries & { npsha: number | null; npshr_quoted: number | null }) | null;
+  show: PlotShow;
+}
+
+/** `npsh` view (after evaluate; `{}` while the node is invalid). */
+export type NpshView = Partial<NpshSeries> & {
+  pump_tag: string;
+  mode: string;
+  status: "pass" | "fail" | "info";
+  verdict: string;
+  verified: boolean;
+  criteria_label: string;
+  npsha: number | null;
+  npshr: number | null;
+  margin: number | null;
+  ratio: number | null;
+  npshr_quoted: number | null;
+  quoted_ok: boolean | null;
+  min_ratio: number | null;
+  min_margin: number | null;
+  npshr_tol_plus: number | null;
+  rated_q: number | null;
+};
+
+export interface MrtCheckRow {
+  name: string;
+  role: string;
+  unit: string;
+  min: Quantity | null;
+  max: Quantity | null;
+  last: Quantity | null;
+  limit: Quantity | null;
+  stabilisation: {
+    change: Quantity | null;
+    allowed: Quantity | null;
+    window: Quantity | null;
+    ok: boolean | null;
+  } | null;
+  status: string;
+}
+
+/** `mechanical_run_check` view (after evaluate; `{}` while no log is wired). */
+export interface MrtCheckView {
+  pump_tag: string;
+  verdict: string;
+  verdict_label: string;
+  inputs_text: string;
+  passed: boolean;
+  fully_assessed: boolean;
+  verified: boolean;
+  source: string;
+  criteria_label: string;
+  duration: Quantity | null;
+  min_duration: Quantity | null;
+  duration_status: string;
+  rows: MrtCheckRow[];
+}
+
+/** One channel of an MRT Log (runtime settings shape). */
+export interface MrtColumn {
+  name: string;
+  dimension: string;
+  unit: string;
+  role: string;
+}
+
+/** One reading of an MRT Log. */
+export interface MrtRow {
+  time: string;
+  values: Record<string, number | null>;
+}
+
+/** `mrt_options()`: channel roles, channel dimensions, dimension of each role's limits. */
+export interface MrtOptions {
+  roles: string[];
+  dimensions: string[];
+  role_dimensions: Record<string, string>;
 }
 
 export interface WaterProperties {
@@ -207,6 +330,9 @@ export interface ApiFns {
     args: [text: string, columns: Record<string, string>, pressureRef: string];
     result: PasteResult;
   };
+  next_time: { args: [rows: Array<{ time?: string }>]; result: string };
+  mrt_options: { args: []; result: MrtOptions };
+  parse_mrt_paste: { args: [text: string, columns: MrtColumn[]]; result: MrtRow[] };
 }
 export type FnName = keyof ApiFns;
 

@@ -606,3 +606,103 @@ def test_b34004b_rows_typed_through_the_form_equal_the_committed_file():
     assert got["test_b"]["view"]["rows"] == pytest.approx(
         want["test_b"]["view"]["rows"]
     )
+
+
+# ------------------------------------------- witness forms II (sprint 7)
+def test_npsh_view_matches_desktop_numbers(result_a):
+    v = result_a["nodes"]["npsh_a"]["view"]
+    assert json.loads(json.dumps(v, allow_nan=False)) == v
+    assert v["npshr"] == pytest.approx(1.08, abs=0.005)  # NPSHr @ rated, m
+    assert v["ratio"] == pytest.approx(2.22, abs=0.005)
+    assert v["rated_q"] == pytest.approx(9.8)
+    assert v["mode"] == "points" and v["status"] == "pass"
+    assert len(v["points"]["q"]) == len(v["points"]["npshr"]) == 5
+    assert len(v["curve"]["q"]) == len(v["curve"]["npshr"]) > 10
+
+
+def test_mrt_check_view_verdict_and_labels(result_a):
+    node = result_a["nodes"]["mrt_a_check"]
+    v = node["view"]
+    assert json.loads(json.dumps(v, allow_nan=False)) == v
+    assert v["verdict"] == "FAILED" and v["verified"] is False
+    assert v["verdict_label"] == "FAILED (unverified limits)"
+    assert v["verdict_label"] in node["status"]  # the node status uses the same label
+    assert v["inputs_text"].startswith("Log: B-34004A, 17 readings.")
+    assert "Criteria: api610:8" in v["inputs_text"]
+    assert {r["status"] for r in v["rows"]} >= {"pass", "fail", "info"}
+    assert v["min_duration"] == {"value": 4.0, "unit": "h"}
+
+
+def test_performance_plot_view_is_json_safe_with_series(result_a):
+    v = result_a["nodes"]["plot_a"]["view"]
+    assert json.loads(json.dumps(v, allow_nan=False)) == v
+    fit = v["fit"]
+    n = len(fit["poly"]["q"])
+    assert n == 160 and len(fit["poly"]["head"]) == n
+    assert len(fit["spline"]["q"]) == len(fit["spline"]["head"])
+    assert len(fit["points"]["q"]) == len(fit["points"]["head"]) == 6
+    assert v["show"] == {"poly": True, "spline": True, "points": True}
+    assert v["rated"]["in_range"] is True
+    assert len(v["npsh"]["points"]["q"]) == len(v["npsh"]["points"]["npshr"])
+
+
+def test_next_time_is_the_desktop_rule():
+    assert webapi.next_time([]) == "00:00"
+    assert webapi.next_time([{"time": "06:00"}, {"time": "06:15"}]) == "06:30"
+    assert webapi.next_time([{"time": "23:50"}]) == "00:05"  # wraps at midnight
+    assert webapi.next_time([{"time": "6:45"}, {"time": ""}]) == "07:00"  # last valid
+    assert webapi.next_time([{"time": "x"}]) == "00:00"
+
+
+def test_mrt_options_roles_and_dimensions():
+    from pump.mechanical_run import ROLES
+
+    o = webapi.mrt_options()
+    assert o["roles"] == list(ROLES) and o["roles"][-1] == "other"
+    assert "vibration_velocity" in o["dimensions"]
+    assert o["role_dimensions"]["oil_temperature"] == "temperature"
+    assert "other" not in o["role_dimensions"]
+    assert json.loads(json.dumps(o)) == o
+    for dim in o["dimensions"]:
+        assert webapi.unit_options(dim)
+
+
+def test_web_edited_mrt_check_override_and_npsh_quoted_off(doc_a):
+    def override(rt):
+        rt["overrides"]["min_duration"] = {"value": 5.0, "unit": "h"}
+
+    _, nodes = _web_edit(doc_a, "mrt_a_check", override)
+    v = nodes["mrt_a_check"]["view"]
+    assert v["duration_status"] == "fail"  # a 4 h run against a 5 h minimum
+    assert v["min_duration"] == {"value": 5.0, "unit": "h"}
+
+    def quoted_off(rt):
+        rt.pop("npshr_quoted")
+        rt.pop("npshr_quoted_unit")
+
+    doc2, nodes2 = _web_edit(doc_a, "npsh_a", quoted_off)
+    node = next(n for n in doc2["nodes"] if n["id"] == "npsh_a")
+    assert "npshr_quoted" not in node["settings"]
+    assert nodes2["npsh_a"]["view"]["npshr_quoted"] is None
+
+
+def test_parse_mrt_paste_headers_units_and_blank():
+    cols = [
+        {"name": "Flow", "dimension": "capacity", "unit": "US GPM", "role": "flow"},
+        {
+            "name": "Sump",
+            "dimension": "temperature",
+            "unit": "\u00b0F",
+            "role": "other",
+        },
+    ]
+    text = "Time\tFlow [m\u00b3/h]\tSump [\u00b0C]\n06:00\t10,0\t50\n6:15\t10\t\nbad\t1\t2\n"
+    rows = webapi.parse_mrt_paste(text, cols)
+    assert [r["time"] for r in rows] == ["06:00", "06:15"]
+    assert rows[0]["values"]["Flow"] == pytest.approx(44.0287, abs=1e-3)
+    assert rows[0]["values"]["Sump"] == pytest.approx(122.0)
+    assert rows[1]["values"]["Sump"] is None
+    assert json.loads(json.dumps(rows, allow_nan=False)) == rows
+    plain = webapi.parse_mrt_paste("06:00;1,5;70\n", cols)  # no header: channel order
+    assert plain == [{"time": "06:00", "values": {"Flow": 1.5, "Sump": 70.0}}]
+    assert webapi.parse_mrt_paste("   \n", cols) == []

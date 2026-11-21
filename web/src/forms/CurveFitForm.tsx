@@ -1,3 +1,4 @@
+import PerformanceChart from "../charts/PerformanceChart";
 import type { CurveFitView } from "../engine/types";
 import { useEngine } from "./engineContext";
 import { Banner, Checkbox, Divider, NumberField, Row, Section, Select } from "./fields";
@@ -9,7 +10,7 @@ const DEGREES: Array<[string, string]> = ["2", "3", "4", "5"].map((d) => [d, d])
 const RES_MIN = 40;
 const RES_MAX = 400;
 
-/** Curve Fit — mirrors pumpflow/nodes/curve_fit.py (UI_SPEC §5.4); the chart is sprint 7. */
+/** Curve Fit — mirrors pumpflow/nodes/curve_fit.py (UI_SPEC §5.4), with the preview chart. */
 export default function CurveFitForm({ nodeId, doc, result, dispatch }: FormProps) {
   const engine = useEngine();
   const { runtime: s, update, error } = useNodeForm(engine, doc, nodeId, dispatch);
@@ -64,7 +65,17 @@ export default function CurveFitForm({ nodeId, doc, result, dispatch }: FormProp
           onChange={(v) => update({ show_preview: v })}
         />
       </Row>
-      <p className="field-hint">The chart preview arrives with the performance plot.</p>
+      {getBool(s, "show_preview", true) && fitted && view.points && view.poly && (
+        <PerformanceChart
+          fit={{
+            points: view.points,
+            poly: view.poly,
+            spline: getBool(s, "spline", true) ? (view.spline ?? null) : null,
+            ...(view.degree !== undefined ? { degree: view.degree } : {}),
+          }}
+          show={{ poly: true, spline: getBool(s, "spline", true), points: true }}
+        />
+      )}
     </div>
   );
 }

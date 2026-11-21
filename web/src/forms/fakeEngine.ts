@@ -43,6 +43,31 @@ export function fakeEngine(): { [K in keyof FormEngine]: ReturnType<typeof vi.fn
       vibration: false,
       warnings: [] as string[],
     })),
+    nextTime: vi.fn(async (rows: Array<{ time?: string }>) => {
+      const t = rows.at(-1)?.time ?? "";
+      const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+      if (!m) return "00:00";
+      const total = (Number(m[1]) * 60 + Number(m[2]) + 15) % 1440;
+      return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    }),
+    parseMrtPaste: vi.fn(async (text: string) =>
+      text
+        .split("\n")
+        .filter((l) => /^\d{1,2}:\d{2}/.test(l))
+        .map((l) => {
+          const [time = "", ...rest] = l.split("\t");
+          return { time, values: { Flow: Number((rest[0] ?? "").replace(",", ".")) } };
+        }),
+    ),
+    mrtOptions: vi.fn(async () => ({
+      roles: ["flow", "oil_temperature", "vibration_filtered", "other"],
+      dimensions: ["capacity", "temperature", "vibration_velocity"],
+      role_dimensions: {
+        flow: "capacity",
+        oil_temperature: "temperature",
+        vibration_filtered: "vibration_velocity",
+      },
+    })),
     pumpTypeHint: vi.fn(async (code: string) => (code ? `hint ${code}` : "Not set")),
   };
   return fake as never;

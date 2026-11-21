@@ -12,6 +12,20 @@ class DOMMatrixReadOnlyStub {
   }
 }
 
+// uPlot reads the pixel ratio through matchMedia when it is imported.
+if (typeof window !== "undefined" && !window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
 const g = globalThis as Record<string, unknown>;
 if (!g.ResizeObserver) g.ResizeObserver = ResizeObserverStub;
 if (!g.DOMMatrixReadOnly) g.DOMMatrixReadOnly = DOMMatrixReadOnlyStub;

@@ -103,6 +103,8 @@ Public functions
          "fully_assessed": bool, "verified": bool, "source": str,
          "criteria_label": str, "duration": {"value","unit"},
          "min_duration": {"value","unit"} | None, "duration_status": str,
+         "verdict_label": str,   # "FAILED (unverified limits)" etc., as the node status
+         "inputs_text": str,     # log / criteria / high-speed-rule power sentence
          "rows": [{"name", "role", "unit", "min", "max", "last", "limit",
                    "stabilisation", "status"}]}   # quantities as {"value","unit"}
 
@@ -150,6 +152,24 @@ Public functions
     an optional unit-header line becomes ``{"rows": [...], "columns": {key: label},
     "pressure_ref": "g" | "a", "vibration": bool, "warnings": [str]}``; ``rows``
     is empty for blank text.
+
+``next_time(rows: list) -> str``
+    The MRT Log "Add reading" rule (``nodes.mechanical_run._next_time``): the time of
+    the last row with a valid ``HH:MM`` plus 15 minutes (wrapping at midnight);
+    ``"00:00"`` when no row has one.  ``rows`` are ``{"time": str, ...}`` dicts.
+
+``mrt_options() -> dict``
+    ``{"roles": [str], "dimensions": [str], "role_dimensions": {role: dimension}}``:
+    the channel roles (``pump.mechanical_run.ROLES``), the dimensions an MRT Log
+    channel may use, and the dimension of each role's limits (the MRT Check
+    overrides; roles without an entry have no editable limits).
+
+``parse_mrt_paste(text: str, columns: list) -> list``
+    The MRT Log paste (``nodes.mechanical_run.paste_rows``): spreadsheet text, with an
+    optional header line naming channels and units, becomes
+    ``[{"time": "HH:MM", "values": {channel: float | None}}]`` in each channel's own
+    unit (``columns`` are the log's ``{"name","dimension","unit","role"}`` dicts);
+    ``[]`` when nothing is usable.
 
 ``water_density(temp_c: float) -> float``
     kg/m3 of water at ``temp_c`` degC.  ``water_properties(temp_c) -> dict`` adds
@@ -207,6 +227,9 @@ __all__ = [
     "pump_type_hint",
     "atmosphere",
     "parse_paste",
+    "next_time",
+    "mrt_options",
+    "parse_mrt_paste",
 ]
 
 #: Kinds with a web form (the witness kinds).
@@ -546,7 +569,39 @@ def _view_npsh(graph: Graph, node) -> dict:
     }
 
 
+def _mrt_inputs_text(node) -> str:
+    """The "Log / Criteria / High-speed rule power" sentence of the MRT Check dialog."""
+    run_set = getattr(node, "_run_set", None)
+    if run_set is None:
+        return "No log connected: wire an MRT Log into this node."
+    rated = getattr(node, "_rated", None)
+    fitted = getattr(node, "_fitted", None)
+    if rated is not None:
+        criteria = f"Criteria: {rated.standard_key}"
+        if rated.client:
+            criteria += f" + {rated.client}"
+        if rated.pump_type:
+            criteria += f", pump type {rated.pump_type}"
+        criteria += "."
+    else:
+        criteria = "Criteria: library default (no rated point wired)."
+    power = (
+        "High-speed rule power: BEP of the fitted curve."
+        if fitted is not None
+        else "High-speed rule power: rated power (no fitted curve wired)."
+    )
+    return "  ".join(
+        [
+            f"Log: {run_set.pump_tag}, {len(run_set.log.readings)} readings.",
+            criteria,
+            power,
+        ]
+    )
+
+
 def _view_mrt_check(graph: Graph, node) -> dict:
+    from .nodes.mechanical_run import verdict_label
+
     sig = _first_output(node, "MechanicalRunResult")
     if sig is None:
         return {}
@@ -567,6 +622,8 @@ def _view_mrt_check(graph: Graph, node) -> dict:
     ]
     return {
         "pump_tag": sig.pump_tag,
+        "verdict_label": verdict_label(res),
+        "inputs_text": _mrt_inputs_text(node),
         "verdict": res.verdict,
         "passed": res.passed,
         "fully_assessed": res.fully_assessed,
@@ -964,3 +1021,31 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
         "mime": _MIME[fmt],
         "base64": base64.b64encode(content).decode("ascii"),
     }
+
+
+def next_time(rows: list) -> str:
+    """Time of the next MRT Log reading: last valid ``HH:MM`` + 15 min (the desktop rule)."""
+    from .nodes.mechanical_run import _next_time
+
+    return _next_time([r for r in (rows or []) if isinstance(r, dict)])
+
+
+def mrt_options() -> dict:
+    """Channel roles, channel dimensions and the dimension of each role's limits."""
+    from pump.mechanical_run import ROLES
+
+    from .nodes.mechanical_run import _DIMENSIONS
+
+    return {
+        "roles": list(ROLES),
+        "dimensions": list(_DIMENSIONS),
+        "role_dimensions": dict(settings_codec.ROLE_DIMENSIONS),
+    }
+
+
+def parse_mrt_paste(text: str, columns: list) -> list:
+    """MRT Log paste: spreadsheet text -> readings in the channels' own units."""
+    from .nodes.mechanical_run import paste_rows
+
+    cols = [c for c in (columns or []) if isinstance(c, dict)]
+    return _jsonable(paste_rows(text or "", cols))

@@ -5,6 +5,9 @@ import type {
   ExportFormat,
   ExportResult,
   FnName,
+  MrtColumn,
+  MrtOptions,
+  MrtRow,
   PasteResult,
   Progress,
   PumpflowDoc,
@@ -160,6 +163,18 @@ export class Engine {
     pressureRef: string,
   ): Promise<PasteResult> {
     return this.call("parse_paste", text, columns, pressureRef);
+  }
+
+  nextTime(rows: Array<{ time?: string }>): Promise<string> {
+    return this.call("next_time", rows);
+  }
+
+  mrtOptions(): Promise<MrtOptions> {
+    return this.call("mrt_options");
+  }
+
+  parseMrtPaste(text: string, columns: MrtColumn[]): Promise<MrtRow[]> {
+    return this.call("parse_mrt_paste", text, columns);
   }
 
   dispose(): void {

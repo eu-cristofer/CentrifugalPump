@@ -66,6 +66,11 @@ describe("FormPanel", () => {
     ["correction", "Fit degree"],
     ["curve_fit", "Polynomial degree"],
     ["compliance", /awaiting inputs/],
+    ["performance_plot", /Polynomial curve/],
+    ["npsh", "Pump TAG"],
+    ["mechanical_run", "Pump TAG"],
+    ["mechanical_run_check", /awaiting a log/],
+    ["markdown_note", "Markdown"],
   ])("routes %s to its form", async (kind, marker) => {
     show(kind);
     expect(

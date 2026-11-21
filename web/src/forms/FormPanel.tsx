@@ -10,12 +10,17 @@ import ComplianceForm from "./ComplianceForm";
 import CorrectionForm from "./CorrectionForm";
 import CurveFitForm from "./CurveFitForm";
 import FluidForm from "./FluidForm";
+import MrtCheckForm from "./MrtCheckForm";
+import MrtLogForm from "./MrtLogForm";
+import NoteForm from "./NoteForm";
+import NpshForm from "./NpshForm";
+import PerformancePlotForm from "./PerformancePlotForm";
 import RatedPointForm from "./RatedPointForm";
 import type { FormProps } from "./forms.types";
 import TestPointsForm from "./TestPointsForm";
 import "./forms.css";
 
-/** Kinds with a web form so far (the rest say "Edit this node in the desktop app."). */
+/** Kinds with a web form (all witness kinds but report_export; the rest say "Edit this node in the desktop app."). */
 export const FORMS: Record<string, ComponentType<FormProps>> = {
   rated_point: RatedPointForm,
   fluid: FluidForm,
@@ -23,6 +28,11 @@ export const FORMS: Record<string, ComponentType<FormProps>> = {
   correction: CorrectionForm,
   curve_fit: CurveFitForm,
   compliance: ComplianceForm,
+  performance_plot: PerformancePlotForm,
+  npsh: NpshForm,
+  mechanical_run: MrtLogForm,
+  mechanical_run_check: MrtCheckForm,
+  markdown_note: NoteForm,
 };
 
 export interface FormPanelProps {

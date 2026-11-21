@@ -39,6 +39,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     conversions, parsing and display strings come from Python; the desktop now
     shares `pump_type_hint`, `paste_rows`, `banner_message`, `viscous_summary`
     and `param_cells` with the web.
+  - Sprint 7: web charts (uPlot, pinned) — Q×H / Q×P / Q×η / NPSHr panels with
+    measured points, polynomial and spline, rated-point crosshair, NPSHa line and a
+    synced hover readout, in the Performance Plot and Curve Fit forms; forms for
+    NPSH, MRT Log ("Add reading" uses the desktop +15 min rule), MRT Check
+    (verdict, per-channel table, overrides) and Note (sanitised Markdown preview,
+    no remote content).  The desktop MRT paste is shared (`mechanical_run.paste_rows`).
 - **UI/UX review, round 2 (2026-11-18)**
   - Toolbox (now "Nodes") and the Add node menu are grouped: Inputs,
     Corrections, Curves & analysis, Checks, Output.  Node glyphs are distinct
