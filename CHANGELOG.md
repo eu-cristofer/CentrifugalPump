@@ -11,6 +11,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `docs/DEV_JOURNEY.md` rewritten for today: the three repositories, setup, the
+  change loop with its local gates, guarded files, confidentiality rules.  The public
+  split cutover is done (2026-11-24).
 - `tools/make_public_snapshot.sh` (one leak-scanned commit of HEAD for the public repo)
   and `tools/verdicts.py` (write/compare project verdicts; the private data repo's
   `check.sh` guards the real cases with it).  README "Repositories" section —

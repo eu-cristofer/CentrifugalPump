@@ -12,6 +12,8 @@ See [MOTIVATION.md](MOTIVATION.md) for the why, the decisions and the risks.
 
 Status: ready to archive · Branch: feat/public-split · Baseline commit: 128bf22
 
+Cutover done 2026-11-24: the public repo, the private data repo and Pages are live (NEXT_STEPS §0).
+
 # 003_public-split — Loop Protocol
 
 Each run MUST:
