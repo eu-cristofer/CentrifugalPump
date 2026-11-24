@@ -11,8 +11,7 @@ from pump import Q_
 from pump.utilities.test_summary import vibration_by_region
 
 PROJECT = (
-    Path(__file__).resolve().parents[1]
-    / "examples/user/P-9001A_MRT_reference.pumpflow"
+    Path(__file__).resolve().parents[1] / "examples/user/P-9001A_MRT_reference.pumpflow"
 )
 LIMITS = {"overall": Q_(3.0, "mm/s"), "filtered": Q_(2.0, "mm/s")}
 

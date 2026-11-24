@@ -19,8 +19,7 @@ from pump.vibration import (
 )
 
 PROJECT = (
-    Path(__file__).resolve().parents[1]
-    / "examples/user/P-9001A_MRT_reference.pumpflow"
+    Path(__file__).resolve().parents[1] / "examples/user/P-9001A_MRT_reference.pumpflow"
 )
 
 
