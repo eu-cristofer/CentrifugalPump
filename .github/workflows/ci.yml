@@ -1,0 +1,248 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Qt offscreen system libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon0 libgl1
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,gui]"
+
+      - name: Tests (tests/ + pump/ doctests)
+        run: pytest
+
+      - name: Black (black-clean file set)
+        run: >
+          black --check
+          pump/acceptance.py
+          pump/compare.py
+          pump/mechanical_run.py
+          pump/npsh.py
+          pump/viscosity.py
+          pump/trim.py
+          pump/fitting.py
+          pump/system_curve.py
+          pump/operating_point.py
+          pump/catalogue.py
+          pump/constants.py
+          pump/quantity_io.py
+          pump/utilities/pressure.py
+          pump/utilities/test_summary.py
+          pump/vibration.py
+          pump/utilities/annex_m_charts.py
+          pumpflow/binding/
+          pumpflow/signals.py
+          pumpflow/settings_codec.py
+          pumpflow/export_cli.py
+          tools/anonymise.py
+          pump/templates/build_templates.py
+          tests/test_report_templates.py
+          tools/leak_scan.py
+          tests/test_anonymise.py
+          tests/test_leak_scan.py
+          tests/test_leak_hook.py
+          tools/verdicts.py
+          tests/test_verdicts_tool.py
+          tests/test_public_snapshot.py
+          tests/test_notebook_images.py
+          tests/test_canvas_dispose.py
+          tests/test_pump_type_vibration.py
+          tests/test_annex_m_charts.py
+          tests/test_dialog_maximize.py
+          tests/test_mechanical_run_gui.py
+          tests/test_style_fonts.py
+          tests/test_design_tokens.py
+          pump/design/__init__.py
+          pumpflow/nodes/mechanical_run_check.py
+          tests/test_test_summary.py
+          tests/test_vibration_columns.py
+          tests/test_acceptance.py
+          tests/test_acceptance_binding.py
+          tests/test_compare.py
+          tests/test_compliance_gui.py
+          tests/test_explain.py
+          tests/test_head_components.py
+          tests/test_head_gui.py
+          tests/test_mechanical_run.py
+          tests/test_mechanical_run_gui.py
+          tests/test_style_fonts.py
+          tests/test_design_tokens.py
+          pump/design/__init__.py
+          tests/test_notebooks.py
+          tests/test_npsh.py
+          tests/test_npsh_gui.py
+          tests/test_operating_point.py
+          tests/test_quantity_spine.py
+          tests/test_schema_migration.py
+          tests/test_selection.py
+          tests/test_selection_gui.py
+          tests/test_signals_quantities.py
+          tests/test_system_curve.py
+          tests/test_system_curve_gui.py
+          tests/test_trim.py
+          tests/test_trim_gui.py
+          tests/test_units.py
+          tests/test_units_gui.py
+          tests/test_viscosity.py
+          tests/test_verdict_consistency.py
+          tests/test_ui_round2_gui.py
+          tests/test_engine.py
+          pumpflow/engine.py
+          tests/test_qt_free_engine.py
+          tests/test_webapi.py
+          pumpflow/webapi.py
+          tests/test_web_saved_fixture.py
+          tests/test_canvas_verdict_gui.py
+
+  leak-scan:
+    runs-on: ubuntu-latest
+    env:
+      LEAK_WORDLIST: ${{ secrets.LEAK_WORDLIST }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan for confidential words
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LEAK_WORDLIST:-}" ]; then
+            echo "::notice::LEAK_WORDLIST secret not set (fork PR or not configured); leak scan skipped"
+            exit 0
+          fi
+          wordlist="$RUNNER_TEMP/wordlist.txt"
+          printf '%s\n' "$LEAK_WORDLIST" > "$wordlist"
+          trap 'rm -f "$wordlist"' EXIT
+          # full tracked tree
+          git ls-files -z | xargs -0 python tools/leak_scan.py --words "$wordlist"
+          # commits of this event
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            python tools/leak_scan.py --words "$wordlist" --git-range "$PR_BASE..$PR_HEAD"
+          elif [ -n "${PUSH_BEFORE:-}" ] && [ -n "${PUSH_BEFORE//0/}" ]; then
+            python tools/leak_scan.py --words "$wordlist" --git-range "$PUSH_BEFORE..$PUSH_SHA"
+          fi
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: mypy
+        run: mypy pump --ignore-missing-imports
+
+  latex-pdf:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System libraries (Qt offscreen + LaTeX)
+        run: >
+          sudo apt-get update && sudo apt-get install -y
+          libegl1 libxkbcommon0 libgl1
+          texlive-latex-base texlive-latex-recommended texlive-latex-extra
+          texlive-fonts-recommended texlive-lang-portuguese latexmk
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,gui]"
+      - name: Export the P-9001A PDF report
+        run: python -m pumpflow.export_cli examples/user/P-9001A_MRT_reference.pumpflow --formats pdf --out out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p9001a-report
+          path: out/
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+      - name: Sphinx (warnings are errors)
+        run: sphinx-build -b html docs docs/_build/html -W
+
+  web:
+    runs-on: ubuntu-latest
+    env:
+      PYTHON: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Python (engine only, no Qt)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" build
+      - name: Install web dependencies
+        run: npm --prefix web ci
+      - name: Cache the Pyodide bundle
+        uses: actions/cache@v4
+        with:
+          path: web/public/py
+          key: pyodide-bundle-${{ hashFiles('web/package-lock.json', 'web/scripts/vendor.mjs') }}
+      - name: Vendor the offline bundle (rebuilds the project wheel)
+        run: npm --prefix web run vendor
+      - name: Check (types, lint, unit tests)
+        run: npm --prefix web run check
+      - name: Parity (browser engine = desktop engine)
+        run: npm --prefix web run parity
+      - name: Build
+        run: npm --prefix web run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pumpflow-web
+          path: web/dist/
+          retention-days: 14

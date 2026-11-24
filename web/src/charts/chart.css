@@ -1,0 +1,50 @@
+/* ---- chart (uPlot) — tokens only ---- */
+.chart {
+  min-width: 0;
+  color: var(--chart-ink);
+}
+
+.chart-host {
+  width: 100%;
+}
+
+.chart .uplot {
+  width: 100%;
+  font-family: inherit;
+}
+
+.chart .u-legend {
+  margin: 0;
+  padding: 2px 0 0;
+  font-size: var(--fs-caption);
+  text-align: left;
+}
+
+.chart .u-legend .u-series {
+  padding: 1px 6px 1px 0;
+}
+
+.chart .u-legend .u-label {
+  color: var(--chart-ink);
+}
+
+.chart .u-legend .u-value {
+  min-width: 3.2em;
+  color: var(--mono-text);
+  font-family: var(--font-mono);
+}
+
+.chart .uplot .u-cursor-x,
+.chart .uplot .u-cursor-y {
+  border-color: var(--chart-cursor);
+}
+
+.chart .uplot .u-select {
+  background: var(--table-selection-bg);
+}
+
+.chart-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

@@ -1,0 +1,58 @@
+"""
+utilities
+=========
+
+This submodule provides unit conversion utilities to standardize physical quantities
+using Pint.
+
+Overview
+--------
+The `utilities` module serves as a central point for handling unit conversions, working with
+fluid properties, and standardizing physical quantities using the Pint library.
+
+Classes
+-------
+- UnitConverterInterface: Defines an interface for unit conversion.
+- ImprovedQuantity: Implements unit conversion logic.
+- Fluid: Represents a fluid and its physical properties.
+- Pressure: Gauge/absolute pressure with an explicit atmosphere.
+
+Functions
+---------
+- quantity_factory: A helper function for unit conversion.
+
+Constants
+---------
+- CONTEXT: Set of available conversion contexts.
+- STANDARD_UNITS: Dictionary defining standard units for various physical quantities.
+
+Examples
+--------
+Basic fluid representation and conversion:
+
+>>> from pump.utilities import Fluid, Q_
+>>> water = Fluid(name="Water", density=Q_(1000, "kg/m**3"))
+>>> print(water)
+Fluid(name=Water, density=1000 kilogram / meter ** 3)
+
+>>> from pump.utilities import quantity_factory, Q_
+>>> flow_rate = quantity_factory(Q_(10, "liter/minute"))
+>>> round(flow_rate.magnitude, 4), str(flow_rate.units)
+(0.6, 'meter ** 3 / hour')
+"""
+from . import unit_conversion, fluid, pressure, report, report_latex, report_html
+from .unit_conversion import *
+from .fluid import *
+from .pressure import *
+from .report import *
+from .report_latex import *
+from .report_html import *
+
+__all__ = list(
+    set(unit_conversion.__all__) |
+    set(fluid.__all__) |
+    set(pressure.__all__) |
+    set(report.__all__) |
+    set(report_latex.__all__) |
+    set(report_html.__all__)
+)

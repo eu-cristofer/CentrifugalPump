@@ -1,0 +1,46 @@
+{
+  "name": "pumpflow-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "tokens": "node scripts/tokens.mjs",
+    "predev": "node scripts/tokens.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/tokens.mjs",
+    "build": "vite build && node scripts/sw.mjs",
+    "check": "node scripts/tokens.mjs && tsc --noEmit && eslint . && vitest run",
+    "vendor": "node scripts/vendor.mjs",
+    "parity": "node scripts/parity.mjs",
+    "dev:lan": "vite --host",
+    "serve": "vite preview --host --port 8080 --strictPort"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.12.1",
+    "dompurify": "3.4.17",
+    "marked": "18.1.3",
+    "pyodide": "314.0.7",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "uplot": "1.6.32"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jsdom": "31.0.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  }
+}

@@ -1,0 +1,250 @@
+# API 610 / ISO 13709 acceptance criteria, one table per edition.
+#
+# Checked 2026-11-16 against the owner's licensed copies of the 8th, 11th and 12th
+# editions (local text conversions, never committed).  Each `source` names the
+# clauses.  `verified = true` covers the performance tolerances of that edition;
+# `unverified_parts` lists keys the text does not settle.  The 10th edition was not
+# available and stays verified = false (secondary sources).
+#
+# Efficiency is NOT a rated value in API 610 (8th Table 4-2 note; 11th/12th Table 16
+# note c), so no edition defines efficiency_tol_minus: efficiency is reported for
+# information.  A purchaser-specified efficiency tolerance is entered as an override
+# or by a client overlay.
+#
+# `shutoff_extrapolation_q_fraction` is a tool setting (when to flag the shut-off
+# head as extrapolated), not a standard value.
+#
+# [editions."N".npsh]: npshr_tol_plus = 0.0 is "Rated NPSH +0 %" (NPSH3 at the
+# rated point shall not exceed the quoted value).  API 610 has no NPSHa/NPSHr margin
+# rule; that comes from the client (see clients/n553.toml).
+
+standard = "api610"
+title = "API 610 / ISO 13709"
+
+[editions."8"]
+label = "API 610 8th edition"
+source = "API 610 8th ed. Table 4-2 Performance Tolerances: rated differential head 0-150 m -2/+5 %, 151-300 m -2/+3 %, >300 m -2/+2 %; shut-off 0-150 m +/-10 %, 151-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % (cumulative tolerances not acceptable, note b); rated NPSH +0 %; 'Efficiency is not a rating value'. Parallel operation: head rise to shut-off >= 10 % (2.1.11).; test speed within 3 % of rated unless otherwise agreed (4.3.3.2.3)."
+verified = true
+test_speed_tol = 0.03
+power_tol_plus = 0.04
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "150 m", tol_minus = 0.02, tol_plus = 0.05 },
+  { max_rated_head = "300 m", tol_minus = 0.02, tol_plus = 0.03 },
+  { max_rated_head = "inf m", tol_minus = 0.02, tol_plus = 0.02 },
+]
+shutoff_bands = [
+  { max_rated_head = "150 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."8".mechanical_run]
+min_duration = "4 h"
+source = "Vibration: API 610 8th ed. Table 2-5 (overhung and between-bearings pumps, bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region; limits are RMS only, true peak is for information (2.8.3.7 note, 4.3.3.3.1). The 8th edition has no high-speed allowance. Duration: the 8th edition defines NO mechanical running test; the 4 h run is a purchaser requirement (e.g. N-553 rev E -> API 610:2010 8.3.4.2.2). Confirm the duration against the purchase order."
+verified = false
+
+[[editions."8".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."8".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
+[editions."8".npsh]
+npshr_tol_plus = 0.0
+source = "API 610 8th ed. Table 4-2 rated NPSH +0 % and 4.3.4.1.3 (NPSHR at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
+verified = true
+
+[editions."8".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 8th ed. Table 2-5 (overhung and between-bearings pumps, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS; Table 2-6 (vertically suspended, thrust bearing housing or motor mounting flange): overall 5.0 mm/s RMS, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region within the allowable region; RMS only (2.8.3.7 note). Locations: Figures 2-8A / 2-8B. No high-speed allowance in this edition."
+verified = true
+
+[editions."8".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 8th ed. 2.1.12: preferred operating region 70-120 % of best-efficiency capacity; rated capacity within 80-110 %."
+verified = true
+
+[editions."10"]
+label = "API 610 10th edition"
+source = "head bands: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th' (10th: 0-150 m +5/-2 %, 151-300 m +3/-2 %, >300 m +/-2 %); shut-off 10/8/5 % and power +4 %: pre-S5 seeds corroborated by secondary sources; efficiency: no tolerance (not a rated value in the 8th, 11th and 12th editions; 10th not consulted). Not checked against the 10th-edition text.; test speed within 3 %: taken from the 8th/11th editions, 10th not consulted."
+verified = false
+test_speed_tol = 0.03
+power_tol_plus = 0.04
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "150 m", tol_minus = 0.02, tol_plus = 0.05 },
+  { max_rated_head = "300 m", tol_minus = 0.02, tol_plus = 0.03 },
+  { max_rated_head = "inf m", tol_minus = 0.02, tol_plus = 0.02 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."10".mechanical_run]
+min_duration = "4 h"
+source = "duration 4 h at rated flow and oil-temperature stabilisation: Amarinth technical bulletin MP2606-100 rev A (Dec-11), 'Testing procedures API 610 10th and 11th'; vibration (horizontal pumps, mm/s RMS, preferred region): overall 3.0 / discrete 2.0 (allowable region 3.9 / 2.6), same source, 10th and 11th editions. Caveats: limits are RMS (check whether the test sheet reports peak); API 610 speed/power adjustments for pumps above 3600 rpm or 300 kW per stage NOT applied."
+verified = false
+
+[[editions."10".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."10".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
+[editions."10".npsh]
+npshr_tol_plus = 0.0
+source = "rated NPSH +0 % taken from the 8th/11th/12th editions (Table 4-2 / Table 16); 10th-edition text not consulted. No API margin rule: use the client overlay."
+verified = false
+
+[editions."10".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "Taken from the 8th/11th/12th editions (identical values); 10th-edition text not consulted."
+verified = false
+
+[editions."10".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 preferred operating region 70–120 % of BEP flow per secondary sources (inspection-for-industry.com; Amarinth white paper) — not checked against the standard text"
+verified = false
+
+[editions."11"]
+label = "API 610 11th edition"
+source = "API 610 11th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.11).; test speed within 3 % of rated unless otherwise agreed (8.3.3.3 c)."
+verified = true
+test_speed_tol = 0.03
+power_tol_plus = 0.04
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."11".mechanical_run]
+min_duration = "4 h"
+source = "Duration: API 610 11th ed. 8.3.4.2.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 34 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
+verified = false
+
+[[editions."11".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."11".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
+[editions."11".npsh]
+npshr_tol_plus = 0.0
+source = "API 610 11th ed. Table 16 rated NPSH 0 % and 8.3.4.3 (NPSH3 at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
+verified = true
+
+[editions."11".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 11th ed. Table 8 (OH and BB, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS for pumps up to 3600 r/min and 300 kW per stage; Table 9 (VS): overall 5.0, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region; RMS only (6.9.3.4). Locations: Figures 31-33. High-speed pumps (above 3600 r/min or 300 kW per stage): Figure 34 allowance applied from [vibration.high_speed] (exponents reconstructed, unverified)."
+verified = false
+
+[editions."11".vibration.high_speed]
+# Figure 34: horizontal (Table 8: OH, BB) pumps above 3600 r/min or 300 kW per stage.
+base = "3.0 mm/s"
+cap = "4.5 mm/s"
+n_ref = "3600 rpm"
+p_ref = "300 kW"
+speed_exponent = 0.30
+power_exponent = 0.21
+discrete_ratio = 0.67
+source = "API 610 11th ed. Figure 34: v_u = 3.0 (n/3600)^0.30 (P/300)^0.21 mm/s RMS, limited to 4.5 mm/s; P = power at BEP of the rated impeller, relative density 1.0, per stage (P <= 300 kW uses 300; the result is kept between 3.0 and 4.5 mm/s: the figure's 'transition from 3.0 to 4.5 mm/s'; rounded to two significant figures); discrete frequencies v_f < 0.67 v_u (Note 2). The exponents are illegible in the local text conversion: 0.30 and 0.21 are reconstructed and cross-checked against the figure's curve positions (P >= 3000 kW reaches 4.5 mm/s near 2 800 r/min, P <= 300 kW near 13 900 r/min). Confirm against the printed figure."
+verified = false
+
+[editions."11".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 11th ed. 6.1.12: preferred operating region 70-120 % of BEP flow; rated flow within 80-110 %."
+verified = true
+
+[editions."12"]
+label = "API 610 12th edition"
+source = "API 610 12th ed. Table 16 Performance tolerances: rated differential head +/-3 % (all bands); shut-off 0-75 m +/-10 %, 75-300 m +/-8 %, >300 m +/-5 % (negative tolerance only if the curve still rises when a rising curve is specified, note a); rated power +4 % from all causes (cumulative tolerances not acceptable, note b); efficiency not a rated value unless specified by the purchaser (note c); rated NPSH 0 %. Parallel operation: head rise from rated point to shut-off >= 10 % (6.1.13 and the parallel-operation requirements of 6.1).; test speed within 3 % of rated unless otherwise agreed (8.3.3, paragraph after Table 16)."
+verified = true
+test_speed_tol = 0.03
+power_tol_plus = 0.04
+parallel_shutoff_min_ratio = 1.10
+shutoff_extrapolation_q_fraction = 0.05
+head_bands = [
+  { max_rated_head = "inf m", tol_minus = 0.03, tol_plus = 0.03 },
+]
+shutoff_bands = [
+  { max_rated_head = "75 m", tol_minus = 0.10, tol_plus = 0.10 },
+  { max_rated_head = "300 m", tol_minus = 0.08, tol_plus = 0.08 },
+  { max_rated_head = "inf m", tol_minus = 0.05, tol_plus = 0.05 },
+]
+
+[editions."12".mechanical_run]
+min_duration = "4 h"
+source = "Duration: API 610 12th ed. 8.3.4.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 35 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
+verified = false
+
+[[editions."12".mechanical_run.roles]]
+role = "vibration_filtered"
+max = "2.0 mm/s"
+
+[[editions."12".mechanical_run.roles]]
+role = "vibration_unfiltered"
+max = "3.0 mm/s"
+
+[editions."12".npsh]
+npshr_tol_plus = 0.0
+source = "API 610 12th ed. Table 16 rated NPSH 0 % and 8.3.4.3 (NPSH3 at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
+verified = true
+
+[editions."12".vibration]
+oh_bb_overall = "3.0 mm/s"
+oh_bb_filtered = "2.0 mm/s"
+vs_overall = "5.0 mm/s"
+vs_filtered = "3.4 mm/s"
+outside_por_increase = 0.30
+source = "API 610 12th ed. Table 8 (OH and BB, bearing housing): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS for pumps up to 3600 r/min and 300 kW per stage; Table 9 (VS): overall 5.0, discrete 3.4 mm/s RMS; +30 % outside the preferred operating region; RMS only. Locations: Figures 32-34. High-speed pumps (above 3600 r/min or 300 kW per stage): Figure 35 allowance applied from [vibration.high_speed] (exponents reconstructed, unverified)."
+verified = false
+
+[editions."12".vibration.high_speed]
+# Figure 35: horizontal (Table 8: OH, BB) pumps above 3600 r/min or 300 kW per stage.
+base = "3.0 mm/s"
+cap = "4.5 mm/s"
+n_ref = "3600 rpm"
+p_ref = "300 kW"
+speed_exponent = 0.30
+power_exponent = 0.21
+discrete_ratio = 0.67
+source = "API 610 12th ed. Figure 35: v_u = 3.0 (n/3600)^0.30 (P/300)^0.21 mm/s RMS, limited to 4.5 mm/s; P = power at BEP of the rated impeller, relative density 1.0, per stage (P <= 300 kW uses 300; the result is kept between 3.0 and 4.5 mm/s: the figure's 'transition from 3.0 to 4.5 mm/s'; rounded to two significant figures); discrete frequencies v_f < 0.67 v_u (Note 2). The exponents are illegible in the local text conversion: 0.30 and 0.21 are reconstructed and cross-checked against the figure's curve positions (P >= 3000 kW reaches 4.5 mm/s near 2 800 r/min, P <= 300 kW near 13 900 r/min). Confirm against the printed figure."
+verified = false
+
+[editions."12".selection]
+por_min = 0.70
+por_max = 1.20
+source = "API 610 12th ed. 6.1 (preferred operating region paragraph): preferred operating region 70-120 % of BEP flow; rated flow within 80-110 %."
+verified = true

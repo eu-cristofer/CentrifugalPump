@@ -1,0 +1,678 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "-X-X-X-\nNote: To update the Table of Contents, open the document in Word, right-click on the TOC, and select 'Update Field'.\n-X-X-X-"
+msgstr "-X-X-X-\nNota: Para atualizar o Sumário, abra o documento no Word, clique com o botão direito no Sumário e selecione 'Atualizar Campo'.\n-X-X-X-"
+
+msgid "8.3.3.4.3 The test data shall be fit to a spline or an appropriate polynomial (typically, not less than a third order) for head and for power using a least squares method. The resulting polynomial equation shall be stated on the head and power calculated. These values shall be corrected for speed, viscosity, and density (specific gravity).[..]"
+msgstr "8.3.3.4.3 Os dados do teste devem ser ajustados a um spline ou um polinômio apropriado (tipicamente, não inferior à terceira ordem) para altura manométrica e potência, usando um método de mínimos quadrados. A equação polinomial resultante deve ser declarada para a altura manométrica e a potência calculada. Esses valores devem ser corrigidos para rotação, viscosidade e densidade (gravidade específica).[..]"
+
+msgid "Actual"
+msgstr "Testado"
+
+msgid "Calculated Head and Power:"
+msgstr "Cálculo de Head Diferencial Total e Potência:"
+
+msgid "Design Point data:"
+msgstr "Dados do Ponto de Projeto:"
+
+msgid "Efficiency"
+msgstr "Eficiência"
+
+msgid "Equipment Description"
+msgstr "Descrição do Equipamento"
+
+msgid "Fabricante"
+msgstr "Fabricante"
+
+msgid "Flow Rate"
+msgstr "Vazão"
+
+msgid "Head"
+msgstr "Head"
+
+msgid "The following section presents the main characteristics of the equipment."
+msgstr "A seguir, apresentamos as principais características do equipamento."
+
+msgid "Here we present the key details regarding the development of the tests."
+msgstr "A seguir são apresentadas as principais informações relacionadas ao desenvolvimento dos testes."
+
+msgid "Here we can find the translation of the test results into data based on the specified speed of rotation (or frequency) and density."
+msgstr "Neste tópico é apresentada a conversão dos resultados do teste em dados estimados de performance com base na rotação e densidade especificadas."
+
+msgid "Manufacturer"
+msgstr "Fabricante"
+
+msgid "Maximum"
+msgstr "Máximo"
+
+msgid "Minimun"
+msgstr "Mínimo"
+
+msgid "Model"
+msgstr "Modelo"
+
+msgid "New document saved at"
+msgstr "Novo documento salvo em"
+
+msgid "Parameter"
+msgstr "Parâmetro"
+
+msgid "Performance Curve - Service Fluid"
+msgstr "Curva de Performance - Fluido de Trabalho"
+
+msgid "Performance Curve - Water"
+msgstr "Curva de Performance - Água"
+
+msgid "Performance test summary."
+msgstr "Sumário do teste de performance."
+
+msgid "Report"
+msgstr "Relatório"
+
+msgid "Serial Number"
+msgstr "Número de Série"
+
+msgid "Service"
+msgstr "Serviço"
+
+msgid "Template file not found:"
+msgstr "Arquivo de modelo não encontrado:"
+
+msgid "Test Data - "
+msgstr "Dados do Teste - "
+
+msgid "Test Results and Observations"
+msgstr "Resultados"
+
+msgid "Tests Development"
+msgstr "Desenvolvimento dos Testes"
+
+msgid "The computations in this section were performed in accordance with {standard}:"
+msgstr "Os cálculos apresentados nesta seção foram realizados de acordo com {standard}:"
+
+msgid "Acceptance criteria not yet verified against the standard text: {items}."
+msgstr "Critérios de aceitação ainda não verificados contra o texto da norma: {items}."
+
+msgid "The primary objective of the FAT is to ensure that the pump meets the required  mechanical, and performance criteria as defined in API 610 and the project specifications. The test procedures include mechanical run tests and performance verification, vibration analysis, and NPSH (Net Positive Suction Head) testing."
+msgstr "O principal objetivo do FAT é garantir que a bomba atenda aos critérios mecânicos e de desempenho exigidos, conforme definido na API 610 e nas especificações do projeto. Os procedimentos de teste incluem testes de funcionamento mecânico, verificação de desempenho, análise de vibração e teste de NPSH (Altura Líquida Positiva de Sucção)."
+
+msgid "This report documents the Factory Acceptance Test (FAT) performed on an API 610 centrifugal pump at the manufacturer's facility. The FAT was conducted to verify compliance with the technical specifications and contractual requirements before shipment."
+msgstr "Este relatório documenta o Teste de Aceitação em Fábrica (FAT) realizado em uma bomba centrífuga API 610 nas instalações do fabricante. O FAT foi conduzido com o objetivo de verificar a conformidade com as especificações técnicas e requisitos contratuais antes do envio."
+
+msgid "This report provides a detailed record of the test procedures, observed results, and compliance with the acceptance criteria. Any deviations, corrective actions, and final acceptance status are also documented to ensure transparency and traceability of the qualification process."
+msgstr "Este relatório fornece um registro detalhado dos procedimentos de teste adotados, resultados observados e conformidade com os critérios de aceitação. Quaisquer desvios, ações corretivas e status final de aceitação também são documentados para garantir transparência e rastreabilidade do processo de qualificação."
+
+msgid "Warning: Unable to add chart"
+msgstr "Aviso: Não foi possível adicionar o gráfico"
+
+msgid "Warning: Unable to set locale, using default."
+msgstr "Aviso: Não foi possível definir o idioma, usando o padrão."
+
+msgid "Introduction"
+msgstr "Introdução"
+
+msgid "Performance Curve"
+msgstr "Curva de Performance"
+
+msgid "Factory Acceptance Test Report"
+msgstr "Relatório de Teste de Aceitação em Fábrica"
+
+msgid "Generated on"
+msgstr "Gerado em"
+
+msgid "Overall verdict"
+msgstr "Resultado geral"
+
+msgid "APPROVED"
+msgstr "APROVADO"
+
+msgid "NOT APPROVED"
+msgstr "REPROVADO"
+
+msgid "NOT FULLY ASSESSED"
+msgstr "NÃO TOTALMENTE AVALIADO"
+
+msgid "Capacity"
+msgstr "Vazão"
+
+msgid "Breaking Power"
+msgstr "Potência"
+
+msgid "Hydraulic Power"
+msgstr "Potência Hidráulica"
+
+msgid "Rated Capacity"
+msgstr "Vazão Nominal"
+
+msgid "Density"
+msgstr "Massa Específica"
+
+msgid "Viscosity"
+msgstr "Viscosidade"
+
+msgid "Differential Head"
+msgstr "Head Diferencial"
+
+msgid "Head Shutoff"
+msgstr "Head no Shutoff"
+
+msgid "Npsha"
+msgstr "NPSH Disponível"
+
+msgid "Speed Of Rotation"
+msgstr "Rotação"
+
+msgid "Serial No."
+msgstr "Nº de Série"
+
+msgid "Type"
+msgstr "Tipo"
+
+msgid "Driver"
+msgstr "Acionador"
+
+msgid "Test bench"
+msgstr "Bancada de Teste"
+
+msgid "Mechanical running test"
+msgstr "Teste de funcionamento mecânico"
+
+msgid "Duration"
+msgstr "Duração"
+
+msgid "Channel"
+msgstr "Canal"
+
+msgid "Unit"
+msgstr "Unidade"
+
+msgid "Min"
+msgstr "Mín"
+
+msgid "Max"
+msgstr "Máx"
+
+msgid "Limit"
+msgstr "Limite"
+
+msgid "Status"
+msgstr "Situação"
+
+msgid "PASSED"
+msgstr "APROVADO"
+
+msgid "FAILED"
+msgstr "REPROVADO"
+
+msgid "PASSED (not fully assessed)"
+msgstr "APROVADO (avaliação incompleta)"
+
+msgid "not configured"
+msgstr "não configurado"
+
+msgid "PASS"
+msgstr "OK"
+
+msgid "FAIL"
+msgstr "FALHA"
+
+msgid "INFO"
+msgstr "INFO"
+
+msgid "Criteria source: {source}"
+msgstr "Fonte dos critérios: {source}"
+
+msgid "Mechanical running test limits not yet verified against the standard text."
+msgstr "Limites do teste de funcionamento mecânico ainda não verificados contra o texto da norma."
+
+msgid "Comparison"
+msgstr "Comparação"
+
+msgid "Reference"
+msgstr "Referência"
+
+msgid "Δ vs reference"
+msgstr "Δ vs referência"
+
+msgid "unverified limits"
+msgstr "limites não verificados"
+
+msgid "unverified criteria"
+msgstr "critérios não verificados"
+
+msgid "NPSH"
+msgstr "NPSH"
+
+msgid "NPSH available"
+msgstr "NPSH disponível"
+
+msgid "NPSH required"
+msgstr "NPSH requerido"
+
+msgid "Quoted NPSH required"
+msgstr "NPSH requerido cotado"
+
+msgid "Margin"
+msgstr "Margem"
+
+msgid "Ratio"
+msgstr "Razão"
+
+msgid "Viscosity correction (HI 9.6.7)"
+msgstr "Correção de viscosidade (HI 9.6.7)"
+
+msgid "Project"
+msgstr "Projeto"
+
+msgid "Client"
+msgstr "Cliente"
+
+msgid "Location"
+msgstr "Local"
+
+msgid "Test date"
+msgstr "Data do teste"
+
+msgid "Revision"
+msgstr "Revisão"
+
+msgid "Standard"
+msgstr "Norma"
+
+msgid "Deviations and open points"
+msgstr "Desvios e pendências"
+
+msgid "Signatures"
+msgstr "Assinaturas"
+
+msgid "Role"
+msgstr "Função"
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Signature"
+msgstr "Assinatura"
+
+msgid "Date"
+msgstr "Data"
+
+msgid "Vendor"
+msgstr "Fornecedor"
+
+msgid "Inspector"
+msgstr "Inspetor"
+
+msgid "Client witness"
+msgstr "Testemunha do cliente"
+
+# Test data summary (API 610 Annex M / 8th App. T)
+msgid "Test data summary"
+msgstr "Resumo dos dados de teste"
+
+msgid "edition"
+msgstr "edição"
+
+msgid "Annex M"
+msgstr "Anexo M"
+
+msgid "Appendix T"
+msgstr "Apêndice T"
+
+msgid "Acceptance criteria"
+msgstr "Critérios de aceitação"
+
+msgid "rated speed"
+msgstr "rotação nominal"
+
+msgid "Customer"
+msgstr "Cliente"
+
+msgid "Purchaser"
+msgstr "Comprador"
+
+msgid "Purchase order no."
+msgstr "Nº do pedido de compra"
+
+msgid "Item no."
+msgstr "Nº do item"
+
+msgid "Pump serial no."
+msgstr "Nº de série da bomba"
+
+msgid "Size and type"
+msgstr "Tamanho e tipo"
+
+msgid "No. of stages"
+msgstr "Nº de estágios"
+
+msgid "Curve no."
+msgstr "Nº da curva"
+
+msgid "Certified by (vendor representative)"
+msgstr "Certificado por (representante do fornecedor)"
+
+msgid "Witnessed by (purchaser representative)"
+msgstr "Testemunhado por (representante do comprador)"
+
+msgid "Overall hydraulic performance"
+msgstr "Desempenho hidráulico global"
+
+msgid "Rated"
+msgstr "Nominal"
+
+msgid "Tested (at rated flow)"
+msgstr "Testado (na vazão nominal)"
+
+msgid "Deviation"
+msgstr "Desvio"
+
+msgid "Acceptance tolerance"
+msgstr "Tolerância de aceitação"
+
+msgid "Flow"
+msgstr "Vazão"
+
+msgid "Power"
+msgstr "Potência"
+
+msgid "NPSH3"
+msgstr "NPSH3"
+
+msgid "Shut-off head"
+msgstr "Altura em shut-off"
+
+msgid "Speed"
+msgstr "Rotação"
+
+msgid "extrapolated"
+msgstr "extrapolado"
+
+msgid "Pump construction data"
+msgstr "Dados construtivos da bomba"
+
+msgid "Stage 1"
+msgstr "Estágio 1"
+
+msgid "Series stages"
+msgstr "Estágios em série"
+
+msgid "Impeller diameter (mm)"
+msgstr "Diâmetro do impelidor (mm)"
+
+msgid "Impeller pattern no."
+msgstr "Nº do modelo do impelidor"
+
+msgid "No. of vanes"
+msgstr "Nº de pás"
+
+msgid "Volute/diffuser pattern no."
+msgstr "Nº do modelo da voluta/difusor"
+
+msgid "Blade tip clearance (%)"
+msgstr "Folga na ponta das pás (%)"
+
+msgid "Mechanical performance"
+msgstr "Desempenho mecânico"
+
+msgid "Maximum vibration levels recorded within specified flow region"
+msgstr "Níveis máximos de vibração registrados na faixa de vazão especificada"
+
+msgid "Rated flow"
+msgstr "Vazão nominal"
+
+msgid "Preferred operating region"
+msgstr "Região de operação preferencial"
+
+msgid "Allowable operating region"
+msgstr "Região de operação admissível"
+
+msgid "Tested"
+msgstr "Testado"
+
+msgid "Specified"
+msgstr "Especificado"
+
+msgid "Drive end"
+msgstr "Lado acoplado"
+
+msgid "Non-drive end"
+msgstr "Lado não acoplado"
+
+msgid "Overall"
+msgstr "Global"
+
+msgid "Filtered"
+msgstr "Filtrado"
+
+msgid "Shaft displacement"
+msgstr "Deslocamento do eixo"
+
+msgid "All probes (mechanical run)"
+msgstr "Todos os sensores (teste mecânico)"
+
+msgid "Bearing temperatures"
+msgstr "Temperaturas dos mancais"
+
+msgid "Ambient temperature"
+msgstr "Temperatura ambiente"
+
+msgid "Oil sump / outlet temperature"
+msgstr "Temperatura do óleo (cárter / saída)"
+
+msgid "Oil temperature rise"
+msgstr "Elevação de temperatura do óleo"
+
+msgid "Maximum bearing temperature"
+msgstr "Temperatura máxima de mancal"
+
+msgid "Test curve"
+msgstr "Curva de teste"
+
+msgid "Rated point"
+msgstr "Ponto nominal"
+
+msgid "Bearing-housing velocity, mm/s RMS. True-peak values are not used for acceptance."
+msgstr "Velocidade na caixa de mancal, mm/s RMS. Valores de pico verdadeiro não são usados para aceitação."
+
+msgid "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow ({qlo:.2f}–{qhi:.2f} m³/h)."
+msgstr "Região de operação preferencial: {lo:g}–{hi:g} % da vazão de BEP ({qlo:.2f}–{qhi:.2f} m³/h)."
+
+msgid "Allowable region: every tested point except shut-off (the vendor's allowable-region limits are not in the project); specified = preferred-region limit + 30 %."
+msgstr "Região admissível: todos os pontos testados exceto shut-off (os limites da região admissível do fornecedor não constam do projeto); especificado = limite da região preferencial + 30 %."
+
+msgid "No vibration in the Test Points table: the rated-flow column is taken from the mechanical run."
+msgstr "Sem vibração na tabela de pontos de teste: a coluna de vazão nominal vem do teste mecânico."
+
+msgid "Blank fields are not recorded in the project: complete them by hand."
+msgstr "Campos em branco não constam do projeto: preencha-os à mão."
+
+msgid "Criteria not yet verified against the standard text: {items}."
+msgstr "Critérios ainda não verificados contra o texto da norma: {items}."
+msgid "API 610 {ordinal} edition"
+msgstr "API 610 {number}ª edição"
+
+# Vibration by API 610 pump type; high-speed chart
+msgid "Drive-end bearing housing"
+msgstr "Caixa de mancal do lado acoplado"
+
+msgid "Non-drive-end bearing housing"
+msgstr "Caixa de mancal do lado não acoplado"
+
+msgid "Driver mounting surface"
+msgstr "Superfície de montagem do acionador"
+
+msgid "Pump bearing housing"
+msgstr "Caixa de mancal da bomba"
+
+msgid "Gearbox housing"
+msgstr "Carcaça da caixa de engrenagens"
+
+msgid "Thrust bearing housing / motor mounting flange"
+msgstr "Caixa do mancal de escora / flange de montagem do motor"
+
+msgid "Pump type {ptype}: measured at the API 610 locations of that type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), {basis}."
+msgstr "Bomba tipo {ptype}: medida nos pontos da API 610 para esse tipo; limites {overall:.1f} / {filtered:.1f} mm/s (global / filtrado), {basis}."
+
+msgid "High-speed vibration limit (API 610 chart)"
+msgstr "Limite de vibração para alta rotação (gráfico da API 610)"
+
+msgid "Rotational speed"
+msgstr "Rotação"
+
+msgid "Overall vibration limit"
+msgstr "Limite de vibração global"
+
+msgid "This pump"
+msgstr "Esta bomba"
+
+msgid "stage"
+msgstr "estágio"
+
+
+# Annex M charts (Figures M.3 / M.4)
+
+msgid "Allowable operating region: not in the project"
+msgstr "Região operacional admissível: não consta no projeto"
+
+msgid "As rated"
+msgstr "Nominal"
+
+msgid "Calculated efficiency"
+msgstr "Eficiência calculada"
+
+msgid "Curve No."
+msgstr "Curva n.º"
+
+msgid "Flowrate"
+msgstr "Vazão"
+
+msgid "Impeller diameter"
+msgstr "Diâmetro do impelidor"
+
+msgid "Impeller eye area"
+msgstr "Área do olho do impelidor"
+
+msgid "Impeller no."
+msgstr "Impelidor n.º"
+
+msgid "Key"
+msgstr "Legenda"
+
+msgid "Kinematic viscosity"
+msgstr "Viscosidade cinemática"
+
+msgid "Max."
+msgstr "Máx."
+
+msgid "Min."
+msgstr "Mín."
+
+msgid "No vibration recorded in the Test Points table."
+msgstr "Nenhuma vibração registrada na tabela de pontos de teste."
+
+msgid "Pumped liquid"
+msgstr "Líquido bombeado"
+
+msgid "Relative density"
+msgstr "Densidade relativa"
+
+msgid "Speed, r/min"
+msgstr "Rotação, rpm"
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Test points and vibration (overall)"
+msgstr "Pontos de teste e vibração (global)"
+
+msgid "Test points and vibration against flow"
+msgstr "Pontos de teste e vibração em função da vazão"
+
+msgid "Vibration"
+msgstr "Vibração"
+
+msgid "allowable operating region of flow"
+msgstr "região operacional admissível de vazão"
+
+msgid "basic vibration limit"
+msgstr "limite básico de vibração"
+
+msgid "efficiency"
+msgstr "eficiência"
+
+msgid "efficiency, expressed in percentage"
+msgstr "eficiência, expressa em porcentagem"
+
+msgid "expressed in metres"
+msgstr "expressa em metros"
+
+msgid "filtered"
+msgstr "filtrada"
+
+msgid "flowrate"
+msgstr "vazão"
+
+msgid "flowrate, expressed in cubic metres per hour"
+msgstr "vazão, expressa em metros cúbicos por hora"
+
+msgid "head"
+msgstr "altura manométrica"
+
+msgid "head vs. flow curve"
+msgstr "curva altura × vazão"
+
+msgid "head, expressed in metres"
+msgstr "altura manométrica, expressa em metros"
+
+msgid "limit outside the preferred region"
+msgstr "limite fora da região preferencial"
+
+msgid "power"
+msgstr "potência"
+
+msgid "power, expressed in kilowatts"
+msgstr "potência, expressa em quilowatts"
+
+msgid "preferred operating region of flow"
+msgstr "região operacional preferencial de vazão"
+
+msgid "rated flow"
+msgstr "vazão nominal"
+
+msgid "rated operating point"
+msgstr "ponto de operação nominal"
+
+msgid "rated point"
+msgstr "ponto nominal"
+
+msgid "test point"
+msgstr "ponto de teste"
+
+msgid "tested flow range (no allowable region in the project)"
+msgstr "faixa de vazão testada (região admissível não consta no projeto)"
+
+msgid "vibration"
+msgstr "vibração"
+
+msgid "vibration vs. flow curve"
+msgstr "curva vibração × vazão"
+
+msgid "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+msgstr "Tolerâncias alteradas pelo usuário (padrão do critério de aceitação entre parênteses)"
+
+msgid "shut-off head"
+msgstr "altura em shut-off"
+
+msgid "not set"
+msgstr "não definida"
+
+msgid "Reason"
+msgstr "Motivo"
+
+msgid "not given"
+msgstr "não informado"

@@ -1,0 +1,612 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Acceptance Tests"
+msgstr "Acceptance Tests"
+
+msgid "Pump B"
+msgstr "Pump B"
+
+msgid "This is a sample paragraph added to the document."
+msgstr "This is a sample paragraph added to the document."
+
+msgid "Test Results"
+msgstr "Test Results"
+
+msgid "CONCLUSION"
+msgstr "CONCLUSION"
+
+msgid "This is the conclusion of the document."
+msgstr "This is the conclusion of the document."
+
+msgid "New document saved at"
+msgstr "New document saved at"
+
+msgid "Introduction"
+msgstr "Introduction"
+
+msgid "Performance Curve"
+msgstr "Performance Curve"
+
+msgid "Factory Acceptance Test Report"
+msgstr "Factory Acceptance Test Report"
+
+msgid "Generated on"
+msgstr "Generated on"
+
+msgid "Overall verdict"
+msgstr "Overall verdict"
+
+msgid "APPROVED"
+msgstr "APPROVED"
+
+msgid "NOT APPROVED"
+msgstr "NOT APPROVED"
+
+msgid "NOT FULLY ASSESSED"
+msgstr ""
+
+msgid "Capacity"
+msgstr "Capacity"
+
+msgid "Head"
+msgstr "Head"
+
+msgid "Breaking Power"
+msgstr "Breaking Power"
+
+msgid "Hydraulic Power"
+msgstr "Hydraulic Power"
+
+msgid "Rated Capacity"
+msgstr "Rated Capacity"
+
+msgid "Density"
+msgstr "Density"
+
+msgid "Viscosity"
+msgstr "Viscosity"
+
+msgid "Differential Head"
+msgstr "Differential Head"
+
+msgid "Head Shutoff"
+msgstr "Head Shutoff"
+
+msgid "Npsha"
+msgstr "Npsha"
+
+msgid "Service"
+msgstr "Service"
+
+msgid "Speed Of Rotation"
+msgstr "Speed Of Rotation"
+
+msgid "Manufacturer"
+msgstr "Manufacturer"
+
+msgid "Model"
+msgstr "Model"
+
+msgid "Serial No."
+msgstr "Serial No."
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Driver"
+msgstr "Driver"
+
+msgid "Test bench"
+msgstr "Test bench"
+
+msgid "The computations in this section were performed in accordance with {standard}:"
+msgstr "The computations in this section were performed in accordance with {standard}:"
+
+msgid "Acceptance criteria not yet verified against the standard text: {items}."
+msgstr "Acceptance criteria not yet verified against the standard text: {items}."
+
+msgid "Mechanical running test"
+msgstr "Mechanical running test"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Channel"
+msgstr "Channel"
+
+msgid "Unit"
+msgstr "Unit"
+
+msgid "Min"
+msgstr "Min"
+
+msgid "Max"
+msgstr "Max"
+
+msgid "Limit"
+msgstr "Limit"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "PASSED"
+msgstr "PASSED"
+
+msgid "FAILED"
+msgstr "FAILED"
+
+msgid "PASSED (not fully assessed)"
+msgstr "PASSED (not fully assessed)"
+
+msgid "not configured"
+msgstr "not configured"
+
+msgid "PASS"
+msgstr "PASS"
+
+msgid "FAIL"
+msgstr "FAIL"
+
+msgid "INFO"
+msgstr "INFO"
+
+msgid "Criteria source: {source}"
+msgstr "Criteria source: {source}"
+
+msgid "Mechanical running test limits not yet verified against the standard text."
+msgstr "Mechanical running test limits not yet verified against the standard text."
+
+msgid "Comparison"
+msgstr "Comparison"
+
+msgid "Reference"
+msgstr "Reference"
+
+msgid "Δ vs reference"
+msgstr "Δ vs reference"
+
+msgid "unverified limits"
+msgstr "unverified limits"
+
+msgid "unverified criteria"
+msgstr "unverified criteria"
+
+msgid "NPSH"
+msgstr "NPSH"
+
+msgid "NPSH available"
+msgstr "NPSH available"
+
+msgid "NPSH required"
+msgstr "NPSH required"
+
+msgid "Quoted NPSH required"
+msgstr ""
+
+msgid "Margin"
+msgstr "Margin"
+
+msgid "Ratio"
+msgstr "Ratio"
+
+msgid "Viscosity correction (HI 9.6.7)"
+msgstr "Viscosity correction (HI 9.6.7)"
+
+msgid "Project"
+msgstr "Project"
+
+msgid "Client"
+msgstr "Client"
+
+msgid "Location"
+msgstr "Location"
+
+msgid "Test date"
+msgstr "Test date"
+
+msgid "Revision"
+msgstr "Revision"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Deviations and open points"
+msgstr "Deviations and open points"
+
+msgid "Signatures"
+msgstr "Signatures"
+
+msgid "Role"
+msgstr "Role"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Signature"
+msgstr "Signature"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Vendor"
+msgstr "Vendor"
+
+msgid "Inspector"
+msgstr "Inspector"
+
+msgid "Client witness"
+msgstr "Client witness"
+
+# Test data summary (API 610 Annex M / 8th App. T)
+msgid "Test data summary"
+msgstr ""
+
+msgid "edition"
+msgstr ""
+
+msgid "Annex M"
+msgstr ""
+
+msgid "Appendix T"
+msgstr ""
+
+msgid "Acceptance criteria"
+msgstr ""
+
+msgid "rated speed"
+msgstr ""
+
+msgid "Customer"
+msgstr ""
+
+msgid "Purchaser"
+msgstr ""
+
+msgid "Purchase order no."
+msgstr ""
+
+msgid "Item no."
+msgstr ""
+
+msgid "Pump serial no."
+msgstr ""
+
+msgid "Size and type"
+msgstr ""
+
+msgid "No. of stages"
+msgstr ""
+
+msgid "Curve no."
+msgstr ""
+
+msgid "Certified by (vendor representative)"
+msgstr ""
+
+msgid "Witnessed by (purchaser representative)"
+msgstr ""
+
+msgid "Overall hydraulic performance"
+msgstr ""
+
+msgid "Rated"
+msgstr ""
+
+msgid "Tested (at rated flow)"
+msgstr ""
+
+msgid "Deviation"
+msgstr ""
+
+msgid "Acceptance tolerance"
+msgstr ""
+
+msgid "Flow"
+msgstr ""
+
+msgid "Power"
+msgstr ""
+
+msgid "Efficiency"
+msgstr ""
+
+msgid "NPSH3"
+msgstr ""
+
+msgid "Shut-off head"
+msgstr ""
+
+msgid "Speed"
+msgstr ""
+
+msgid "extrapolated"
+msgstr ""
+
+msgid "Pump construction data"
+msgstr ""
+
+msgid "Stage 1"
+msgstr ""
+
+msgid "Series stages"
+msgstr ""
+
+msgid "Impeller diameter (mm)"
+msgstr ""
+
+msgid "Impeller pattern no."
+msgstr ""
+
+msgid "No. of vanes"
+msgstr ""
+
+msgid "Volute/diffuser pattern no."
+msgstr ""
+
+msgid "Blade tip clearance (%)"
+msgstr ""
+
+msgid "Mechanical performance"
+msgstr ""
+
+msgid "Maximum vibration levels recorded within specified flow region"
+msgstr ""
+
+msgid "Rated flow"
+msgstr ""
+
+msgid "Preferred operating region"
+msgstr ""
+
+msgid "Allowable operating region"
+msgstr ""
+
+msgid "Tested"
+msgstr ""
+
+msgid "Specified"
+msgstr ""
+
+msgid "Drive end"
+msgstr ""
+
+msgid "Non-drive end"
+msgstr ""
+
+msgid "Overall"
+msgstr ""
+
+msgid "Filtered"
+msgstr ""
+
+msgid "Shaft displacement"
+msgstr ""
+
+msgid "All probes (mechanical run)"
+msgstr ""
+
+msgid "Bearing temperatures"
+msgstr ""
+
+msgid "Ambient temperature"
+msgstr ""
+
+msgid "Oil sump / outlet temperature"
+msgstr ""
+
+msgid "Oil temperature rise"
+msgstr ""
+
+msgid "Maximum bearing temperature"
+msgstr ""
+
+msgid "Test curve"
+msgstr ""
+
+msgid "Rated point"
+msgstr ""
+
+msgid "Bearing-housing velocity, mm/s RMS. True-peak values are not used for acceptance."
+msgstr ""
+
+msgid "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow ({qlo:.2f}–{qhi:.2f} m³/h)."
+msgstr ""
+
+msgid "Allowable region: every tested point except shut-off (the vendor's allowable-region limits are not in the project); specified = preferred-region limit + 30 %."
+msgstr ""
+
+msgid "No vibration in the Test Points table: the rated-flow column is taken from the mechanical run."
+msgstr ""
+
+msgid "Blank fields are not recorded in the project: complete them by hand."
+msgstr ""
+
+msgid "Criteria not yet verified against the standard text: {items}."
+msgstr ""
+msgid "API 610 {ordinal} edition"
+msgstr ""
+
+# Vibration by API 610 pump type; high-speed chart
+msgid "Drive-end bearing housing"
+msgstr ""
+
+msgid "Non-drive-end bearing housing"
+msgstr ""
+
+msgid "Driver mounting surface"
+msgstr ""
+
+msgid "Pump bearing housing"
+msgstr ""
+
+msgid "Gearbox housing"
+msgstr ""
+
+msgid "Thrust bearing housing / motor mounting flange"
+msgstr ""
+
+msgid "Pump type {ptype}: measured at the API 610 locations of that type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), {basis}."
+msgstr ""
+
+msgid "High-speed vibration limit (API 610 chart)"
+msgstr ""
+
+msgid "Rotational speed"
+msgstr ""
+
+msgid "Overall vibration limit"
+msgstr ""
+
+msgid "This pump"
+msgstr ""
+
+msgid "stage"
+msgstr ""
+
+
+# Annex M charts (Figures M.3 / M.4)
+
+msgid "Allowable operating region: not in the project"
+msgstr ""
+
+msgid "As rated"
+msgstr ""
+
+msgid "Calculated efficiency"
+msgstr ""
+
+msgid "Curve No."
+msgstr ""
+
+msgid "Flowrate"
+msgstr ""
+
+msgid "Impeller diameter"
+msgstr ""
+
+msgid "Impeller eye area"
+msgstr ""
+
+msgid "Impeller no."
+msgstr ""
+
+msgid "Key"
+msgstr ""
+
+msgid "Kinematic viscosity"
+msgstr ""
+
+msgid "Max."
+msgstr ""
+
+msgid "Min."
+msgstr ""
+
+msgid "No vibration recorded in the Test Points table."
+msgstr ""
+
+msgid "Pumped liquid"
+msgstr ""
+
+msgid "Relative density"
+msgstr ""
+
+msgid "Speed, r/min"
+msgstr ""
+
+msgid "Temperature"
+msgstr ""
+
+msgid "Test points and vibration (overall)"
+msgstr ""
+
+msgid "Test points and vibration against flow"
+msgstr ""
+
+msgid "Vibration"
+msgstr ""
+
+msgid "allowable operating region of flow"
+msgstr ""
+
+msgid "basic vibration limit"
+msgstr ""
+
+msgid "efficiency"
+msgstr ""
+
+msgid "efficiency, expressed in percentage"
+msgstr ""
+
+msgid "expressed in metres"
+msgstr ""
+
+msgid "filtered"
+msgstr ""
+
+msgid "flowrate"
+msgstr ""
+
+msgid "flowrate, expressed in cubic metres per hour"
+msgstr ""
+
+msgid "head"
+msgstr ""
+
+msgid "head vs. flow curve"
+msgstr ""
+
+msgid "head, expressed in metres"
+msgstr ""
+
+msgid "limit outside the preferred region"
+msgstr ""
+
+msgid "power"
+msgstr ""
+
+msgid "power, expressed in kilowatts"
+msgstr ""
+
+msgid "preferred operating region of flow"
+msgstr ""
+
+msgid "rated flow"
+msgstr ""
+
+msgid "rated operating point"
+msgstr ""
+
+msgid "rated point"
+msgstr ""
+
+msgid "test point"
+msgstr ""
+
+msgid "tested flow range (no allowable region in the project)"
+msgstr ""
+
+msgid "vibration"
+msgstr ""
+
+msgid "vibration vs. flow curve"
+msgstr ""
+
+msgid "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+msgstr "Tolerances overridden by the user (acceptance-criteria default in brackets)"
+
+msgid "shut-off head"
+msgstr "shut-off head"
+
+msgid "not set"
+msgstr "not set"
+
+msgid "Reason"
+msgstr "Reason"
+
+msgid "not given"
+msgstr "not given"

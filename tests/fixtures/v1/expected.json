@@ -1,0 +1,433 @@
+{
+ "P-9003.pumpflow": {
+  "rated_point-2": [
+   "rated_point",
+   "ok",
+   "P-9003 · 833 m³/h · 73 m · 1750 rpm"
+  ]
+ },
+ "P-9001.pumpflow": {
+  "fluid-10": [
+   "fluid",
+   "ok",
+   "Test fluid · 997.0 kg/m³ · 0.893 cSt"
+  ],
+  "fluid-9": [
+   "fluid",
+   "ok",
+   "Wash water · 986.6 kg/m³ · 0.525 cSt"
+  ],
+  "rated_point-8": [
+   "rated_point",
+   "ok",
+   "P-9001 · 9.8 m³/h · 333.8 m · 1720 rpm · fluid✓"
+  ]
+ },
+ "P-9001A_MRT_reference.pumpflow": {
+  "check_a": [
+   "compliance",
+   "ok",
+   "P-9001A · APPROVED ✓",
+   [
+    [
+     "Head",
+     "339.5439871291028",
+     "327.12",
+     "340.48",
+     true
+    ],
+    [
+     "Power",
+     "24.60694716522438",
+     "None",
+     "27.98",
+     true
+    ],
+    [
+     "Efficiency",
+     "36.79907512615413",
+     "None",
+     "None",
+     true
+    ],
+    [
+     "Shutoff Head",
+     "367.35020503238155",
+     "339.5",
+     "375.24",
+     true
+    ],
+    [
+     "Test speed",
+     "10301.0",
+     "9905.64",
+     "10518.36",
+     true
+    ]
+   ]
+  ],
+  "check_b": [
+   "compliance",
+   "idle",
+   "Waiting for model + rated point"
+  ],
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-9001A · 6 pts · → 10212 rpm"
+  ],
+  "corr_b": [
+   "correction",
+   "idle",
+   "Waiting for test points"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-9001A · deg-3 +spline · R²(H)=0.9991"
+  ],
+  "fit_b": [
+   "curve_fit",
+   "idle",
+   "Waiting for corrected curve"
+  ],
+  "fluid_rated": [
+   "fluid",
+   "ok",
+   "Wash water (rated) · SG 0.999 · 0.52 cSt"
+  ],
+  "note": [
+   "markdown_note",
+   "ok",
+   "P-9001 FAT — witness reference"
+  ],
+  "plot_a": [
+   "performance_plot",
+   "ok",
+   "P-9001A · plotted · rated marked"
+  ],
+  "plot_b": [
+   "performance_plot",
+   "idle",
+   "Waiting for fitted model"
+  ],
+  "rated": [
+   "rated_point",
+   "ok",
+   "P-9001 · 9.8 m³/h · 333.8 m · 10212 rpm · fluid✓"
+  ],
+  "report": [
+   "report_export",
+   "ok",
+   "1 pump · APPROVED ✓"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-9001A · 6 points · no shut-off pt"
+  ],
+  "test_b": [
+   "test_points",
+   "invalid",
+   "Row 1: speed N is missing."
+  ]
+ },
+ "Fluid.pumpflow": {
+  "fluid-1": [
+   "fluid",
+   "ok",
+   "Acid Water @ 35°C · 994.0 kg/m³ · 0.723 cSt"
+  ]
+ },
+ "example_1.pumpflow": {
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-1001A · 6 pts · → 2000 rpm · forced"
+  ],
+  "correction-10": [
+   "correction",
+   "ok",
+   "P-1001A · 6 pts · → 1750 rpm · forced"
+  ],
+  "curve_fit-11": [
+   "curve_fit",
+   "ok",
+   "P-1001A · deg-3 +spline · R²(H)=1.0000"
+  ],
+  "explore_plot-9": [
+   "explore_plot",
+   "ok",
+   "0 pts · 0 measured · 12 corrected · 2 curves"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-1001A · deg-3 +spline · R²(H)=1.0000"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-1001A · 6 points · no shut-off pt"
+  ]
+ },
+ "explore_performance.pumpflow": {
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-9002A · 6 pts · → 1750 rpm"
+  ],
+  "explore": [
+   "explore_plot",
+   "ok",
+   "2 pts · 6 measured · 0 corrected · 1 curves"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-9002A · deg-3 +spline · R²(H)=0.9991"
+  ],
+  "pt_alt": [
+   "point",
+   "ok",
+   "Alt duty · Q=950 · H=62"
+  ],
+  "pt_guar": [
+   "point",
+   "ok",
+   "Guarantee · Q=833 · H=73"
+  ],
+  "rated": [
+   "rated_point",
+   "ok",
+   "P-9002 · 833 m³/h · 73 m · 1750 rpm"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-9002A · 6 points · no shut-off pt"
+  ]
+ },
+ "sample_project.pumpflow": {
+  "check_a": [
+   "compliance",
+   "reject",
+   "P-9002A · REJECTED ✗: 1 out of tolerance",
+   [
+    [
+     "Head",
+     "73.54110095296038",
+     "70.81",
+     "75.19",
+     true
+    ],
+    [
+     "Power",
+     "203.70022423789686",
+     "None",
+     "262.08",
+     true
+    ],
+    [
+     "Efficiency",
+     "60.346345734456975",
+     "None",
+     "None",
+     true
+    ],
+    [
+     "Shutoff Head",
+     "130.59304549362517",
+     "105.3",
+     "128.7",
+     false
+    ],
+    [
+     "Test speed",
+     "1801.0",
+     "1697.5",
+     "1802.5",
+     true
+    ]
+   ]
+  ],
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-9002A · 6 pts · → 1750 rpm"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-9002A · deg-3 +spline · R²(H)=0.9991"
+  ],
+  "plot_a": [
+   "performance_plot",
+   "ok",
+   "P-9002A · plotted · rated marked"
+  ],
+  "rated": [
+   "rated_point",
+   "ok",
+   "P-9002 · 833 m³/h · 73 m · 1750 rpm"
+  ],
+  "report": [
+   "report_export",
+   "reject",
+   "1 pump · REJECTED ✗"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-9002A · 6 points · no shut-off pt"
+  ]
+ },
+ "single_pump_fat_hc.pumpflow": {
+  "check_a": [
+   "compliance",
+   "reject",
+   "P-9002A · REJECTED ✗: 1 out of tolerance",
+   [
+    [
+     "Head",
+     "73.54110095296038",
+     "70.81",
+     "75.19",
+     true
+    ],
+    [
+     "Power",
+     "203.70022423789686",
+     "None",
+     "262.08",
+     true
+    ],
+    [
+     "Efficiency",
+     "60.346345734456975",
+     "None",
+     "None",
+     true
+    ],
+    [
+     "Shutoff Head",
+     "130.59304549362517",
+     "105.3",
+     "128.7",
+     false
+    ],
+    [
+     "Test speed",
+     "1801.0",
+     "1697.5",
+     "1802.5",
+     true
+    ]
+   ]
+  ],
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-9002A · 6 pts · → 1750 rpm"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-9002A · deg-3 +spline · R²(H)=0.9991"
+  ],
+  "plot_a": [
+   "performance_plot",
+   "ok",
+   "P-9002A · plotted · rated marked"
+  ],
+  "rated": [
+   "rated_point",
+   "ok",
+   "P-9002 · 833 m³/h · 73 m · 1750 rpm"
+  ],
+  "report": [
+   "report_export",
+   "reject",
+   "1 pump · REJECTED ✗"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-9002A · 6 points · no shut-off pt"
+  ]
+ },
+ "water_pump_curve_report.pumpflow": {
+  "check_a": [
+   "compliance",
+   "ok",
+   "P-1001A · APPROVED ✓",
+   [
+    [
+     "Head",
+     "99.9074633507386",
+     "97.0",
+     "103.0",
+     true
+    ],
+    [
+     "Power",
+     "145.42500828302468",
+     "None",
+     "153.92",
+     true
+    ],
+    [
+     "Efficiency",
+     "75.28316633549302",
+     "None",
+     "None",
+     true
+    ],
+    [
+     "Shutoff Head",
+     "129.89409201742856",
+     "119.6",
+     "140.4",
+     true
+    ],
+    [
+     "Test speed",
+     "1481.0",
+     "1435.6",
+     "1524.4",
+     true
+    ]
+   ]
+  ],
+  "corr_a": [
+   "correction",
+   "ok",
+   "P-1001A · 6 pts · → 1480 rpm"
+  ],
+  "fit_a": [
+   "curve_fit",
+   "ok",
+   "P-1001A · deg-3 +spline · R²(H)=1.0000"
+  ],
+  "plot_a": [
+   "performance_plot",
+   "ok",
+   "P-1001A · plotted · rated marked"
+  ],
+  "rated": [
+   "rated_point",
+   "ok",
+   "P-1001 · 400 m³/h · 100 m · 1480 rpm"
+  ],
+  "report": [
+   "report_export",
+   "ok",
+   "1 pump · APPROVED ✓"
+  ],
+  "test_a": [
+   "test_points",
+   "ok",
+   "P-1001A · 6 points · no shut-off pt"
+  ]
+ }
+}

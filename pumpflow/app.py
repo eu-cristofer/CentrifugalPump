@@ -1,0 +1,628 @@
+"""
+app
+===
+
+The PumpFlow main window: a node toolbox, the reactive canvas, the menu/toolbar
+for project + data-file IO, and the default pre-wired pipeline shipped on first
+launch (UI_SPEC §2).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from PySide6.QtCore import QPointF, QTimer, Qt
+from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtWidgets import (
+    QDockWidget,
+    QFileDialog,
+    QFrame,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
+from . import units
+from .canvas.scene import GraphScene
+from .canvas.view import GraphView
+from .nodes import make_node
+from .nodes.registry import grouped_node_kinds
+from .nodes.test_points import canonical_columns, testset_settings
+from .persistence import (
+    json_from_signals,
+    rated_from_json,
+    read_json,
+    testset_from_json,
+    write_json,
+)
+from .sample_data import SECOND_PUMP_POINTS, SINGLE_PUMP_JSON
+from .style import app_qss, init_fonts
+from .welcome import WelcomeDialog, save_recent
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PumpFlow — API 610 Pump Performance Workbench")
+        self.resize(1320, 860)
+
+        # Path of the last saved / opened file; None when unsaved.
+        self._current_path: Path | None = None
+        # True when the canvas has changes not yet written to disk.
+        self._dirty: bool = False
+
+        # Open property dialogs, keyed by node logic — one modeless window per node.
+        self._open_dialogs: dict = {}
+
+        self.scene = GraphScene(node_factory=make_node)
+        self.scene.dialog_requested.connect(self._open_dialog)
+        self.scene.node_removed.connect(self._close_dialog_for)
+        self.view = GraphView(self.scene)
+        self.setCentralWidget(self.view)
+
+        self._build_menu()
+        self._build_toolbox()
+        self.statusBar().showMessage("Ready")
+
+        # Connect dirty-tracking before the first pipeline is built so that any
+        # canvas loaded via the welcome dialog (or build_default_pipeline) is
+        # covered.  The welcome dialog itself calls _mark_clean after loading.
+        self.scene.graph_changed.connect(self._mark_dirty)
+        # Fire after the event loop starts so the main window is fully painted
+        # before the modal dialog appears on top of it.
+        QTimer.singleShot(0, self._show_welcome)
+
+    # ------------------------------------------------------------------ menu
+    def _build_menu(self) -> None:
+        bar = self.menuBar()
+
+        m_file = bar.addMenu("&File")
+        self._act(m_file, "New (empty canvas)", self.new_project, "Ctrl+N")
+        self._act(m_file, "Open project (.pumpflow)…", self.open_project, "Ctrl+O")
+        self._act(m_file, "Save project", self.save_project, "Ctrl+S")
+        self._act(m_file, "Save project as (.pumpflow)…", self.save_project_as, "Ctrl+Shift+S")
+        m_file.addSeparator()
+        self._act(m_file, "Import data file (.json)…", self.import_data_file)
+        self._act(m_file, "Export data file (.json)…", self.export_data_file)
+        m_file.addSeparator()
+        self._act(m_file, "Quit", self.close, "Ctrl+Q")
+
+        m_add = bar.addMenu("&Add node")
+        for group, kinds in grouped_node_kinds():
+            m_add.addSection(group.replace("&", "&&"))
+            for kind, title, glyph in kinds:
+                self._act(
+                    m_add,
+                    f"{glyph}  {title}",
+                    lambda _=False, k=kind: self.add_node_centered(k),
+                )
+
+        m_canvas = bar.addMenu("&Canvas")
+        self._act(m_canvas, "Recompute graph", self.scene.evaluate, "F5")
+        self._act(m_canvas, "Add Pump B branch (A/B demo)", self.add_second_pump_branch)
+        self._act(m_canvas, "Reset view", self._reset_view)
+
+        # Project-level unit preset (multi-unit philosophy): chooses the display
+        # units fresh fields open in. Existing fields keep their explicit choice.
+        m_units = bar.addMenu("&Units")
+        self._unit_group = QActionGroup(self)
+        self._unit_group.setExclusive(True)
+        self._unit_actions: dict[str, QAction] = {}
+        for key, label in (
+            ("SI", "SI  (m³/h · m · kW)"),
+            ("US", "US customary  (US GPM · ft · hp)"),
+            ("custom", "Custom  (per-field defaults)"),
+        ):
+            act = QAction(label, self, checkable=True)
+            act.triggered.connect(lambda _=False, k=key: self._set_unit_preset(k))
+            self._unit_group.addAction(act)
+            m_units.addAction(act)
+            self._unit_actions[key] = act
+        self._sync_units_menu()
+
+    def _set_unit_preset(self, key: str) -> None:
+        """Switch the project's display-unit preset (File-level preference)."""
+        units.PREFS.set_preset(key)
+        self._sync_units_menu()
+        self._mark_dirty()
+        self.statusBar().showMessage(
+            f"Project units: {key} — applies to newly added fields", 4000
+        )
+
+    def _sync_units_menu(self) -> None:
+        """Reflect the active ``units.PREFS`` preset in the Units menu check."""
+        act = getattr(self, "_unit_actions", {}).get(units.PREFS.preset)
+        if act is not None:
+            act.setChecked(True)
+
+    def _act(self, menu, text, slot, shortcut=None) -> QAction:
+        act = QAction(text, self)
+        act.triggered.connect(slot)
+        if shortcut:
+            act.setShortcut(shortcut)
+        menu.addAction(act)
+        return act
+
+    # ----------------------------------------------------------- dirty state
+    def _mark_dirty(self) -> None:
+        """
+        Flag the session as having unsaved changes.
+
+        Appends an asterisk to the window title so the user has a persistent
+        visual cue that the project has not been saved.
+
+        Notes
+        -----
+        Connected to ``GraphScene.graph_changed`` after the initial pipeline
+        build so the startup state is never treated as unsaved work.
+        """
+        self._dirty = True
+        title = self.windowTitle()
+        if not title.endswith(" *"):
+            self.setWindowTitle(title + " *")
+
+    def _mark_clean(self) -> None:
+        """
+        Clear the unsaved-changes flag.
+
+        Removes the asterisk appended by :meth:`_mark_dirty` so the title
+        reflects that the project is in sync with disk.
+        """
+        self._dirty = False
+        self.setWindowTitle(self.windowTitle().removesuffix(" *"))
+
+    def _maybe_save(self) -> bool:
+        """
+        Guard destructive actions with a Save / Discard / Cancel prompt.
+
+        Presents a modal dialog only when there are unsaved changes
+        (``self._dirty is True``).  If the user chooses **Save** but then
+        cancels the file-picker, the method returns ``False`` so the caller
+        does not proceed with the destructive action.
+
+        Returns
+        -------
+        bool
+            ``True`` if the caller may safely continue (no dirty state, or the
+            user chose Discard, or the project was saved successfully).
+            ``False`` if the user clicked **Cancel** or dismissed the dialog.
+        """
+        if not self._dirty:
+            return True
+        reply = QMessageBox.question(
+            self,
+            "Unsaved changes",
+            "The current project has unsaved changes.\n\nSave before continuing?",
+            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+            QMessageBox.Save,
+        )
+        if reply == QMessageBox.Save:
+            self.save_project()
+            # If the user cancelled the file-picker, _dirty is still True.
+            return not self._dirty
+        if reply == QMessageBox.Discard:
+            return True
+        return False  # Cancel
+
+    # ----------------------------------------------------------- new project
+    def new_project(self) -> None:
+        """
+        Create a blank canvas (File > New).
+
+        Prompts to save unsaved changes before clearing the canvas.  On
+        confirmation the scene is replaced with an empty graph, the current
+        path is cleared, and the window title is reset to clean.
+
+        Notes
+        -----
+        Unlike :meth:`build_default_pipeline`, this method produces a truly
+        empty canvas with no pre-wired nodes so the user starts from scratch.
+        """
+        if not self._maybe_save():
+            return
+        self.scene.load_dict({"nodes": [], "edges": []})
+        self._sync_units_menu()  # empty doc reset units.PREFS to the SI default
+        self._current_path = None
+        self._reset_view()
+        self._mark_clean()
+        self.statusBar().showMessage("New project — canvas is empty", 4000)
+
+    # ---------------------------------------------------------- close guard
+    def closeEvent(self, event) -> None:
+        """
+        Intercept the window close event to guard unsaved work.
+
+        Parameters
+        ----------
+        event : QCloseEvent
+            The close event issued by Qt.  Accepted when the user confirms or
+            there is nothing to save; ignored (window stays open) on Cancel.
+        """
+        if self._maybe_save():
+            # Dispose any independent (parentless) property windows so the app
+            # actually quits instead of lingering on their open windows.
+            for dlg in list(self._open_dialogs.values()):
+                dlg.close()
+            event.accept()
+        else:
+            event.ignore()
+
+    # ---------------------------------------------------------- welcome flow
+    def _show_welcome(self) -> None:
+        """
+        Display the start-screen dialog and act on the user's choice.
+
+        Called once via ``QTimer.singleShot(0, …)`` so the main window is
+        fully painted before the modal appears.  Falls back to
+        :meth:`build_default_pipeline` when the user dismisses without
+        choosing, preserving the pre-existing startup behaviour.
+
+        Notes
+        -----
+        The ``"open"`` branch covers both user-chosen files (``result_path``
+        is set) and bundled examples (``result_path`` is ``None``).
+        ``_load_project`` handles the distinction internally.
+        """
+        dlg = WelcomeDialog(self)
+        dlg.exec()
+
+        if dlg.result_action == "new":
+            self.scene.load_dict({"nodes": [], "edges": []})
+            self._current_path = None
+            self._reset_view()
+            self._mark_clean()
+            self.statusBar().showMessage("New project — canvas is empty", 4000)
+
+        elif dlg.result_action == "open" and dlg.result_doc is not None:
+            self._load_project(dlg.result_doc, dlg.result_path)
+
+        else:  # "skip" or dialog closed with ×
+            self.build_default_pipeline()
+            self._mark_clean()
+
+    def _load_project(self, doc: dict, path: Path | None = None) -> None:
+        """
+        Replace the canvas with *doc* and update session state.
+
+        Parameters
+        ----------
+        doc : dict
+            Deserialised ``.pumpflow`` project document
+            (``{"nodes": [...], "edges": [...]}``) ready for
+            :meth:`GraphScene.load_dict`.
+        path : Path or None
+            Source file path.  When not ``None``, the path is stored in
+            ``_current_path``, added to the recent-files list, and shown in
+            the status bar.  Pass ``None`` for bundled examples so they do
+            not pollute the recent-files history.
+        """
+        self.scene.load_dict(doc)
+        self._sync_units_menu()  # load_dict restored units.PREFS from doc["meta"]
+        self._current_path = path
+        # User projects restore their saved zoom + center; bundled examples
+        # (path is None) always open framed to fit (zoom extents).
+        if path is not None and doc.get("view"):
+            self.view.apply_view_state(doc["view"])
+        else:
+            self.view.fit_to_contents()
+        self._mark_clean()
+        if path is not None:
+            save_recent(path)
+            self.statusBar().showMessage(f"Opened {path}", 4000)
+        else:
+            self.statusBar().showMessage("Example loaded — canvas ready", 4000)
+        self._update_status()
+
+    # --------------------------------------------------------------- toolbox
+    def _build_toolbox(self) -> None:
+        dock = QDockWidget("Nodes", self)
+        dock.setObjectName("NodesDock")
+        dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        panel = QWidget(objectName="Toolbox")
+        lay = QVBoxLayout(panel)
+        lay.setContentsMargins(0, 4, 0, 8)
+        lay.setSpacing(0)
+        for group, kinds in grouped_node_kinds():
+            lay.addWidget(QLabel(group.upper(), objectName="ToolboxGroup"))
+            for kind, title, glyph in kinds:
+                btn = QPushButton(f"{glyph}   {title}", objectName="ToolboxItem")
+                btn.setToolTip(f"Add a {title} node at the centre of the view")
+                btn.clicked.connect(lambda _=False, k=kind: self.add_node_centered(k))
+                lay.addWidget(btn)
+        lay.addStretch(1)
+        scroll = QScrollArea(objectName="ToolboxScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidget(panel)
+        dock.setWidget(scroll)
+        dock.setMinimumWidth(210)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+
+    # ----------------------------------------------------------- node dialog
+    def _open_dialog(self, logic) -> None:
+        # Modeless, one window per node: re-activating a node raises its existing
+        # dialog rather than spawning a duplicate (mirrors Orange's WidgetManager).
+        existing = self._open_dialogs.get(logic)
+        if existing is not None:
+            existing.raise_()
+            existing.activateWindow()
+            return
+        # parent=None makes each dialog a fully independent top-level window
+        # (own taskbar entry, freely arrangeable, can sit behind the canvas) —
+        # the Orange3 multi-window feel. Lifetime is managed via _open_dialogs +
+        # WA_DeleteOnClose, and closeEvent() disposes any still open on exit.
+        dlg = logic.create_dialog(None, on_change=self._on_dialog_change)
+        if dlg is None:
+            return
+        dlg.setAttribute(Qt.WA_DeleteOnClose, True)
+        if hasattr(dlg, "remember_as"):  # reopen at the last size / maximised
+            dlg.remember_as(logic.kind)
+        self._open_dialogs[logic] = dlg
+        dlg.finished.connect(lambda _result, lg=logic: self._on_dialog_closed(lg))
+        dlg.show()
+        dlg.raise_()
+        dlg.activateWindow()
+
+    def _on_dialog_closed(self, logic) -> None:
+        self._open_dialogs.pop(logic, None)
+        self.scene.evaluate()
+
+    def _close_dialog_for(self, logic) -> None:
+        dlg = self._open_dialogs.get(logic)
+        if dlg is not None:
+            dlg.close()
+
+    def _on_dialog_change(self) -> None:
+        self.scene.evaluate()
+        self._mark_dirty()
+        self._update_status()
+
+    # ----------------------------------------------------------- node adding
+    def add_node_centered(self, kind: str):
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        item = self.scene.add_node(kind, center)
+        self.scene.evaluate()
+        return item
+
+    def _reset_view(self) -> None:
+        """Frame the whole pipeline (zoom extents)."""
+        self.view.fit_to_contents()
+
+    # ---------------------------------------------------- default pipeline
+    def build_default_pipeline(self) -> None:
+        self.scene.load_dict({"nodes": [], "edges": []})
+        s = self.scene
+        rated = s.add_node("rated_point", QPointF(-660, -170))
+        test = s.add_node("test_points", QPointF(-660, 150))
+        corr = s.add_node("correction", QPointF(-360, -20))
+        fit = s.add_node("curve_fit", QPointF(-90, -20))
+        plot = s.add_node("performance_plot", QPointF(200, -230))
+        check = s.add_node("compliance", QPointF(200, -30))
+        report = s.add_node("report_export", QPointF(200, 190))
+
+        wire = self._wire
+        wire(rated, "RatedPoint", corr, "RatedPoint")
+        wire(test, "TestPointSet", corr, "TestPointSet")
+        wire(corr, "CorrectedCurve", fit, "CorrectedCurve")
+        wire(fit, "FittedModel", plot, "FittedModel")
+        wire(rated, "RatedPoint", plot, "RatedPoint")
+        wire(fit, "FittedModel", check, "FittedModel")
+        wire(rated, "RatedPoint", check, "RatedPoint")
+        wire(rated, "RatedPoint", report, "RatedPoint")
+        wire(corr, "CorrectedCurve", report, "branch")
+        wire(fit, "FittedModel", report, "branch")
+        wire(check, "ComplianceResult", report, "branch")
+
+        self.scene.evaluate()
+        self._reset_view()
+        self._update_status()
+
+    def add_second_pump_branch(self) -> None:
+        """Wire a Pump B branch to the same Rated Point + Report (UI_SPEC §2 A/B)."""
+        s = self.scene
+        rated = self._find("rated_point")
+        report = self._find("report_export")
+        if rated is None or report is None:
+            QMessageBox.information(
+                self, "A/B demo", "Build the default pipeline first."
+            )
+            return
+        testb = s.add_node(
+            "test_points",
+            QPointF(-660, 470),
+            settings={
+                "pump_tag": SECOND_PUMP_POINTS["pump_tag"],
+                "columns": canonical_columns("bar"),
+                "pressure_ref": "g",
+                "rows": [
+                    {
+                        "q": _d(p.get("q")),
+                        "p_suc": _d(p.get("p_suc")),
+                        "p_dis": _d(p.get("p_dis")),
+                        "temp_c": _d(p.get("temp_c")),
+                        "n": _d(p.get("n_rpm")),
+                        "power": _d(p.get("power")),
+                        "head": _d(p.get("head")),
+                        "eff": _d(p.get("eff")),
+                    }
+                    for p in SECOND_PUMP_POINTS["points"]
+                ],
+            },
+        )
+        corrb = s.add_node("correction", QPointF(-360, 360))
+        fitb = s.add_node("curve_fit", QPointF(-90, 360))
+        checkb = s.add_node("compliance", QPointF(200, 360))
+
+        self._wire(rated, "RatedPoint", corrb, "RatedPoint")
+        self._wire(testb, "TestPointSet", corrb, "TestPointSet")
+        self._wire(corrb, "CorrectedCurve", fitb, "CorrectedCurve")
+        self._wire(fitb, "FittedModel", checkb, "FittedModel")
+        self._wire(rated, "RatedPoint", checkb, "RatedPoint")
+        self._wire(corrb, "CorrectedCurve", report, "branch")
+        self._wire(fitb, "FittedModel", report, "branch")
+        self._wire(checkb, "ComplianceResult", report, "branch")
+        self.scene.evaluate()
+        self._update_status()
+
+    def _wire(self, up_item, out_name, down_item, in_name) -> None:
+        src = up_item.out_ports.get(out_name)
+        dst = down_item.in_ports.get(in_name)
+        if src and dst:
+            self.scene.connect_ports(src, dst)
+
+    def _find(self, kind: str):
+        for n in self.scene.nodes:
+            if n.logic.kind == kind:
+                return n
+        return None
+
+    # ------------------------------------------------------- project IO
+    def save_project(self) -> None:
+        """
+        Serialise the canvas to the current ``.pumpflow`` file (File > Save).
+
+        Falls back to :meth:`save_project_as` when the project has not yet been
+        saved to disk.
+        """
+        if self._current_path is None:
+            self.save_project_as()
+            return
+        doc = self.scene.to_dict()
+        doc["view"] = self.view.view_state()
+        write_json(self._current_path, doc)
+        self._mark_clean()
+        save_recent(self._current_path)
+        self.statusBar().showMessage(f"Saved {self._current_path}", 4000)
+
+    def save_project_as(self) -> None:
+        """Serialise the canvas to a chosen ``.pumpflow`` path (File > Save As)."""
+        default = str(self._current_path) if self._current_path else "pipeline.pumpflow"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save project", default, "PumpFlow (*.pumpflow)"
+        )
+        if not path:
+            return
+        doc = self.scene.to_dict()
+        doc["view"] = self.view.view_state()
+        write_json(path, doc)
+        self._current_path = Path(path)
+        self._mark_clean()
+        save_recent(self._current_path)
+        self.statusBar().showMessage(f"Saved {path}", 4000)
+
+    def open_project(self) -> None:
+        """
+        Load a ``.pumpflow`` project file into the canvas (File > Open).
+
+        Guards unsaved changes with :meth:`_maybe_save` before replacing the
+        canvas.  Delegates to :meth:`_load_project` which handles path
+        tracking and recent-files registration.
+        """
+        if not self._maybe_save():
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open project", "", "PumpFlow (*.pumpflow);;JSON (*.json)"
+        )
+        if not path:
+            return
+        self._load_project(read_json(path), Path(path))
+
+    # ------------------------------------------------------- data-file IO
+    def import_data_file(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Import data file", "", "JSON (*.json)"
+        )
+        if not path:
+            return
+        doc = read_json(path)
+        rated = rated_from_json(doc)
+        tps = testset_from_json(doc)
+        rated_node = self._find("rated_point")
+        test_node = self._find("test_points")
+        if rated_node:
+            rated_node.logic.settings.update(
+                {
+                    "tag": rated.tag,
+                    "standard": rated.standard,
+                    # Imported values are standard magnitudes — label them with the
+                    # canonical display units so the dialog shows them correctly.
+                    "q": rated.q.to("m**3/h").magnitude,
+                    "q_unit": "m³/h",
+                    "head": rated.head.to("m").magnitude,
+                    "head_unit": "m",
+                    "n": rated.speed.to("rpm").magnitude,
+                    "n_unit": "rpm",
+                    "power": rated.power.to("kW").magnitude,
+                    "power_unit": "kW",
+                    "eff": _mag_or(rated.efficiency, "percent", 0),
+                    "eff_unit": "%",
+                    "head_shutoff": _mag_or(rated.head_shutoff, "m", 0),
+                    "head_shutoff_unit": "m",
+                    "npsha": _mag_or(rated.npsha, "m", 0),
+                    "npsha_unit": "m",
+                    "dens_rel": rated.density_rel,
+                    "dens_unit": "kg/m³",
+                    "visc": rated.viscosity.to("cSt").magnitude,
+                    "visc_unit": "cSt",
+                    "parallel": rated.parallel_operation,
+                }
+            )
+        if test_node:
+            # Exchange JSON is m³/h · bar|kgf/cm² · °C · rpm · kW · m · %: the
+            # table adopts those column units, values untouched.
+            test_node.logic.settings.update(
+                {"pump_tag": tps.pump_tag, **testset_settings(tps)}
+            )
+        self.scene.evaluate()
+        self.statusBar().showMessage(f"Imported {path}", 4000)
+        self._update_status()
+
+    def export_data_file(self) -> None:
+        rated_node = self._find("rated_point")
+        test_node = self._find("test_points")
+        if not rated_node:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export data file", "pump_data.json", "JSON (*.json)"
+        )
+        if not path:
+            return
+        rated = rated_node.logic.to_signal()
+        tps = test_node.logic.to_signal() if test_node else None
+        write_json(path, json_from_signals(rated, tps))
+        self.statusBar().showMessage(f"Exported {path}", 4000)
+
+    # ------------------------------------------------------------- status
+    def _update_status(self) -> None:
+        report = self._find("report_export")
+        if report is not None and report.logic.status:
+            self.statusBar().showMessage(f"Report Export · {report.logic.status}")
+
+
+def _d(value):
+    from .numfmt import parse_decimal
+
+    return parse_decimal(value, None)
+
+
+def _mag_or(q, unit: str, default):
+    """Magnitude of an optional Quantity in ``unit``, or ``default`` when ``None``."""
+    return default if q is None else q.to(unit).magnitude
+
+
+def run() -> int:
+    import sys
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication(sys.argv)
+    init_fonts(app)  # resolve an installed UI font before any widget is built
+    app.setStyleSheet(app_qss())
+    win = MainWindow()
+    win.show()
+    return app.exec()

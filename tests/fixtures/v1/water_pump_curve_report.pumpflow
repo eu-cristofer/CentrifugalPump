@@ -1,0 +1,178 @@
+{
+  "nodes": [
+    {
+      "id": "rated",
+      "kind": "rated_point",
+      "x": -560.0,
+      "y": -40.0,
+      "settings": {
+        "tag": "P-1001",
+        "standard": "API610 (12a ed.) / ISO 13709",
+        "q": 400.0,
+        "head": 100.0,
+        "n": 1480.0,
+        "power": 148.0,
+        "eff": 73.0,
+        "head_shutoff": 130.0,
+        "dens_rel": 1.0,
+        "visc": 1.0,
+        "unit": "bar",
+        "parallel": false,
+        "fluid_name": "Water (service)"
+      }
+    },
+    {
+      "id": "test_a",
+      "kind": "test_points",
+      "x": -560.0,
+      "y": 220.0,
+      "settings": {
+        "pump_tag": "P-1001A",
+        "unit": "bar",
+        "rows": [
+          {
+            "q": 160.0,
+            "p_suc": 1.48,
+            "p_dis": 13.77,
+            "temp_c": 19.5,
+            "n": 1481.0,
+            "power": 78.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 240.0,
+            "p_suc": 1.50,
+            "p_dis": 13.16,
+            "temp_c": 20.0,
+            "n": 1480.0,
+            "power": 95.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 320.0,
+            "p_suc": 1.50,
+            "p_dis": 12.33,
+            "temp_c": 20.2,
+            "n": 1479.0,
+            "power": 114.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 400.0,
+            "p_suc": 1.51,
+            "p_dis": 11.30,
+            "temp_c": 20.0,
+            "n": 1480.0,
+            "power": 147.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 480.0,
+            "p_suc": 1.50,
+            "p_dis": 10.00,
+            "temp_c": 20.5,
+            "n": 1481.0,
+            "power": 174.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 540.0,
+            "p_suc": 1.49,
+            "p_dis": 8.88,
+            "temp_c": 20.3,
+            "n": 1479.0,
+            "power": 194.0,
+            "head": null,
+            "eff": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "corr_a",
+      "kind": "correction",
+      "x": -240.0,
+      "y": 90.0,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": 1480.0,
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3
+      }
+    },
+    {
+      "id": "fit_a",
+      "kind": "curve_fit",
+      "x": 40.0,
+      "y": 90.0,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160
+      }
+    },
+    {
+      "id": "plot_a",
+      "kind": "performance_plot",
+      "x": 320.0,
+      "y": -60.0,
+      "settings": {
+        "show_poly": true,
+        "show_spline": true,
+        "show_points": true,
+        "head_ylim": null,
+        "power_ylim": null,
+        "eff_ylim": null
+      }
+    },
+    {
+      "id": "check_a",
+      "kind": "compliance",
+      "x": 320.0,
+      "y": 200.0,
+      "settings": {
+        "tolerances": {}
+      }
+    },
+    {
+      "id": "report",
+      "kind": "report_export",
+      "x": 620.0,
+      "y": 90.0,
+      "settings": {
+        "language": "en",
+        "template_path": "",
+        "out_dir": "",
+        "filename": "",
+        "equipment": {
+          "Manufacturer": "",
+          "Model": "",
+          "Serial No.": "",
+          "Type": "",
+          "Driver": "",
+          "Test bench": ""
+        }
+      }
+    }
+  ],
+  "edges": [
+    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "corr_a",  "dst_port": "RatedPoint"},
+    {"src_node": "test_a", "src_port": "TestPointSet",    "dst_node": "corr_a",  "dst_port": "TestPointSet"},
+    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "fit_a",   "dst_port": "CorrectedCurve"},
+    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "plot_a",  "dst_port": "FittedModel"},
+    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "plot_a",  "dst_port": "RatedPoint"},
+    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "check_a", "dst_port": "FittedModel"},
+    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "check_a", "dst_port": "RatedPoint"},
+    {"src_node": "rated",  "src_port": "RatedPoint",      "dst_node": "report",  "dst_port": "RatedPoint"},
+    {"src_node": "corr_a", "src_port": "CorrectedCurve",  "dst_node": "report",  "dst_port": "branch"},
+    {"src_node": "fit_a",  "src_port": "FittedModel",     "dst_node": "report",  "dst_port": "branch"},
+    {"src_node": "check_a","src_port": "ComplianceResult","dst_node": "report",  "dst_port": "branch"}
+  ]
+}

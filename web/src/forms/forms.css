@@ -1,0 +1,559 @@
+/* ---- form panel (UI_SPEC §5, §12); tokens only ---- */
+.form-panel {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 899px) {
+  .form-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    width: auto;
+    border-left: 0;
+  }
+}
+
+.form-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--title-bg);
+  color: var(--title-text);
+}
+
+.form-title-text {
+  font-size: var(--fs-dialog-title);
+  font-weight: var(--fw-dialog-title);
+}
+
+.form-node-id {
+  margin-right: auto;
+  color: var(--header-subtitle);
+  font-size: var(--fs-caption);
+}
+
+.form-close {
+  padding: 0 8px;
+  background: transparent;
+  color: var(--title-text);
+  border: 1px solid var(--header-button-border);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--fs-dialog-title);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.form-close:hover {
+  background: var(--header-button-hover-bg);
+  border-color: var(--header-button-hover-border);
+}
+
+.form-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 12px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--divider);
+}
+
+.form-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-dialog-top) var(--space-dialog-x) var(--space-dialog-bottom);
+}
+
+.form-loading,
+.form-desktop-only {
+  color: var(--subtle-text);
+}
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+}
+
+.form-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-section);
+}
+
+.section-label {
+  color: var(--field-label);
+  font-size: var(--fs-section-label);
+  font-weight: var(--fw-section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.form-hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--divider);
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-row);
+}
+
+.row-label {
+  flex: none;
+  min-width: 150px;
+  color: var(--field-label);
+}
+
+.row-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-suffix {
+  min-width: 48px;
+  color: var(--unit-label);
+  font-size: var(--fs-unit);
+}
+
+@media (max-width: 479px) {
+  .row-label {
+    flex-basis: 100%;
+  }
+}
+
+.field {
+  width: 100%;
+  padding: var(--space-control-y) var(--space-control-x);
+  background: var(--surface);
+  color: var(--body-text);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
+.field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.field:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  border-color: var(--disabled-border);
+}
+
+.field::placeholder {
+  color: var(--placeholder);
+}
+
+.field-number {
+  text-align: right;
+}
+
+.unit-field {
+  display: flex;
+  gap: 4px;
+}
+
+.unit-field .field-number {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit-field select.field {
+  flex: none;
+  width: auto;
+  min-width: 84px;
+}
+
+.readout {
+  color: var(--mono-text);
+  font-family: var(--font-mono);
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--subtle-text);
+  font-size: var(--fs-caption);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox.disabled {
+  color: var(--disabled-text);
+  cursor: default;
+}
+
+.checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-check);
+  color: var(--check-mark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.checkbox input:checked + .check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox input:focus-visible + .check-box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.banner {
+  padding: 6px var(--space-banner-x);
+  border: 1px solid transparent;
+  border-radius: var(--radius-banner);
+  font-size: var(--fs-banner);
+}
+
+.banner-info {
+  background: var(--banner-info-bg);
+  color: var(--banner-info-text);
+}
+
+.banner-ok {
+  background: var(--banner-ok-bg);
+  color: var(--banner-ok-text);
+  border-color: var(--banner-ok-border);
+}
+
+.banner-warn {
+  background: var(--banner-warn-bg);
+  color: var(--banner-warn-text);
+  border-color: var(--amber);
+}
+
+.banner-error {
+  background: var(--banner-error-bg);
+  color: var(--banner-error-text);
+  border-color: var(--banner-error-border);
+}
+
+.info {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  color: var(--info-button);
+  border: 1px solid var(--info-button);
+  border-radius: 50%;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-button:hover {
+  background: var(--hover-bg);
+}
+
+.info-popover {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  z-index: 30;
+  width: 340px;
+  max-width: 80vw;
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--body-text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 12px var(--node-shadow);
+  font-size: var(--fs-caption);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: normal;
+}
+
+.info-text {
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
+.row-label.disabled {
+  color: var(--disabled-text);
+}
+
+/* ---- tool buttons, grids, verdict (sprint 6 part B) ---- */
+.tool-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-button {
+  padding: var(--space-control-y) var(--space-control-x);
+  background: var(--surface);
+  color: var(--tool-button-text);
+  border: 1px solid var(--border-tool-button);
+  border-radius: var(--radius-control);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tool-button:hover:not(:disabled) {
+  background: var(--tool-button-hover-bg);
+}
+
+.tool-button:disabled {
+  color: var(--disabled-text);
+  border-color: var(--disabled-border);
+  cursor: default;
+}
+
+.grid-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--fs-body);
+}
+
+.grid th,
+.grid td {
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--gridline);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.grid thead th {
+  background: var(--surface-alt);
+  color: var(--field-label);
+  font-weight: var(--fw-section-label);
+}
+
+.grid .grid-text {
+  text-align: left;
+  white-space: normal;
+}
+
+.grid select.field {
+  min-width: 76px;
+  padding: 1px 2px;
+}
+
+.grid input.field {
+  min-width: 68px;
+  padding: 1px 4px;
+}
+
+.grid .row-select {
+  min-width: 28px;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--subtle-text);
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.grid tr.selected td,
+.grid tr.selected .row-select {
+  background: var(--table-selection-bg);
+}
+
+.grid td.computed {
+  background: var(--table-computed-bg);
+  color: var(--table-computed-text);
+  font-family: var(--font-mono);
+}
+
+.paste-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paste-box textarea {
+  min-height: 90px;
+  font-family: var(--font-mono);
+}
+
+.verdict-banner {
+  padding: 8px var(--space-banner-x);
+  border: 1px solid transparent;
+  border-radius: var(--radius-banner);
+  font-size: var(--fs-verdict);
+  font-weight: var(--fw-verdict);
+}
+
+.verdict-ok {
+  background: var(--banner-ok-bg);
+  color: var(--banner-ok-text);
+  border-color: var(--banner-ok-border);
+}
+
+.verdict-error {
+  background: var(--banner-error-bg);
+  color: var(--banner-error-text);
+  border-color: var(--banner-error-border);
+}
+
+.verdict-warn {
+  background: var(--banner-warn-bg);
+  color: var(--banner-warn-text);
+  border-color: var(--amber);
+}
+
+.verdict-idle {
+  color: var(--verdict-idle-text);
+  border-color: var(--verdict-idle-border);
+}
+
+.v-pass {
+  color: var(--ok-green);
+  font-weight: 700;
+}
+
+.v-fail {
+  color: var(--reject-red);
+  font-weight: 700;
+}
+
+.v-info {
+  color: var(--subtle-text);
+}
+
+.v-warn,
+.grid .note-warn {
+  color: var(--warn-text);
+}
+
+.section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  color: var(--field-label);
+  border: 0;
+  font: inherit;
+  font-weight: var(--fw-section-label);
+  cursor: pointer;
+}
+
+.mono-block {
+  margin: 0;
+  padding: 8px;
+  background: var(--mono-bg);
+  color: var(--mono-text);
+  border-radius: var(--radius-control);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-block);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* ---- witness forms II (sprint 7): plots, MRT, notes ---- */
+.ylim-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+}
+
+.override-role {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+  padding: 6px 8px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-control);
+}
+
+.source-note summary {
+  color: var(--field-label);
+  cursor: pointer;
+}
+
+.note-editor {
+  min-height: 180px;
+  font-family: var(--font-mono);
+  resize: vertical;
+}
+
+.note-preview {
+  min-height: 120px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+
+.note-preview > :first-child {
+  margin-top: 0;
+}
+
+.note-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.note-preview a {
+  color: var(--accent);
+}
+
+.note-preview table {
+  border-collapse: collapse;
+}
+
+.note-preview th,
+.note-preview td {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+}
+
+.note-preview code,
+.note-preview pre {
+  background: var(--mono-bg);
+  color: var(--mono-text);
+  font-family: var(--font-mono);
+}

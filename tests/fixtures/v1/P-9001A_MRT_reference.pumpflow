@@ -1,0 +1,471 @@
+{
+  "meta": {
+    "unit_preset": "SI"
+  },
+  "nodes": [
+    {
+      "id": "fluid_rated",
+      "kind": "fluid",
+      "x": -900.0,
+      "y": -120.0,
+      "settings": {
+        "source": "manual",
+        "name": "Wash water (rated)",
+        "temp": 53.0,
+        "temp_unit": "°C",
+        "dens": 999.0,
+        "dens_unit": "kg/m³",
+        "visc": 0.52,
+        "visc_unit": "cSt"
+      }
+    },
+    {
+      "id": "rated",
+      "kind": "rated_point",
+      "x": -620.0,
+      "y": -120.0,
+      "settings": {
+        "tag": "P-9001",
+        "service": "Wash water",
+        "standard": "API 610 8th + N-553C + API 682 3rd",
+        "q": 9.8,
+        "q_unit": "m³/h",
+        "head": 333.8,
+        "head_unit": "m",
+        "n": 10212.0,
+        "power": 26.9,
+        "power_unit": "kW",
+        "eff": 32.7,
+        "head_shutoff": 357.37,
+        "npsha": 2.4,
+        "dens_rel": 0.999,
+        "dens_unit": "kg/m³",
+        "visc": 0.52,
+        "visc_unit": "cSt",
+        "parallel": false,
+        "fluid_name": "Rated fluid",
+        "fluid_choice": ""
+      }
+    },
+    {
+      "id": "test_a",
+      "kind": "test_points",
+      "x": -620.0,
+      "y": 160.0,
+      "settings": {
+        "pump_tag": "P-9001A",
+        "unit": "bar",
+        "fluid_choice": "",
+        "rows": [
+          {
+            "q": 3.452,
+            "p_suc": 0.0,
+            "p_dis": 36.177,
+            "temp_c": 54.4,
+            "n": 10301.0,
+            "power": 18.95,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 6.677,
+            "p_suc": 0.0,
+            "p_dis": 35.998,
+            "temp_c": 53.9,
+            "n": 10301.0,
+            "power": 21.5,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 7.904,
+            "p_suc": 0.0,
+            "p_dis": 35.398,
+            "temp_c": 53.9,
+            "n": 10301.0,
+            "power": 22.79,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 9.88,
+            "p_suc": 0.0,
+            "p_dis": 33.543,
+            "temp_c": 52.8,
+            "n": 10301.0,
+            "power": 24.88,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 10.879,
+            "p_suc": 0.0,
+            "p_dis": 31.681,
+            "temp_c": 52.2,
+            "n": 10301.0,
+            "power": 26.17,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 11.856,
+            "p_suc": 0.0,
+            "p_dis": 29.765,
+            "temp_c": 52.2,
+            "n": 10301.0,
+            "power": 27.3,
+            "head": null,
+            "eff": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "corr_a",
+      "kind": "correction",
+      "x": -320.0,
+      "y": 160.0,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": 10212.0,
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3,
+        "fluid_choice": ""
+      }
+    },
+    {
+      "id": "fit_a",
+      "kind": "curve_fit",
+      "x": -40.0,
+      "y": 160.0,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160,
+        "show_preview": true
+      }
+    },
+    {
+      "id": "plot_a",
+      "kind": "performance_plot",
+      "x": 240.0,
+      "y": 50.0,
+      "settings": {
+        "show_poly": true,
+        "show_spline": true,
+        "show_points": true,
+        "head_ylim": null,
+        "power_ylim": null,
+        "eff_ylim": null
+      }
+    },
+    {
+      "id": "check_a",
+      "kind": "compliance",
+      "x": 240.0,
+      "y": 270.0,
+      "settings": {
+        "tolerances": {}
+      }
+    },
+    {
+      "id": "test_b",
+      "kind": "test_points",
+      "x": -620.0,
+      "y": 520.0,
+      "settings": {
+        "pump_tag": "P-9001B",
+        "unit": "bar",
+        "fluid_choice": "",
+        "rows": [
+          {
+            "q": 3.452,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 6.677,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 7.904,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 9.88,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 10.879,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 11.856,
+            "p_suc": null,
+            "p_dis": null,
+            "temp_c": null,
+            "n": null,
+            "power": null,
+            "head": null,
+            "eff": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "corr_b",
+      "kind": "correction",
+      "x": -320.0,
+      "y": 520.0,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": 10212.0,
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3,
+        "fluid_choice": ""
+      }
+    },
+    {
+      "id": "fit_b",
+      "kind": "curve_fit",
+      "x": -40.0,
+      "y": 520.0,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160,
+        "show_preview": true
+      }
+    },
+    {
+      "id": "plot_b",
+      "kind": "performance_plot",
+      "x": 240.0,
+      "y": 410.0,
+      "settings": {
+        "show_poly": true,
+        "show_spline": true,
+        "show_points": true,
+        "head_ylim": null,
+        "power_ylim": null,
+        "eff_ylim": null
+      }
+    },
+    {
+      "id": "check_b",
+      "kind": "compliance",
+      "x": 240.0,
+      "y": 630.0,
+      "settings": {
+        "tolerances": {}
+      }
+    },
+    {
+      "id": "report",
+      "kind": "report_export",
+      "x": 560.0,
+      "y": 340.0,
+      "settings": {
+        "language": "en",
+        "template_path": "",
+        "out_dir": "",
+        "filename": "",
+        "equipment": {
+          "Manufacturer": "Vendor A",
+          "Model": "Model M1 (OH6)",
+          "Serial No.": "SN-9001-11 (P-9001A)",
+          "Type": "Integrally geared, overhung in-line",
+          "Driver": "Electric motor 37 kW @ 3557 rpm; gearbox 2.871",
+          "Test bench": "Vendor A, test site"
+        },
+        "formats": [
+          "docx",
+          "tex",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "note",
+      "kind": "markdown_note",
+      "x": -1180.0,
+      "y": 160.0,
+      "settings": {
+        "title": "P-9001 witness reference",
+        "body": "# P-9001 FAT — witness reference\n\n**Reference unit:** P-9001A (Vendor A Model M1 OH6, S/N SN-9001-11), tested 12/13/2011 — PASSED.\n**Datasheet:** DS-9001 rev B — 9.80 m³/h · 333.8 m · 26.9 kW · 32.7 % · shut-off 357.37 m · SG 0.999 · 0.520 cSt @ 53 °C · NPSHa 2.4 m.\n\n## Data entry conventions (keep identical for B)\n- Q = GPM × 0.22712 → m³/h\n- P_suc = 0, P_dis = ΔP (psi × 0.068948 → bar); Head is derived with water density at T_water\n- T_water = suction temperature in °C\n- N = **pump** speed = motor rpm × 2.871 (gearbox)\n- P = **motor output** kW (motor HP × 0.7457) — coupling power incl. integral gearbox\n\n## Mechanical run of A (4 h, 06:00–10:00, at design flow)\n| Item | A recorded | Comment |\n|---|---|---|\n| Flow | 43.47–43.53 GPM | ~9.88 m³/h |\n| ΔP | 484.7–487.3 psi | |\n| Power (electrical) | 28.6–29.7 kW | design max 33.1 kW |\n| Vibration filtered @10300 rpm | 0.04–0.05 in/s | |\n| Vibration unfiltered | 0.14–0.16 in/s | |\n| Lube oil pressure | 42–44 psig | |\n| Lube oil sump temp | 116–124 °F | |\n| Seal cavity pressure | 64.9–69.3 psig | |\n| NPSHr (design) | 4.06 ft = 1.24 m | NPSHa 2.4 m |\n\n## Witness-day checklist (P-9001B)\n1. Confirm instruments calibration certificates and gearbox ratio 2.871.\n2. Fill **Test Points B** row by row; watch Head/η columns.\n3. Check Compliance B (head, power, η, shut-off) — see head-tolerance note.\n4. 4 h mechanical run: log the items above every 15 min; compare to A.\n5. Report Export ▸ Export all (docx + tex + pdf). Save As P-9001B_witness.pumpflow.\n\n## Open points\n- Head tolerance: default ±3 %; confirm API 610 8th / N-553 band for >300 m (±2 %?). A is ≈ +2 %.\n- SG: datasheet 0.999 vs Vendor A conversion 0.990 / 0.50 cSt.\n- Datasheet body says P-9001A/B (title P-9001A/B).\n- A: no inlet temperature recorded at the 120 % point (52.2 °C assumed).\n"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src_node": "fluid_rated",
+      "src_port": "FluidSpec",
+      "dst_node": "rated",
+      "dst_port": "FluidSpec"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "corr_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "test_a",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_a",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_a",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "plot_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "plot_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "check_a",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "check_a",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "check_a",
+      "src_port": "ComplianceResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "corr_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "test_b",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_b",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_b",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_b",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "plot_b",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "plot_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "check_b",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "check_b",
+      "dst_port": "RatedPoint"
+    },
+    {
+      "src_node": "corr_b",
+      "src_port": "CorrectedCurve",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "fit_b",
+      "src_port": "FittedModel",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "check_b",
+      "src_port": "ComplianceResult",
+      "dst_node": "report",
+      "dst_port": "branch"
+    },
+    {
+      "src_node": "rated",
+      "src_port": "RatedPoint",
+      "dst_node": "report",
+      "dst_port": "RatedPoint"
+    }
+  ],
+  "view": {
+    "zoom": 0.8,
+    "cx": -100.0,
+    "cy": 200.0
+  }
+}

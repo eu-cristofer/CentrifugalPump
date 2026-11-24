@@ -1,0 +1,103 @@
+name: Pages
+
+# Publishes the documentation (site root) and the web app (app/) from main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PYTHON: python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs,dev]" build
+
+      - name: Build docs
+        run: sphinx-build -W -b html docs _site
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
+
+      - name: Cache the Pyodide bundle
+        uses: actions/cache@v4
+        with:
+          path: web/public/py
+          key: pyodide-bundle-${{ hashFiles('web/package-lock.json', 'web/scripts/vendor.mjs') }}
+
+      - name: Vendor the offline bundle (rebuilds the project wheel)
+        run: npm --prefix web run vendor
+
+      - name: Check (types, lint, unit tests)
+        run: npm --prefix web run check
+
+      - name: Parity (browser engine = desktop engine)
+        run: npm --prefix web run parity
+
+      - name: Build the web app under app/
+        env:
+          PUMPFLOW_BASE: /${{ github.event.repository.name }}/app/
+        run: npm --prefix web run build
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/app
+          cp -R web/dist/. _site/app/
+          touch _site/.nojekyll
+
+      - name: Leak scan of the site
+        shell: bash
+        env:
+          LEAK_WORDLIST: ${{ secrets.LEAK_WORDLIST }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LEAK_WORDLIST:-}" ]; then
+            echo "::notice::LEAK_WORDLIST secret not set; leak scan skipped"
+            exit 0
+          fi
+          wordlist="$RUNNER_TEMP/wordlist.txt"
+          printf '%s\n' "$LEAK_WORDLIST" > "$wordlist"
+          trap 'rm -f "$wordlist"' EXIT
+          python tools/leak_scan.py --words "$wordlist" _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

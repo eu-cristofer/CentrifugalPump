@@ -1,0 +1,188 @@
+{
+  "nodes": [
+    {
+      "id": "test_a",
+      "kind": "test_points",
+      "x": -611.6698385611469,
+      "y": 66.94028954528216,
+      "settings": {
+        "pump_tag": "P-1001A",
+        "unit": "bar",
+        "rows": [
+          {
+            "q": 160.0,
+            "p_suc": 1.48,
+            "p_dis": 13.77,
+            "temp_c": 19.5,
+            "n": 1481.0,
+            "power": 78.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 240.0,
+            "p_suc": 1.5,
+            "p_dis": 13.16,
+            "temp_c": 20.0,
+            "n": 1480.0,
+            "power": 95.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 320.0,
+            "p_suc": 1.5,
+            "p_dis": 12.33,
+            "temp_c": 20.2,
+            "n": 1479.0,
+            "power": 114.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 400.0,
+            "p_suc": 1.51,
+            "p_dis": 11.3,
+            "temp_c": 20.0,
+            "n": 1480.0,
+            "power": 147.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 480.0,
+            "p_suc": 1.5,
+            "p_dis": 10.0,
+            "temp_c": 20.5,
+            "n": 1481.0,
+            "power": 174.0,
+            "head": null,
+            "eff": null
+          },
+          {
+            "q": 540.0,
+            "p_suc": 1.49,
+            "p_dis": 8.88,
+            "temp_c": 20.3,
+            "n": 1479.0,
+            "power": 194.0,
+            "head": null,
+            "eff": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "corr_a",
+      "kind": "correction",
+      "x": -359.91302156643496,
+      "y": -120.57896470203212,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": 2000.0,
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3
+      }
+    },
+    {
+      "id": "fit_a",
+      "kind": "curve_fit",
+      "x": -105.26048953982774,
+      "y": -216.1194209094356,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160
+      }
+    },
+    {
+      "id": "explore_plot-9",
+      "kind": "explore_plot",
+      "x": 183.98542886576885,
+      "y": -48.915543920145815,
+      "settings": {}
+    },
+    {
+      "id": "correction-10",
+      "kind": "correction",
+      "x": -350.9649411700535,
+      "y": 216.42838038819983,
+      "settings": {
+        "lock_to_rated": true,
+        "target_speed": 1750.0,
+        "apply_speed": true,
+        "apply_density": true,
+        "apply_viscosity": false,
+        "degree": 3
+      }
+    },
+    {
+      "id": "curve_fit-11",
+      "kind": "curve_fit",
+      "x": -89.69104052123592,
+      "y": 292.470784308378,
+      "settings": {
+        "degree": 3,
+        "spline": true,
+        "resolution": 160
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src_node": "test_a",
+      "src_port": "TestPointSet",
+      "dst_node": "corr_a",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "fit_a",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "corr_a",
+      "src_port": "CorrectedCurve",
+      "dst_node": "explore_plot-9",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "fit_a",
+      "src_port": "FittedModel",
+      "dst_node": "explore_plot-9",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "test_a",
+      "src_port": "TestPointSet",
+      "dst_node": "correction-10",
+      "dst_port": "TestPointSet"
+    },
+    {
+      "src_node": "correction-10",
+      "src_port": "CorrectedCurve",
+      "dst_node": "curve_fit-11",
+      "dst_port": "CorrectedCurve"
+    },
+    {
+      "src_node": "curve_fit-11",
+      "src_port": "FittedModel",
+      "dst_node": "explore_plot-9",
+      "dst_port": "FittedModel"
+    },
+    {
+      "src_node": "correction-10",
+      "src_port": "CorrectedCurve",
+      "dst_node": "explore_plot-9",
+      "dst_port": "CorrectedCurve"
+    }
+  ],
+  "view": {
+    "zoom": 1.0257434796758478,
+    "cx": -108.21419019409986,
+    "cy": 143.31068431110523
+  }
+}
