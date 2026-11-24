@@ -971,8 +971,9 @@ class PerformanceChecker:
         rated_head = self.design_point.differential_head
         self.head_tolerance_minus, self.head_tolerance = self._head_band()
         self.shutoff_tolerance: float = self._get_shutoff_tolerance()
-        self.breaking_power_tolerance: float = self.tolerances.get(
-            "power", self.criteria.power_tol_plus
+        power_tol = self.tolerances.get("power")
+        self.breaking_power_tolerance: float = (
+            power_tol if power_tol is not None else self.criteria.power_tol_plus
         )
 
         self._compute_limits()
