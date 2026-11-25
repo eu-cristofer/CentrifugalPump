@@ -90,6 +90,69 @@ When a **rising curve** is specified (always the case with parallel operation):
 
 The tool applies all three when *Parallel operation* is ticked on the Rated Point.
 
+### 4.1 When shut-off was not tested
+
+Not every pump has to be run at shut-off, but skipping it must be justified and agreed
+in writing.  What each document says (clause numbers and short phrases only; read your
+own copy for the full text):
+
+| Document | Clause | What it says about the shut-off test point |
+|---|---|---|
+| API 610 8th | 4.3.3.2.1 and its Note | the five points "will normally be" shut-off, minimum flow, …; shut-off "may not be feasible" for **high-energy** (2.1.15) and **multistage** pumps |
+| API 610 11th | 8.3.3.3 a) and its Note | same list; the note adds **integral-gear** pumps ("might not be feasible") |
+| API 610 12th | 8.3.3.4 | same three pump types, now with a criterion: the **power density** PD = P / (D_imp · D_nozzle²); above a typical **13 MW/m³ (0.286 hp/in³)** it is suggested that the pump not be run at shut-off, because the temperature rises too fast |
+| N-553 rev D / rev E | 9.14 / 9.13 (replace item a) of API 8.3.3.3) | "These points **shall be**: 1) shutoff …": the client turns "normally" into "shall" and does not restate the API note, so an exemption needs the client's concurrence |
+| N-553 rev E | 6.1.11 (modification) | stable curves "continuous head rise to shutoff" **for all applications**, so the rising-curve question stays open even if the shut-off point is waived |
+
+High-energy means more than 200 m **and** more than 225 kW per stage (8th 2.1.15, 11th
+6.1.15).  In the 12th formula, P is the rated power per stage with water, D_imp the
+rated impeller diameter and D_nozzle the nominal discharge flange diameter (inlet flange
+for double-suction single-stage pumps).
+
+**Worked case (anonymised real FAT, 2026, a P-9001 unit).**  OH6, integrally
+geared (gear ratio 2.871), 9.8 m³/h, 333.8 m, 26.9 kW, impeller 125.5 mm, discharge 2 in,
+datasheet shut-off head 357.4 m.  The vendor tested six points; the lowest was at
+**35 % of rated flow** (3.46 m³/h), so there is no shut-off point.
+
+- *Is the omission defensible?*  Not high-energy (26.9 kW is far below 225 kW), so the
+  8th-edition note does not cover it.  It **is** integral-gear (11th, 12th note), and its
+  power density is 26.9 kW / (0.1255 m × 0.0508² m²) ≈ **83 MW/m³**, about **6 times**
+  the 12th-edition guide value.  So yes under the 11th/12th; under N-553 it still needs
+  the client's written concurrence (look for it in the vendor's list of exceptions).
+- *Can the shut-off head be judged from the curve?*  **No.**  The tool predicts H(0) by
+  extrapolation and flags it.  The answer depends on the fit, not on the pump:
+
+  | Fit | Predicted H(0) | vs 357.4 m (±5 %) |
+  |---|---|---|
+  | cubic, all six points | 743 m | +108 %, "fail" |
+  | cubic, without the run-out point (11.6 m³/h, beyond the end of the curve) | 365 m | +2.1 %, "pass" |
+  | quadratic, without the run-out point | 312 m | −12.6 %, "fail" |
+
+  The same choices move the head at rated flow by only 0.5 % (333.2 m vs 331.5 m, both
+  inside −2/+2 %).  **Rated-point results are robust; an extrapolated shut-off head is
+  not a measurement.**
+- *Is there a real concern behind it?*  Yes.  Corrected to rated speed, the head at
+  3.5 m³/h (about 367 m) is slightly **below** the head at 6.7 m³/h (about 370 m): the
+  curve droops at low flow.  With N-553 rev E's rising-curve rule, ask the vendor for a
+  statement (or a shut-off reading) that the head rises to shut-off.
+
+**What to do at the bench**
+- Check the contract first: which API edition and which N-553 revision govern, and
+  whether the vendor's exceptions list waives the shut-off point.
+- Record the shut-off head as **not tested** and list it as an open point with the reason
+  (pump type, power density, the client's concurrence reference).
+- Do **not** widen the shut-off tolerance with a Compliance override to turn the
+  extrapolated value into a pass: an override changes a limit, it does not replace a
+  missing measurement.
+- Leaving the rated shut-off head blank on the Rated Point skips the check, but the report
+  then says nothing about it; prefer recording it as an open point.
+
+```{note}
+The tool currently reports an extrapolated shut-off head as **pass** or **fail** with an
+*extrapolated* flag.  A planned change will report it as **not evaluated** and add a
+"shut-off not tested" waiver with a required reason (see `docs/changes/NEXT_STEPS.md`).
+```
+
 ## 5 · NPSH: two separate rules
 
 | Rule | From | Test |
@@ -214,7 +277,9 @@ Before the test:
 
 During the test:
 - [ ] At least 5 points: shut-off, minimum flow, between minimum and rated, rated, and
-  maximum (at least 120 % of BEP) (8th 4.3.3.2.1).
+  maximum (at least 120 % of BEP) (8th 4.3.3.2.1).  No shut-off point?  Find the
+  agreed exemption (high-energy, multistage, integral-gear; 12th power density) and
+  record it as an open point (§4.1).
 - [ ] Test speed within 3 % of rated.
 - [ ] Vibration in **RMS**, at each point except shut-off.
 - [ ] NPSH 3 % head-drop data, if specified.
@@ -260,6 +325,11 @@ Work them by hand from §2-§7, then check with the notebook.
    at BEP (relative density 1.0).  Gearbox-housing readings: overall 3.84, largest
    discrete line 2.24 mm/s RMS.  Which limits apply, and does it pass?  And under the
    8th edition?
+11. The worked case of §4.1 (OH6, integrally geared, 26.9 kW, impeller 125.5 mm,
+   discharge 2 in, lowest test point at 35 % of rated flow, API 610 8th + N-553 rev E).
+   The tool reports the shut-off head as **743 m, fail (extrapolated)** against 357.4 m.
+   Is the pump rejected?  Compute the 12th-edition power density.  What do you write in
+   the report?
 
 ## Answers
 
@@ -291,3 +361,13 @@ Work them by hand from §2-§7, then check with the notebook.
    *v_f* = 0.67·4.1 = **2.7 mm/s**.  3.84 ≤ 4.1 and 2.24 ≤ 2.7, so it **passes** under the
    12th edition.  Under the 8th edition there is no high-speed allowance: the limits are
    3.0 / 2.0 mm/s and it **fails** both.  This is P-9001A's real situation.
+11. **Not rejected on that row, and not accepted on it either.**  The 743 m is an
+   extrapolation from 35 % of rated flow to zero; other reasonable fits give 312-365 m,
+   so it says nothing about the pump.  PD = 0.0269 MW / (0.1255 m × 0.0508² m²) ≈
+   **83 MW/m³** (1.8 hp/in³), about 6 times the 13 MW/m³ guide value, and the pump is
+   integral-gear: the 11th/12th notes support skipping shut-off.  Under the 8th edition
+   alone it is neither high-energy nor multistage, and N-553 says "shall", so the
+   omission needs the client's written concurrence.  In the report: shut-off head **not
+   tested**, reason and concurrence reference, plus an open point on the rising curve
+   (N-553 rev E), because the head at 35 % of rated flow is slightly below the head at
+   68 %.  Do not override the tolerance to make the row pass.

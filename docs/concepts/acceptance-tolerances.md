@@ -29,6 +29,14 @@ $$
 The shut-off head is flagged *extrapolated* when no test point lies below 5 % of the rated
 flow.  This threshold is a tool setting, not a value from the standard.
 
+An extrapolated shut-off head is not a measurement: with the lowest point far from Q = 0,
+the predicted value depends on the fit degree and on which points are kept.  Shut-off may
+be left out of the test only where the standard allows it: high-energy and multistage
+pumps (8th 4.3.3.2.1 note), also integral-gear pumps (11th 8.3.3.3 a) note), and in the
+12th edition when the power density P / (D_imp · D_nozzle²) exceeds about 13 MW/m³
+(8.3.3.4).  N-553 rev D/E make the shut-off point a "shall" (9.14 / 9.13), so an omission
+needs the client's concurrence.  See {doc}`../training/TR-01-witness-performance-test` §4.1.
+
 ## The values, by edition
 
 Checked on 2026-11-16 against the owner's licensed copies of API 610 8th, 11th and 12th
