@@ -21,15 +21,36 @@ source = "N-553 rev E 7.3: at rated flow NPSHa shall exceed NPSHr by at least 0.
 verified = true
 
 [mechanical_run]
-source = "N-553 rev E 9.20 (replaces API 610:2010 8.3.4.2.1): run at rated flow until oil and bearing temperatures stabilise, i.e. no rise of more than 2 K during 30 min, after at least a 1 h warm-up (NOTE 1, 2). 9.21 (replaces 8.3.4.2.2): 4 h at rated flow when ndm >= 350 000 or the energy-density criterion is met. Vibration limits stay those of the API edition."
+source = "N-553 rev E 9.20 (replaces API 610:2010 8.3.4.2.1): run at rated flow until oil and bearing temperatures stabilise, i.e. no rise of more than 2 K during 30 min, after at least a 1 h warm-up (NOTE 1, 2); required, so it replaces any edition definition. 7.35 c: oil-mist temperature limits. 9.21 (replaces 8.3.4.2.2): 4 h at rated flow when ndm >= 350 000 or the energy-density criterion is met. Vibration limits stay those of the API edition."
 verified = true
 
 [[mechanical_run.stabilisation]]
 role = "oil_temperature"
 delta = "2 delta_degC"
 window = "30 min"
+warmup = "60 min"
+
+[[mechanical_run.stabilisation]]
+role = "oil_outlet_temperature"
+delta = "2 delta_degC"
+window = "30 min"
+warmup = "60 min"
 
 [[mechanical_run.stabilisation]]
 role = "bearing_temperature"
 delta = "2 delta_degC"
 window = "30 min"
+warmup = "60 min"
+
+[[mechanical_run.stabilisation]]
+role = "housing_temperature"
+delta = "2 delta_degC"
+window = "30 min"
+warmup = "60 min"
+
+# 7.35 (adds c to API 610:2010 6.10.2.4): oil-mist systems.
+[mechanical_run.temperature.oil_mist]
+housing_max = "70 degC"
+housing_rise_max = "35 delta_degC"
+bearing_metal_max = "93 degC"
+source = "N-553 rev E 7.35 c: oil mist, during shop testing bearing housing external surface below 70 degC, outer ring / bearing metal not above 93 degC if sensors are supplied, housing rise not above 35 K above ambient."

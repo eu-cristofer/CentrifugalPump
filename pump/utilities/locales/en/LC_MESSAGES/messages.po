@@ -613,3 +613,69 @@ msgstr "not given"
 
 msgid "Shut-off head not tested (no test point near zero flow); not judged by agreement"
 msgstr "Shut-off head not tested (no test point near zero flow); not judged by agreement"
+
+msgid "NOT EVALUATED"
+msgstr "NOT EVALUATED"
+
+msgid "Bearing lubrication"
+msgstr "Bearing lubrication"
+
+msgid "Ring-oil / splash"
+msgstr "Ring-oil / splash"
+
+msgid "Pressurized (forced-feed)"
+msgstr "Pressurized (forced-feed)"
+
+msgid "Pure oil mist"
+msgstr "Pure oil mist"
+
+msgid "Grease"
+msgstr "Grease"
+
+msgid "not stated"
+msgstr "not stated"
+
+msgid "Oil temperature rise (outlet − inlet)"
+msgstr "Oil temperature rise (outlet − inlet)"
+
+msgid "Oil sump rise above ambient"
+msgstr "Oil sump rise above ambient"
+
+msgid "Bearing-housing rise above ambient"
+msgstr "Bearing-housing rise above ambient"
+
+msgid "Bearing-housing temperature"
+msgstr "Bearing-housing temperature"
+
+msgid "Bearing metal temperature"
+msgstr "Bearing metal temperature"
+
+msgid "Oil outlet temperature"
+msgstr "Oil outlet temperature"
+
+msgid "Oil sump temperature"
+msgstr "Oil sump temperature"
+
+msgid "Bearing temperature rules"
+msgstr "Bearing temperature rules"
+
+msgid "needs oil inlet and oil outlet temperature channels"
+msgstr "needs oil inlet and oil outlet temperature channels"
+
+msgid "needs oil sump and ambient temperature channels"
+msgstr "needs oil sump and ambient temperature channels"
+
+msgid "needs bearing-housing and ambient temperature channels"
+msgstr "needs bearing-housing and ambient temperature channels"
+
+msgid "needs bearing-housing temperature channels"
+msgstr "needs bearing-housing temperature channels"
+
+msgid "no bearing temperature sensors in the log (the limit applies if sensors are supplied)"
+msgstr "no bearing temperature sensors in the log (the limit applies if sensors are supplied)"
+
+msgid "design limit at 43 °C ambient, not judged in the shop test"
+msgstr "design limit at 43 °C ambient, not judged in the shop test"
+
+msgid "lubrication system not stated in the MRT Log"
+msgstr "lubrication system not stated in the MRT Log"

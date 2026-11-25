@@ -177,6 +177,13 @@ export class Engine {
     return this.call("parse_mrt_paste", text, columns);
   }
 
+  mrtStandardChannels(
+    settings: Record<string, unknown>,
+    pumpType: string | null,
+  ): Promise<MrtColumn[]> {
+    return this.call("mrt_standard_channels", settings, pumpType);
+  }
+
   dispose(): void {
     this.fail(new Error("engine disposed"));
     this.worker.terminate();

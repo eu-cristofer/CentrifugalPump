@@ -344,11 +344,17 @@ def mechanical_run_duration_sentence(translate: Callable[[str], str], result) ->
 
 
 def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
-    """``(header, rows)`` of strings for the per-channel table (never empty cells)."""
+    """``(header, rows)`` of strings for the per-channel table (never empty cells).
+
+    The bearing temperature rules (``result.rules``) follow the channels as
+    rows of their own: rule name, unit, the worst value in the Max column and
+    the limit.
+    """
     status_text = {
         "pass": translate("PASS"),
         "fail": translate("FAIL"),
         "info": translate("INFO"),
+        "not evaluated": translate("NOT EVALUATED"),
     }
 
     def num(q):
@@ -374,12 +380,32 @@ def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
                 status_text.get(ch.status, ch.status),
             ]
         )
+    for rule in getattr(result, "rules", ()) or ():
+        rows.append(
+            [
+                translate(rule.name),
+                rule.unit or "-",
+                "-",
+                num(rule.value),
+                f"≤ {num(rule.limit)}" if rule.limit is not None else "-",
+                status_text.get(rule.status, rule.status),
+            ]
+        )
     return header, rows
 
 
 def mechanical_run_notes(translate: Callable[[str], str], result) -> list:
     """Criteria-source line and unverified note (empty list if nothing to say)."""
     notes = []
+    lube = getattr(result, "lubrication", None)
+    if getattr(result, "rules", ()):
+        from ..mechanical_run import LUBRICATION_LABELS
+
+        label = LUBRICATION_LABELS.get(lube or "", "not stated")
+        notes.append(f"{translate('Bearing lubrication')}: {translate(label)}.")
+    for rule in getattr(result, "rules", ()) or ():
+        if rule.note:
+            notes.append(f"{translate(rule.name)}: {translate(rule.note)}.")
     if getattr(result, "source", ""):
         notes.append(translate(MECHANICAL_RUN_SOURCE).format(source=result.source))
     if not getattr(result, "verified", False):

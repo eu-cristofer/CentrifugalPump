@@ -25,6 +25,7 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
 - [x] **N-553 client overlay.** Filled from **rev E** (NPSH margin, temperature stabilisation). ⚠ The P-9001 datasheet calls for **N-553 rev C**, which is not available: confirm the rules match rev C, or obtain rev C.
 - [x] **NPSH margin rule.** N-553 rev E 7.3: ≥ 0.8 m **and** ratio ≥ 1.15 at rated flow. P-9001A passes (1.32 m, 2.22). API "rated NPSH +0 %" is judged once the quoted NPSHr is entered in the NPSH node.
 - [ ] **Quoted NPSHr.** Read it from the datasheet / proposal and enter it in the NPSH node.
+- [x] **Bearing temperature rules in the MRT** (2026-11-25). The MRT Log states the lubrication system and offers standard channels (oil inlet/outlet, sump, housing, ambient, bearing metal, vibration at the pump-type locations); the MRT Check judges the rules of 8th 2.9.2.3, 11th 6.10.2.4, 12th 6.10.2.7 and N-553 rev E 7.35 c, plus the 12th / N-553 stabilisation definitions. The P-9001A reference log records only a "Sump" temperature and no ambient, while its datasheet says pressurized oil: its lubrication is left *not stated*; confirm what the vendor's "Sump" reading is.
 - [ ] **Mechanical-run duration.** The 8th edition defines no running test; confirm the 4 h (N-553 rev E 9.21: ndm ≥ 350 000 or energy density) from the purchase order.
 - [ ] **SG discrepancy.** The datasheet says 0.999, but Vendor A's conversion used 0.990 and 0.50 cSt. Ask why.
 - [ ] **Datasheet typo.** The body says "P-9001A/B" but the title says P-9001A/B.

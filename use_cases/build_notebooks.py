@@ -1876,6 +1876,37 @@ for name, h0 in fits.items():
     verdicts[name] = -lo11 <= d <= hi11
     print(f"{name:22s} H(0) = {h0:6.1f} m  {d:+.1%}  {'pass' if verdicts[name] else 'fail'}")
 """),
+        md(r"""
+## Exercise 12 · Bearing oil temperatures by lubrication system
+
+The temperature rules depend on the lubrication system stated in the log (11th
+6.10.2.4): pressurized, the oil rise through each bearing (outlet − inlet) ≤ 28 K;
+ring-oil / splash, the sump rise above the test-cell ambient ≤ 40 K (39 K in the 12th).
+"""),
+        code(r"""
+from pump.mechanical_run import Channel, RunReading, MechanicalRunLog, MechanicalRunChecker
+
+times = [f"{6 + i // 4:02d}:{15 * (i % 4):02d}" for i in range(17)]
+
+def run(lube, values, key="api610:11"):
+    chans = [Channel(n, r, loc) for n, (r, loc, _v) in values.items()]
+    reads = [RunReading(t, {n: Q_(v, "degC") for n, (_r, _l, v) in values.items()})
+             for t in times]
+    crit = AcceptanceCriteria.load(key).mechanical_run
+    return MechanicalRunChecker(MechanicalRunLog(chans, reads, lubrication=lube), crit).check()
+
+press = run("pressurized", {"Oil inlet": ("oil_inlet_temperature", "", 41.0),
+                            "Oil out DE": ("oil_outlet_temperature", "DE", 63.0),
+                            "Oil out NDE": ("oil_outlet_temperature", "NDE", 71.0)})
+ring = {"Sump": ("oil_temperature", "", 66.0), "Ambient": ("ambient_temperature", "", 25.0)}
+ring11, ring12 = run("ring_oil", ring), run("ring_oil", ring, "api610:12")
+no_inlet = run("pressurized", {"Oil out DE": ("oil_outlet_temperature", "DE", 63.0)})
+for label, run_res in (("(a) pressurized", press), ("(b) ring-oil 11th", ring11),
+                       ("(b) ring-oil 12th", ring12), ("(c) no inlet", no_inlet)):
+    for r in run_res.rules:
+        print(f"{label:18s} {r.name:40s} {r.value if r.value is None else f'{r.value:.1f~P}'!s:>8} "
+              f"limit {r.limit:.0f~P}  {r.status}")
+"""),
         md("## Answers (asserted)"),
         code(r"""
 assert de.rated == (2.1, 3.0) and de.por == (2.6, 3.0) and de.aor == (3.4, 3.9)
@@ -1908,6 +1939,14 @@ assert 80 < pd.magnitude < 86 and 1.7 < pd_us.magnitude < 1.9  # about 6x the gu
 assert pd > Q_(13, "MW/m**3") and pd_us > Q_(0.286, "hp/in**3")
 # the extrapolated shut-off verdict depends on the fit, not on the pump
 assert sorted(verdicts.values()) == [False, False, True]
+rise = next(r for r in press.rules if r.key == "oil_rise_max")
+assert rise.status == "fail" and abs(rise.value.magnitude - 30.0) < 1e-9
+assert next(r for r in press.rules if r.key == "oil_outlet_design_max").status == "info"
+for ring_res, lim in ((ring11, 40), (ring12, 39)):
+    sump = next(r for r in ring_res.rules if r.key == "sump_rise_max")
+    assert sump.status == "fail" and sump.limit.magnitude == lim
+assert next(r for r in no_inlet.rules if r.key == "oil_rise_max").status == "not evaluated"
+assert not no_inlet.fully_assessed
 print("TR-01 answers OK")
 """),
     ]

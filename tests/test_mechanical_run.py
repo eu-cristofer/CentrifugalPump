@@ -222,7 +222,15 @@ def test_every_edition_has_an_open_mechanical_run(key):
     assert mr.role_max["vibration_unfiltered"].to("mm/s").magnitude == pytest.approx(
         3.0
     )
-    assert mr.stabilisation == {}  # API editions: no stabilisation rule encoded
+    if key == "api610:12":
+        # 12th 8.3.4.2.1: rise above ambient <= 1 degC over 10 min, "if
+        # specified": defined, but for information only.
+        st = mr.stabilisation["oil_temperature"]
+        assert st.relative_to_ambient and not st.required
+        assert st.delta.to("delta_degC").magnitude == pytest.approx(1.0)
+        assert st.window.to("min").magnitude == pytest.approx(10.0)
+    else:
+        assert mr.stabilisation == {}  # no numeric stabilisation in the text
     # Still open: the 8th edition defines no mechanical run test (duration comes
     # from the purchaser), and the 11th/12th high-speed allowance is not applied.
     assert mr.verified is False
@@ -232,10 +240,13 @@ def test_every_edition_has_an_open_mechanical_run(key):
 
 def test_n553_adds_temperature_stabilisation():
     crit = AcceptanceCriteria.load("api610:8", client="n553")
-    delta, window = crit.mechanical_run.stabilisation["oil_temperature"]
-    assert delta.to("delta_degC").magnitude == pytest.approx(2.0)
-    assert window.to("min").magnitude == pytest.approx(30.0)
+    st = crit.mechanical_run.stabilisation["oil_temperature"]
+    assert st.delta.to("delta_degC").magnitude == pytest.approx(2.0)
+    assert st.window.to("min").magnitude == pytest.approx(30.0)
+    assert st.required and not st.relative_to_ambient
+    assert st.warmup.to("min").magnitude == pytest.approx(60.0)  # 9.20 NOTE 1
     assert "bearing_temperature" in crit.mechanical_run.stabilisation
+    assert "oil_outlet_temperature" in crit.mechanical_run.stabilisation
 
 
 # --------------------------------------------------------------------------- #
@@ -323,3 +334,232 @@ def test_p9001a_sump_stabilisation_last_hour(p9001a):
     assert sump.stabilisation["ok"] is True
     assert sump.stabilisation["change"].to("delta_degF").magnitude == pytest.approx(2.0)
     assert sump.status == "pass"
+
+
+# --------------------------------------------------------------------------- #
+# Bearing temperature rules by lubrication system (8th 2.9.2.3, 11th 6.10.2.4,
+# 12th 6.10.2.7, N-553 rev E 7.35 c / 9.20)
+# --------------------------------------------------------------------------- #
+_QUARTER = [f"{h:02d}:{m:02d}" for h in range(4) for m in (0, 15, 30, 45)] + ["04:00"]
+
+
+def _temp_log(cols, values, lubrication, times=_QUARTER):
+    """cols: [(name, role, location)]; values: {name: constant degC or list}."""
+    channels = tuple(Channel(n, r, loc) for n, r, loc in cols) + tuple(
+        Channel(n, r) for n, r, _u in _VIB_COLS
+    )
+    readings = []
+    for i, t in enumerate(times):
+        vals = {n: Q_(1.0, "mm/s") for n, _r, _u in _VIB_COLS}
+        for name, v in values.items():
+            x = v[i] if isinstance(v, list) else v
+            if x is not None:
+                vals[name] = Q_(x, "degC")
+        readings.append(RunReading(t, vals))
+    return MechanicalRunLog(channels, tuple(readings), lubrication=lubrication)
+
+
+def _check(log, key, client=None):
+    crit = AcceptanceCriteria.load(key, client=client).mechanical_run
+    crit = replace(
+        crit,
+        role_max={
+            "vibration_filtered": Q_(2, "mm/s"),
+            "vibration_unfiltered": Q_(3, "mm/s"),
+        },
+    )
+    return MechanicalRunChecker(log, crit).check()
+
+
+def _rule(res, key):
+    return next(r for r in res.rules if r.key == key)
+
+
+_PRESS = [
+    ("Oil inlet", "oil_inlet_temperature", ""),
+    ("Oil out DE", "oil_outlet_temperature", "DE"),
+    ("Oil out NDE", "oil_outlet_temperature", "NDE"),
+]
+
+
+def test_pressurized_oil_rise_is_outlet_minus_inlet():
+    log = _temp_log(
+        _PRESS,
+        {"Oil inlet": 40.0, "Oil out DE": 62.0, "Oil out NDE": 66.0},
+        "pressurized",
+    )
+    res = _check(log, "api610:11")
+    rise = _rule(res, "oil_rise_max")
+    assert rise.status == "pass"
+    assert rise.value.to("delta_degC").magnitude == pytest.approx(26.0)  # worst bearing
+    assert rise.limit.to("delta_degC").magnitude == pytest.approx(28.0)
+    # no bearing sensors: the metal limit applies "if supplied" -> information
+    assert _rule(res, "bearing_metal_max").status == "info"
+    # 70 degC outlet design limit at 43 degC ambient: reported, not judged
+    assert _rule(res, "oil_outlet_design_max").status == "info"
+    assert res.passed and res.fully_assessed
+
+
+def test_pressurized_rise_over_28_K_fails():
+    log = _temp_log(
+        _PRESS,
+        {"Oil inlet": 40.0, "Oil out DE": 62.0, "Oil out NDE": 69.0},
+        "pressurized",
+    )
+    res = _check(log, "api610:12")
+    assert _rule(res, "oil_rise_max").status == "fail" and not res.passed
+
+
+def test_outlet_paired_with_the_inlet_of_its_bearing():
+    cols = [
+        ("In DE", "oil_inlet_temperature", "DE"),
+        ("In NDE", "oil_inlet_temperature", "NDE"),
+        ("Out DE", "oil_outlet_temperature", "DE"),
+        ("Out NDE", "oil_outlet_temperature", "NDE"),
+    ]
+    log = _temp_log(
+        cols,
+        {"In DE": 30.0, "In NDE": 45.0, "Out DE": 55.0, "Out NDE": 70.0},
+        "pressurized",
+    )
+    rise = _rule(_check(log, "api610:11"), "oil_rise_max")
+    assert rise.value.to("delta_degC").magnitude == pytest.approx(25.0)
+
+
+def test_missing_inlet_is_not_evaluated():
+    log = _temp_log(
+        _PRESS[1:], {"Oil out DE": 62.0, "Oil out NDE": 66.0}, "pressurized"
+    )
+    res = _check(log, "api610:11")
+    rule = _rule(res, "oil_rise_max")
+    assert rule.status == "not evaluated" and "inlet" in rule.note
+    assert res.passed and not res.fully_assessed
+    assert res.verdict == "PASSED (not fully assessed)"
+
+
+@pytest.mark.parametrize(
+    "key, limit, ok", [("api610:11", 40, True), ("api610:12", 39, False)]
+)
+def test_ring_oil_sump_rise_above_ambient(key, limit, ok):
+    cols = [("Sump", "oil_temperature", ""), ("Ambient", "ambient_temperature", "")]
+    log = _temp_log(cols, {"Sump": 65.0, "Ambient": 25.0}, "ring_oil")
+    rule = _rule(_check(log, key), "sump_rise_max")
+    assert rule.value.to("delta_degC").magnitude == pytest.approx(40.0)
+    assert rule.limit.to("delta_degC").magnitude == pytest.approx(limit)
+    assert rule.status == ("pass" if ok else "fail")
+
+
+def test_sump_rise_is_judged_at_each_reading():
+    # 11th 6.10.2.4 b): "above the ambient ... at the time of each reading"
+    cols = [("Sump", "oil_temperature", ""), ("Ambient", "ambient_temperature", "")]
+    n = len(_QUARTER)
+    sump = [60.0] * n
+    ambient = [25.0] * n
+    ambient[5] = 18.0  # a cold reading: 42 K rise at that moment
+    log = _temp_log(cols, {"Sump": sump, "Ambient": ambient}, "ring_oil")
+    rule = _rule(_check(log, "api610:11"), "sump_rise_max")
+    assert rule.value.to("delta_degC").magnitude == pytest.approx(42.0)
+    assert rule.status == "fail"
+
+
+def test_ring_oil_without_ambient_is_not_evaluated():
+    log = _temp_log([("Sump", "oil_temperature", "")], {"Sump": 65.0}, "ring_oil")
+    res = _check(log, "api610:11")
+    assert _rule(res, "sump_rise_max").status == "not evaluated"
+    assert not res.fully_assessed
+
+
+def test_bearing_metal_limit_when_sensors_are_supplied():
+    cols = _PRESS + [("Brg DE", "bearing_temperature", "DE")]
+    log = _temp_log(
+        cols,
+        {"Oil inlet": 40.0, "Oil out DE": 60.0, "Oil out NDE": 60.0, "Brg DE": 95.0},
+        "pressurized",
+    )
+    assert _rule(_check(log, "api610:11"), "bearing_metal_max").status == "fail"
+
+
+def test_oil_mist_12th_with_n553_keeps_the_stricter_limits():
+    cols = [
+        ("Housing DE", "housing_temperature", "DE"),
+        ("Ambient", "ambient_temperature", ""),
+        ("Brg DE", "bearing_temperature", "DE"),
+    ]
+    log = _temp_log(
+        cols, {"Housing DE": 70.5, "Ambient": 40.0, "Brg DE": 90.0}, "oil_mist"
+    )
+    res = _check(log, "api610:12", client="n553")
+    assert _rule(res, "housing_max").limit.to("degC").magnitude == pytest.approx(70.0)
+    assert _rule(res, "housing_max").status == "fail"  # N-553 7.35 c: below 70 degC
+    assert _rule(res, "bearing_metal_max").limit.to("degC").magnitude == pytest.approx(
+        88.0
+    )
+    assert _rule(res, "bearing_metal_max").status == "fail"  # 12th 6.10.2.7 c: 88 degC
+    assert _rule(res, "housing_rise_max").status == "pass"  # 30.5 K <= 35 K
+
+
+def test_no_lubrication_stated_is_not_evaluated():
+    log = _temp_log(
+        _PRESS, {"Oil inlet": 40.0, "Oil out DE": 60.0, "Oil out NDE": 60.0}, None
+    )
+    res = _check(log, "api610:11")
+    assert [(r.key, r.status) for r in res.rules] == [("lubrication", "not evaluated")]
+    assert not res.fully_assessed
+
+
+def test_lubrication_without_rules_in_the_edition_is_information():
+    log = _temp_log([], {}, "oil_mist")
+    res = _check(log, "api610:11")  # 11th: no oil-mist rule (N-553 adds one)
+    assert [(r.key, r.status) for r in res.rules] == [("lubrication", "info")]
+
+
+def test_unknown_lubrication_is_rejected():
+    with pytest.raises(ValueError, match="lubrication"):
+        MechanicalRunLog((), (), lubrication="water")
+
+
+def test_criteria_without_temperature_rules_add_none():
+    log = _temp_log(_PRESS, {"Oil inlet": 40.0}, "pressurized")
+    assert MechanicalRunChecker(log, _crit()).check().rules == ()
+
+
+def test_12th_stabilisation_relative_to_ambient_is_information_only():
+    cols = [("Sump", "oil_temperature", ""), ("Ambient", "ambient_temperature", "")]
+    n = len(_QUARTER)
+    sump = [50.0 + i for i in range(n)]  # still rising 1 K per 15 min...
+    ambient = [20.0 + i for i in range(n)]  # ...but so is the cell: rise constant
+    log = _temp_log(cols, {"Sump": sump, "Ambient": ambient}, "ring_oil")
+    res = _check(log, "api610:12")
+    sump_ch = next(c for c in res.channels if c.name == "Sump")
+    st = sump_ch.stabilisation
+    assert st["relative_to_ambient"] and not st["required"]
+    assert st["ok"] is True and st["change"].to(
+        "delta_degC"
+    ).magnitude == pytest.approx(0)
+    assert sump_ch.status == "info"  # "if specified": never pass/fail on its own
+
+
+def test_n553_stabilisation_needs_the_warm_up():
+    cols = _PRESS
+    short = ["00:00", "00:15", "00:30", "00:45", "01:00"]
+    log = _temp_log(
+        cols,
+        {"Oil inlet": 40.0, "Oil out DE": 60.0, "Oil out NDE": 60.0},
+        "pressurized",
+        times=short,
+    )
+    res = _check(log, "api610:11", client="n553")
+    out = next(c for c in res.channels if c.name == "Oil out DE")
+    # 1 h warm-up + 30 min window > 1 h run: cannot be judged yet
+    assert out.status == "not evaluated" and not res.fully_assessed
+    long = _temp_log(
+        cols,
+        {"Oil inlet": 40.0, "Oil out DE": 60.0, "Oil out NDE": 60.0},
+        "pressurized",
+    )
+    out = next(
+        c
+        for c in _check(long, "api610:11", client="n553").channels
+        if c.name == "Oil out DE"
+    )
+    assert out.status == "pass"

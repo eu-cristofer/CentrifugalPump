@@ -128,9 +128,11 @@ def check_compliance(
     )
     verified = bool(criteria.verified)
     so_row = verdict.row("Shutoff Head")
-    waived = (shutoff_waiver or "").strip() if (
-        so_row is not None and so_row.extrapolated and so_row.status == "info"
-    ) else ""
+    waived = (
+        (shutoff_waiver or "").strip()
+        if (so_row is not None and so_row.extrapolated and so_row.status == "info")
+        else ""
+    )
     display_unit = {
         "Head": "m",
         "Power": "kW",
@@ -269,6 +271,7 @@ def check_mechanical_run(
     for role, spec in (ov.get("stabilisation") or {}).items():
         if isinstance(spec, dict):
             spec = (spec["delta"], spec["window"])
+        # A witness override is a requirement on the temperature itself.
         stabilisation[role] = (spec[0], spec[1])
 
     overridden = bool(
@@ -285,6 +288,7 @@ def check_mechanical_run(
         stabilisation=stabilisation,
         source=source,
         verified=False if overridden else bool(getattr(base, "verified", False)),
+        temperature=dict(getattr(base, "temperature", None) or {}),
     )
     result = MechanicalRunChecker(run_set.log, criteria).check()
     return MechanicalRunResultSignal(

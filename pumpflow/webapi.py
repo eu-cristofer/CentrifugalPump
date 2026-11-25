@@ -635,6 +635,18 @@ def _view_mrt_check(graph: Graph, node) -> dict:
         }
         for c in res.channels
     ]
+    rules = [
+        {
+            "key": r.key,
+            "name": r.name,
+            "value": r.value,
+            "limit": r.limit,
+            "unit": r.unit,
+            "status": r.status,
+            "note": r.note,
+        }
+        for r in getattr(res, "rules", ()) or ()
+    ]
     return {
         "pump_tag": sig.pump_tag,
         "verdict_label": verdict_label(res),
@@ -648,7 +660,9 @@ def _view_mrt_check(graph: Graph, node) -> dict:
         "duration": res.duration,
         "min_duration": res.min_duration,
         "duration_status": res.duration_status,
+        "lubrication": getattr(res, "lubrication", None),
         "rows": rows,
+        "rules": rules,
     }
 
 
@@ -773,8 +787,14 @@ def _view_report_export(graph: Graph, node) -> dict:
     }
 
 
+def _view_mrt_log(graph: Graph, node) -> dict:
+    """The pump type of the wired rated point (selects the vibration channels)."""
+    return {"pump_type": getattr(node, "_pump_type", None)}
+
+
 _VIEWS = {
     "rated_point": _view_rated_point,
+    "mechanical_run": _view_mrt_log,
     "fluid": _view_fluid,
     "test_points": _view_test_points,
     "correction": _view_correction,
@@ -1082,16 +1102,27 @@ def next_time(rows: list) -> str:
 
 
 def mrt_options() -> dict:
-    """Channel roles, channel dimensions and the dimension of each role's limits."""
-    from pump.mechanical_run import ROLES
+    """Channel roles, channel dimensions, the dimension of each role's limits,
+    the lubrication systems and the optional standard-channel groups."""
+    from pump.mechanical_run import LUBRICATION, LUBRICATION_LABELS, ROLES
 
-    from .nodes.mechanical_run import _DIMENSIONS
+    from .nodes.mechanical_run import _DIMENSIONS, CHANNEL_GROUPS
 
     return {
         "roles": list(ROLES),
         "dimensions": list(_DIMENSIONS),
         "role_dimensions": dict(settings_codec.ROLE_DIMENSIONS),
+        "lubrication": [[k, LUBRICATION_LABELS[k]] for k in LUBRICATION],
+        "channel_groups": [list(g) for g in CHANNEL_GROUPS],
     }
+
+
+def mrt_standard_channels(settings: dict, pump_type: Optional[str] = None) -> list:
+    """MRT Log columns after a change of lubrication system or channel groups
+    (the desktop rule, ``nodes.mechanical_run.apply_standard_channels``)."""
+    from .nodes.mechanical_run import apply_standard_channels
+
+    return _jsonable(apply_standard_channels(dict(settings or {}), pump_type or None))
 
 
 def parse_mrt_paste(text: str, columns: list) -> list:

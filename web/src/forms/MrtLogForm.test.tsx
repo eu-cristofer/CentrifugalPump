@@ -48,10 +48,45 @@ function mount(s = settings(), r = result(), dispatch = vi.fn()) {
   return { dispatch, engine };
 }
 
+const d = (dispatch: ReturnType<typeof vi.fn>) =>
+  dispatch.mock.calls.at(-1)![0].settings as {
+    lubrication?: string;
+    channel_groups?: string[];
+    columns: MrtColumn[];
+  };
+
 const lastSettings = (d: ReturnType<typeof vi.fn>) =>
   d.mock.calls.at(-1)![0].settings as { pump_tag: string; columns: MrtColumn[]; rows: MrtRow[] };
 
 describe("MrtLogForm", () => {
+  it("adds the lubrication system's standard channels through the engine", async () => {
+    const { dispatch, engine } = mount();
+    const lube = (await screen.findByLabelText("Lubrication")) as HTMLSelectElement;
+    fireEvent.change(lube, { target: { value: "pressurized" } });
+    await waitFor(() => expect(dispatch).toHaveBeenCalled(), { timeout: 2000 });
+    expect(engine.mrtStandardChannels).toHaveBeenCalledWith(
+      expect.objectContaining({ lubrication: "pressurized" }),
+      null,
+    );
+    const sent = d(dispatch);
+    expect(sent.lubrication).toBe("pressurized");
+    expect(sent.columns.map((c) => c.name)).toContain("Oil inlet");
+  });
+
+  it("writes a channel group and clears it when unticked", async () => {
+    const { dispatch } = mount(settings({ channel_groups: ["ambient"] }));
+    const box = (await screen.findByLabelText(/Ambient temperature/)) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    await waitFor(() => expect(dispatch).toHaveBeenCalled(), { timeout: 2000 });
+    expect("channel_groups" in d(dispatch)).toBe(false);
+  });
+
+  it("names the pump type of the wired rated point in the vibration group", async () => {
+    mount(settings(), { ...result(), view: { pump_type: "OH6" } });
+    expect(await screen.findByText(/locations of the pump type \(OH6\)/)).toBeTruthy();
+  });
+
   it("renders the channels, the readings and the status", async () => {
     mount();
     expect(((await screen.findByLabelText("Pump TAG")) as HTMLInputElement).value).toBe("P-9001B");

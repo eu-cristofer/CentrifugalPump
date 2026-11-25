@@ -105,13 +105,43 @@ def _read_toml(path: str) -> dict:
 
 
 def _merge_sub(base: Optional[dict], overlay: Mapping, overlay_label: str) -> dict:
-    """Overlay a sub-table key by key, keeping *both* sources (base | overlay)."""
+    """Overlay a sub-table key by key, keeping *both* sources (base | overlay).
+
+    A ``temperature`` table (mechanical run, one table per lubrication system)
+    is merged per lubrication system and per limit: where the edition and the
+    client both set a limit, both apply, so the stricter one is kept.
+    """
     merged = {**(base or {}), **overlay}
     base_src = (base or {}).get("source", "")
     over_src = overlay.get("source", "")
     if base_src and over_src:
         merged["source"] = f"{base_src} | {overlay_label}: {over_src}"
+    base_temp = (base or {}).get("temperature")
+    if "temperature" in overlay and base_temp:
+        temp = {k: dict(v) for k, v in base_temp.items()}
+        for lube, rules in overlay["temperature"].items():
+            cur = temp.setdefault(lube, {})
+            for key, value in rules.items():
+                if key == "source":
+                    continue
+                if key in cur:
+                    a, b = _quantity_of(cur[key]), _quantity_of(value)
+                    value = cur[key] if a <= b else value
+                cur[key] = value
+            if rules.get("source"):
+                src = cur.get("source", "")
+                cur["source"] = (
+                    f"{src} | {overlay_label}: {rules['source']}"
+                    if src and src != rules["source"]
+                    else rules["source"]
+                )
+        merged["temperature"] = temp
     return merged
+
+
+def _quantity_of(text) -> Q_:
+    number, unit = str(text).split(None, 1)
+    return Q_(float(number), unit.strip())
 
 
 def _edition_sort_key(edition: str):

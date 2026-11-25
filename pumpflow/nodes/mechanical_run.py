@@ -9,8 +9,20 @@ produced by an **MRT Check** node (:mod:`.mechanical_run_check`) wired after it.
 Runtime settings::
 
     {"pump_tag": str,
-     "columns": [{"name", "dimension", "unit" (display label), "role"}, ...],
+     "lubrication": "ring_oil" | "pressurized" | "oil_mist" | "grease"  (optional),
+     "channel_groups": ["ambient", "bearing_metal", "vibration", ...]  (optional),
+     "columns": [{"name", "dimension", "unit" (display label), "role",
+                  "key" (standard channel id, optional),
+                  "location" (bearing, optional)}, ...],
      "rows": [{"time": "HH:MM", "values": {<name>: float | None}}, ...]}
+
+Like the Test Points table, the log offers **standard channels**: the
+lubrication system adds its temperature channels (oil inlet / outlet per
+bearing, sump, or bearing housing; plus the ambient the rise rules need), the
+optional Rated Point input gives the pump type and with it the API 610
+vibration locations, and a few optional groups add the rest
+(:func:`standard_channels`, :func:`apply_standard_channels`).  Custom channels
+(no ``key``) can still be added for anything else.
 
 Projects saved before the split had one ``mechanical_run`` node holding the
 criteria overrides too.  ``persistence.migrate`` splits such a node into this
@@ -23,7 +35,15 @@ import re
 from typing import Dict, List, Optional
 
 from pump import Q_
-from pump.mechanical_run import ROLES, Channel, MechanicalRunLog, RunReading
+from pump.mechanical_run import (
+    LUBRICATION,
+    LUBRICATION_LABELS,
+    ROLES,
+    Channel,
+    MechanicalRunLog,
+    RunReading,
+)
+from pump.vibration import location_of_key, vibration_keys
 
 from .. import units
 from ..numfmt import parse_decimal
@@ -156,11 +176,152 @@ def _col_pint(col: dict) -> str:
     return units.pint_str(col["dimension"], col["unit"])
 
 
+# ---------------------------------------------------------------------------
+# Standard channels (the Test Points idea: known columns, chosen by context)
+# ---------------------------------------------------------------------------
+
+#: Optional channel groups, in display order: (id, label).
+CHANNEL_GROUPS = (
+    ("vibration", "Vibration at the API 610 locations of the pump type"),
+    ("ambient", "Ambient temperature (test cell)"),
+    ("bearing_metal", "Bearing metal temperatures (sensors supplied)"),
+    ("oil_pressure", "Oil pressure"),
+    ("seal_pressure", "Seal / barrier pressure"),
+    ("power", "Power"),
+)
+_GROUP_IDS = tuple(g for g, _ in CHANNEL_GROUPS)
+# The lubrication systems whose rules are rises above the ambient temperature.
+_NEEDS_AMBIENT = ("ring_oil", "oil_mist", "grease")
+
+
+def _col(key, name, dimension, role, location="", unit=None) -> dict:
+    col = {
+        "key": key,
+        "name": name,
+        "dimension": dimension,
+        "unit": unit or units.PREFS.default_unit(dimension),
+        "role": role,
+    }
+    if location:
+        col["location"] = location
+    return col
+
+
+def standard_channels(
+    lubrication: Optional[str], groups=(), pump_type: Optional[str] = None
+) -> List[dict]:
+    """The standard MRT Log columns for a lubrication system and groups.
+
+    Flow always; vibration (overall and filtered, RMS) at the API 610
+    measurement locations of ``pump_type``; the temperature channels of the
+    lubrication system (pressurized: oil inlet + oil outlet per bearing;
+    ring-oil / splash: oil sump; oil mist and grease: bearing housing per
+    bearing) and the ambient temperature their rise rules need; then the
+    optional ``groups`` (:data:`CHANNEL_GROUPS`).
+
+    >>> [c["name"] for c in standard_channels("pressurized", ("vibration", "ambient"), "OH6")]
+    ['Flow', 'Gearbox overall', 'Gearbox filt.', 'Oil inlet', 'Oil outlet DE', 'Oil outlet NDE', 'Ambient']
+    >>> [c["role"] for c in standard_channels("ring_oil")][1:]
+    ['oil_temperature', 'ambient_temperature']
+    """
+    groups = set(groups or ())
+    cols = [_col("flow", "Flow", "capacity", "flow")]
+    if "vibration" in groups:
+        for key in vibration_keys(pump_type):
+            loc, filtered = location_of_key(key)
+            cols.append(
+                _col(
+                    key,
+                    f"{loc.short} {'filt.' if filtered else 'overall'}",
+                    "vibration_velocity",
+                    "vibration_filtered" if filtered else "vibration_unfiltered",
+                    loc.short,
+                    unit="mm/s",
+                )
+            )
+    temp = "temperature"
+    if lubrication == "pressurized":
+        cols.append(_col("oil_in", "Oil inlet", temp, "oil_inlet_temperature"))
+        for b in ("DE", "NDE"):
+            cols.append(
+                _col(f"oil_out_{b.lower()}", f"Oil outlet {b}", temp,
+                     "oil_outlet_temperature", b)
+            )
+    elif lubrication == "ring_oil":
+        cols.append(_col("oil_sump", "Oil sump", temp, "oil_temperature"))
+    elif lubrication in ("oil_mist", "grease"):
+        for b in ("DE", "NDE"):
+            cols.append(
+                _col(f"housing_{b.lower()}", f"Housing {b}", temp,
+                     "housing_temperature", b)
+            )
+    if "bearing_metal" in groups:
+        for b in ("DE", "NDE"):
+            cols.append(
+                _col(f"bearing_{b.lower()}", f"Bearing {b}", temp,
+                     "bearing_temperature", b)
+            )
+    if "ambient" in groups or lubrication in _NEEDS_AMBIENT:
+        cols.append(_col("ambient", "Ambient", temp, "ambient_temperature"))
+    if "oil_pressure" in groups:
+        cols.append(_col("oil_pressure", "Oil pressure", "pressure", "oil_pressure"))
+    if "seal_pressure" in groups:
+        cols.append(_col("seal_pressure", "Seal pressure", "pressure", "seal_pressure"))
+    if "power" in groups:
+        cols.append(_col("power", "Power", "power", "power"))
+    return cols
+
+
+def _has_data(rows, name) -> bool:
+    return any((r.get("values") or {}).get(name) is not None for r in rows or [])
+
+
+def apply_standard_channels(settings: dict, pump_type: Optional[str] = None) -> List[dict]:
+    """New ``columns`` after a change of lubrication system or channel groups.
+
+    Standard channels that are wanted are added in their canonical order (a
+    custom channel with the same name is adopted: it gets the standard role
+    and key, and keeps its unit and readings).  Standard channels no longer
+    wanted are dropped, unless they hold readings (nothing entered is ever
+    hidden).  Custom channels stay, after the standard ones.
+    """
+    rows = settings.get("rows") or []
+    current = [dict(c) for c in settings.get("columns") or []]
+    wanted = standard_channels(
+        settings.get("lubrication"), settings.get("channel_groups") or (), pump_type
+    )
+    by_key = {c["key"]: c for c in current if c.get("key")}
+    by_name = {c["name"]: c for c in current if not c.get("key")}
+    out, used = [], set()
+    for w in wanted:
+        have = by_key.get(w["key"]) or by_name.get(w["name"])
+        if have is not None:
+            used.add(id(have))
+            merged = {**w, "name": have["name"], "unit": have["unit"]}
+            if have.get("dimension") != w["dimension"]:
+                merged["unit"] = w["unit"]
+            out.append(merged)
+        else:
+            out.append(w)
+    for c in current:
+        if id(c) in used:
+            continue
+        if c.get("key") and not _has_data(rows, c["name"]):
+            continue  # an unwanted standard channel without readings
+        out.append(c)
+    return out
+
+
 def build_log(settings: dict) -> MechanicalRunLog:
     """``pump.mechanical_run.MechanicalRunLog`` from the node settings."""
     cols = [c for c in settings.get("columns") or [] if str(c.get("name", "")).strip()]
     channels = tuple(
-        Channel(str(c["name"]).strip(), c.get("role") or "other") for c in cols
+        Channel(
+            str(c["name"]).strip(),
+            c.get("role") or "other",
+            str(c.get("location") or "").strip(),
+        )
+        for c in cols
     )
     readings = []
     for r in settings.get("rows") or []:
@@ -174,7 +335,12 @@ def build_log(settings: dict) -> MechanicalRunLog:
             if v is not None:
                 values[str(c["name"]).strip()] = Q_(float(v), _col_pint(c))
         readings.append(RunReading(time=t, values=values))
-    return MechanicalRunLog(channels=channels, readings=tuple(readings))
+    lube = settings.get("lubrication") or None
+    return MechanicalRunLog(
+        channels=channels,
+        readings=tuple(readings),
+        lubrication=lube if lube in LUBRICATION else None,
+    )
 
 
 def overrides_to_quantities(ov: Optional[dict]) -> dict:
@@ -307,7 +473,8 @@ class MechanicalRunNode(BaseNode):
     title = "MRT Log"
     glyph = "⟳"
     is_source = True
-    inputs: list = []
+    # Optional: the rated point's pump type selects the vibration locations.
+    inputs = [PortSpec("RatedPoint", "RatedPoint")]
     outputs = [PortSpec("MechanicalRunSet", "MechanicalRunSet")]
 
     def default_settings(self) -> Dict:
@@ -318,11 +485,13 @@ class MechanicalRunNode(BaseNode):
         }
 
     def port_label(self, name: str) -> str:
-        return {"MechanicalRunSet": "Log"}.get(name, name)
+        return {"MechanicalRunSet": "Log", "RatedPoint": "Rated"}.get(name, name)
 
     # -- payload -----------------------------------------------------------
     def compute(self, inputs) -> Dict[str, object]:
         s = self.settings
+        rated = self.first(inputs, "RatedPoint") if inputs else None
+        self._pump_type = getattr(rated, "pump_type", None) if rated else None
         try:
             log = build_log(s)
         except Exception as exc:
@@ -338,8 +507,10 @@ class MechanicalRunNode(BaseNode):
             return self.emit_nothing("Enter readings: < 2 rows have values", "invalid")
         run_set = MechanicalRunSet(pump_tag=str(s["pump_tag"]).strip(), log=log)
         hours = float(log.duration.to("h").magnitude)
+        lube = LUBRICATION_LABELS.get(log.lubrication or "", "lubrication not stated")
         self.status = (
             f"{run_set.pump_tag} · {len(log.readings)} readings · {hours:.1f} h"
+            f" · {lube.lower() if log.lubrication else lube}"
         )
         self.state = "ok"
         return {"MechanicalRunSet": run_set}
@@ -376,9 +547,9 @@ class MechanicalRunNode(BaseNode):
         banner = ui.Banner()
         tag = ui.line_edit(s["pump_tag"], None, "physical unit TAG, e.g. P-9001A")
 
-        col_table = QTableWidget(0, 3)
+        col_table = QTableWidget(0, 4)
         col_table.setObjectName("RunColumns")
-        col_table.setHorizontalHeaderLabels(["Name", "Dimension", "Role"])
+        col_table.setHorizontalHeaderLabels(["Name", "Dimension", "Role", "Location"])
         col_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         grid = QTableWidget(0, 1)
@@ -477,6 +648,7 @@ class MechanicalRunNode(BaseNode):
                 )
                 col_table.setCellWidget(i, 1, dim)
                 col_table.setCellWidget(i, 2, role)
+                col_table.setItem(i, 3, QTableWidgetItem(str(c.get("location") or "")))
             col_table.blockSignals(False)
 
         def on_dimension(i, new):
@@ -512,6 +684,14 @@ class MechanicalRunNode(BaseNode):
                 recompute()
 
         def on_col_name(item):
+            if item.column() == 3 and item.row() < len(cols):
+                loc = item.text().strip()
+                if loc:
+                    cols[item.row()]["location"] = loc
+                else:
+                    cols[item.row()].pop("location", None)
+                recompute()
+                return
             if item.column() != 0 or item.row() >= len(cols):
                 return
             c = cols[item.row()]
@@ -600,6 +780,47 @@ class MechanicalRunNode(BaseNode):
 
         tag.textChanged.connect(lambda v: (s.__setitem__("pump_tag", v), recompute()))
 
+        # -- standard channels (lubrication system + groups) ------------------
+        pump_type = getattr(self, "_pump_type", None)
+        lube = ui.combo(
+            [("Not stated", "")] + [(LUBRICATION_LABELS[k], k) for k in LUBRICATION],
+            s.get("lubrication") or "",
+            None,
+        )
+        group_boxes = {}
+        groups_box = QWidget()
+        gb = QVBoxLayout(groups_box)
+        gb.setContentsMargins(0, 0, 0, 0)
+        gb.setSpacing(2)
+        for gid, label in CHANNEL_GROUPS:
+            if gid == "vibration":
+                label += f" ({pump_type or 'pump type not set: DE / NDE'})"
+            box = ui.checkbox(label, gid in (s.get("channel_groups") or ()))
+            group_boxes[gid] = box
+            gb.addWidget(box)
+
+        def on_standard(*_):
+            value = lube.currentData() or ""
+            if value:
+                s["lubrication"] = value
+            else:
+                s.pop("lubrication", None)
+            chosen = [g for g in _GROUP_IDS if group_boxes[g].isChecked()]
+            if chosen:
+                s["channel_groups"] = chosen
+            else:
+                s.pop("channel_groups", None)
+            s["columns"] = apply_standard_channels(s, pump_type)
+            cols[:] = s["columns"]
+            s["columns"] = cols
+            fill_cols()
+            fill_grid()
+            recompute()
+
+        lube.currentIndexChanged.connect(on_standard)
+        for box in group_boxes.values():
+            box.toggled.connect(on_standard)
+
         # Readings first, units above each column (the Test Points layout);
         # the channel definitions (name, dimension, role) below.
         readings = QWidget()
@@ -621,7 +842,19 @@ class MechanicalRunNode(BaseNode):
         dlg.add(readings)
         dlg.add(banner)
         dlg.add(ui.hline())
-        dlg.add(ui.section("Channels (name, dimension, role)"))
+        dlg.add(ui.section("Standard channels (API 610)"))
+        dlg.add(
+            ui.Banner(
+                "The lubrication system selects the temperature channels its "
+                "bearing temperature rules need (API 610 8th 2.9.2.3, 11th "
+                "6.10.2.4, 12th 6.10.2.7).  Readings already entered are kept.",
+                "info",
+            )
+        )
+        dlg.add(ui.row("Lubrication", lube))
+        dlg.add(groups_box)
+        dlg.add(ui.hline())
+        dlg.add(ui.section("Channels (name, dimension, role, bearing location)"))
         dlg.add(toolbar([("＋ Channel", add_column), ("－ Channel", del_column)]))
         dlg.add(col_table)
 

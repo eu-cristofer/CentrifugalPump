@@ -200,14 +200,16 @@ N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
 ## 7 · The mechanical run
 
 In the workbench the run is two nodes:
-- **MRT Log**: type or paste the 15-minute readings.  A new log records the witness
-  sheet: time, flow, vibration (overall and filtered) and oil temperature.  The unit of
-  each column is picked above it, as in Test Points, and picking another unit converts
-  the readings.  Add channels (ΔP, power, bearing temperatures...) if the test sheet has
-  them;
+- **MRT Log**: type or paste the 15-minute readings.  First **state the lubrication
+  system** from the datasheet (ring-oil / splash, pressurized, pure oil mist, grease):
+  it adds the temperature channels the API rules need.  Wire the Rated Point and tick
+  *Vibration* to get the pump type's measurement locations, as in Test Points.  The unit
+  of each column is picked above it, and picking another unit converts the readings.
+  Add custom channels (ΔP, ...) if the test sheet has them;
 - **MRT Check**: wire the log, the rated point and the fitted curve into it.  It gives
-  the verdict, the per-channel table (min / max / last / limit) and the trend plot.
-  Your own limits (overrides) go here and make the verdict provisional.
+  the verdict, the per-channel table (min / max / last / limit), the **bearing
+  temperature rules** and the trend plot.  Your own limits (overrides) go here and make
+  the verdict provisional.
 
 Keep the log faithful to the test sheet, and argue about the limits in the check.
 
@@ -217,9 +219,21 @@ Keep the log faithful to the test sheet, and argue about the limits in the check
 - **Stabilisation.**  N-553 rev E 9.20 requires at least a 1 h warm-up, then oil and
   bearing temperatures are stable when they rise no more than 2 K in 30 min.  The tool
   checks this from the log.
-- **Bearing temperatures** (11th 6.10.2.4): with pressurised oil, the outlet is below 70 °C
-  and the oil rise at most 28 K; with ring-oil or splash lubrication, the sump is below
-  82 °C and the rise at most 40 K above ambient.
+- **Bearing temperatures** depend on the lubrication system (8th 2.9.2.3, 11th 6.10.2.4,
+  12th 6.10.2.7; the full table is in {doc}`../concepts/mechanical-run`):
+  - *pressurized*: the **oil rise through each bearing** (outlet − inlet) at most 28 K;
+    so log the oil **inlet** too, not only the outlets.  Bearing metal below 93 °C if
+    sensors are fitted;
+  - *ring-oil / splash*: the **sump rise above the test-cell ambient**, at each reading,
+    at most 40 K (11th) or 39 K (8th, 12th); so log the **ambient** at every reading;
+  - *pure oil mist* (12th; N-553 rev E 7.35 c for the 2010 edition): bearing-housing
+    surface at most 71 °C (N-553: below 70 °C, and at most 35 K above ambient);
+  - the absolute limits (oil outlet 70/71 °C, sump 82 °C) are **design** values at 43 °C
+    ambient: report them, but judge the shop test on the rises.
+
+  A rule the log cannot answer (no inlet, no ambient, lubrication not stated) is **not
+  evaluated**, and the verdict says *not fully assessed*: ask for the missing readings
+  rather than signing.
 
 ## 8 · The test data summary (Annex M / 8th App. T)
 
@@ -294,7 +308,9 @@ At the end:
 - [ ] No `OVERRIDDEN` chip on a Compliance node unless the change is agreed in writing,
   and its reason is filled in (the report prints "Reason: not given" otherwise).
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
-- [ ] Mechanical run: duration, stabilisation, vibration (MRT Log → MRT Check).
+- [ ] Mechanical run: duration, stabilisation, vibration, and the bearing temperature
+  rules of the stated lubrication system, with the oil inlet / ambient readings they
+  need (MRT Log → MRT Check).
 - [ ] Report exported (Word / PDF), open points listed, signatures if required.
 - [ ] Test data summary exported, blanks completed by hand, signed by vendor and witness.
 
@@ -333,6 +349,12 @@ Work them by hand from §2-§7, then check with the notebook.
    (extrapolated)** against 357.4 m.
    Is the pump rejected?  Compute the 12th-edition power density.  What do you write in
    the report?
+
+12. A 4 h run, API 610 11th edition.  (a) Pressurized lubrication: oil inlet 41 °C, oil
+   outlet DE 63 °C, oil outlet NDE 71 °C, steady.  Judge the oil temperature rules.
+   (b) The same pump with ring-oil lubrication: sump 66 °C with the test cell at 25 °C;
+   would it pass under the 12th edition?  (c) The log has the outlets but nobody
+   recorded the inlet.  What does the tool say?
 
 ## Answers
 
@@ -377,3 +399,9 @@ Work them by hand from §2-§7, then check with the notebook.
    waiver the verdict is **NOT FULLY ASSESSED ⚠: Shutoff Head**; with the agreed reason
    in "Shut-off not tested, agreed because" it is **APPROVED ✓ (shut-off not tested)**
    and the report prints the reason.
+12. (a) The rise through each bearing is outlet − inlet: DE 22 K, NDE **30 K > 28 K**, so
+   the oil-rise rule **fails** (6.10.2.4 a).  The NDE outlet is also above the 70 °C
+   design limit, but that limit is at 43 °C ambient: it is reported, not judged.
+   (b) 66 − 25 = **41 K**: above 40 K (11th 6.10.2.4 b) and 39 K (12th 6.10.2.7 b), so it
+   **fails** both.  (c) The oil rise cannot be computed: the rule is **not evaluated**
+   and the run is *not fully assessed*.  Ask for the inlet temperature before signing.

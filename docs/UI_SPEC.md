@@ -448,8 +448,8 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
 
 | Kind | Inputs | Outputs | Key settings |
 |------|--------|---------|--------------|
-| `mechanical_run` (**MRT Log**) | — | MechanicalRunSet | pump TAG, channels (name, dimension, unit, role), 15-min readings, paste |
-| `mechanical_run_check` (**MRT Check**) | MechanicalRunSet, RatedPoint (opt.), FittedModel (opt.) | MechanicalRunResult | limit overrides; shows the verdict, per-channel table and trend plot |
+| `mechanical_run` (**MRT Log**) | RatedPoint (opt.) | MechanicalRunSet | pump TAG, lubrication system, standard channel groups, channels (name, dimension, unit, role, bearing location), 15-min readings, paste |
+| `mechanical_run_check` (**MRT Check**) | MechanicalRunSet, RatedPoint (opt.), FittedModel (opt.) | MechanicalRunResult | limit overrides; shows the verdict, per-channel table, bearing temperature rules and trend plot |
 | `npsh` | RatedPoint (opt.) | NPSHResult | mode (NPSHr points / NPSHa calculator), per-column units, margin-rule overrides |
 | `trim` | FittedModel or CorrectedCurve, RatedPoint | CorrectedCurve | mode (target diameter / solve for rated duty), max trim % |
 | `system_curve` | Fluid (opt.) | SystemCurveSpec | mode (static + k / two points / pipe Darcy–Weisbach), units per field |
@@ -460,6 +460,28 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
 data entry only; the check judges it against the criteria of the wired rated
 point (edition, client overlay, pump type).  A fitted curve wired into the
 check gives the BEP power for the 11th/12th-edition high-speed vibration rule.
+
+**Standard channels (MRT Log).**  As in Test Points, the log offers known
+columns.  The *Lubrication* selector (not stated, ring-oil / splash,
+pressurized, pure oil mist, grease; setting `lubrication`, omitted when not
+stated) adds the temperature channels the bearing temperature rules need:
+pressurized, oil inlet + oil outlet DE / NDE; ring-oil, oil sump; oil mist and
+grease, housing DE / NDE; plus the ambient for the rises above ambient.
+Optional groups (setting `channel_groups`): vibration at the API 610 locations
+of the pump type of the optional Rated Point input, ambient, bearing metal DE /
+NDE, oil pressure, seal pressure, power.  Standard columns carry a `key` (and a
+`location`); a custom column with the same name is adopted with its unit and
+readings, an unwanted standard column without readings is removed, and custom
+columns stay after the standard ones (`nodes.mechanical_run.apply_standard_channels`,
+shared with the web form through `webapi.mrt_standard_channels`).
+
+**Bearing temperature rules (MRT Check).**  A second table lists the rules of
+the log's lubrication system (`MechanicalRunResult.rules`): rule, worst value,
+limit, status (pass / fail / info / not evaluated) and note.  A rule whose
+channels are missing, or a log without a stated lubrication system, is *not
+evaluated* and the verdict is not fully assessed.  The report prints the rules
+as rows of the mechanical-run table, with their notes below it.
+
 Projects saved with the earlier single `mechanical_run` node (log + overrides +
 verdict) are split on load by `persistence.split_mechanical_runs`.  The node
 keeps its log, and a `<id>_check` node placed below it takes the overrides,
