@@ -3,13 +3,13 @@
 Recorded 2026-11-15. Project [001_masterpiece](001_masterpiece/README.md) is complete (14/14 sprints, `Status: ready to archive`) on branch `feat/masterpiece`. This file lists what remains, in priority order. Tick items as they are done.
 
 ## 0. Public split cutover (owner, 003_public-split)
-Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, and the last item.
-- [x] Set the old GitHub repo to **private** (done 2026-11-24).
-- [x] Merge `feat/public-split` into `main` locally (done 2026-11-24). Pushing it to the archive needs `PUMP_LEAK_SKIP=1`: still open.
-- [x] Rename the GitHub repo `CentrifugalPump` → `CentrifugalPump-archive` (private, frozen; done 2026-11-24).
-- [x] `sh tools/make_public_snapshot.sh ../CentrifugalPump-public` → review → create the **public** repo `CentrifugalPump` → `git -C ../CentrifugalPump-public remote add origin <url>` → push `main` (done 2026-11-24; the first CI fixes are PR #1).
-- [x] Create the **private** repo `CentrifugalPump-data` and push `../CentrifugalPump-data` (done 2026-11-24).
-- [x] Public repo settings: secret `LEAK_WORDLIST` (contents of `wordlist.txt`); Settings → Pages → Source "GitHub Actions"; run the Pages workflow (done 2026-11-24; docs and `/app/` live).
+Everything is prepared on `feat/public-split`; these steps happen on GitHub and are the owner's.
+- [ ] Set the current GitHub repo to **private** now (it showed as public on 2026-11-23).
+- [ ] Merge `feat/public-split` into `main` locally (it already contains 001 and 002).
+- [ ] Rename the GitHub repo `CentrifugalPump` → `CentrifugalPump-archive` (private, frozen; its history holds customer data).
+- [ ] `sh tools/make_public_snapshot.sh ../CentrifugalPump-public` → review → create the **public** repo `CentrifugalPump` → `git -C ../CentrifugalPump-public remote add origin <url>` → push `main`.
+- [ ] Create the **private** repo `CentrifugalPump-data` and push `../CentrifugalPump-data`.
+- [ ] Public repo settings: secret `LEAK_WORDLIST` (contents of `wordlist.txt`); Settings → Pages → Source "GitHub Actions"; run the Pages workflow.
 - [ ] Work from the public clone from then on (re-clone into `~/GitHub/CentrifugalPump`, keep this folder as the archive, run `sh tools/install_hooks.sh`).
 
 ## 1. Ship it
@@ -35,7 +35,7 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
   - save as `P-9001B_witness.pumpflow`.
 
 ## 3. Confirm researched values against the standards (owner)
-On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in `marker-output/`, git-ignored, never published). Still open:
+On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in the private data repo under `standards/`, never published). Still open:
 - [x] API 610 11th/12th head, shut-off and power tolerances, vibration table, POR (Table 16, Table 8, 6.1.12).
 - [ ] API 610 10th edition: no text available; still Amarinth bulletin values, `verified = false`.
 - [x] API 610 11th/12th high-speed vibration allowance (Figures 34/35): applied, with the chart (2026-11-17). Exponents 0.30/0.21 reconstructed from the figure: **confirm against the printed figure**, then set `verified = true`.
@@ -77,7 +77,7 @@ On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked aga
 - [ ] Dark theme for the web (the tokens have only `light`).
 - [ ] Performance Plot: PNG export and a zoom toolbar.
 - [x] Hosting decision: GitHub Pages, docs at the root and the app under `app/` (2026-11-23, 003_public-split).
-- [x] Serve under a sub-path: the worker derives `py/` from the build base (`PUMPFLOW_BASE`); the app runs at `/app/` on Pages (2026-11-23).
+- [ ] Serve under a sub-path: the worker loads the engine from the absolute `/py/` path, so the app must sit at the origin root.
 - [ ] Undo granularity in the forms (one undo step per field edit today).
 
 ## 4. Product follow-ups (candidate sprints for a 002 project)
