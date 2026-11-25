@@ -19,6 +19,7 @@ links and every downstream widget recomputes automatically.
 | [Architecture](architecture.md) | System design + **Mermaid** workflow diagrams |
 | [Module Reference](modules.md) | Per-module / per-class API documentation |
 | [Data Formats](data_formats.md) | `.pumpflow` project + §6.2 data-exchange JSON |
+| [Training](../../docs/training/README.md) | Hands-on walkthroughs: witnessing a test on the desktop and in the browser |
 
 ---
 
@@ -41,9 +42,8 @@ links and every downstream widget recomputes automatically.
 ## Quick start
 
 ```bash
-# from the CentrifugalPump repo root (branch: orange), with pumpflow/ in place
-pip install -e .                      # the pump library (pint, python-docx, tabulate)
-pip install PySide6 matplotlib numpy  # the UI dependencies
+# from the CentrifugalPump repo root
+pip install -e ".[gui]"               # the pump library + the workbench UI (PySide6, matplotlib, …)
 python -m pumpflow                    # launch
 ```
 
