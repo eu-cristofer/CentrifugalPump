@@ -26,7 +26,7 @@ pytest -k verdict                    # by keyword
 pytest tests/test_affinity.py::test_to_speed_round_trip_is_identity   # one test
 
 black <file>                         # only on black-clean files (CI checks a listed set)
-mypy pump --ignore-missing-imports   # CI job, non-blocking until its backlog is fixed
+mypy pump --ignore-missing-imports   # CI job (blocking; clean since 2026-11-17)
 sphinx-build -b html docs docs/_build/html
 
 python -m pumpflow                   # the workbench
@@ -39,11 +39,14 @@ npm --prefix web run dev             # dev server
 npm --prefix web run check           # typecheck + lint + vitest
 npm --prefix web run parity          # Pyodide = desktop on the fixture projects
 npm --prefix web run build           # web/dist, the offline app (see docs/web.md)
+npm --prefix web run serve           # serve web/dist on the LAN; prints the Network address to open
 ```
+
+Run Python commands in the `pump` env (or wherever `.[dev,gui]` is installed): a bare base interpreter may lack PySide6, and `matplotlib.backends.backend_qt` then fails to import.
 
 `pytest` collects `tests/` plus `pump/` docstrings; it does **not** crawl `pumpflow/` (a Qt package). `pumpflow/nodes/test_points.py` is a Qt widget, not a test. GUI tests run Qt offscreen (`QT_QPA_PLATFORM=offscreen`). Do not open Qt windows and call `processEvents()` in tests after a modeless child window was left open: it can segfault.
 
-CI (`.github/workflows/ci.yml`): tests on Python 3.12 and 3.13 (blocking), black on a listed file set, a LaTeX job that exports the P-9001A PDF, and mypy and Sphinx `-W` (non-blocking backlogs listed in `docs/changes/NEXT_STEPS.md`).
+CI (`.github/workflows/ci.yml`): tests on Python 3.12 and 3.13 plus black on a listed file set (job `test`), the confidential-word scan (job `leak-scan`, word list from the `LEAK_WORDLIST` secret), `mypy pump`, Sphinx `-W` (job `docs`) and the web check/parity/build (job `web`) are all **blocking**. Only `latex-pdf` (exports the P-9001A PDF; needs TeX on the runner) is `continue-on-error`. A new black-clean file must be added to the list in `ci.yml` by hand.
 
 ## Architecture: the `pump` library
 
@@ -64,7 +67,7 @@ CI (`.github/workflows/ci.yml`): tests on Python 3.12 and 3.13 (blocking), black
 ### Acceptance: one engine ([pump/acceptance.py](pump/acceptance.py), ADR 0012)
 - Criteria are **data**: [pump/standards/api610.toml](pump/standards/api610.toml) (one table per edition) and [pump/standards/clients/*.toml](pump/standards/clients/) (overlays).  `AcceptanceCriteria.load("api610:8", client="n553")`.
 - Every table has a clause-level `source` and `verified`; `unverified` lists open parts, `performance_unverified` those that affect the performance verdict.  A merged sub-table is verified only if every layer is.  **Never invent a standard value**: unknown values ship `verified = false` with an honest `source`, and verdicts on them are labelled provisional.
-- `evaluate_performance(...)` is the **only** performance-verdict implementation.  Rows are `pass` / `fail` / `info` / `not evaluated`.  `approved = passed and complete`; a check that cannot be computed is never a silent pass ("NOT FULLY ASSESSED").  `PerformanceChecker` and `binding.check_compliance` are views of it.
+- `evaluate_performance(...)` is the **only** performance-verdict implementation.  Rows are `pass` / `fail` / `info` / `not evaluated`.  `approved = passed and complete`; a check that cannot be computed is never a silent pass ("NOT FULLY ASSESSED").  `PerformanceChecker` (in `performance_curve.py`) and `binding.check_compliance` are views of it.
 - API 610 facts encoded (checked against the 8th, 11th and 12th texts): efficiency is **not** a rated value (info only unless the purchaser sets a tolerance); shut-off bands split at 150/300 m in the 8th and 75/300 m in the 11th/12th; rising-curve rule; rated NPSH +0 % against the quoted NPSHr; test speed within 3 %.
 - Other verdicts: `pump.npsh` (margin rule from the client overlay plus quoted NPSHr), `pump.mechanical_run` (vibration in RMS, stabilisation, duration).
 
@@ -95,6 +98,7 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 ## Conventions and gotchas
 
 - **Design tokens only**: colours, font sizes, radii and spacing come from `pump/design/tokens.json` through `pump.design` (`color`, `length`, `render` for `@token` stylesheets) or `pumpflow.style.qcolor`. No `#rrggbb` in code (`tests/test_design_tokens.py` fails); see `docs/design-system.md`.
+- **macOS cursors**: use only cursor shapes macOS draws natively (arrow, pointing/open/closed hand, cross, I-beam, size H/V). Qt's Cocoa plugin builds `WaitCursor`, `BusyCursor` and `SizeAllCursor` from a bitmap, and that conversion segfaults on macOS 27 with Qt 6.11. matplotlib's toolbar sets WAIT and MOVE, so Qt plot canvases with a `NavigationToolbar` must remap them (see the `FigureCanvas` subclass in `pumpflow/nodes/performance_plot.py`).
 - Pass `Q_` quantities into library constructors; raw numbers raise `ValueError`.
 - Don't mutate curves in place; transforms and signals return new instances.
 - `pumpflow` must not re-implement physics or verdicts.
@@ -108,7 +112,7 @@ A thin reactive layer on PySide6 `QGraphicsView`:
 ## Workflow
 
 - **Repositories**: this public repo holds all code; real customer projects, the anonymisation map (`map.yaml`, used by `tools/anonymise.py`), the leak-guard word list and the real-case verdict check (`check.sh`, via `tools/verdicts.py`) live in the private sibling `../CentrifugalPump-data/`.  The pre-split history is the private, frozen `CentrifugalPump-archive`.
-- Larger work is planned as sprint projects with the `sprint-loop` skill under [docs/changes/](docs/changes/) (`001_masterpiece` is complete).  Open items live in [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
+- Larger work is planned as sprint projects with the `sprint-loop` skill under [docs/changes/](docs/changes/) (`001_masterpiece` is complete; `002_web` and `003_public-split` are "ready to archive").  Open items live in [docs/changes/NEXT_STEPS.md](docs/changes/NEXT_STEPS.md).
 - Architecture decisions are in [docs/adr/](docs/adr/) (latest: 0013, the web version in Pyodide; 0012, the single verdict engine).  The use-case registry is [docs/product/use-cases.md](docs/product/use-cases.md), with worked notebooks in [use_cases/](use_cases/).
 - Commit attribution and "commit/push only when asked" follow the session instructions.
 
