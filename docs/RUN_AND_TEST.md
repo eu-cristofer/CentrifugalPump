@@ -199,8 +199,6 @@ and an APPROVED/REJECTED verdict.
 
 Both formats are specified in [pumpflow/docs/data_formats.md](../pumpflow/docs/data_formats.md).
 
-For the full UI walkthrough see the [pumpflow User Guide](../pumpflow/docs/user_guide.md).
-
 ---
 
 ## 5. Testing
@@ -312,4 +310,4 @@ pytest -v                             # everything discoverable
 
 ---
 
-*See also: [Architecture Blueprint](ARCHITECTURE.md) · [pumpflow docs](../pumpflow/docs/index.md) · [`UI_SPEC.md`](../UI_SPEC.md)*
+*See also: [Architecture Blueprint](ARCHITECTURE.md) · [pumpflow docs](../pumpflow/docs/index.md) · [`UI_SPEC.md`](UI_SPEC.md)*
