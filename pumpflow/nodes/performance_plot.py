@@ -127,10 +127,26 @@ class PerformancePlotNode(BaseNode):
             QVBoxLayout,
             QWidget,
         )
-        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backend_tools import Cursors
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
         from matplotlib.backends.backend_qtagg import (
             NavigationToolbar2QT as NavigationToolbar,
         )
+
+        class FigureCanvas(FigureCanvasQTAgg):
+            """Canvas that only uses cursors macOS draws natively.
+
+            Qt's Cocoa plugin builds WaitCursor and SizeAllCursor from a
+            bitmap, and that conversion (QImage::toCGImage) segfaults on
+            macOS 27 with Qt 6.11.  The toolbar sets WAIT from inside
+            paintEvent on slow draws and MOVE while panning, so map both
+            to native shapes.
+            """
+
+            _SAFE = {Cursors.WAIT: Cursors.POINTER, Cursors.MOVE: Cursors.HAND}
+
+            def set_cursor(self, cursor):
+                super().set_cursor(self._SAFE.get(cursor, cursor))
 
         from . import ui
         from .plotting import build_figure
