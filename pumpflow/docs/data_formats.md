@@ -1,199 +1,149 @@
-# Architecture
+# Data Formats
 
-PumpLab is organized in four layers. Each layer depends only on the ones below
-it, and **only `binding.py` is allowed to import from the `pump` library** — this
-keeps the engineering physics in one auditable place.
-
-```mermaid
-flowchart TB
-    subgraph UI["Presentation — PySide6"]
-        APP["app.py · MainWindow / menus / file IO"]
-        CANVAS["canvas/ · scene · view · node/edge/port items"]
-        DLG["nodes/*.py dialogs + ui.py + plotting.py"]
-    end
-    subgraph LOGIC["Logic — Qt-agnostic"]
-        NODES["nodes/base.py · the 7 node compute() methods"]
-        SIG["signals.py · typed payloads"]
-    end
-    subgraph BIND["Binding"]
-        B["binding.py"]
-        MX["mathx.py · numfmt.py"]
-    end
-    subgraph LIB["Engineering library"]
-        PUMP["pump · Fluid / DesignPoint / TestPoint / PerformanceCurve / PerformanceChecker / ReportGenerator"]
-    end
-
-    APP --> CANVAS --> NODES
-    DLG --> NODES
-    NODES --> SIG
-    NODES --> B
-    B --> MX
-    B --> PUMP
-```
-
----
-
-## 1. The reactive data-flow model
-
-Widgets never call each other directly. Each node declares typed **input** and
-**output** ports; a link copies one node's cached output payload to another node's
-input. When anything changes, the scene recomputes the whole graph in
-dependency order.
+PumpLab reads and writes four artifacts. Two are inputs/interchange you will edit
+or share; two are outputs.
 
 ```mermaid
 flowchart LR
-    subgraph "A node"
-        direction TB
-        IN["inputs (typed ports)"] --> COMPUTE["compute(inputs)"]
-        COMPUTE --> OUT["outputs_cache {port: payload}"]
-        COMPUTE --> STATUS["status + state dot"]
-    end
-    UP["upstream node.outputs_cache"] -->|edge| IN
-    OUT -->|edge| DOWN["downstream node inputs"]
-```
-
-### Signal types and the ports that carry them
-
-```mermaid
-flowchart LR
-    RP[["RatedPoint"]]
-    TP[["TestPointSet"]]
-    CC2[["CorrectedCurve"]]
-    FM[["FittedModel"]]
-    CR[["ComplianceResult"]]
-
-    RP --> Correction
-    TP --> Correction
-    Correction --> CC2
-    CC2 --> CurveFit
-    CurveFit --> FM
-    FM --> Plot
-    FM --> Check
-    RP --> Plot
-    RP --> Check
-    Check --> CR
-    RP --> Report
-    CC2 --> Report
-    FM --> Report
-    CR --> Report
-```
-
-Port compatibility rule (`port_item.PortItem.can_accept`): an output may connect
-to an input when the signal types match (or either side is the wildcard `*`, used
-by Report Export's `branch` input and the Plot's `image` output), the two ports
-are on different nodes, and a **single-connection input** is not already occupied.
-
----
-
-## 2. The evaluation loop
-
-`GraphScene.evaluate()` runs on every meaningful change — a dialog edit, a new or
-removed link, a deleted node, or a project load.
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant D as Property Dialog
-    participant S as GraphScene
-    participant N as Nodes (topo order)
-    participant B as binding.py
-    participant P as pump library
-
-    U->>D: edit a value / toggle
-    D->>S: on_change → evaluate()
-    S->>S: _topo_order() (Kahn)
-    loop each node in order
-        S->>N: gather inputs from upstream caches
-        S->>N: run(inputs) → compute()
-        N->>B: (correction / fit / check)
-        B->>P: to_speed · to_fluid · fitter · PerformanceChecker
-        P-->>B: corrected curve / coeffs / limits
-        B-->>N: typed payload
-        N-->>S: outputs_cache + status/state
-        S->>S: node.refresh() (repaint)
-    end
-    S-->>U: canvas + downstream dialogs updated
-```
-
-**Ordering** uses a stable Kahn topological sort over the link graph; nodes left
-over from a cycle are appended deterministically so evaluation never hangs.
-**Error isolation**: a node that raises is caught and shown with an `error` state
-and message (UI_SPEC §7) — its neighbours still evaluate.
-
----
-
-## 3. Interactive edge creation
-
-All link dragging lives in `GraphView` (not in the ports) so the view keeps full
-control of the mouse and there is no grabber ambiguity.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Dragging: press on a port
-    note right of Dragging
-        if a connected single-input is
-        grabbed, its link detaches first
-        (re-wire), keeping the far end
-    end note
-    Dragging --> Dragging: mouse move → rubber-band to cursor
-    Dragging --> Connected: release on a compatible port
-    Dragging --> Idle: release on empty space (cancel)
-    Connected --> Idle: connect_ports() + evaluate()
-```
-
-Fan-out is supported because **output ports are always multi-connection**; merge
-is supported because the Report Export `branch` input is declared `multi=True`.
-
----
-
-## 4. The two-pump (A/B) topology
-
-One shared **Rated Point** (the service datasheet) fans out to two independent
-branches, each with its own **Test Points Table** (a physical unit TAG). Every
-branch payload carries its `pump_tag`, so Report Export groups them unambiguously
-into one consolidated document, and overall acceptance reflects **all** pumps.
-
-```mermaid
-flowchart LR
-    RP["◆ Rated Point (shared service TAG)"]
-    RP --> COA["↻ Correction A"]
-    RP --> COB["↻ Correction B"]
-    TPA["▦ Test Points · P-9002A"] --> COA
-    TPB["▦ Test Points · P-9002B"] --> COB
-    COA --> CFA["∿ Fit A"] --> CKA["✓ Check A"]
-    COB --> CFB["∿ Fit B"] --> CKB["✓ Check B"]
-    RP --> CKA
-    RP --> CKB
-    RP --> RE["▤ Report Export"]
-    CKA --> RE
-    CKB --> RE
-    CFA --> RE
-    CFB --> RE
-    COA --> RE
-    COB --> RE
+    DJ[".json — §6.2 data-exchange"] -->|Import| APP((PumpLab))
+    APP -->|Export| DJ
+    PF[".pumpflow — project"] <-->|Open / Save| APP
+    APP -->|Report Export| DOCX[".docx"]
+    APP -->|Report Export| PNG[".png"]
 ```
 
 ---
 
-## 5. Persistence boundaries
+## 1 · Data-exchange JSON (UI_SPEC §6.2)
 
-```mermaid
-flowchart TB
-    subgraph DISK["On disk"]
-        PF[".pumpflow (project: nodes + links + settings)"]
-        DJ[".json (§6.2 data-exchange: unit/rated/points)"]
-        DOCX[".docx (ReportGenerator output)"]
-        PNG[".png (per-pump plot)"]
-    end
-    SCENE["canvas/scene.py to_dict / load_dict"] <--> PF
-    PERSIST["persistence.py rated_from_json / testset_from_json"] <--> DJ
-    RE["report_export.py"] --> DOCX
-    RE --> PNG
-    RE --> DJ
+The lightweight interchange format: one rated point and a set of measured rows.
+**Numbers may be JSON numbers or strings**, and strings may use comma **or** dot
+decimals plus thousands separators (`"858,29"`, `"78.552"`, `"1.234,56"`). This is
+what `File ▸ Import/Export data file` reads and writes, and the shape of the
+seeded sample.
+
+```json
+{
+  "unit": "bar",
+  "rated": {
+    "tag": "P-9002",
+    "standard": "API610 (12a ed.) / ISO 13709 + N-553",
+    "q_m3h": "833",
+    "head_m": "73",
+    "n_rpm": "1750",
+    "power_kw": "252",
+    "eff_pct": "61",
+    "dens_rel": "0,736",
+    "visc_nom_cst": "0,567",
+    "head_shutoff": "117",
+    "parallel": false
+  },
+  "pump_tag": "P-9002A",
+  "points": [
+    { "q": "300",    "p_suc": "1,80", "p_dis": "12,53", "temp_c": "34", "power": "248",    "n_rpm": "1799" },
+    { "q": "858,29", "p_suc": "1,81", "p_dis": "9,47",  "temp_c": "34", "head": "78.552", "power": "298,69", "n_rpm": "1799" }
+  ]
+}
 ```
 
-- **`.pumpflow`** captures the entire canvas — node kinds, positions, links, and
-  each widget's `settings`. It is the "save my work" format.
-- **§6.2 JSON** is the lightweight interchange shape (single rated point + measured
-  rows) and round-trips with existing files, including comma-decimal strings.
+### Field reference
+
+**`unit`** — pressure unit for `p_suc` / `p_dis`. Accepted: `"bar"`,
+`"kgf/cm**2"` (also `"kgf/cm2"`, `"kgf/cm²"`).
+
+**`rated`** (object)
+
+| Key | Meaning | Unit |
+|---|---|---|
+| `tag` | service / datasheet TAG (shared) | — |
+| `standard` | applicable standard text | — |
+| `q_m3h` | rated capacity | m³/h |
+| `head_m` | rated differential head | m |
+| `n_rpm` | rated speed | rpm |
+| `power_kw` | rated breaking power | kW |
+| `eff_pct` | rated efficiency *(optional)* | % |
+| `head_shutoff` | rated shut-off head *(optional)* | m |
+| `dens_rel` | relative density (SG) | — |
+| `visc_nom_cst` | nominal viscosity | cSt |
+| `parallel` | parallel-operation flag | bool |
+
+**`pump_tag`** — physical unit TAG (unique per branch). If omitted on import,
+defaults to `rated.tag + "A"`.
+
+**`points`** (array) — one object per measured row.
+
+| Key | Meaning | Unit |
+|---|---|---|
+| `q` | measured capacity | m³/h |
+| `p_suc` | suction pressure | `unit` |
+| `p_dis` | discharge pressure | `unit` |
+| `temp_c` | test-water temperature | °C |
+| `n_rpm` | measured speed | rpm |
+| `power` | measured breaking power | kW |
+| `head` | measured/overridden head *(optional)* | m |
+| `eff` | measured efficiency *(optional)* | % |
+
+If `head` is omitted it is computed as `(P_dis − P_suc) / (ρ·g)` using water
+density at `temp_c`. If `eff` is omitted it is computed from hydraulic vs.
+breaking power.
+
+> **Round-trip:** the exporter (`json_from_signals`) writes this exact shape, so
+> existing files stay interoperable. Exported numbers are normalized to plain
+> numerics; the importer still accepts the comma-decimal strings.
+
+---
+
+## 2 · Project file — `.pumpflow` (UI_SPEC §6.1)
+
+The full canvas: every node (kind, position, settings) and every link. This is
+the "save my work" format, written/read by `GraphScene.to_dict` / `load_dict`
+via `File ▸ Save/Open project`.
+
+```json
+{
+  "nodes": [
+    {
+      "id": "rated_point-1",
+      "kind": "rated_point",
+      "x": -660.0,
+      "y": -170.0,
+      "settings": {
+        "tag": "P-9002", "q": 833.0, "head": 73.0, "n": 1750.0,
+        "power": 252.0, "eff": 61.0, "head_shutoff": 117.0,
+        "dens_rel": 0.736, "visc": 0.567, "unit": "bar", "parallel": false
+      }
+    },
+    {
+      "id": "test_points-2",
+      "kind": "test_points",
+      "x": -660.0, "y": 150.0,
+      "settings": { "pump_tag": "P-9002A", "unit": "bar", "rows": [ /* … */ ] }
+    }
+  ],
+  "edges": [
+    { "src_node": "rated_point-1", "src_port": "RatedPoint",
+      "dst_node": "correction-3",  "dst_port": "RatedPoint" }
+  ]
+}
+```
+
+- **`nodes[].kind`** must be one of the registry kinds: `rated_point`,
+  `test_points`, `correction`, `curve_fit`, `performance_plot`, `compliance`,
+  `report_export`.
+- **`nodes[].settings`** is each widget's own settings dict (see the Module
+  Reference for per-node `default_settings`).
+- **`edges[]`** reference ports by name; unknown nodes/ports are skipped on load
+  (forward-compatible).
+
+---
+
+## 3 · Report outputs
+
+- **`.docx`** — produced by `pump.ReportGenerator` from a `report_data` dict
+  (`assemble_report_data`): a shared `equipment_description` + `design_point`, and
+  one `test_data` entry **per pump TAG** (test summary, raw test data, plot PNG).
+  Needs `template_en.docx` / `template_pt.docx`.
+- **`.json`** (from Report Export) — a richer bundle than §6.2: service-level
+  identity, shared rated point, equipment, and a `pumps[]` array carrying each
+  unit's verdict, per-parameter checks, and corrected curve data.
+- **`.png`** — per-pump performance plot (the library's Matplotlib figure).
