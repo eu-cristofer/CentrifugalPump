@@ -133,7 +133,7 @@ capability. If it only arranges existing nouns, it is a flow plus an acceptance 
 2. **Write the assertion first**, so the job becomes making one line go green.
 3. **Narrow a sprawling diff.** If it sprawls, you took on too much: stash it, narrow it,
    resume.
-4. **Lean on the rules in `CLAUDE.md` and the ADRs.** They are decisions you don't
+4. **Lean on the rules in `AGENTS.md` and the ADRs.** They are decisions you don't
    have to make again.
 
 ## Where to read next
