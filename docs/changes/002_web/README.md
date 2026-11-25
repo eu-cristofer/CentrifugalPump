@@ -46,7 +46,7 @@ Each run MUST:
 - **Gates.** `pytest` green; black on new Python files and the CI list; from sprint 4,
   `npm --prefix web run check` (typecheck + lint + tests) green.
 - **Regression fixture.** `python -m pumpflow.export_cli examples/user/P-9001A_MRT_reference.pumpflow --out /tmp/p9001 --formats docx,tex,pdf` exits 0.
-- **Confidential material** (`examples/user/*.PDF`, `marker-output/`) never enters git
+- **Confidential material** (customer files and the licensed standard texts, now in the private data repo) never enters git
   or the web bundle.
 
 ## Tracker

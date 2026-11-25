@@ -35,7 +35,7 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
   - save as `P-9001B_witness.pumpflow`.
 
 ## 3. Confirm researched values against the standards (owner)
-On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in `marker-output/`, git-ignored, never published). Still open:
+On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in the private data repo under `standards/`, never published). Still open:
 - [x] API 610 11th/12th head, shut-off and power tolerances, vibration table, POR (Table 16, Table 8, 6.1.12).
 - [ ] API 610 10th edition: no text available; still Amarinth bulletin values, `verified = false`.
 - [x] API 610 11th/12th high-speed vibration allowance (Figures 34/35): applied, with the chart (2026-11-17). Exponents 0.30/0.21 reconstructed from the figure: **confirm against the printed figure**, then set `verified = true`.
