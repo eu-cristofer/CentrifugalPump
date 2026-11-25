@@ -11,6 +11,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- `AGENTS.md` is the single source of agent/developer guidance (it absorbs the former
+  `CLAUDE.md`, which now only imports it); notes the `PumpWorkspace` master folder and
+  points the licensed standard texts to the private data repo.
 - `docs/DEV_JOURNEY.md` rewritten for today: the three repositories, setup, the
   change loop with its local gates, guarded files, confidentiality rules.  The public
   split cutover is done (2026-11-24).
