@@ -50,6 +50,8 @@ export interface ComplianceView {
   criteria_label: string;
   overridden: boolean;
   override_reason: string;
+  /** agreed reason shut-off was not tested; "" unless it was applied */
+  shutoff_waiver?: string;
   unverified: string[];
   not_evaluated: string[];
   parallel_ok: boolean | null;

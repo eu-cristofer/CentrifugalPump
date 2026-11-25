@@ -313,6 +313,28 @@ def tolerance_override_sentence(
     )
 
 
+def shutoff_waiver_sentence(translate: Callable[[str], str], reason: str = "") -> str:
+    """The agreed reason shut-off was not tested, or ``""`` when none.
+
+    Printed under the verdict when the Compliance node's waiver was applied
+    (no test point near zero flow, so the shut-off head was not judged).
+
+    Examples
+    --------
+    >>> shutoff_waiver_sentence(str, "integral-gear pump, client letter 12")
+    'Shut-off head not tested (no test point near zero flow); not judged by agreement. Reason: integral-gear pump, client letter 12.'
+    >>> shutoff_waiver_sentence(str, "")
+    ''
+    """
+    why = (reason or "").strip()
+    if not why:
+        return ""
+    return (
+        f"{translate('Shut-off head not tested (no test point near zero flow); not judged by agreement')}. "
+        f"{translate('Reason')}: {why.rstrip('.')}."
+    )
+
+
 def mechanical_run_duration_sentence(translate: Callable[[str], str], result) -> str:
     """``Duration: 4.00 h`` (plus the required minimum when configured)."""
     text = f"{translate('Duration')}: {result.duration.to('h'):0.2f~P}"
@@ -655,6 +677,9 @@ class ReportGenerator:
             )
             if override_text:
                 document.add_paragraph(override_text, style='Text_body')
+            waiver_text = shutoff_waiver_sentence(self._, test_data.get("shutoff_waiver", ""))
+            if waiver_text:
+                document.add_paragraph(waiver_text, style='Text_body')
             self._add_test_summary(document, test_data.get("test_summary", {}), acceptance)
             if test_data.get(VISCOSITY_KEY):
                 document.add_paragraph(

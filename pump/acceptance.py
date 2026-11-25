@@ -734,6 +734,7 @@ def evaluate_performance(
     rated_speed: Optional[Q_] = None,
     test_speeds: tuple = (),
     tolerances: Optional[Mapping] = None,
+    shutoff_waiver: Optional[str] = None,
 ) -> PerformanceVerdict:
     """
     Judge a fitted, corrected performance curve at the rated point.
@@ -749,7 +750,12 @@ def evaluate_performance(
       ``tolerances["efficiency"]``); otherwise ``info``.
     - **Shutoff Head**: inside the shut-off band (chosen by the rated head);
       with ``parallel_operation`` (rising curve specified) the negative side
-      is allowed only if :func:`head_rises_to_shutoff`.
+      is allowed only if :func:`head_rises_to_shutoff`.  When no test point lies
+      below ``shutoff_extrapolation_q_fraction`` of the rated flow, shut-off was
+      not tested and the predicted value is an extrapolation: the row is
+      ``not evaluated`` (never pass or fail), or ``info`` when
+      ``shutoff_waiver`` gives the agreed reason for not testing at shut-off
+      (API 610 8th 4.3.3.2.1 note, 11th 8.3.3.3 a) note, 12th 8.3.3.4).
     - **Parallel operation**: shut-off / rated head ``>= parallel_shutoff_min_ratio``
       and a rising curve (only when ``parallel_operation``).
     - **Test speed**: every tested speed within ``test_speed_tol`` of the rated
@@ -940,6 +946,20 @@ def evaluate_performance(
                     "negative tolerance not allowed: the curve does not rise "
                     "to shut-off"
                 )
+            status = PASS if ok else FAIL
+            if extrapolated:
+                # Not a measurement: never judged (TR-01 4.1).
+                waiver = (shutoff_waiver or "").strip()
+                frac = criteria.shutoff_extrapolation_q_fraction
+                if waiver:
+                    status = INFO
+                    note = f"shut-off not tested; waived: {waiver}"
+                else:
+                    status = NOT_EVALUATED
+                    note = (
+                        f"shut-off not tested (no test point below {frac:.0%} of "
+                        "rated flow); the extrapolated value is not judged"
+                    )
             rows.append(
                 CheckRow(
                     "Shutoff Head",
@@ -949,7 +969,7 @@ def evaluate_performance(
                     _limit(rated_shutoff * (1 + s_plus)),
                     d,
                     s_plus,
-                    PASS if ok else FAIL,
+                    status,
                     extrapolated=extrapolated,
                     note=note,
                 )

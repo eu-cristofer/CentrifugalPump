@@ -47,6 +47,7 @@ class ComplianceCheckNode(BaseNode):
             rated,
             self.settings.get("tolerances") or None,
             reason=self.settings.get("override_reason", ""),
+            shutoff_waiver=self.settings.get("shutoff_waiver", ""),
         )
         self._last = result
         self._rated = rated
@@ -267,6 +268,27 @@ class ComplianceCheckNode(BaseNode):
         toggle.setChecked(is_overridden)
         show_override(is_overridden)
 
+        # Shut-off not tested (TR-01 4.1): an agreed waiver, not a tolerance.
+        waiver = QLineEdit(s.get("shutoff_waiver", ""))
+        waiver.setPlaceholderText(
+            "only if agreed, e.g. integral-gear, API 610 12th 8.3.3.4; client letter no."
+        )
+        waiver.setToolTip(
+            "Used only when no test point is near zero flow (the shut-off head is "
+            "extrapolated).  Without a reason the shut-off row is not evaluated; "
+            "with one it is reported for information and the reason is printed."
+        )
+
+        def write_waiver(text):
+            if text.strip():
+                s["shutoff_waiver"] = text.strip()
+            else:
+                s.pop("shutoff_waiver", None)
+            refresh()
+
+        waiver.textChanged.connect(write_waiver)
+        dlg.add(ui.row("Shut-off not tested, agreed because", waiver))
+        dlg.add(ui.hline())
         dlg.add(toggle)
         dlg.add(override_box)
         refresh()

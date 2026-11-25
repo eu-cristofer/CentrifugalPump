@@ -77,9 +77,10 @@ changed tolerance next to the criteria default, with your reason.
 ## 4 · Shut-off head and the rising curve
 
 The shut-off head is predicted at Q = 0.  When no test point lies near Q = 0 it is an
-**extrapolation**; the tool flags it (no point below 5 % of rated flow).  Ask whether a
-shut-off point was taken: the 8th edition lists shut-off as one of the five minimum test
-points (4.3.3.2.1), but high-energy pumps may skip it.
+**extrapolation** (no point below 5 % of rated flow): the tool shows the value but does
+not judge it, and the verdict is **NOT FULLY ASSESSED** until shut-off is tested or the
+omission is waived (§4.1).  Ask whether a shut-off point was taken: the 8th edition lists
+shut-off as one of the five minimum test points (4.3.3.2.1), but some pumps may skip it.
 
 When a **rising curve** is specified (always the case with parallel operation):
 - the head must rise continuously from rated flow back to shut-off;
@@ -139,19 +140,20 @@ datasheet shut-off head 357.4 m.  The vendor tested six points; the lowest was a
 **What to do at the bench**
 - Check the contract first: which API edition and which N-553 revision govern, and
   whether the vendor's exceptions list waives the shut-off point.
-- Record the shut-off head as **not tested** and list it as an open point with the reason
-  (pump type, power density, the client's concurrence reference).
+- Until the omission is agreed, leave the waiver empty: the Compliance node shows the
+  shut-off row as **not evaluated** ("shut-off not tested …") and the verdict is
+  **NOT FULLY ASSESSED ⚠: Shutoff Head**.  List it as an open point.
+- Once it is agreed, type the reason in the Compliance node's **"Shut-off not tested,
+  agreed because"** field (pump type, clause, the client's concurrence reference).  The
+  row becomes *information* ("waived: …"), the verdict can be **APPROVED ✓ (shut-off not
+  tested)**, and the report prints "Shut-off head not tested … Reason: …" under the
+  verdict.  The waiver is used only when the shut-off head is extrapolated: a tested
+  shut-off point is always judged.
 - Do **not** widen the shut-off tolerance with a Compliance override to turn the
   extrapolated value into a pass: an override changes a limit, it does not replace a
   missing measurement.
 - Leaving the rated shut-off head blank on the Rated Point skips the check, but the report
-  then says nothing about it; prefer recording it as an open point.
-
-```{note}
-The tool currently reports an extrapolated shut-off head as **pass** or **fail** with an
-*extrapolated* flag.  A planned change will report it as **not evaluated** and add a
-"shut-off not tested" waiver with a required reason (see `docs/changes/NEXT_STEPS.md`).
-```
+  then says nothing about it; use the waiver instead.
 
 ## 5 · NPSH: two separate rules
 
@@ -327,7 +329,8 @@ Work them by hand from §2-§7, then check with the notebook.
    8th edition?
 11. The worked case of §4.1 (OH6, integrally geared, 26.9 kW, impeller 125.5 mm,
    discharge 2 in, lowest test point at 35 % of rated flow, API 610 8th + N-553 rev E).
-   The tool reports the shut-off head as **743 m, fail (extrapolated)** against 357.4 m.
+   Older versions of the tool reported the shut-off head as **743 m, fail
+   (extrapolated)** against 357.4 m.
    Is the pump rejected?  Compute the 12th-edition power density.  What do you write in
    the report?
 
@@ -370,4 +373,7 @@ Work them by hand from §2-§7, then check with the notebook.
    omission needs the client's written concurrence.  In the report: shut-off head **not
    tested**, reason and concurrence reference, plus an open point on the rising curve
    (N-553 rev E), because the head at 35 % of rated flow is slightly below the head at
-   68 %.  Do not override the tolerance to make the row pass.
+   68 %.  Do not override the tolerance to make the row pass.  In the tool: without a
+   waiver the verdict is **NOT FULLY ASSESSED ⚠: Shutoff Head**; with the agreed reason
+   in "Shut-off not tested, agreed because" it is **APPROVED ✓ (shut-off not tested)**
+   and the report prints the reason.

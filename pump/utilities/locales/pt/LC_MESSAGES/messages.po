@@ -676,3 +676,6 @@ msgstr "Motivo"
 
 msgid "not given"
 msgstr "não informado"
+
+msgid "Shut-off head not tested (no test point near zero flow); not judged by agreement"
+msgstr "Altura de shut-off não testada (nenhum ponto de teste próximo à vazão zero); não julgada, por acordo"

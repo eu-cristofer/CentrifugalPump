@@ -357,6 +357,7 @@ class ComplianceResult:
     unverified: tuple = ()  # names of criteria parts not yet verified
     parallel_ok: Optional[bool] = None  # parallel-operation rule (None = n/a)
     not_evaluated: tuple = ()  # required checks that could not be computed
+    shutoff_waiver: str = ""  # agreed reason shut-off was not tested (applied)
 
     @property
     def verdict_label(self) -> str:
@@ -387,6 +388,8 @@ class ComplianceResult:
             qualifiers.append("provisional")
         if self.overridden:
             qualifiers.append("tolerances overridden")
+        if self.shutoff_waiver:
+            qualifiers.append("shut-off not tested")
         if qualifiers:
             text += " (" + ", ".join(qualifiers) + ")"
         return text

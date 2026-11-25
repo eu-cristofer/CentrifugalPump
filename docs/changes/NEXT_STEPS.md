@@ -35,7 +35,8 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
   - save as `P-9001B_witness.pumpflow`.
 
 - [ ] **Shut-off not tested (2026-11-25 FAT).** The vendor took no shut-off point (lowest at 35 % of rated flow); the tool extrapolates H(0) and fails it. Ask for the agreed exemption (integral-gear, 12th 8.3.3.4 power density ≈ 83 MW/m³) and a statement that the head rises to shut-off (N-553 rev E 6.1.11; the curve droops slightly at low flow). Confirm the governing API edition (the datasheet cites ISO 13709 / API 610 12th; the tool uses the 8th). See TR-01 §4.1.
-- [ ] **Tool: shut-off not tested.** Report an extrapolated shut-off head as *not evaluated* instead of pass/fail, and add a "shut-off not tested" waiver with a required reason on the Compliance node, printed in the report. Optionally compute the 12th-edition power density. Moves verdicts: run `check.sh`.
+- [x] **Tool: shut-off not tested** (2026-11-25). An extrapolated shut-off head is *not evaluated* (NOT FULLY ASSESSED) unless the Compliance node's "Shut-off not tested, agreed because" waiver is filled; the report prints the reason. The four example fixtures moved to NOT FULLY ASSESSED; the private `expected/` verdicts were regenerated.
+- [ ] **Power density** (12th 8.3.3.4) shown as supporting information on the Compliance node (optional).
 
 ## 3. Confirm researched values against the standards (owner)
 On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in the private data repo under `standards/`, never published). Still open:

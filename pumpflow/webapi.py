@@ -79,7 +79,8 @@ Public functions
 
         {"pump_tag": str, "verdict_text": str, "verdict_label": str,
          "overall_pass": bool, "criteria_label": str, "overridden": bool,
-         "override_reason": str, "unverified": [str], "not_evaluated": [str],
+         "override_reason": str, "shutoff_waiver": str,
+         "unverified": [str], "not_evaluated": [str],
          "parallel_ok": bool | None, "tolerances": dict,
          "default_tolerances": {"head","shutoff","power","efficiency"},
          "rows": [{"name", "actual", "predicted", "min", "max", "deviation",
@@ -527,6 +528,7 @@ def _view_compliance(graph: Graph, node) -> dict:
         "criteria_label": res.criteria_label,
         "overridden": res.overridden,
         "override_reason": res.override_reason,
+        "shutoff_waiver": res.shutoff_waiver,
         "unverified": list(res.unverified),
         "not_evaluated": list(res.not_evaluated),
         "parallel_ok": res.parallel_ok,

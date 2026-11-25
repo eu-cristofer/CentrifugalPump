@@ -290,6 +290,13 @@ maximised state, kept in the app settings (`QSettings`, key
   - Deviation per notebook: `δ = 1 − nominal/predicted`.
   - Verdict logic per notebook `status()`: head |δ|≤tol; power δ≤tol;
     efficiency δ≥−tol.
+- **Shut-off not tested:** when no test point lies below
+  `shutoff_extrapolation_q_fraction` of rated flow, the Shutoff Head row is *not
+  evaluated* (overall NOT FULLY ASSESSED).  A **"Shut-off not tested, agreed because"**
+  text field (setting `shutoff_waiver`, omitted when empty), outside the override
+  section, turns that row into *information*; the verdict text gains "(shut-off not
+  tested)" and the report prints the reason under the verdict.  A tested shut-off point
+  is always judged and the field is then ignored.
 - **Controls:** a collapsed **"Override acceptance criteria…"** section (opened
   automatically when an override exists) with the tolerance fields pre‑filled
   from the acceptance criteria of the rated point's edition and client overlay,

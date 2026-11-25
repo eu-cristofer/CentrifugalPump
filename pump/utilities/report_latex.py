@@ -55,6 +55,7 @@ from .report import (
     npsh_points_table,
     npsh_summary_rows,
     performance_verdict,
+    shutoff_waiver_sentence,
     tolerance_override_sentence,
     signature_block,
     standard_sentence,
@@ -308,6 +309,9 @@ class LatexReportGenerator:
             )
             if override_text:
                 out.append(latex_escape(override_text) + "\n")
+            waiver_text = shutoff_waiver_sentence(_, entry.get("shutoff_waiver", ""))
+            if waiver_text:
+                out.append(latex_escape(waiver_text) + "\n")
             out.append(self._summary(entry.get("test_summary") or {}, acceptance))
             if entry.get(VISCOSITY_KEY):
                 out.append(

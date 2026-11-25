@@ -610,3 +610,6 @@ msgstr "Reason"
 
 msgid "not given"
 msgstr "not given"
+
+msgid "Shut-off head not tested (no test point near zero flow); not judged by agreement"
+msgstr "Shut-off head not tested (no test point near zero flow); not judged by agreement"

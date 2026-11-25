@@ -222,6 +222,8 @@ def assemble_report_data(
                 entry["verdict"] = bool(b.compliance.overall_pass)
                 if b.compliance.verdict_label == "NOT FULLY ASSESSED":
                     entry["not_evaluated"] = list(b.compliance.not_evaluated)
+            if b.compliance is not None and b.compliance.shutoff_waiver:
+                entry["shutoff_waiver"] = b.compliance.shutoff_waiver
             if override:
                 entry["tolerance_override"] = override
                 if b.compliance.override_reason:

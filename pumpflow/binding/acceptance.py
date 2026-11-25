@@ -86,6 +86,7 @@ def check_compliance(
     rated: RatedPoint,
     tolerances: Optional[dict] = None,
     reason: str = "",
+    shutoff_waiver: str = "",
 ) -> ComplianceResult:
     """
     Evaluate API 610 deviations & verdict.
@@ -93,7 +94,9 @@ def check_compliance(
     A thin adapter: the verdict is :func:`pump.acceptance.evaluate_performance`
     (the same engine as ``PerformanceChecker``), and this function only turns
     its rows into display floats (m, kW, %, rpm).  Every deviation is
-    ``(predicted - rated) / rated``.
+    ``(predicted - rated) / rated``.  ``shutoff_waiver`` is the agreed reason
+    shut-off was not tested; it applies only when the shut-off head is
+    extrapolated (no test point near zero flow).
     """
     criteria = criteria_for(rated)
     lib_defaults = default_tolerances(rated)
@@ -121,8 +124,13 @@ def check_compliance(
         rated_speed=rated.speed,
         test_speeds=tuple(getattr(fitted, "test_speeds", ()) or ()),
         tolerances=tol,
+        shutoff_waiver=shutoff_waiver,
     )
     verified = bool(criteria.verified)
+    so_row = verdict.row("Shutoff Head")
+    waived = (shutoff_waiver or "").strip() if (
+        so_row is not None and so_row.extrapolated and so_row.status == "info"
+    ) else ""
     display_unit = {
         "Head": "m",
         "Power": "kW",
@@ -168,6 +176,7 @@ def check_compliance(
         unverified=criteria.performance_unverified,
         parallel_ok=verdict.parallel_ok,
         not_evaluated=verdict.not_evaluated,
+        shutoff_waiver=waived,
     )
 
 
