@@ -128,9 +128,11 @@ def check_compliance(
     )
     verified = bool(criteria.verified)
     so_row = verdict.row("Shutoff Head")
-    waived = (shutoff_waiver or "").strip() if (
-        so_row is not None and so_row.extrapolated and so_row.status == "info"
-    ) else ""
+    waived = (
+        (shutoff_waiver or "").strip()
+        if (so_row is not None and so_row.extrapolated and so_row.status == "info")
+        else ""
+    )
     display_unit = {
         "Head": "m",
         "Power": "kW",
