@@ -15,6 +15,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
 from pump.design import color as token_color
@@ -47,6 +48,7 @@ class ComplianceCheckNode(BaseNode):
             rated,
             self.settings.get("tolerances") or None,
             reason=self.settings.get("override_reason", ""),
+            shutoff_waiver=self.settings.get("shutoff_waiver", ""),
         )
         self._last = result
         self._rated = rated
@@ -267,6 +269,27 @@ class ComplianceCheckNode(BaseNode):
         toggle.setChecked(is_overridden)
         show_override(is_overridden)
 
+        # Shut-off not tested (TR-01 4.1): an agreed waiver, not a tolerance.
+        waiver = QLineEdit(s.get("shutoff_waiver", ""))
+        waiver.setPlaceholderText(
+            "only if agreed, e.g. integral-gear, API 610 12th 8.3.3.4; client letter no."
+        )
+        waiver.setToolTip(
+            "Used only when no test point is near zero flow (the shut-off head is "
+            "extrapolated).  Without a reason the shut-off row is not evaluated; "
+            "with one it is reported for information and the reason is printed."
+        )
+
+        def write_waiver(text):
+            if text.strip():
+                s["shutoff_waiver"] = text.strip()
+            else:
+                s.pop("shutoff_waiver", None)
+            refresh()
+
+        waiver.textChanged.connect(write_waiver)
+        dlg.add(ui.row("Shut-off not tested, agreed because", waiver))
+        dlg.add(ui.hline())
         dlg.add(toggle)
         dlg.add(override_box)
         refresh()
@@ -302,8 +325,8 @@ def param_cells(p) -> list:
         fmt(p.predicted) if p.predicted is not None else "—",
         fmt(p.minimum) if p.minimum is not None else "—",
         fmt(p.maximum) if p.maximum is not None else "—",
-        f"{p.deviation * 100:+.2f} %" if p.deviation is not None else "—",
-        f"{p.tolerance * 100:.1f} %" if p.tolerance is not None else "—",
+        f"{_nf(p.deviation * 100, '+.2f')} %" if p.deviation is not None else "—",
+        f"{_nf(p.tolerance * 100, '.1f')} %" if p.tolerance is not None else "—",
         "info" if info else ("n/e ⚠" if not evaluated else ("✅" if p.passed else "❌")),
         " · ".join(notes),
     ]

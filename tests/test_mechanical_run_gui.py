@@ -165,7 +165,8 @@ def test_default_log_emits_only_the_log(qapp):
         ("Oil temperature", "oil_temperature"),
     ]
     assert [p.name for p in node.outputs] == ["MechanicalRunSet"]
-    assert node.inputs == []
+    # optional: the rated point's pump type selects the vibration locations
+    assert [p.name for p in node.inputs] == ["RatedPoint"]
 
 
 def test_p9001a_log_and_check(qapp):
@@ -234,6 +235,7 @@ def test_log_units_sit_above_the_readings_and_convert(qapp):
         "Name",
         "Dimension",
         "Role",
+        "Location",
     ]
     strip = next(
         w for w in dlg.findChildren(object) if type(w).__name__ == "UnitHeaderStrip"
@@ -444,3 +446,36 @@ def test_blank_template_is_invalid_not_a_verdict(qapp):
     ]
     out = node.compute({})
     assert node.state == "invalid" and not out
+
+
+def test_lubrication_adds_the_standard_temperature_channels(qapp):
+    """Choosing a lubrication system adds the channels its temperature rules
+    need; readings of channels already entered are never dropped."""
+    from PySide6.QtWidgets import QCheckBox, QComboBox
+
+    node = _node()
+    dlg = node.create_dialog(None, lambda: node.compute({}))
+    lube = next(
+        c for c in dlg.findChildren(QComboBox) if c.findData("pressurized") >= 0
+    )
+    lube.setCurrentIndex(lube.findData("pressurized"))
+    s = node.settings
+    assert s["lubrication"] == "pressurized"
+    roles = {c["name"]: c["role"] for c in s["columns"]}
+    assert roles["Oil inlet"] == "oil_inlet_temperature"
+    assert roles["Oil outlet DE"] == "oil_outlet_temperature"
+    assert (
+        next(c for c in s["columns"] if c["name"] == "Oil outlet NDE")["location"]
+        == "NDE"
+    )
+    assert "Sump" in roles  # the custom channel with readings stays
+    ambient = next(
+        b for b in dlg.findChildren(QCheckBox) if b.text().startswith("Ambient")
+    )
+    ambient.setChecked(True)
+    assert s["channel_groups"] == ["ambient"]
+    assert any(c["role"] == "ambient_temperature" for c in s["columns"])
+    lube.setCurrentIndex(lube.findData(""))
+    assert "lubrication" not in s
+    assert not any(c.get("key") == "oil_in" for c in s["columns"])  # no readings: gone
+    dlg.close()

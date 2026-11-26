@@ -24,6 +24,7 @@ from typing import Dict, Optional
 
 from pump.design import color as token_color
 
+from ..numfmt import num as _nf
 from .. import units
 from .base import BaseNode, PortSpec
 
@@ -206,12 +207,12 @@ class PerformancePlotNode(BaseNode):
                 c.set_xdata([q, q])
                 c.set_visible(True)
             values = fig.pump_readout(q)
-            parts = [f"Q = {q:.2f} m³/h"]
+            parts = [f"Q = {_nf(q, '.2f')} m³/h"]
             for key in ("head", "power", "efficiency", "npsh"):
                 if key in values:
                     name = {"head": "H", "power": "P", "efficiency": "η",
                             "npsh": "NPSHr"}[key]
-                    parts.append(f"{name} = {values[key]:.2f} {_CANON[key]}")
+                    parts.append(f"{name} = {_nf(values[key], '.2f')} {_CANON[key]}")
             if len(parts) == 1:
                 parts.append("outside the tested range")
             readout.setText("   ·   ".join(parts))

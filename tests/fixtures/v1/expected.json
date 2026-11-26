@@ -26,8 +26,8 @@
  "P-9001A_MRT_reference.pumpflow": {
   "check_a": [
    "compliance",
-   "ok",
-   "P-9001A · APPROVED ✓",
+   "reject",
+   "P-9001A · NOT FULLY ASSESSED ⚠: Shutoff Head",
    [
     [
      "Head",
@@ -55,7 +55,7 @@
      "367.35020503238155",
      "339.5",
      "375.24",
-     true
+     false
     ],
     [
      "Test speed",
@@ -118,8 +118,8 @@
   ],
   "report": [
    "report_export",
-   "ok",
-   "1 pump · APPROVED ✓"
+   "reject",
+   "1 pump · NOT FULLY ASSESSED ⚠"
   ],
   "test_a": [
    "test_points",
@@ -212,7 +212,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "P-9002A · REJECTED ✗: 1 out of tolerance",
+   "P-9002A · NOT FULLY ASSESSED ⚠: Shutoff Head",
    [
     [
      "Head",
@@ -274,7 +274,7 @@
   "report": [
    "report_export",
    "reject",
-   "1 pump · REJECTED ✗"
+   "1 pump · NOT FULLY ASSESSED ⚠"
   ],
   "test_a": [
    "test_points",
@@ -286,7 +286,7 @@
   "check_a": [
    "compliance",
    "reject",
-   "P-9002A · REJECTED ✗: 1 out of tolerance",
+   "P-9002A · NOT FULLY ASSESSED ⚠: Shutoff Head",
    [
     [
      "Head",
@@ -348,7 +348,7 @@
   "report": [
    "report_export",
    "reject",
-   "1 pump · REJECTED ✗"
+   "1 pump · NOT FULLY ASSESSED ⚠"
   ],
   "test_a": [
    "test_points",
@@ -359,8 +359,8 @@
  "water_pump_curve_report.pumpflow": {
   "check_a": [
    "compliance",
-   "ok",
-   "P-1001A · APPROVED ✓",
+   "reject",
+   "P-1001A · NOT FULLY ASSESSED ⚠: Shutoff Head",
    [
     [
      "Head",
@@ -388,7 +388,7 @@
      "129.89409201742856",
      "119.6",
      "140.4",
-     true
+     false
     ],
     [
      "Test speed",
@@ -421,8 +421,8 @@
   ],
   "report": [
    "report_export",
-   "ok",
-   "1 pump · APPROVED ✓"
+   "reject",
+   "1 pump · NOT FULLY ASSESSED ⚠"
   ],
   "test_a": [
    "test_points",

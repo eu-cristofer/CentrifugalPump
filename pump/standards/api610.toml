@@ -53,6 +53,25 @@ max = "2.0 mm/s"
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
 
+# Bearing temperatures during the shop test (2.9.2.3; grease 5.1.2.11).  Rises
+# are temperature differences; *_design_max are design limits at 43 degC ambient
+# (information only in the shop test).  The 8th edition defines no
+# temperature-stabilisation criterion.
+[editions."8".mechanical_run.temperature.pressurized]
+oil_rise_max = "28 delta_degC"
+bearing_metal_max = "93 degC"
+oil_outlet_design_max = "71 degC"
+source = "API 610 8th 2.9.2.3 a: during shop testing the bearing oil temperature rise shall not exceed 28 degC (50 degF); bearing metal below 93 degC when sensors are supplied; oil outlet below 71 degC at 43 degC ambient (design)."
+
+[editions."8".mechanical_run.temperature.ring_oil]
+sump_rise_max = "39 delta_degC"
+sump_design_max = "82 degC"
+source = "API 610 8th 2.9.2.3 b: during shop testing the sump oil temperature rise shall not exceed 39 degC (70 degF), judged against the test-cell ambient; sump below 82 degC at 43 degC ambient (design)."
+
+[editions."8".mechanical_run.temperature.grease]
+housing_design_max = "82 degC"
+source = "API 610 8th 5.1.2.11: stabilized bearing housing temperature not above 82 degC at 43 degC ambient (design)."
+
 [editions."8".npsh]
 npshr_tol_plus = 0.0
 source = "API 610 8th ed. Table 4-2 rated NPSH +0 % and 4.3.4.1.3 (NPSHR at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
@@ -155,6 +174,25 @@ max = "2.0 mm/s"
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
 
+# Bearing temperatures during the shop test (6.10.2.4; grease 9.1.2.7).  The 11th
+# edition defines stabilisation only as "oil temperature stabilization" (8.3.4.2.1)
+# without a number: a client overlay supplies it.
+[editions."11".mechanical_run.temperature.pressurized]
+oil_rise_max = "28 delta_degC"
+bearing_metal_max = "93 degC"
+oil_outlet_design_max = "70 degC"
+source = "API 610 11th 6.10.2.4 a: during shop testing the bearing-oil temperature rise shall not exceed 28 K (50 degR); bearing metal below 93 degC if sensors are supplied; oil outlet below 70 degC at 43 degC ambient (design)."
+
+[editions."11".mechanical_run.temperature.ring_oil]
+sump_rise_max = "40 delta_degC"
+bearing_metal_max = "93 degC"
+sump_design_max = "82 degC"
+source = "API 610 11th 6.10.2.4 b: during shop testing the sump oil temperature rise shall not exceed 40 K (70 degR) above the test-cell ambient at the time of each reading; outer ring not above 93 degC if sensors are supplied; sump below 82 degC at 43 degC ambient (design)."
+
+[editions."11".mechanical_run.temperature.grease]
+housing_design_max = "82 degC"
+source = "API 610 11th 9.1.2.7: stabilized bearing-housing temperature not above 82 degC at 43 degC ambient (design)."
+
 [editions."11".npsh]
 npshr_tol_plus = 0.0
 source = "API 610 11th ed. Table 16 rated NPSH 0 % and 8.3.4.3 (NPSH3 at the rated point shall not exceed the quoted value). No API margin rule: use the client overlay."
@@ -206,7 +244,7 @@ shutoff_bands = [
 
 [editions."12".mechanical_run]
 min_duration = "4 h"
-source = "Duration: API 610 12th ed. 8.3.4.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 35 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
+source = "Duration: API 610 12th ed. 8.3.4.2 (if specified, run at rated flow for 4 h; oil-temperature stabilisation per 8.3.4.2.1: rise relative to ambient not more than 1 degC over 10 min, run to it only if specified, so reported for information). Vibration: Table 8 (bearing housing, preferred operating region): overall 3.0 mm/s RMS, discrete 2.0 mm/s RMS, +30 % outside the preferred region, valid for pumps up to 3600 r/min and 300 kW per stage. High-speed pumps (above 3600 r/min or 300 kW per stage): the Figure 35 allowance is applied through [vibration.high_speed] when the Rated Point has a pump type (exponents reconstructed and unverified; confirm from the printed standard)."
 verified = false
 
 [[editions."12".mechanical_run.roles]]
@@ -216,6 +254,42 @@ max = "2.0 mm/s"
 [[editions."12".mechanical_run.roles]]
 role = "vibration_unfiltered"
 max = "3.0 mm/s"
+
+# Bearing temperatures during the shop test (6.10.2.7; grease 9.1.2.7) and the
+# stabilisation definition of 8.3.4.2.1 (run to stabilisation only if specified,
+# so it is reported for information unless a client makes it a requirement).
+[editions."12".mechanical_run.temperature.pressurized]
+oil_rise_max = "28 delta_degC"
+bearing_metal_max = "93 degC"
+source = "API 610 12th 6.10.2.7 a: during shop testing the bearing-oil temperature rise shall not exceed 50 degF (28 K); bearing metal not above 200 degF (93 degC) if sensors are supplied."
+
+[editions."12".mechanical_run.temperature.ring_oil]
+sump_rise_max = "39 delta_degC"
+bearing_metal_max = "93 degC"
+source = "API 610 12th 6.10.2.7 b: the sump oil temperature rise shall not exceed 70 degF (39 K) above the ambient temperature; bearing metal not above 93 degC if sensors are supplied."
+
+[editions."12".mechanical_run.temperature.oil_mist]
+housing_max = "71 degC"
+bearing_metal_max = "88 degC"
+source = "API 610 12th 6.10.2.7 c: pure oil mist, bearing housing surface not above 160 degF (71 degC); bearing metal not above 190 degF (88 degC) if sensors are supplied."
+
+[editions."12".mechanical_run.temperature.grease]
+housing_rise_max = "39 delta_degC"
+source = "API 610 12th 9.1.2.7: the stabilized bearing-housing temperature shall not exceed a 70 degF (39 K) rise above ambient."
+
+[[editions."12".mechanical_run.stabilisation]]
+role = "oil_temperature"
+delta = "1 delta_degC"
+window = "10 min"
+relative_to_ambient = true
+required = false
+
+[[editions."12".mechanical_run.stabilisation]]
+role = "oil_outlet_temperature"
+delta = "1 delta_degC"
+window = "10 min"
+relative_to_ambient = true
+required = false
 
 [editions."12".npsh]
 npshr_tol_plus = 0.0

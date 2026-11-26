@@ -442,6 +442,64 @@ def test_engine_parallel_operation_needs_rise_and_ratio():
     assert v.parallel_ok is False and v.row("Parallel operation").status == "fail"
 
 
+class _TestedCurve(_Curve):
+    """``_Curve`` with test points at the given flows (m3/h)."""
+
+    def __init__(self, flows):
+        super().__init__()
+        from types import SimpleNamespace
+
+        self.points = tuple(SimpleNamespace(capacity=Q_(q, "m**3/h")) for q in flows)
+
+
+_SO = Q_(357.4, "m")  # rated shut-off head; the curve gives 357.0 m at Q = 0
+_FAR = (3.46, 6.68, 9.38, 9.88, 10.39)  # lowest point at 35 % of rated flow
+_NEAR = (0.0,) + _FAR
+
+
+def test_extrapolated_shutoff_is_not_evaluated_without_a_waiver():
+    v = _verdict(_TestedCurve(_FAR), rated_shutoff=_SO)
+    row = v.row("Shutoff Head")
+    assert row.status == "not evaluated" and row.extrapolated
+    assert "shut-off not tested" in row.note and "5%" in row.note
+    assert row.predicted is not None  # still shown, never judged
+    assert v.passed and not v.complete and not v.approved
+    assert v.not_evaluated == ("Shutoff Head",)
+
+
+@pytest.mark.parametrize("waiver", ["", "   ", None])
+def test_blank_waiver_is_no_waiver(waiver):
+    v = _verdict(_TestedCurve(_FAR), rated_shutoff=_SO, shutoff_waiver=waiver)
+    assert v.row("Shutoff Head").status == "not evaluated"
+
+
+def test_waived_extrapolated_shutoff_is_information_only():
+    v = _verdict(
+        _TestedCurve(_FAR), rated_shutoff=_SO, shutoff_waiver=" integral-gear pump "
+    )
+    row = v.row("Shutoff Head")
+    assert row.status == "info" and not row.judged
+    assert row.note == "shut-off not tested; waived: integral-gear pump"
+    assert v.approved
+
+
+def test_waived_extrapolated_shutoff_is_not_judged_even_if_far_off():
+    # an extrapolation 100 % off is not a measurement: no fail either way
+    v = _verdict(_TestedCurve(_FAR), rated_shutoff=_SO * 2)
+    assert v.row("Shutoff Head").status == "not evaluated"
+    v = _verdict(_TestedCurve(_FAR), rated_shutoff=_SO * 2, shutoff_waiver="agreed")
+    assert v.row("Shutoff Head").status == "info" and v.approved
+
+
+def test_tested_shutoff_is_judged_and_the_waiver_ignored():
+    for waiver in (None, "agreed"):
+        v = _verdict(_TestedCurve(_NEAR), rated_shutoff=_SO, shutoff_waiver=waiver)
+        row = v.row("Shutoff Head")
+        assert row.status == "pass" and not row.extrapolated and row.note == ""
+    v = _verdict(_TestedCurve(_NEAR), rated_shutoff=_SO * 1.2, shutoff_waiver="agreed")
+    assert v.row("Shutoff Head").status == "fail" and not v.approved
+
+
 def test_checker_and_engine_agree(design_point, curve):
     chk = PerformanceChecker(design_point, curve)
     v = chk.verdict()

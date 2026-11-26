@@ -30,3 +30,7 @@ The tolerance values were checked on 2026-11-16 against the owner's licensed cop
 API 610 8th, 11th and 12th editions and Petrobras N-553 rev D and rev E.  Those texts are
 **not** in the repository.  The training quotes clause numbers and short phrases only:
 consult your own copy of the standard for the full text.
+
+The shut-off test-point rules (TR-01 §4.1: API 610 8th 4.3.3.2.1, 11th 8.3.3.3 a),
+12th 8.3.3.4 power density, N-553 rev D 9.14 / rev E 9.13 and 6.1.11) were checked on
+2026-11-25 against the same copies, on an anonymised real FAT.

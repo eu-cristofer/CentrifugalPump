@@ -1,4 +1,5 @@
 import type { ChartData, ChartMark, ChartSeries } from "./Chart";
+import { fixed } from "../decimal";
 import type { FitSeries, NpshSeries, PlotRated, PlotShow } from "../engine/types";
 
 export type PanelKey = "head" | "power" | "efficiency" | "npsh";
@@ -96,7 +97,7 @@ function npshPanel(
   if (npsh.npsha !== null && npsh.npsha !== undefined) {
     data.push(xs.map(() => npsh.npsha ?? null));
     series.push({
-      label: `NPSHa ${npsh.npsha.toFixed(2)} m`,
+      label: `NPSHa ${fixed(npsh.npsha, 2)} m`,
       token: "--chart-npsha",
       style: "dashdot",
     });

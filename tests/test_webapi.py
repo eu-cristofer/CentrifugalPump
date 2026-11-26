@@ -82,7 +82,8 @@ def test_evaluate_matches_expected(path, expected):
 def test_evaluate_shape_and_badges(result_a):
     node = result_a["nodes"]["check_a"]
     assert set(node) == {"kind", "state", "status", "badge", "notes", "view"}
-    assert node["badge"] == ["APPROVED", "ok"]
+    # no test point near zero flow: shut-off not tested (TR-01 4.1)
+    assert node["badge"] == ["NOT FULLY ASSESSED", "warn"]
     assert result_a["nodes"]["mrt_a_check"]["state"] == "reject"
     assert result_a["nodes"]["mrt_a_check"]["notes"] == ["PROVISIONAL"]
     assert result_a["nodes"]["rated"]["badge"] is None
@@ -93,7 +94,11 @@ def test_compliance_view_matches_desktop_result(doc_a, result_a):
     graph.evaluate()
     desktop = graph.node_by_id("check_a").outputs_cache["ComplianceResult"]
     view = result_a["nodes"]["check_a"]["view"]
-    assert view["verdict_text"] == "APPROVED ✓" == desktop.verdict_text
+    assert view["verdict_text"] == "NOT FULLY ASSESSED ⚠" == desktop.verdict_text
+    shut = next(r for r in view["rows"] if r["name"] == "Shutoff Head")
+    assert shut["verdict"] == "n/e" and shut["extrapolated"] is True
+    assert "shut-off not tested" in shut["note"]
+    assert view["shutoff_waiver"] == ""
     head = next(r for r in view["rows"] if r["name"] == "Head")
     want = next(p for p in desktop.parameters if p.name == "Head")
     assert abs(head["predicted"] - want.predicted) < 0.01
@@ -254,7 +259,7 @@ def test_imports_and_evaluates_without_qt():
         timeout=300,
     )
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.strip().endswith("APPROVED ✓")
+    assert proc.stdout.strip().endswith("NOT FULLY ASSESSED ⚠")
 
 
 # ------------------------------------------------------------ form helpers
@@ -738,7 +743,7 @@ def test_export_docx_has_the_texts_of_the_cli_docx(doc_a, tmp_path):
     cli_paragraphs, cli_cells = _docx_text(str(tmp_path / "cli.docx"))
     out = webapi.export_report(doc_a, "docx")
     web_paragraphs, web_cells = _docx_text(base64.b64decode(out["base64"]))
-    assert cli_paragraphs and any("APPROVED" in p for p in cli_paragraphs)
+    assert cli_paragraphs and any("NOT FULLY ASSESSED" in p for p in cli_paragraphs)
     assert web_paragraphs == cli_paragraphs
     assert web_cells == cli_cells
 
@@ -773,6 +778,47 @@ def test_export_html_states_the_tolerance_override(doc_a):
     assert TOLERANCE_OVERRIDE_INTRO not in plain
 
 
+def _with_waiver(doc, reason="integral-gear pump, API 610 12th 8.3.3.4; letter 12"):
+    """A copy of ``doc`` whose Compliance node waives the shut-off test."""
+    import copy
+
+    doc = copy.deepcopy(doc)
+    comp = next(n for n in doc["nodes"] if n["kind"] == "compliance")
+    runtime = webapi.decode_settings("compliance", comp["settings"])
+    runtime["shutoff_waiver"] = reason
+    comp["settings"] = webapi.encode_settings("compliance", runtime)
+    return doc
+
+
+def test_shutoff_waiver_approves_and_is_printed(doc_a):
+    from pump.utilities.report import shutoff_waiver_sentence
+
+    waived = _with_waiver(doc_a)
+    res = webapi.evaluate(waived)
+    comp_id = next(n["id"] for n in waived["nodes"] if n["kind"] == "compliance")
+    view = res["nodes"][comp_id]["view"]
+    assert view["verdict_text"] == "APPROVED ✓ (shut-off not tested)"
+    assert view["shutoff_waiver"].startswith("integral-gear pump")
+    shut = next(r for r in view["rows"] if r["name"] == "Shutoff Head")
+    assert shut["verdict"] == "info" and "waived: integral-gear" in shut["note"]
+
+    sentence = shutoff_waiver_sentence(str, view["shutoff_waiver"])
+    html = base64.b64decode(webapi.export_report(waived, "html")["base64"]).decode(
+        "utf-8"
+    )
+    plain = base64.b64decode(webapi.export_report(doc_a, "html")["base64"]).decode(
+        "utf-8"
+    )
+    from html import escape
+
+    assert escape(sentence) in html
+    assert "Shut-off head not tested" not in plain
+    paragraphs, _ = _docx_text(
+        base64.b64decode(webapi.export_report(waived, "docx")["base64"])
+    )
+    assert sentence in paragraphs
+
+
 def test_report_export_view_lists_the_branches_and_the_overall_verdict(doc_a, result_a):
     node_id = next(n["id"] for n in doc_a["nodes"] if n["kind"] == "report_export")
     node = result_a["nodes"][node_id]
@@ -781,7 +827,7 @@ def test_report_export_view_lists_the_branches_and_the_overall_verdict(doc_a, re
     assert [p["tag"] for p in view["pumps"]] == ["P-9001A"]
     pump = view["pumps"][0]
     assert pump["reportable"] is True
-    assert pump["verdict_text"].startswith("APPROVED")
+    assert pump["verdict_text"].startswith("NOT FULLY ASSESSED")
     assert {"Fitted", "Verdict"} <= set(pump["sections"])
     # the overall verdict is the text after the pump count in the node status
     assert node["status"].endswith(view["overall_verdict_text"])

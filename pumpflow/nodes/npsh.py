@@ -39,6 +39,7 @@ from typing import Dict, Optional
 
 from pump import Pressure, Q_
 
+from ..numfmt import num as _nf
 from .. import explain, units
 from ..binding import check_npsh_set, npsha_from_suction
 from ..numfmt import parse_decimal
@@ -220,8 +221,8 @@ class NPSHNode(BaseNode):
             pass
         where = "rated" if rated is not None else "max Q"
         self.status = (
-            f"{tag} · NPSHr {_m(res.npshr):.2f} m @ {where} · "
-            f"NPSHa {_m(res.npsha):.2f} m · ratio {float(res.ratio):.2f} · "
+            f"{tag} · NPSHr {_nf(_m(res.npshr), '.2f')} m @ {where} · "
+            f"NPSHa {_nf(_m(res.npsha), '.2f')} m · ratio {_nf(float(res.ratio), '.2f')} · "
             f"{verdict_label(res)}{extrap}"
         )
         st = getattr(res, "status", "info")
@@ -295,7 +296,7 @@ class NPSHNode(BaseNode):
                 for j, key in enumerate(("q", "npshr")):
                     v = r.get(key)
                     table.setItem(
-                        i, j, QTableWidgetItem("" if v is None else f"{float(v):g}")
+                        i, j, QTableWidgetItem("" if v is None else f"{_nf(float(v), 'g')}")
                     )
             table.blockSignals(False)
 
@@ -306,7 +307,7 @@ class NPSHNode(BaseNode):
             val = parse_decimal(item.text(), None)
             rows[i][("q", "npshr")[j]] = val
             table.blockSignals(True)
-            item.setText("" if val is None else f"{val:g}")
+            item.setText("" if val is None else f"{_nf(val, 'g')}")
             table.blockSignals(False)
             recompute()
 
@@ -511,7 +512,7 @@ class NPSHNode(BaseNode):
             banner.show_message(self.status, kind)
             calc = getattr(self, "_calc_npsha", None)
             if calc is not None:
-                calc_lbl.setText(f"Calculated NPSHa: {_m(calc):.3f} m")
+                calc_lbl.setText(f"Calculated NPSHa: {_nf(_m(calc), '.3f')} m")
             else:
                 calc_lbl.setText(getattr(self, "_calc_error", "") or "")
 

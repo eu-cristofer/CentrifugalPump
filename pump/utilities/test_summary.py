@@ -47,6 +47,7 @@ from typing import Callable, Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 
+from .numbers import num as _nf
 from .unit_conversion import Q_
 
 __all__ = [
@@ -221,11 +222,11 @@ def vibration_by_region(
 def _num(value, digits: int = 2) -> str:
     if value is None:
         return ""
-    return f"{value:,.{digits}f}"
+    return _nf(value, f"0.{digits}f")
 
 
 def _dev(value) -> str:
-    return "" if value is None else f"{value * 100:+.2f} %"
+    return "" if value is None else f"{_nf(value * 100, '+.2f')} %"
 
 
 def _perf_rows(s: TestDataSummary, _: Translate) -> list:

@@ -676,3 +676,72 @@ msgstr "Motivo"
 
 msgid "not given"
 msgstr "não informado"
+
+msgid "Shut-off head not tested (no test point near zero flow); not judged by agreement"
+msgstr "Altura de shut-off não testada (nenhum ponto de teste próximo à vazão zero); não julgada, por acordo"
+
+msgid "NOT EVALUATED"
+msgstr "NÃO AVALIADO"
+
+msgid "Bearing lubrication"
+msgstr "Lubrificação dos mancais"
+
+msgid "Ring-oil / splash"
+msgstr "Anel pescador / salpico"
+
+msgid "Pressurized (forced-feed)"
+msgstr "Pressurizada (forçada)"
+
+msgid "Pure oil mist"
+msgstr "Névoa de óleo pura"
+
+msgid "Grease"
+msgstr "Graxa"
+
+msgid "not stated"
+msgstr "não informada"
+
+msgid "Oil temperature rise (outlet − inlet)"
+msgstr "Elevação de temperatura do óleo (saída − entrada)"
+
+msgid "Oil sump rise above ambient"
+msgstr "Elevação do óleo do cárter acima da ambiente"
+
+msgid "Bearing-housing rise above ambient"
+msgstr "Elevação da caixa de mancal acima da ambiente"
+
+msgid "Bearing-housing temperature"
+msgstr "Temperatura da caixa de mancal"
+
+msgid "Bearing metal temperature"
+msgstr "Temperatura do metal do mancal"
+
+msgid "Oil outlet temperature"
+msgstr "Temperatura de saída do óleo"
+
+msgid "Oil sump temperature"
+msgstr "Temperatura do óleo do cárter"
+
+msgid "Bearing temperature rules"
+msgstr "Regras de temperatura dos mancais"
+
+msgid "needs oil inlet and oil outlet temperature channels"
+msgstr "requer canais de temperatura de entrada e saída do óleo"
+
+msgid "needs oil sump and ambient temperature channels"
+msgstr "requer canais de temperatura do cárter e ambiente"
+
+msgid "needs bearing-housing and ambient temperature channels"
+msgstr "requer canais de temperatura da caixa de mancal e ambiente"
+
+msgid "needs bearing-housing temperature channels"
+msgstr "requer canais de temperatura da caixa de mancal"
+
+msgid "no bearing temperature sensors in the log (the limit applies if sensors are supplied)"
+msgstr "sem sensores de temperatura de mancal no registro (o limite se aplica se houver sensores)"
+
+msgid "design limit at 43 °C ambient, not judged in the shop test"
+msgstr "limite de projeto a 43 °C de ambiente, não julgado no teste de fábrica"
+
+msgid "lubrication system not stated in the MRT Log"
+msgstr "sistema de lubrificação não informado no MRT Log"

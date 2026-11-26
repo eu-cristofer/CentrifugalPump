@@ -24,6 +24,7 @@ from matplotlib.figure import Figure
 
 from pump import Q_ as _Q
 from pump.design import color as token_color
+from ..numfmt import num as _nf
 
 HEAD_C = token_color("chart-head")
 POWER_C = token_color("chart-power")
@@ -103,7 +104,7 @@ def build_figure(
             ax.axvline(rated_q, color=MARK_C, ls=":", lw=1.0, alpha=0.7)
             ax.axhline(yv, color=MARK_C, ls=":", lw=1.0, alpha=0.7)
             ax.plot([rated_q], [yv], "x", color=MARK_C, ms=8, mew=1.6, zorder=6)
-            ax.annotate(f"{yv:.1f}", (ax.get_xlim()[0], yv), fontsize=7,
+            ax.annotate(f"{_nf(yv, '.1f')}", (ax.get_xlim()[0], yv), fontsize=7,
                         va="center", ha="left",
                         bbox=dict(fc="white", ec=FRAME_C, boxstyle="round,pad=0.2"))
         if not compact:
@@ -150,7 +151,7 @@ def build_figure(
                 label="NPSHr fit")
         if npsh_res is not None and getattr(npsh_res, "npsha", None) is not None:
             a = float(npsh_res.npsha.to("m").magnitude)
-            ax.axhline(a, color=NPSHA_C, lw=1.4, ls="-.", label=f"NPSHa {a:.2f} m")
+            ax.axhline(a, color=NPSHA_C, lw=1.4, ls="-.", label=f"NPSHa {_nf(a, '.2f')} m")
         quoted = getattr(npsh_res, "npshr_quoted", None)
         if quoted is not None and rated_q is not None:
             ax.plot([rated_q], [float(quoted.to("m").magnitude)], "D", ms=6,

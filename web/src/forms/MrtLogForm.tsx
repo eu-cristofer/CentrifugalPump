@@ -1,7 +1,17 @@
 import { type ClipboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
 import type { MrtColumn, MrtRow } from "../engine/types";
 import { useEngine } from "./engineContext";
-import { Banner, Divider, NumberField, Row, Section, Select, TextField, UnitSelect } from "./fields";
+import {
+  Banner,
+  Checkbox,
+  Divider,
+  NumberField,
+  Row,
+  Section,
+  Select,
+  TextField,
+  UnitSelect,
+} from "./fields";
 import type { FormProps } from "./forms.types";
 import { getStr } from "./settings";
 import { useLoaded } from "./useLoaded";
@@ -49,6 +59,8 @@ export default function MrtLogForm({ nodeId, doc, result, dispatch }: FormProps)
     roles: [] as string[],
     dimensions: [] as string[],
     role_dimensions: {} as Record<string, string>,
+    lubrication: [] as Array<[string, string]>,
+    channel_groups: [] as Array<[string, string]>,
   });
   const [selected, setSelected] = useState<number[]>([]);
   const anchor = useRef(0);
@@ -59,6 +71,27 @@ export default function MrtLogForm({ nodeId, doc, result, dispatch }: FormProps)
 
   const cols: MrtColumn[] = Array.isArray(s.columns) ? (s.columns as MrtColumn[]) : [];
   const rows: MrtRow[] = Array.isArray(s.rows) ? (s.rows as MrtRow[]) : [];
+
+  // ---- standard channels (lubrication system + groups) ------------------------------
+  const pumpType =
+    ((result?.view ?? {}) as { pump_type?: string | null }).pump_type ?? null;
+  const lubrication = getStr(s, "lubrication");
+  const groups: string[] = Array.isArray(s.channel_groups)
+    ? (s.channel_groups as string[])
+    : [];
+  const applyStandard = (patch: Record<string, unknown>) => {
+    engine.mrtStandardChannels({ ...s, ...patch }, pumpType).then(
+      (columns) => update({ ...patch, columns }),
+      () => undefined,
+    );
+  };
+  const setLubrication = (v: string) =>
+    applyStandard({ lubrication: v === "" ? undefined : v });
+  const toggleGroup = (g: string, on: boolean) => {
+    const order = (options.channel_groups ?? []).map(([id]) => id);
+    const next = order.filter((id) => (id === g ? on : groups.includes(id)));
+    applyStandard({ channel_groups: next.length ? next : undefined });
+  };
 
   // ---- readings ------------------------------------------------------------------
   const setRows = (next: MrtRow[]) => update({ rows: next });
@@ -366,7 +399,36 @@ export default function MrtLogForm({ nodeId, doc, result, dispatch }: FormProps)
       {error && <Banner kind="error">{error}</Banner>}
       <Divider />
 
-      <Section title="Channels (name, dimension, role)" />
+      <Section
+        title="Standard channels (API 610)"
+        info="The lubrication system selects the temperature channels its bearing temperature rules need (API 610 8th 2.9.2.3, 11th 6.10.2.4, 12th 6.10.2.7). Readings already entered are kept."
+      />
+      <Row label="Lubrication">
+        <Select
+          value={lubrication}
+          options={[
+            ["Not stated", ""],
+            ...(options.lubrication ?? []).map(([id, label]): [string, string] => [label, id]),
+          ]}
+          onChange={setLubrication}
+        />
+      </Row>
+      {(options.channel_groups ?? []).map(([id, label]) => (
+        <Row key={id} label="">
+          <Checkbox
+            checked={groups.includes(id)}
+            label={
+              id === "vibration"
+                ? `${label} (${pumpType ?? "pump type not set: DE / NDE"})`
+                : label
+            }
+            onChange={(on) => toggleGroup(id, on)}
+          />
+        </Row>
+      ))}
+      <Divider />
+
+      <Section title="Channels (name, dimension, role, bearing location)" />
       <div className="tool-bar">
         <button type="button" className="tool-button" onClick={addChannel}>
           ＋ Channel
@@ -379,6 +441,7 @@ export default function MrtLogForm({ nodeId, doc, result, dispatch }: FormProps)
               <th className="grid-text">Name</th>
               <th className="grid-text">Dimension</th>
               <th className="grid-text">Role</th>
+              <th className="grid-text">Location</th>
               <th />
             </tr>
           </thead>
@@ -407,6 +470,15 @@ export default function MrtLogForm({ nodeId, doc, result, dispatch }: FormProps)
                     options={options.roles.map((r): [string, string] => [r, r])}
                     ariaLabel={`Channel ${j + 1} role`}
                     onChange={(r) => patchCol(j, { role: r })}
+                  />
+                </td>
+                <td>
+                  <TextField
+                    value={c.location ?? ""}
+                    ariaLabel={`Channel ${j + 1} location`}
+                    onChange={(v) =>
+                      patchCol(j, { location: v.trim() === "" ? undefined : v.trim() })
+                    }
                   />
                 </td>
                 <td>

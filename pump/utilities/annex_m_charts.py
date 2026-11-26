@@ -36,6 +36,7 @@ from typing import Callable, Mapping, Optional, Sequence
 import numpy as np
 
 from ..design import color
+from .numbers import num as _nf
 from .unit_conversion import Q_
 
 __all__ = ["plot_annex_m_curve", "plot_test_points_vibration"]
@@ -192,6 +193,9 @@ def _arrow_x(host):
 
 def _png(fig) -> bytes:
     buf = io.BytesIO()
+    from pump.utilities.numbers import localize_axes
+
+    localize_axes(fig)
     fig.savefig(buf, format="png", dpi=150)
     return buf.getvalue()
 
@@ -205,7 +209,7 @@ def _fmt(value, digits: int = 1) -> str:
         return ""
     if isinstance(value, str):
         return value
-    return f"{float(value):,.{digits}f}"
+    return _nf(float(value), f"0.{digits}f")
 
 
 # --------------------------------------------------------------------------- #
@@ -459,7 +463,9 @@ def plot_annex_m_curve(
     )
     for k, (label, value) in enumerate(rows):
         y = by + bh - 0.075 - k * 0.04
-        text = "" if value is None else f"{float(value.to('mm').magnitude):.1f} mm"
+        text = (
+            "" if value is None else f"{_nf(float(value.to('mm').magnitude), '.1f')} mm"
+        )
         host.text(
             bx + 0.015,
             y,
@@ -801,7 +807,9 @@ def plot_test_points_vibration(
         lo_b = por_q[0] if por_q else (aor_q[0] if aor_q else 0.0)
         hi_b = por_q[1] if por_q else (aor_q[1] if aor_q else q_max)
         ax_v.plot([lo_b, hi_b], [basic, basic], color=_LIMIT, lw=1.3)
-        ax_v.text(hi_b, basic, f"  {basic:.1f}", color=_LIMIT, fontsize=7, va="center")
+        ax_v.text(
+            hi_b, basic, f"  {_nf(basic, '.1f')}", color=_LIMIT, fontsize=7, va="center"
+        )
         if aor_q is not None and por_q is not None:
             drawn = []
             for a, b, edge in (
@@ -817,7 +825,12 @@ def plot_test_points_vibration(
             if drawn and raised is not None:
                 a, b = drawn[-1]
                 ax_v.text(
-                    b, raised, f"  {raised:.1f}", color=_LIMIT, fontsize=7, va="center"
+                    b,
+                    raised,
+                    f"  {_nf(raised, '.1f')}",
+                    color=_LIMIT,
+                    fontsize=7,
+                    va="center",
                 )
                 _callout(ax_v, (a + b) / 2, raised, "3", 14, 16)
         _callout(ax_v, (lo_b + hi_b) / 2, basic, "4", 10, -18)
@@ -872,7 +885,7 @@ def plot_test_points_vibration(
         (
             "3",
             _("limit outside the preferred region")
-            + f" +{(aor_factor - 1) * 100:.0f} %",
+            + f" +{_nf((aor_factor - 1) * 100, '.0f')} %",
         ),
         ("4", _("basic vibration limit")),
         ("5", _("rated flow")),

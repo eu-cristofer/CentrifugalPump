@@ -14,6 +14,21 @@ from __future__ import annotations
 
 from typing import Optional
 
+# The separator itself lives in the library (reports use it too); the
+# workbench sets the user's preference with ``set_decimal``.
+from pump.utilities.numbers import (  # noqa: F401  (re-exported)
+    COMMA,
+    POINT,
+    decimal,
+    decimal_for_language,
+    localize,
+    nformat,
+    num,
+    qty,
+    separator,
+    set_decimal,
+)
+
 
 def parse_decimal(value, default: Optional[float] = None) -> Optional[float]:
     """
@@ -56,7 +71,7 @@ def fmt(value: Optional[float], decimals: int = 2, unit: str = "") -> str:
     if value is None:
         return "—"
     try:
-        text = f"{float(value):.{decimals}f}"
+        text = num(float(value), f".{decimals}f")
     except (ValueError, TypeError):
         return str(value)
     return f"{text} {unit}".strip()
@@ -65,4 +80,4 @@ def fmt(value: Optional[float], decimals: int = 2, unit: str = "") -> str:
 def fmt_pct(value: Optional[float], decimals: int = 1) -> str:
     if value is None:
         return "—"
-    return f"{float(value):.{decimals}f} %"
+    return f"{num(float(value), f'.{decimals}f')} %"

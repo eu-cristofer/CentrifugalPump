@@ -171,6 +171,30 @@ describe("ComplianceForm", () => {
     expect((screen.getByLabelText("Reason") as HTMLInputElement).value).toBe("");
   });
 
+  it("writes the shut-off waiver outside the override section, and removes it when cleared", async () => {
+    const dispatch = show({ tolerances: {} }, result(view()));
+    const field = (await screen.findByLabelText(
+      "Shut-off not tested, agreed because",
+    )) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "  integral-gear pump " } });
+    await waitFor(() => expect(dispatch).toHaveBeenCalled(), { timeout: 2000 });
+    expect(lastSettings(dispatch)).toMatchObject({ shutoff_waiver: "integral-gear pump" });
+    dispatch.mockClear();
+    fireEvent.change(field, { target: { value: " " } });
+    await waitFor(() => expect(dispatch).toHaveBeenCalled(), { timeout: 2000 });
+    expect("shutoff_waiver" in lastSettings(dispatch)).toBe(false);
+  });
+
+  it("keeps the shut-off waiver when the tolerances are reset", async () => {
+    const dispatch = show(
+      { tolerances: { head: 0.1 }, override_reason: "agreed", shutoff_waiver: "integral-gear" },
+      result(view({ overridden: true, override_reason: "agreed" })),
+    );
+    fireEvent.click(await screen.findByText("Reset to the acceptance criteria"));
+    await waitFor(() => expect(dispatch).toHaveBeenCalled(), { timeout: 2000 });
+    expect(lastSettings(dispatch).shutoff_waiver).toBe("integral-gear");
+  });
+
   it("says it is waiting when there is no result yet", async () => {
     show({ tolerances: {} }, result({}, { state: "idle", status: "Waiting for model + rated point" }));
     expect(await screen.findByText(/awaiting inputs/)).toBeTruthy();

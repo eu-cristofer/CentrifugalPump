@@ -76,6 +76,11 @@ physics to the existing `pump` library.
 
 - **Locale-tolerant number parsing** (`numfmt.py`): accepts `,` or `.` decimals
   and thousands separators, used live in the test grid and the JSON importer.
+- **Decimal separator** (2026-11-25): a per-user *Units ▸ Decimal separator*
+  preference (point or comma) for every number the workbench shows; number
+  boxes no longer take the OS region. Reports follow their language instead
+  (`pt` prints a decimal comma, `en` a point), charts included, with no
+  thousands grouping. See UI_SPEC §7.
 - **Scrollable property dialogs** with consistent header/section/banner styling.
 - **Tolerant port hit-testing** (14 px radius) so links are easy to grab.
 - **Single-fluid handling**: per-row `Head`/`η` computed with each row's own water

@@ -26,6 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from .numbers import num as _nf
 from .report import (
     API_PARAGRAPH,
     COMPARISON_KEY,
@@ -55,6 +56,7 @@ from .report import (
     npsh_points_table,
     npsh_summary_rows,
     performance_verdict,
+    shutoff_waiver_sentence,
     tolerance_override_sentence,
     signature_block,
     standard_sentence,
@@ -158,9 +160,9 @@ def _fmt(value) -> str:
     if isinstance(value, str):
         return value
     if hasattr(value, "magnitude"):
-        return f"{value:0.02f~P}"
+        return f"{_nf(value, '0.02f~P')}"
     if isinstance(value, float):
-        return f"{value:0.02f}"
+        return f"{_nf(value, '0.02f')}"
     return str(value)
 
 
@@ -308,6 +310,9 @@ class LatexReportGenerator:
             )
             if override_text:
                 out.append(latex_escape(override_text) + "\n")
+            waiver_text = shutoff_waiver_sentence(_, entry.get("shutoff_waiver", ""))
+            if waiver_text:
+                out.append(latex_escape(waiver_text) + "\n")
             out.append(self._summary(entry.get("test_summary") or {}, acceptance))
             if entry.get(VISCOSITY_KEY):
                 out.append(

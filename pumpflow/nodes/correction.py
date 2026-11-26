@@ -13,6 +13,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from .. import explain, units
 from ..binding import BindingError, correct_curve, make_fluid
 from ..signals import RatedPoint, TestPointSet
@@ -52,7 +53,7 @@ def banner_message(state: str, status: str, has_rated: bool, has_fluid: bool, vi
         )
     if visc and visc["B"] >= 40.0:
         msg, level = (
-            f"Viscosity parameter B = {visc['B']:.1f} is outside the "
+            f"Viscosity parameter B = {_nf(visc['B'], '.1f')} is outside the "
             "HI 9.6.7 method validity (B < 40); factors are extrapolated.",
             "warn",
         )
@@ -65,8 +66,8 @@ def viscous_summary(visc) -> str:
         return "—"
     note = "" if visc["B"] > 1.0 else "  (B ≤ 1: no correction)"
     return (
-        f"B = {visc['B']:.2f} · C_Q = {visc['C_Q']:.3f} · "
-        f"C_H = {visc['C_H']:.3f} · C_η = {visc['C_eta']:.3f}{note}"
+        f"B = {_nf(visc['B'], '.2f')} · C_Q = {_nf(visc['C_Q'], '.3f')} · "
+        f"C_H = {_nf(visc['C_H'], '.3f')} · C_η = {_nf(visc['C_eta'], '.3f')}{note}"
     )
 
 
@@ -152,10 +153,10 @@ class SpeedCorrectionNode(BaseNode):
         fl = " · fluid✓" if override_fluid is not None else ""
         visc = ""
         if corrected.viscous and corrected.viscous["B"] > 1.0:
-            visc = f" · visc B={corrected.viscous['B']:.1f}"
+            visc = f" · visc B={_nf(corrected.viscous['B'], '.1f')}"
         self.status = (
             f"{corrected.pump_tag} · {len(tps.rows)} pts · "
-            f"→ {target.to('rpm').magnitude:g} rpm{mode}{fl}{visc}"
+            f"→ {_nf(target.to('rpm').magnitude, 'g')} rpm{mode}{fl}{visc}"
         )
         self.state = "ok"
         return {"CorrectedCurve": corrected}

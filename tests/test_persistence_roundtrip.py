@@ -140,12 +140,16 @@ def test_p9001_roundtrip_and_wiring(p9001_scene):
 def test_p9001_evaluates_end_to_end(p9001_scene):
     logic = {n.logic.node_id: n.logic for n in p9001_scene.nodes}
     assert not [k for k, lg in logic.items() if lg.state == "error"]
-    for k in ("test_a", "corr_a", "fit_a", "plot_a", "check_a", "report"):
+    for k in ("test_a", "corr_a", "fit_a", "plot_a"):
         assert logic[k].state == "ok", (k, logic[k].status)
+    # no test point near zero flow: shut-off not tested, nothing else open
+    for k in ("check_a", "report"):
+        assert "NOT FULLY ASSESSED" in logic[k].status, (k, logic[k].status)
     assert logic["test_b"].state == "invalid"  # blank template waits for readings
 
     res = logic["check_a"].outputs_cache["ComplianceResult"]
-    assert res.overall_pass
+    assert not res.overall_pass and res.verdict_label == "NOT FULLY ASSESSED"
+    assert res.not_evaluated == ("Shutoff Head",)
     got = {p.name: p for p in res.parameters}
     # Sanity vs the Vendor A certified test converted to datasheet conditions
     assert got["Head"].predicted == pytest.approx(339.4, abs=1.0)  # rated 333.8 m

@@ -18,7 +18,7 @@ $$
 | Check | Rule | Part of the verdict? |
 |---|---|---|
 | Rated head | $-t_- \le \delta_H \le +t_+$, band chosen by the rated head | yes |
-| Shut-off head | $-t_- \le \delta_{H_0} \le +t_+$, band chosen by the rated head | yes |
+| Shut-off head | $-t_- \le \delta_{H_0} \le +t_+$, band chosen by the rated head | yes, when tested; extrapolated: not evaluated, or information with an agreed waiver |
 | Rated power | $\delta_P \le +4\,\%$ | yes |
 | Efficiency | $\delta_\eta \ge -t$ **only if the purchaser specified $t$** | no, otherwise information only |
 | Rising curve (when specified) | the negative shut-off tolerance applies only if the curve still rises to shut-off | yes |
@@ -28,6 +28,19 @@ $$
 
 The shut-off head is flagged *extrapolated* when no test point lies below 5 % of the rated
 flow.  This threshold is a tool setting, not a value from the standard.
+
+An extrapolated shut-off head is not a measurement: with the lowest point far from Q = 0,
+the predicted value depends on the fit degree and on which points are kept.  Shut-off may
+be left out of the test only where the standard allows it: high-energy and multistage
+pumps (8th 4.3.3.2.1 note), also integral-gear pumps (11th 8.3.3.3 a) note), and in the
+12th edition when the power density P / (D_imp · D_nozzle²) exceeds about 13 MW/m³
+(8.3.3.4).  N-553 rev D/E make the shut-off point a "shall" (9.14 / 9.13), so an omission
+needs the client's concurrence.  See {doc}`../training/TR-01-witness-performance-test` §4.1.
+
+The tool therefore never judges an extrapolated shut-off head: the row is **not
+evaluated** (verdict NOT FULLY ASSESSED) unless the Compliance node carries an agreed
+waiver reason (`shutoff_waiver`), in which case the row is information only and the
+report prints the reason.  A tested shut-off point is always judged against the band.
 
 ## The values, by edition
 

@@ -20,6 +20,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import BindingError, diameter_for_rated, trim_curve
 from .base import BaseNode, PortSpec
@@ -89,7 +90,7 @@ class TrimNode(BaseNode):
         trim_pct = (d_mm / ref_mm - 1.0) * 100.0
         notes = []
         if any(issubclass(w.category, UserWarning) for w in caught):
-            notes.append(f"beyond max trim ({max_pct:g} %)")
+            notes.append(f"beyond max trim ({_nf(max_pct, 'g')} %)")
         d_max = rated.impeller_diameter_max
         d_min = rated.impeller_diameter_min
         max_mm = float(d_max.to("mm").magnitude) if d_max is not None else None
@@ -97,8 +98,8 @@ class TrimNode(BaseNode):
         if (max_mm is not None and d_mm > max_mm + 1e-9) or (
             min_mm is not None and d_mm < min_mm - 1e-9
         ):
-            lo = f"{min_mm:g}" if min_mm is not None else "-"
-            hi = f"{max_mm:g}" if max_mm is not None else "-"
+            lo = f"{_nf(min_mm, 'g')}" if min_mm is not None else "-"
+            hi = f"{_nf(max_mm, 'g')}" if max_mm is not None else "-"
             notes.append(f"outside datasheet range [{lo}, {hi}] mm")
 
         self._info = {
@@ -110,7 +111,7 @@ class TrimNode(BaseNode):
         self._last = trimmed
         warn = (" · ⚠ " + "; ".join(notes)) if notes else ""
         self.status = (
-            f"{source.pump_tag} · D = {d_mm:.1f} mm · trim {trim_pct:+.1f} %{warn}"
+            f"{source.pump_tag} · D = {_nf(d_mm, '.1f')} mm · trim {_nf(trim_pct, '+.1f')} %{warn}"
         )
         self.state = "ok"
         return {"CorrectedCurve": trimmed}
@@ -168,8 +169,8 @@ class TrimNode(BaseNode):
             trimmed = getattr(self, "_last", None) if self.state == "ok" else None
             if data:
                 info.setText(
-                    f"D = {data['d_mm']:.2f} mm (reference {data['ref_mm']:.2f} mm) · "
-                    f"trim {data['trim_pct']:+.2f} %"
+                    f"D = {_nf(data['d_mm'], '.2f')} mm (reference {_nf(data['ref_mm'], '.2f')} mm) · "
+                    f"trim {_nf(data['trim_pct'], '+.2f')} %"
                 )
                 if data["notes"]:
                     banner.show_message("⚠ " + "; ".join(data["notes"]), "warn")

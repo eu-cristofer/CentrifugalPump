@@ -186,4 +186,23 @@ describe("useProject evaluation", () => {
     });
     expect(Object.keys(hook.current.result!.nodes)).toEqual(["second"]);
   });
+
+  it("passes the viewer's decimal comma to the engine and re-evaluates on a change", async () => {
+    const evaluate = vi.fn(async () => result("r"));
+    const { result: hook, rerender } = renderHook(
+      ({ sep }: { sep: "." | "," }) => useProject({ evaluate }, sep),
+      { initialProps: { sep: "." as "." | "," } },
+    );
+    act(() => hook.current.dispatch({ type: "open", doc: small(), name: "a" }));
+    await act(async () => {
+      vi.advanceTimersByTime(EVAL_DELAY_MS);
+    });
+    expect(evaluate).toHaveBeenLastCalledWith(small());
+    rerender({ sep: "," });
+    await act(async () => {
+      vi.advanceTimersByTime(EVAL_DELAY_MS);
+    });
+    expect(evaluate).toHaveBeenCalledTimes(2);
+    expect(evaluate).toHaveBeenLastCalledWith(small(), ",");
+  });
 });

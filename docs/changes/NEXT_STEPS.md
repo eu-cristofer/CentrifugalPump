@@ -25,6 +25,7 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
 - [x] **N-553 client overlay.** Filled from **rev E** (NPSH margin, temperature stabilisation). ⚠ The P-9001 datasheet calls for **N-553 rev C**, which is not available: confirm the rules match rev C, or obtain rev C.
 - [x] **NPSH margin rule.** N-553 rev E 7.3: ≥ 0.8 m **and** ratio ≥ 1.15 at rated flow. P-9001A passes (1.32 m, 2.22). API "rated NPSH +0 %" is judged once the quoted NPSHr is entered in the NPSH node.
 - [ ] **Quoted NPSHr.** Read it from the datasheet / proposal and enter it in the NPSH node.
+- [x] **Bearing temperature rules in the MRT** (2026-11-25). The MRT Log states the lubrication system and offers standard channels (oil inlet/outlet, sump, housing, ambient, bearing metal, vibration at the pump-type locations); the MRT Check judges the rules of 8th 2.9.2.3, 11th 6.10.2.4, 12th 6.10.2.7 and N-553 rev E 7.35 c, plus the 12th / N-553 stabilisation definitions. The P-9001A reference log records only a "Sump" temperature and no ambient, while its datasheet says pressurized oil: its lubrication is left *not stated*; confirm what the vendor's "Sump" reading is.
 - [ ] **Mechanical-run duration.** The 8th edition defines no running test; confirm the 4 h (N-553 rev E 9.21: ndm ≥ 350 000 or energy density) from the purchase order.
 - [ ] **SG discrepancy.** The datasheet says 0.999, but Vendor A's conversion used 0.990 and 0.50 cSt. Ask why.
 - [ ] **Datasheet typo.** The body says "P-9001A/B" but the title says P-9001A/B.
@@ -33,6 +34,10 @@ Cutover done 2026-11-24. Still open: pushing the local `main` to the archive, an
   - fill the P-9001B Test Points, Mechanical Run and NPSH sheets in the units printed by the vendor;
   - run Report Export ▸ Export all (docx + tex + pdf + html);
   - save as `P-9001B_witness.pumpflow`.
+
+- [ ] **Shut-off not tested (2026-11-25 FAT).** The vendor took no shut-off point (lowest at 35 % of rated flow); the tool extrapolates H(0) and fails it. Ask for the agreed exemption (integral-gear, 12th 8.3.3.4 power density ≈ 83 MW/m³) and a statement that the head rises to shut-off (N-553 rev E 6.1.11; the curve droops slightly at low flow). Confirm the governing API edition (the datasheet cites ISO 13709 / API 610 12th; the tool uses the 8th). See TR-01 §4.1.
+- [x] **Tool: shut-off not tested** (2026-11-25). An extrapolated shut-off head is *not evaluated* (NOT FULLY ASSESSED) unless the Compliance node's "Shut-off not tested, agreed because" waiver is filled; the report prints the reason. The four example fixtures moved to NOT FULLY ASSESSED; the private `expected/` verdicts were regenerated.
+- [ ] **Power density** (12th 8.3.3.4) shown as supporting information on the Compliance node (optional).
 
 ## 3. Confirm researched values against the standards (owner)
 On 2026-11-16 the 8th, 11th and 12th editions and N-553 rev D/E were checked against the owner's licensed texts (kept in the private data repo under `standards/`, never published). Still open:

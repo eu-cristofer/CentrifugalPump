@@ -222,6 +222,8 @@ def assemble_report_data(
                 entry["verdict"] = bool(b.compliance.overall_pass)
                 if b.compliance.verdict_label == "NOT FULLY ASSESSED":
                     entry["not_evaluated"] = list(b.compliance.not_evaluated)
+            if b.compliance is not None and b.compliance.shutoff_waiver:
+                entry["shutoff_waiver"] = b.compliance.shutoff_waiver
             if override:
                 entry["tolerance_override"] = override
                 if b.compliance.override_reason:
@@ -343,6 +345,8 @@ def export_reports(
     from datetime import datetime
     from pathlib import Path
 
+    from pump.utilities.numbers import decimal, decimal_for_language
+
     if stem is None:
         tag = report_data["equipment_description"]["TAG"].replace("/", "")
         from pump.utilities.report import LocalizationHelper
@@ -385,7 +389,9 @@ def export_reports(
         if isinstance(comparison_plot, io.BytesIO):
             comparison_plot.seek(0)
         try:
-            paths[fmt] = str(writers[fmt](str(folder / f"{stem}.{fmt}")))
+            # the report's numbers follow its language ("," for Portuguese)
+            with decimal(decimal_for_language(language)):
+                paths[fmt] = str(writers[fmt](str(folder / f"{stem}.{fmt}")))
         except Exception as exc:  # collected, reported by the caller
             errors[fmt] = f"{type(exc).__name__}: {exc}"
     return paths, errors

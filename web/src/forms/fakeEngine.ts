@@ -67,7 +67,35 @@ export function fakeEngine(): { [K in keyof FormEngine]: ReturnType<typeof vi.fn
         oil_temperature: "temperature",
         vibration_filtered: "vibration_velocity",
       },
+      lubrication: [
+        ["pressurized", "Pressurized (forced-feed)"],
+        ["ring_oil", "Ring-oil / splash"],
+      ],
+      channel_groups: [
+        ["vibration", "Vibration at the API 610 locations of the pump type"],
+        ["ambient", "Ambient temperature (test cell)"],
+      ],
     })),
+    mrtStandardChannels: vi.fn(async (settings: Record<string, unknown>) => {
+      const cols = [{ key: "flow", name: "Flow", dimension: "capacity", unit: "m³/h", role: "flow" }];
+      if (settings.lubrication === "pressurized")
+        cols.push({
+          key: "oil_in",
+          name: "Oil inlet",
+          dimension: "temperature",
+          unit: "°C",
+          role: "oil_inlet_temperature",
+        });
+      if (Array.isArray(settings.channel_groups) && settings.channel_groups.includes("ambient"))
+        cols.push({
+          key: "ambient",
+          name: "Ambient",
+          dimension: "temperature",
+          unit: "°C",
+          role: "ambient_temperature",
+        });
+      return cols;
+    }),
     exportReport: vi.fn(async (_doc: unknown, fmt: string, lang: string | null) => ({
       filename: `Report.${fmt === "summary_xlsx" ? "xlsx" : fmt}`,
       mime: fmt === "html" ? "text/html" : "application/octet-stream",

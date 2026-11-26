@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { MrtCheckRow, MrtCheckView, Quantity } from "../engine/types";
+import { localizeNumber } from "../decimal";
+import type { MrtCheckRow, MrtCheckView, MrtRuleRow, Quantity } from "../engine/types";
 import { useEngine } from "./engineContext";
 import { Banner, Checkbox, Divider, NumberField, Row, Section, Select, UnitField, loadUnitOptions } from "./fields";
 import type { FormProps } from "./forms.types";
@@ -30,7 +31,7 @@ const DEFAULT_WINDOW_MIN = 60;
 
 /** "0.07874" style: 4 significant digits, "—" for an unknown value. */
 const g4 = (q: Quantity | null | undefined): string =>
-  q === null || q === undefined ? "—" : String(Number(q.value.toPrecision(4)));
+  q === null || q === undefined ? "—" : localizeNumber(String(Number(q.value.toPrecision(4))));
 
 function asOverrides(v: unknown): Overrides {
   const o = (v && typeof v === "object" ? v : {}) as Partial<Overrides>;
@@ -45,11 +46,51 @@ function stabText(st: MrtCheckRow["stabilisation"]): string {
   if (!st) return "—";
   const mark = st.ok === null ? "" : st.ok ? " ✓" : " ✗";
   const win = st.window ? ` / ${g4(st.window)} ${st.window.unit}` : "";
-  return `${g4(st.change)} ≤ ${g4(st.allowed)} ${st.allowed?.unit ?? ""}${win}${mark}`;
+  const rel = st.relative_to_ambient ? " (rise above ambient)" : "";
+  const info = st.required === false ? " (information)" : "";
+  return `${g4(st.change)} ≤ ${g4(st.allowed)} ${st.allowed?.unit ?? ""}${win}${rel}${mark}${info}`;
 }
 
 const statusClass = (status: string): string =>
-  status === "pass" ? "v-pass" : status === "fail" ? "v-fail" : "v-info";
+  status === "pass"
+    ? "v-pass"
+    : status === "fail"
+      ? "v-fail"
+      : status === "not evaluated"
+        ? "v-warn"
+        : "v-info";
+
+const qText = (q: Quantity | null | undefined, unit: string): string =>
+  q === null || q === undefined ? "—" : `${g4(q)} ${unit}`;
+
+function RulesTable({ rules }: { rules: MrtRuleRow[] }) {
+  return (
+    <div className="grid-wrap">
+      <table className="grid" aria-label="Bearing temperature rules">
+        <thead>
+          <tr>
+            <th className="grid-text">Bearing temperature rule</th>
+            <th>Worst</th>
+            <th>Limit</th>
+            <th>Status</th>
+            <th className="grid-text">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rules.map((r) => (
+            <tr key={r.key}>
+              <td className="grid-text">{r.name}</td>
+              <td>{qText(r.value, r.unit)}</td>
+              <td>{r.limit ? `≤ ${qText(r.limit, r.unit)}` : "—"}</td>
+              <td className={statusClass(r.status)}>{r.status.toUpperCase()}</td>
+              <td className="grid-text">{r.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 /** MRT Check — mirrors pumpflow/nodes/mechanical_run_check.py (verdict, channel table, overrides). */
 export default function MrtCheckForm({ nodeId, doc, result, dispatch }: FormProps) {
@@ -175,6 +216,7 @@ export default function MrtCheckForm({ nodeId, doc, result, dispatch }: FormProp
               </tbody>
             </table>
           </div>
+          {(view.rules?.length ?? 0) > 0 && <RulesTable rules={view.rules ?? []} />}
           {view.source && (
             <details className="source-note">
               <summary>Source of the limits</summary>

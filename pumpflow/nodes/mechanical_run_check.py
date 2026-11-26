@@ -24,6 +24,7 @@ from typing import Dict
 
 from pump.mechanical_run import ROLES
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import check_mechanical_run
 from ..settings_codec import ROLE_DIMENSIONS
@@ -89,7 +90,7 @@ class MechanicalRunCheckNode(BaseNode):
         hours = float(duration.to("h").magnitude)
         self.status = (
             f"{run_set.pump_tag} · {len(log.readings)} readings · "
-            f"{hours:.1f} h · {verdict_label(sig.result)}"
+            f"{_nf(hours, '.1f')} h · {verdict_label(sig.result)}"
         )
         self.state = "ok" if getattr(sig.result, "passed", False) else "reject"
         res = sig.result
@@ -154,6 +155,15 @@ class MechanicalRunCheckNode(BaseNode):
         result_table.setEditTriggers(QTableWidget.NoEditTriggers)
         result_table.setMinimumHeight(300)  # every channel without scrolling
 
+        rules_table = QTableWidget(0, 5)
+        rules_table.setObjectName("RunRules")
+        rules_table.setHorizontalHeaderLabels(
+            ["Bearing temperature rule", "Worst", "Limit", "Status", "Note"]
+        )
+        rules_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        rules_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        rules_table.setWordWrap(True)
+
         trend = QLabel()
         trend.setObjectName("RunTrend")
         trend.setAlignment(Qt.AlignCenter)
@@ -207,6 +217,26 @@ class MechanicalRunCheckNode(BaseNode):
                     if c == 6 and status.lower() == "fail":
                         item.setForeground(qcolor("reject-red"))
                     result_table.setItem(i, c, item)
+            rules = (
+                list(getattr(result, "rules", ()) or ()) if result is not None else []
+            )
+            rules_table.setRowCount(len(rules))
+            for i, rule in enumerate(rules):
+                vals = [
+                    rule.name,
+                    "—" if rule.value is None else f"{_nf(rule.value, '.4g~P')}",
+                    "—" if rule.limit is None else f"≤ {_nf(rule.limit, '.4g~P')}",
+                    rule.status.upper(),
+                    rule.note,
+                ]
+                for c, v in enumerate(vals):
+                    item = QTableWidgetItem(v)
+                    item.setFlags(Qt.ItemIsEnabled)
+                    if c == 3 and rule.status == "fail":
+                        item.setForeground(qcolor("reject-red"))
+                    rules_table.setItem(i, c, item)
+            rules_table.setVisible(bool(rules))
+            rules_table.resizeRowsToContents()
             sig = getattr(self, "_signal", None)
             png = getattr(sig, "plot_png", None) if sig is not None else None
             if png is not None:
@@ -329,6 +359,7 @@ class MechanicalRunCheckNode(BaseNode):
         dlg.add(banner)
         dlg.add(source)
         dlg.add(result_table)
+        dlg.add(rules_table)
         dlg.add(ui.section("Trend"))
         dlg.add(trend)
         dlg.add(ui.hline())

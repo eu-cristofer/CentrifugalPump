@@ -77,9 +77,10 @@ changed tolerance next to the criteria default, with your reason.
 ## 4 · Shut-off head and the rising curve
 
 The shut-off head is predicted at Q = 0.  When no test point lies near Q = 0 it is an
-**extrapolation**; the tool flags it (no point below 5 % of rated flow).  Ask whether a
-shut-off point was taken: the 8th edition lists shut-off as one of the five minimum test
-points (4.3.3.2.1), but high-energy pumps may skip it.
+**extrapolation** (no point below 5 % of rated flow): the tool shows the value but does
+not judge it, and the verdict is **NOT FULLY ASSESSED** until shut-off is tested or the
+omission is waived (§4.1).  Ask whether a shut-off point was taken: the 8th edition lists
+shut-off as one of the five minimum test points (4.3.3.2.1), but some pumps may skip it.
 
 When a **rising curve** is specified (always the case with parallel operation):
 - the head must rise continuously from rated flow back to shut-off;
@@ -89,6 +90,70 @@ When a **rising curve** is specified (always the case with parallel operation):
   (note a of the tolerance table).
 
 The tool applies all three when *Parallel operation* is ticked on the Rated Point.
+
+### 4.1 When shut-off was not tested
+
+Not every pump has to be run at shut-off, but skipping it must be justified and agreed
+in writing.  What each document says (clause numbers and short phrases only; read your
+own copy for the full text):
+
+| Document | Clause | What it says about the shut-off test point |
+|---|---|---|
+| API 610 8th | 4.3.3.2.1 and its Note | the five points "will normally be" shut-off, minimum flow, …; shut-off "may not be feasible" for **high-energy** (2.1.15) and **multistage** pumps |
+| API 610 11th | 8.3.3.3 a) and its Note | same list; the note adds **integral-gear** pumps ("might not be feasible") |
+| API 610 12th | 8.3.3.4 | same three pump types, now with a criterion: the **power density** PD = P / (D_imp · D_nozzle²); above a typical **13 MW/m³ (0.286 hp/in³)** it is suggested that the pump not be run at shut-off, because the temperature rises too fast |
+| N-553 rev D / rev E | 9.14 / 9.13 (replace item a) of API 8.3.3.3) | "These points **shall be**: 1) shutoff …": the client turns "normally" into "shall" and does not restate the API note, so an exemption needs the client's concurrence |
+| N-553 rev E | 6.1.11 (modification) | stable curves "continuous head rise to shutoff" **for all applications**, so the rising-curve question stays open even if the shut-off point is waived |
+
+High-energy means more than 200 m **and** more than 225 kW per stage (8th 2.1.15, 11th
+6.1.15).  In the 12th formula, P is the rated power per stage with water, D_imp the
+rated impeller diameter and D_nozzle the nominal discharge flange diameter (inlet flange
+for double-suction single-stage pumps).
+
+**Worked case (anonymised real FAT, 2026, a P-9001 unit).**  OH6, integrally
+geared (gear ratio 2.871), 9.8 m³/h, 333.8 m, 26.9 kW, impeller 125.5 mm, discharge 2 in,
+datasheet shut-off head 357.4 m.  The vendor tested six points; the lowest was at
+**35 % of rated flow** (3.46 m³/h), so there is no shut-off point.
+
+- *Is the omission defensible?*  Not high-energy (26.9 kW is far below 225 kW), so the
+  8th-edition note does not cover it.  It **is** integral-gear (11th, 12th note), and its
+  power density is 26.9 kW / (0.1255 m × 0.0508² m²) ≈ **83 MW/m³**, about **6 times**
+  the 12th-edition guide value.  So yes under the 11th/12th; under N-553 it still needs
+  the client's written concurrence (look for it in the vendor's list of exceptions).
+- *Can the shut-off head be judged from the curve?*  **No.**  The tool predicts H(0) by
+  extrapolation and flags it.  The answer depends on the fit, not on the pump:
+
+  | Fit | Predicted H(0) | vs 357.4 m (±5 %) |
+  |---|---|---|
+  | cubic, all six points | 743 m | +108 %, "fail" |
+  | cubic, without the run-out point (11.6 m³/h, beyond the end of the curve) | 365 m | +2.1 %, "pass" |
+  | quadratic, without the run-out point | 312 m | −12.6 %, "fail" |
+
+  The same choices move the head at rated flow by only 0.5 % (333.2 m vs 331.5 m, both
+  inside −2/+2 %).  **Rated-point results are robust; an extrapolated shut-off head is
+  not a measurement.**
+- *Is there a real concern behind it?*  Yes.  Corrected to rated speed, the head at
+  3.5 m³/h (about 367 m) is slightly **below** the head at 6.7 m³/h (about 370 m): the
+  curve droops at low flow.  With N-553 rev E's rising-curve rule, ask the vendor for a
+  statement (or a shut-off reading) that the head rises to shut-off.
+
+**What to do at the bench**
+- Check the contract first: which API edition and which N-553 revision govern, and
+  whether the vendor's exceptions list waives the shut-off point.
+- Until the omission is agreed, leave the waiver empty: the Compliance node shows the
+  shut-off row as **not evaluated** ("shut-off not tested …") and the verdict is
+  **NOT FULLY ASSESSED ⚠: Shutoff Head**.  List it as an open point.
+- Once it is agreed, type the reason in the Compliance node's **"Shut-off not tested,
+  agreed because"** field (pump type, clause, the client's concurrence reference).  The
+  row becomes *information* ("waived: …"), the verdict can be **APPROVED ✓ (shut-off not
+  tested)**, and the report prints "Shut-off head not tested … Reason: …" under the
+  verdict.  The waiver is used only when the shut-off head is extrapolated: a tested
+  shut-off point is always judged.
+- Do **not** widen the shut-off tolerance with a Compliance override to turn the
+  extrapolated value into a pass: an override changes a limit, it does not replace a
+  missing measurement.
+- Leaving the rated shut-off head blank on the Rated Point skips the check, but the report
+  then says nothing about it; use the waiver instead.
 
 ## 5 · NPSH: two separate rules
 
@@ -135,14 +200,16 @@ N-553 rev E also asks for vibration at each test flow within ±5 % of that flow.
 ## 7 · The mechanical run
 
 In the workbench the run is two nodes:
-- **MRT Log**: type or paste the 15-minute readings.  A new log records the witness
-  sheet: time, flow, vibration (overall and filtered) and oil temperature.  The unit of
-  each column is picked above it, as in Test Points, and picking another unit converts
-  the readings.  Add channels (ΔP, power, bearing temperatures...) if the test sheet has
-  them;
+- **MRT Log**: type or paste the 15-minute readings.  First **state the lubrication
+  system** from the datasheet (ring-oil / splash, pressurized, pure oil mist, grease):
+  it adds the temperature channels the API rules need.  Wire the Rated Point and tick
+  *Vibration* to get the pump type's measurement locations, as in Test Points.  The unit
+  of each column is picked above it, and picking another unit converts the readings.
+  Add custom channels (ΔP, ...) if the test sheet has them;
 - **MRT Check**: wire the log, the rated point and the fitted curve into it.  It gives
-  the verdict, the per-channel table (min / max / last / limit) and the trend plot.
-  Your own limits (overrides) go here and make the verdict provisional.
+  the verdict, the per-channel table (min / max / last / limit), the **bearing
+  temperature rules** and the trend plot.  Your own limits (overrides) go here and make
+  the verdict provisional.
 
 Keep the log faithful to the test sheet, and argue about the limits in the check.
 
@@ -152,9 +219,21 @@ Keep the log faithful to the test sheet, and argue about the limits in the check
 - **Stabilisation.**  N-553 rev E 9.20 requires at least a 1 h warm-up, then oil and
   bearing temperatures are stable when they rise no more than 2 K in 30 min.  The tool
   checks this from the log.
-- **Bearing temperatures** (11th 6.10.2.4): with pressurised oil, the outlet is below 70 °C
-  and the oil rise at most 28 K; with ring-oil or splash lubrication, the sump is below
-  82 °C and the rise at most 40 K above ambient.
+- **Bearing temperatures** depend on the lubrication system (8th 2.9.2.3, 11th 6.10.2.4,
+  12th 6.10.2.7; the full table is in {doc}`../concepts/mechanical-run`):
+  - *pressurized*: the **oil rise through each bearing** (outlet − inlet) at most 28 K;
+    so log the oil **inlet** too, not only the outlets.  Bearing metal below 93 °C if
+    sensors are fitted;
+  - *ring-oil / splash*: the **sump rise above the test-cell ambient**, at each reading,
+    at most 40 K (11th) or 39 K (8th, 12th); so log the **ambient** at every reading;
+  - *pure oil mist* (12th; N-553 rev E 7.35 c for the 2010 edition): bearing-housing
+    surface at most 71 °C (N-553: below 70 °C, and at most 35 K above ambient);
+  - the absolute limits (oil outlet 70/71 °C, sump 82 °C) are **design** values at 43 °C
+    ambient: report them, but judge the shop test on the rises.
+
+  A rule the log cannot answer (no inlet, no ambient, lubrication not stated) is **not
+  evaluated**, and the verdict says *not fully assessed*: ask for the missing readings
+  rather than signing.
 
 ## 8 · The test data summary (Annex M / 8th App. T)
 
@@ -214,7 +293,9 @@ Before the test:
 
 During the test:
 - [ ] At least 5 points: shut-off, minimum flow, between minimum and rated, rated, and
-  maximum (at least 120 % of BEP) (8th 4.3.3.2.1).
+  maximum (at least 120 % of BEP) (8th 4.3.3.2.1).  No shut-off point?  Find the
+  agreed exemption (high-energy, multistage, integral-gear; 12th power density) and
+  record it as an open point (§4.1).
 - [ ] Test speed within 3 % of rated.
 - [ ] Vibration in **RMS**, at each point except shut-off.
 - [ ] NPSH 3 % head-drop data, if specified.
@@ -227,7 +308,9 @@ At the end:
 - [ ] No `OVERRIDDEN` chip on a Compliance node unless the change is agreed in writing,
   and its reason is filled in (the report prints "Reason: not given" otherwise).
 - [ ] NPSH: margin rule and rated NPSH +0 % (NPSH node).
-- [ ] Mechanical run: duration, stabilisation, vibration (MRT Log → MRT Check).
+- [ ] Mechanical run: duration, stabilisation, vibration, and the bearing temperature
+  rules of the stated lubrication system, with the oil inlet / ambient readings they
+  need (MRT Log → MRT Check).
 - [ ] Report exported (Word / PDF), open points listed, signatures if required.
 - [ ] Test data summary exported, blanks completed by hand, signed by vendor and witness.
 
@@ -260,6 +343,18 @@ Work them by hand from §2-§7, then check with the notebook.
    at BEP (relative density 1.0).  Gearbox-housing readings: overall 3.84, largest
    discrete line 2.24 mm/s RMS.  Which limits apply, and does it pass?  And under the
    8th edition?
+11. The worked case of §4.1 (OH6, integrally geared, 26.9 kW, impeller 125.5 mm,
+   discharge 2 in, lowest test point at 35 % of rated flow, API 610 8th + N-553 rev E).
+   Older versions of the tool reported the shut-off head as **743 m, fail
+   (extrapolated)** against 357.4 m.
+   Is the pump rejected?  Compute the 12th-edition power density.  What do you write in
+   the report?
+
+12. A 4 h run, API 610 11th edition.  (a) Pressurized lubrication: oil inlet 41 °C, oil
+   outlet DE 63 °C, oil outlet NDE 71 °C, steady.  Judge the oil temperature rules.
+   (b) The same pump with ring-oil lubrication: sump 66 °C with the test cell at 25 °C;
+   would it pass under the 12th edition?  (c) The log has the outlets but nobody
+   recorded the inlet.  What does the tool say?
 
 ## Answers
 
@@ -291,3 +386,22 @@ Work them by hand from §2-§7, then check with the notebook.
    *v_f* = 0.67·4.1 = **2.7 mm/s**.  3.84 ≤ 4.1 and 2.24 ≤ 2.7, so it **passes** under the
    12th edition.  Under the 8th edition there is no high-speed allowance: the limits are
    3.0 / 2.0 mm/s and it **fails** both.  This is P-9001A's real situation.
+11. **Not rejected on that row, and not accepted on it either.**  The 743 m is an
+   extrapolation from 35 % of rated flow to zero; other reasonable fits give 312-365 m,
+   so it says nothing about the pump.  PD = 0.0269 MW / (0.1255 m × 0.0508² m²) ≈
+   **83 MW/m³** (1.8 hp/in³), about 6 times the 13 MW/m³ guide value, and the pump is
+   integral-gear: the 11th/12th notes support skipping shut-off.  Under the 8th edition
+   alone it is neither high-energy nor multistage, and N-553 says "shall", so the
+   omission needs the client's written concurrence.  In the report: shut-off head **not
+   tested**, reason and concurrence reference, plus an open point on the rising curve
+   (N-553 rev E), because the head at 35 % of rated flow is slightly below the head at
+   68 %.  Do not override the tolerance to make the row pass.  In the tool: without a
+   waiver the verdict is **NOT FULLY ASSESSED ⚠: Shutoff Head**; with the agreed reason
+   in "Shut-off not tested, agreed because" it is **APPROVED ✓ (shut-off not tested)**
+   and the report prints the reason.
+12. (a) The rise through each bearing is outlet − inlet: DE 22 K, NDE **30 K > 28 K**, so
+   the oil-rise rule **fails** (6.10.2.4 a).  The NDE outlet is also above the 70 °C
+   design limit, but that limit is at 43 °C ambient: it is reported, not judged.
+   (b) 66 − 25 = **41 K**: above 40 K (11th 6.10.2.4 b) and 39 K (12th 6.10.2.7 b), so it
+   **fails** both.  (c) The oil rise cannot be computed: the rule is **not evaluated**
+   and the run is *not fully assessed*.  Ask for the inlet temperature before signing.

@@ -18,6 +18,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import BindingError, make_fluid, rated_from_candidate, select_pumps
 from .base import BaseNode, PortSpec
@@ -37,9 +38,9 @@ _COLUMNS = [
 
 def _value_text(cand) -> str:
     if cand.adaptation == "speed" and cand.value is not None:
-        return f"{cand.value.to('rpm').magnitude:.0f} rpm"
+        return f"{_nf(cand.value.to('rpm').magnitude, '.0f')} rpm"
     if cand.adaptation == "trim" and cand.value is not None:
-        return f"{cand.value.to('mm').magnitude:.1f} mm"
+        return f"{_nf(cand.value.to('mm').magnitude, '.1f')} mm"
     return "—"
 
 
@@ -121,7 +122,7 @@ class SelectionNode(BaseNode):
         warn = "" if chosen.in_por else " · ⚠ outside POR"
         self.status = (
             f"{len(result)} candidate(s) · #{idx + 1} {chosen.label} · "
-            f"η {eta:.1f} %{warn}"
+            f"η {_nf(eta, '.1f')} %{warn}"
         )
         self.state = "ok"
         return {"RatedPoint": rated}
@@ -227,12 +228,12 @@ class SelectionNode(BaseNode):
                         c.entry.name,
                         c.adaptation,
                         _value_text(c),
-                        f"{c.eta_at_duty.to('percent').magnitude:.1f}",
-                        f"{power.to('kW').magnitude:.1f}" if power is not None else "—",
-                        f"{c.q_over_qbep:.2f}",
+                        f"{_nf(c.eta_at_duty.to('percent').magnitude, '.1f')}",
+                        f"{_nf(power.to('kW').magnitude, '.1f')}" if power is not None else "—",
+                        f"{_nf(c.q_over_qbep, '.2f')}",
                         "yes" if c.in_por else "no",
                         (
-                            f"{c.trim_margin * 100:.1f} %"
+                            f"{_nf(c.trim_margin * 100, '.1f')} %"
                             if c.trim_margin is not None
                             else "—"
                         ),

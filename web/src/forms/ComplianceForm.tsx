@@ -19,6 +19,8 @@ const HEADERS = [
 ];
 const TOL_MAX_PCT = 50;
 const EMPTY_REASON_PLACEHOLDER = "e.g. purchaser agreement, ref. letter / MoM no.";
+const WAIVER_PLACEHOLDER =
+  "only if agreed, e.g. integral-gear, API 610 12th 8.3.3.4; client letter no.";
 
 type Tolerances = Record<string, number | null | undefined>;
 
@@ -52,6 +54,13 @@ export default function ComplianceForm({ nodeId, doc, result, dispatch }: FormPr
     setTyped((r) => (r !== null && r.trim() !== storedReason ? null : r));
   }, [storedReason]);
   const reason = typed ?? storedReason;
+  // the shut-off waiver (TR-01 4.1), same typing rule as Reason
+  const storedWaiver = s ? getStr(s, "shutoff_waiver") : "";
+  const [typedWaiver, setTypedWaiver] = useState<string | null>(null);
+  useEffect(() => {
+    setTypedWaiver((r) => (r !== null && r.trim() !== storedWaiver ? null : r));
+  }, [storedWaiver]);
+  const waiver = typedWaiver ?? storedWaiver;
   if (!s) return <p className="form-loading">{error || "Loading…"}</p>;
 
   const defaults = asTolerances(view.default_tolerances);
@@ -151,6 +160,21 @@ export default function ComplianceForm({ nodeId, doc, result, dispatch }: FormPr
       )}
       {error && <Banner kind="error">{error}</Banner>}
       {result?.state === "invalid" && <Banner kind="error">{result.status}</Banner>}
+      <Divider />
+      <Row label="Shut-off not tested, agreed because">
+        <TextField
+          value={waiver}
+          placeholder={WAIVER_PLACEHOLDER}
+          onChange={(v) => {
+            setTypedWaiver(v);
+            update({ shutoff_waiver: v.trim() === "" ? undefined : v.trim() });
+          }}
+        />
+      </Row>
+      <Banner kind="info">
+        Used only when no test point is near zero flow. Without a reason the shut-off row is not
+        evaluated; with one it is reported for information and the reason is printed.
+      </Banner>
       <Divider />
 
       <button

@@ -33,6 +33,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from .utilities.numbers import num as _nf
+
 __all__ = [
     "PUMP_TYPES",
     "Location",
@@ -360,7 +362,7 @@ def plot_high_speed_chart(
     if speed is not None:
         n = float(speed.to("rpm").magnitude)
         v = rule.overall(speed, power_per_stage).magnitude
-        ax.plot([n], [v], "k*", ms=13, label=f"{lab['pump']}: {v:.2f} mm/s")
+        ax.plot([n], [v], "k*", ms=13, label=f"{lab['pump']}: {_nf(v, '.2f')} mm/s")
         ax.axvline(n, color="k", ls=":", lw=0.8)
     ax.set_xscale("log")
     ax.set_xlim(500, 30000)
@@ -373,5 +375,8 @@ def plot_high_speed_chart(
         ax.set_title(title, fontsize=10)
     fig.tight_layout()
     buf = io.BytesIO()
+    from pump.utilities.numbers import localize_axes
+
+    localize_axes(fig)
     fig.savefig(buf, format="png")
     return buf.getvalue()

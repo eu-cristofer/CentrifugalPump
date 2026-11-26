@@ -54,6 +54,61 @@ def window_settings() -> QSettings:
     return QSettings("PumpFlow", "PumpFlow")
 
 
+_DECIMAL_KEY = "decimalSeparator"
+
+
+def decimal_preference() -> str:
+    """The user's decimal separator ("." or ","), from the app settings.
+
+    A per-user preference (not the project's): default point.
+    """
+    from ..numfmt import COMMA, POINT
+
+    value = str(window_settings().value(_DECIMAL_KEY, POINT) or POINT)
+    return COMMA if value == COMMA else POINT
+
+
+def apply_decimal_preference(sep: str, save: bool = False) -> None:
+    """Use ``sep`` for every number the workbench shows (texts and number boxes).
+
+    Sets the formatter's default and Qt's default locale (point: C locale,
+    comma: pt_BR), both without thousands grouping.  Boxes built afterwards
+    pick it up; open windows keep theirs until reopened.
+    """
+    from PySide6.QtCore import QLocale
+
+    from ..numfmt import COMMA, set_decimal
+
+    set_decimal(sep)
+    loc = (
+        QLocale("pt_BR")
+        if sep == COMMA
+        else QLocale.c()
+    )
+    loc.setNumberOptions(QLocale.NumberOption.OmitGroupSeparator)
+    QLocale.setDefault(loc)
+    if save:
+        window_settings().setValue(_DECIMAL_KEY, sep)
+
+
+class DecimalSpinBox(QDoubleSpinBox):
+    """A number box that shows the preferred separator and accepts both.
+
+    Typing "9.8" or "9,8" gives 9.8 whatever the preference.
+    """
+
+    def _normal(self, text: str) -> str:
+        mine = self.locale().decimalPoint()
+        other = "," if mine == "." else "."
+        return text.replace(other, mine)
+
+    def validate(self, text, pos):  # noqa: D401 - Qt override
+        return super().validate(self._normal(text), pos)
+
+    def valueFromText(self, text):  # noqa: N802 - Qt override
+        return super().valueFromText(self._normal(text))
+
+
 class PropertyDialog(QDialog):
     """A consistent shell: header, a body you fill, and live-apply semantics.
 
@@ -340,7 +395,7 @@ def spin(
     decimals: int = 2,
     on_change: Optional[Callable] = None,
 ) -> QDoubleSpinBox:
-    sb = QDoubleSpinBox()
+    sb = DecimalSpinBox()
     sb.setRange(lo, hi)
     sb.setDecimals(decimals)
     sb.setSingleStep(step)

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Dict
 
+from ..numfmt import num as _nf
 from ..binding import BindingError
 from ..binding import solve_operating_point
 from .base import BaseNode, PortSpec
@@ -50,11 +51,11 @@ class OperatingPointNode(BaseNode):
             return self.emit_nothing(str(exc), "invalid")
         pt = result.point
         text = (
-            f"Q {float(pt.q.to('m**3/h').magnitude):.1f} m³/h · "
-            f"H {float(pt.h.to('m').magnitude):.1f} m"
+            f"Q {_nf(float(pt.q.to('m**3/h').magnitude), '.1f')} m³/h · "
+            f"H {_nf(float(pt.h.to('m').magnitude), '.1f')} m"
         )
         if pt.efficiency is not None:
-            text += f" · η {float(pt.efficiency.to('percent').magnitude):.1f} %"
+            text += f" · η {_nf(float(pt.efficiency.to('percent').magnitude), '.1f')} %"
         if pt.extrapolated:
             text += " · extrapolated"
         self._last = result

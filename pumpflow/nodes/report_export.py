@@ -30,6 +30,7 @@ from ..binding import (
     assemble_report_data, export_reports, export_test_summary, test_data_summaries,
     open_points_from_notes,
 )
+from ..numfmt import decimal, decimal_for_language
 from ..persistence import write_json
 from ..signals import (
     BranchBundle, ComplianceResult, CorrectedCurve, FittedModel,
@@ -113,6 +114,33 @@ class ReportExportNode(BaseNode):
             for n in getattr(scene, "nodes", [])
             if n.logic.kind == "markdown_note"
         ]
+
+    def report_inputs(self):
+        """``(rated, branches, notes)`` for an export, evaluated afresh.
+
+        The canvas is re-evaluated headless, so the charts are drawn with the
+        decimal separator in force (the exporters set the report language's
+        separator around this call).  Without a canvas the last computed
+        inputs are used.
+        """
+        item = getattr(self, "item", None)
+        scene = item.scene() if item is not None and hasattr(item, "scene") else None
+        if scene is None or not hasattr(scene, "to_dict"):
+            return (
+                getattr(self, "_rated", None),
+                list(getattr(self, "_branches", ())),
+                self.report_notes(),
+            )
+        from ..engine import Graph
+
+        graph = Graph.from_dict(scene.to_dict())
+        graph.evaluate()
+        logic = [getattr(n, "logic", n) for n in graph.nodes]
+        me = next((lg for lg in logic if lg.node_id == self.node_id), None)
+        notes = [lg.settings for lg in logic if lg.kind == "markdown_note"]
+        if me is None:  # pragma: no cover - the canvas always holds this node
+            return getattr(self, "_rated", None), list(getattr(self, "_branches", ())), notes
+        return getattr(me, "_rated", None), list(getattr(me, "_branches", ())), notes
 
     # -- grouping ----------------------------------------------------------
     def _bundle(self, inputs):
@@ -361,31 +389,31 @@ class ReportExportNode(BaseNode):
         # export buttons — every document format goes through
         # binding.export_reports so the GUI and the CLI behave identically.
         def run_export(formats):
-            rated = getattr(self, "_rated", None)
-            branches = [
-                b for b in getattr(self, "_branches", ())
-                if b.fitted is not None or b.mechanical is not None
-                or b.npsh is not None
-            ]
-            if not rated or not branches:
-                QMessageBox.warning(
-                    dlg, "Report Export",
-                    "Connect the rated point and at least one complete branch "
-                    "(test points → correction → curve fit), a mechanical run "
-                    "or an NPSH result.",
+            with decimal(decimal_for_language(s["language"])):
+                rated, found, notes = self.report_inputs()
+                branches = [
+                    b for b in found
+                    if b.fitted is not None or b.mechanical is not None
+                    or b.npsh is not None
+                ]
+                if not rated or not branches:
+                    QMessageBox.warning(
+                        dlg, "Report Export",
+                        "Connect the rated point and at least one complete branch "
+                        "(test points → correction → curve fit), a mechanical run "
+                        "or an NPSH result.",
+                    )
+                    return
+                data = assemble_report_data(
+                    rated, branches, s["equipment"], settings=s, notes=notes,
                 )
-                return
-            data = assemble_report_data(
-                rated, branches, s["equipment"],
-                settings=s, notes=self.report_notes(),
-            )
-            stem = self._resolve_output(s, "", rated)
-            folder, _, name = stem.rpartition("/")
-            paths, errors = export_reports(
-                data, formats, language=s["language"],
-                template_path=s["template_path"] or None,
-                out_dir=folder or ".", stem=name,
-            )
+                stem = self._resolve_output(s, "", rated)
+                folder, _, name = stem.rpartition("/")
+                paths, errors = export_reports(
+                    data, formats, language=s["language"],
+                    template_path=s["template_path"] or None,
+                    out_dir=folder or ".", stem=name,
+                )
             lines = [f"Saved {fmt}: {path}" for fmt, path in paths.items()]
             lines += [f"FAILED {fmt}: {msg}" for fmt, msg in errors.items()]
             if errors and "docx" in errors and "Template" in errors["docx"]:
@@ -409,26 +437,27 @@ class ReportExportNode(BaseNode):
             run_export(list(s.get("formats") or REPORT_FORMATS))
 
         def export_summary():
-            rated = getattr(self, "_rated", None)
-            branches = [b for b in getattr(self, "_branches", ()) if b.fitted is not None]
-            if not rated or not branches:
-                QMessageBox.warning(
-                    dlg, "Report Export",
-                    "The test data summary needs the rated point and at least one "
-                    "fitted branch (test points → correction → curve fit).",
-                )
-                return
             from pump.utilities.report import LocalizationHelper
 
-            summaries = test_data_summaries(
-                rated, branches, s, LocalizationHelper(s["language"])._
-            )
-            stem = self._resolve_output(s, "", rated)
-            folder, _sep, name = stem.rpartition("/")
-            paths, errors = export_test_summary(
-                summaries, SUMMARY_FORMATS, language=s["language"],
-                out_dir=folder or ".", stem=f"{name}_test_summary",
-            )
+            with decimal(decimal_for_language(s["language"])):
+                rated, found, _notes = self.report_inputs()
+                branches = [b for b in found if b.fitted is not None]
+                if not rated or not branches:
+                    QMessageBox.warning(
+                        dlg, "Report Export",
+                        "The test data summary needs the rated point and at least one "
+                        "fitted branch (test points → correction → curve fit).",
+                    )
+                    return
+                summaries = test_data_summaries(
+                    rated, branches, s, LocalizationHelper(s["language"])._
+                )
+                stem = self._resolve_output(s, "", rated)
+                folder, _sep, name = stem.rpartition("/")
+                paths, errors = export_test_summary(
+                    summaries, SUMMARY_FORMATS, language=s["language"],
+                    out_dir=folder or ".", stem=f"{name}_test_summary",
+                )
             lines = [f"Saved {fmt}: {path}" for fmt, path in paths.items()]
             lines += [f"FAILED {fmt}: {msg}" for fmt, msg in errors.items()]
             box = QMessageBox.warning if errors else QMessageBox.information

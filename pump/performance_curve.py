@@ -17,6 +17,7 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from .utilities.unit_conversion import Q_, quantity_factory
+from .utilities.numbers import num as _nf
 from .utilities.fluid import Fluid
 from .point import DesignPoint, TestPoint
 from .acceptance import AcceptanceCriteria, evaluate_performance, _band
@@ -386,14 +387,14 @@ class PerformanceCurve:
         ax1.legend()
 
         if capacity is not None:
-            ax1.plot(capacity_value, fitted_head, "x", color=_c("chart-head"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+            ax1.plot(capacity_value, fitted_head, "x", color=_c("chart-head"), markersize=10, label=f"Capacity {_nf(capacity_value, '.1f')} m³/h")
             ax1.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")  # Vertical dashed line
             ax1.axhline(fitted_head, color=_c("chart-cursor"), linestyle="dashed")  # Horizontal dashed line
 
             # Add tick labels
             ax1.text(ax1.get_xlim()[0],
                      fitted_head,
-                     f"{fitted_head:.1f}",
+                     f"{_nf(fitted_head, '.1f')}",
                      verticalalignment='center',
                      horizontalalignment='left',
                      fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
@@ -401,7 +402,7 @@ class PerformanceCurve:
             if not has_power and not has_efficiency:
                 ax1.text(capacity_value,
                          ax1.get_ylim()[0],
-                         f"{capacity_value:.1f}",
+                         f"{_nf(capacity_value, '.1f')}",
                          verticalalignment='bottom',
                          horizontalalignment='center',
                          fontsize=10,
@@ -423,14 +424,14 @@ class PerformanceCurve:
             ax2.yaxis.tick_right()
 
             if capacity is not None:
-                ax2.plot(capacity_value, fitted_power, "x", color=_c("chart-power"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+                ax2.plot(capacity_value, fitted_power, "x", color=_c("chart-power"), markersize=10, label=f"Capacity {_nf(capacity_value, '.1f')} m³/h")
                 ax2.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
                 ax2.axhline(fitted_power, color=_c("chart-cursor"), linestyle="dashed")
                 
                 # Add tick labels
                 ax2.text(ax2.get_xlim()[0],
                          fitted_power,
-                         f"{fitted_power:.1f}",
+                         f"{_nf(fitted_power, '.1f')}",
                          verticalalignment='center',
                          horizontalalignment='left',
                          fontsize=10,
@@ -449,13 +450,13 @@ class PerformanceCurve:
             ax3.legend()
 
             if capacity is not None:
-                ax3.plot(capacity_value, fitted_efficiency, "x", color=_c("chart-efficiency"), markersize=10, label=f"Capacity {capacity_value:.1f} m³/h")
+                ax3.plot(capacity_value, fitted_efficiency, "x", color=_c("chart-efficiency"), markersize=10, label=f"Capacity {_nf(capacity_value, '.1f')} m³/h")
                 ax3.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
                 ax3.axhline(fitted_efficiency, color=_c("chart-cursor"), linestyle="dashed")
     
                 # Add tick labels
-                ax3.text(capacity_value, ax3.get_ylim()[0], f"{capacity_value:.1f}", verticalalignment='bottom', horizontalalignment='center', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
-                ax3.text(ax3.get_xlim()[0], fitted_efficiency, f"{fitted_efficiency:.1f}", verticalalignment='center', horizontalalignment='left', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
+                ax3.text(capacity_value, ax3.get_ylim()[0], f"{_nf(capacity_value, '.1f')}", verticalalignment='bottom', horizontalalignment='center', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
+                ax3.text(ax3.get_xlim()[0], fitted_efficiency, f"{_nf(fitted_efficiency, '.1f')}", verticalalignment='center', horizontalalignment='left', fontsize=10, bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
 
         if with_npsh:
             ax3.set_xlabel("")
@@ -468,13 +469,13 @@ class PerformanceCurve:
             ax4.plot(grid, fit, "-", color=_c("chart-npsh"), label="NPSHr Fit")
             if npsha is not None:
                 a = npsha.to("m").magnitude
-                ax4.axhline(a, color=_c("chart-npsha"), linestyle="-.", label=f"NPSHa {a:.2f} m")
+                ax4.axhline(a, color=_c("chart-npsha"), linestyle="-.", label=f"NPSHa {_nf(a, '.2f')} m")
             if capacity is not None:
                 ax4.axvline(capacity_value, color=_c("chart-cursor"), linestyle="dashed")
                 if nq.min() <= capacity_value <= nq.max():
                     at = npsh_curve(capacity).to("m").magnitude
                     ax4.plot(capacity_value, at, "x", color=_c("chart-npsh"), markersize=10)
-                    ax4.text(ax4.get_xlim()[0], at, f"{at:.2f}", verticalalignment='center',
+                    ax4.text(ax4.get_xlim()[0], at, f"{_nf(at, '.2f')}", verticalalignment='center',
                              horizontalalignment='left', fontsize=10,
                              bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round,pad=0.3'))
                 if npshr_quoted is not None:
@@ -503,6 +504,8 @@ class PerformanceCurve:
         
         if return_io:
             image_stream = io.BytesIO()
+            from pump.utilities.numbers import localize_axes
+            localize_axes(fig)
             fig.savefig(image_stream, format='png')
             plt.close(fig)
             image_stream.seek(0)
@@ -797,11 +800,11 @@ class PerformanceCurve:
         results = []
         for point in self.points:
             results.append([
-                f"{point.capacity:0.02f~P}", 
-                f"{point.head:0.02f~P}",
-                f"{getattr(point, "breaking_power", 0):0.02f~P}" if hasattr(point, "breaking_power") else "N/A",
-                f"{getattr(point, "hydraulic_power", 0):0.02f~P}" if hasattr(point, "hydraulic_power") else "N/A",
-                f"{getattr(point, "efficiency", 0):0.02f~P}" if hasattr(point, "efficiency") else "N/A",
+                f"{_nf(point.capacity, '0.02f~P')}", 
+                f"{_nf(point.head, '0.02f~P')}",
+                f"{_nf(getattr(point, "breaking_power", 0), '0.02f~P')}" if hasattr(point, "breaking_power") else "N/A",
+                f"{_nf(getattr(point, "hydraulic_power", 0), '0.02f~P')}" if hasattr(point, "hydraulic_power") else "N/A",
+                f"{_nf(getattr(point, "efficiency", 0), '0.02f~P')}" if hasattr(point, "efficiency") else "N/A",
             ])
 
         headers = ["Flow", "Head", "Breaking Power", "Hydralic Power", "Efficiency"]
@@ -869,7 +872,7 @@ def _fmt_value(value) -> str:
     if isinstance(value, str):
         return value
     try:
-        return f"{value:0.02f~P}"
+        return f"{_nf(value, '0.02f~P')}"
     except (TypeError, ValueError):
         return str(value)
 
@@ -1123,7 +1126,7 @@ class PerformanceChecker:
             fraction = self.criteria.shutoff_extrapolation_q_fraction
             text += (
                 "\nNote: shutoff head is extrapolated (no test point below "
-                f"{fraction:.0%} of rated capacity)."
+                f"{_nf(fraction, '.0%')} of rated capacity)."
             )
         if verdict.not_evaluated:
             text += "\nNot evaluated: " + ", ".join(verdict.not_evaluated) + "."
@@ -1147,14 +1150,14 @@ class PerformanceChecker:
         results = []
         for point in self.curve:                
             results.append([
-                f"{point.capacity:0.02f~P}", 
-                f"{point.head:0.02f~P}",
-                f"{self.minimum_head:0.02f~P}", f"{self.maximum_head:0.02f~P}",
-                f"{point.head:0.02f~P}" if point.capacity < shutoff_q else "N/A",
-                f"{self.minimum_head_shutoff:0.02f~P}" if self.minimum_head_shutoff is not None else "N/A",
-                f"{self.maximum_head_shutoff:0.02f~P}" if self.maximum_head_shutoff is not None else "N/A",
-                f"{getattr(point, "breaking_power", 0):0.02f~P}" if hasattr(point, "breaking_power") else "N/A",
-                f"{self.maximum_breaking_power:0.02f~P}" if self.maximum_breaking_power is not None else "N/A"
+                f"{_nf(point.capacity, '0.02f~P')}", 
+                f"{_nf(point.head, '0.02f~P')}",
+                f"{_nf(self.minimum_head, '0.02f~P')}", f"{_nf(self.maximum_head, '0.02f~P')}",
+                f"{_nf(point.head, '0.02f~P')}" if point.capacity < shutoff_q else "N/A",
+                f"{_nf(self.minimum_head_shutoff, '0.02f~P')}" if self.minimum_head_shutoff is not None else "N/A",
+                f"{_nf(self.maximum_head_shutoff, '0.02f~P')}" if self.maximum_head_shutoff is not None else "N/A",
+                f"{_nf(getattr(point, "breaking_power", 0), '0.02f~P')}" if hasattr(point, "breaking_power") else "N/A",
+                f"{_nf(self.maximum_breaking_power, '0.02f~P')}" if self.maximum_breaking_power is not None else "N/A"
             ])
 
         headers = [

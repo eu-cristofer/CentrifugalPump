@@ -22,7 +22,7 @@ _ALLOWED = {
     "decode_settings", "encode_settings", "unit_options", "convert", "explain",
     "standards", "clients", "standard_label", "water_density", "water_properties",
     "pump_types", "pump_type_hint", "atmosphere", "parse_paste",
-    "next_time", "mrt_options", "parse_mrt_paste",
+    "next_time", "mrt_options", "parse_mrt_paste", "mrt_standard_channels",
 }
 
 def _call(fn, args_json):

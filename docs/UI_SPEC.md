@@ -290,6 +290,13 @@ maximised state, kept in the app settings (`QSettings`, key
   - Deviation per notebook: `δ = 1 − nominal/predicted`.
   - Verdict logic per notebook `status()`: head |δ|≤tol; power δ≤tol;
     efficiency δ≥−tol.
+- **Shut-off not tested:** when no test point lies below
+  `shutoff_extrapolation_q_fraction` of rated flow, the Shutoff Head row is *not
+  evaluated* (overall NOT FULLY ASSESSED).  A **"Shut-off not tested, agreed because"**
+  text field (setting `shutoff_waiver`, omitted when empty), outside the override
+  section, turns that row into *information*; the verdict text gains "(shut-off not
+  tested)" and the report prints the reason under the verdict.  A tested shut-off point
+  is always judged and the field is then ignored.
 - **Controls:** a collapsed **"Override acceptance criteria…"** section (opened
   automatically when an override exists) with the tolerance fields pre‑filled
   from the acceptance criteria of the rated point's edition and client overlay,
@@ -385,6 +392,19 @@ comma‑decimal string values, which the importer must parse):
   kgf/cm² ↔ bar. Never show a bare number where a unit is expected.
 - **Localization:** UI labels and the report both support **EN and PT‑BR** (the
   library already ships `locales/en` and `locales/pt` + `template_en/pt.docx`).
+- **Decimal separator:** one rule per output, no thousands grouping anywhere.
+  - *The workbench* (number boxes, tables, node statuses and views, desktop and
+    web) follows the user's **Decimal separator** preference, point (default)
+    or comma. Desktop: *Units ▸ Decimal separator*, saved in the app settings
+    (per user, not in the project). Web: the *Decimal* select in the top bar,
+    saved in the browser. Typing accepts `,` or `.` whatever the preference.
+  - *A report* (docx, tex/pdf, html, the test data summary and its charts)
+    follows its **language**: `en` prints `1234.56`, `pt` prints `1234,56`,
+    whatever the app preference. Free text (notes, equipment fields, criteria
+    sources, clause numbers) is printed as typed.
+  - One formatter does it: `pump.utilities.numbers` (`num`, `qty`, `nformat`,
+    `localize_axes`); the exporters wrap the whole export, the evaluation that
+    draws the charts included, in `decimal(decimal_for_language(lang))`.
 - **Validation & safety:** widgets emit nothing while inputs are invalid; nodes
   surface an amber/red state with a tooltip explaining what's missing
   (mirrors the notebook's `[AVISO] Execute o formulário…` guards).
@@ -392,7 +412,8 @@ comma‑decimal string values, which the importer must parse):
   have the same fluid`, missing `breaking_power`) are caught and shown as
   human‑readable widget errors, not stack traces.
 - **Determinism:** given the same inputs, the verdict and exported files are
-  byte‑reproducible (fixed number formatting, `:0.02f~P` style as the library uses).
+  byte‑reproducible (fixed number formatting, `:0.02f~P` style as the library uses,
+  with the separator of the report language; nothing depends on the OS locale).
 
 ---
 
@@ -441,8 +462,8 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
 
 | Kind | Inputs | Outputs | Key settings |
 |------|--------|---------|--------------|
-| `mechanical_run` (**MRT Log**) | — | MechanicalRunSet | pump TAG, channels (name, dimension, unit, role), 15-min readings, paste |
-| `mechanical_run_check` (**MRT Check**) | MechanicalRunSet, RatedPoint (opt.), FittedModel (opt.) | MechanicalRunResult | limit overrides; shows the verdict, per-channel table and trend plot |
+| `mechanical_run` (**MRT Log**) | RatedPoint (opt.) | MechanicalRunSet | pump TAG, lubrication system, standard channel groups, channels (name, dimension, unit, role, bearing location), 15-min readings, paste |
+| `mechanical_run_check` (**MRT Check**) | MechanicalRunSet, RatedPoint (opt.), FittedModel (opt.) | MechanicalRunResult | limit overrides; shows the verdict, per-channel table, bearing temperature rules and trend plot |
 | `npsh` | RatedPoint (opt.) | NPSHResult | mode (NPSHr points / NPSHa calculator), per-column units, margin-rule overrides |
 | `trim` | FittedModel or CorrectedCurve, RatedPoint | CorrectedCurve | mode (target diameter / solve for rated duty), max trim % |
 | `system_curve` | Fluid (opt.) | SystemCurveSpec | mode (static + k / two points / pipe Darcy–Weisbach), units per field |
@@ -453,6 +474,28 @@ A reviewer must be able to, **end‑to‑end and only via the GUI**:
 data entry only; the check judges it against the criteria of the wired rated
 point (edition, client overlay, pump type).  A fitted curve wired into the
 check gives the BEP power for the 11th/12th-edition high-speed vibration rule.
+
+**Standard channels (MRT Log).**  As in Test Points, the log offers known
+columns.  The *Lubrication* selector (not stated, ring-oil / splash,
+pressurized, pure oil mist, grease; setting `lubrication`, omitted when not
+stated) adds the temperature channels the bearing temperature rules need:
+pressurized, oil inlet + oil outlet DE / NDE; ring-oil, oil sump; oil mist and
+grease, housing DE / NDE; plus the ambient for the rises above ambient.
+Optional groups (setting `channel_groups`): vibration at the API 610 locations
+of the pump type of the optional Rated Point input, ambient, bearing metal DE /
+NDE, oil pressure, seal pressure, power.  Standard columns carry a `key` (and a
+`location`); a custom column with the same name is adopted with its unit and
+readings, an unwanted standard column without readings is removed, and custom
+columns stay after the standard ones (`nodes.mechanical_run.apply_standard_channels`,
+shared with the web form through `webapi.mrt_standard_channels`).
+
+**Bearing temperature rules (MRT Check).**  A second table lists the rules of
+the log's lubrication system (`MechanicalRunResult.rules`): rule, worst value,
+limit, status (pass / fail / info / not evaluated) and note.  A rule whose
+channels are missing, or a log without a stated lubrication system, is *not
+evaluated* and the verdict is not fully assessed.  The report prints the rules
+as rows of the mechanical-run table, with their notes below it.
+
 Projects saved with the earlier single `mechanical_run` node (log + overrides +
 verdict) are split on load by `persistence.split_mechanical_runs`.  The node
 keeps its log, and a `<id>_check` node placed below it takes the overrides,

@@ -52,6 +52,7 @@ from typing import Any, Mapping, Optional
 from .mechanical_run import MechanicalRunCriteria
 from .npsh import NPSHCriteria
 from .utilities.unit_conversion import Q_
+from .utilities.numbers import num as _nf
 
 __all__ = [
     "AcceptanceCriteria",
@@ -105,13 +106,43 @@ def _read_toml(path: str) -> dict:
 
 
 def _merge_sub(base: Optional[dict], overlay: Mapping, overlay_label: str) -> dict:
-    """Overlay a sub-table key by key, keeping *both* sources (base | overlay)."""
+    """Overlay a sub-table key by key, keeping *both* sources (base | overlay).
+
+    A ``temperature`` table (mechanical run, one table per lubrication system)
+    is merged per lubrication system and per limit: where the edition and the
+    client both set a limit, both apply, so the stricter one is kept.
+    """
     merged = {**(base or {}), **overlay}
     base_src = (base or {}).get("source", "")
     over_src = overlay.get("source", "")
     if base_src and over_src:
         merged["source"] = f"{base_src} | {overlay_label}: {over_src}"
+    base_temp = (base or {}).get("temperature")
+    if "temperature" in overlay and base_temp:
+        temp = {k: dict(v) for k, v in base_temp.items()}
+        for lube, rules in overlay["temperature"].items():
+            cur = temp.setdefault(lube, {})
+            for key, value in rules.items():
+                if key == "source":
+                    continue
+                if key in cur:
+                    a, b = _quantity_of(cur[key]), _quantity_of(value)
+                    value = cur[key] if a <= b else value
+                cur[key] = value
+            if rules.get("source"):
+                src = cur.get("source", "")
+                cur["source"] = (
+                    f"{src} | {overlay_label}: {rules['source']}"
+                    if src and src != rules["source"]
+                    else rules["source"]
+                )
+        merged["temperature"] = temp
     return merged
+
+
+def _quantity_of(text) -> Q_:
+    number, unit = str(text).split(None, 1)
+    return Q_(float(number), unit.strip())
 
 
 def _edition_sort_key(edition: str):
@@ -219,11 +250,11 @@ class VibrationCriteria:
             overall = rule.overall(speed, power_per_stage)
             filtered = rule.filtered(speed, power_per_stage)
             p_txt = (
-                f"{power_per_stage.to('kW').magnitude:.0f} kW/stage"
+                f"{_nf(power_per_stage.to('kW').magnitude, '.0f')} kW/stage"
                 if power_per_stage is not None
                 else "power not given (300 kW used)"
             )
-            basis = f"high-speed rule at {speed.to('rpm').magnitude:.0f} r/min, {p_txt}"
+            basis = f"high-speed rule at {_nf(speed.to('rpm').magnitude, '.0f')} r/min, {p_txt}"
         return {"overall": overall, "filtered": filtered, "basis": basis}
 
     @classmethod
@@ -734,6 +765,7 @@ def evaluate_performance(
     rated_speed: Optional[Q_] = None,
     test_speeds: tuple = (),
     tolerances: Optional[Mapping] = None,
+    shutoff_waiver: Optional[str] = None,
 ) -> PerformanceVerdict:
     """
     Judge a fitted, corrected performance curve at the rated point.
@@ -749,7 +781,12 @@ def evaluate_performance(
       ``tolerances["efficiency"]``); otherwise ``info``.
     - **Shutoff Head**: inside the shut-off band (chosen by the rated head);
       with ``parallel_operation`` (rising curve specified) the negative side
-      is allowed only if :func:`head_rises_to_shutoff`.
+      is allowed only if :func:`head_rises_to_shutoff`.  When no test point lies
+      below ``shutoff_extrapolation_q_fraction`` of the rated flow, shut-off was
+      not tested and the predicted value is an extrapolation: the row is
+      ``not evaluated`` (never pass or fail), or ``info`` when
+      ``shutoff_waiver`` gives the agreed reason for not testing at shut-off
+      (API 610 8th 4.3.3.2.1 note, 11th 8.3.3.3 a) note, 12th 8.3.3.4).
     - **Parallel operation**: shut-off / rated head ``>= parallel_shutoff_min_ratio``
       and a rising curve (only when ``parallel_operation``).
     - **Test speed**: every tested speed within ``test_speed_tol`` of the rated
@@ -940,6 +977,20 @@ def evaluate_performance(
                     "negative tolerance not allowed: the curve does not rise "
                     "to shut-off"
                 )
+            status = PASS if ok else FAIL
+            if extrapolated:
+                # Not a measurement: never judged (TR-01 4.1).
+                waiver = (shutoff_waiver or "").strip()
+                frac = criteria.shutoff_extrapolation_q_fraction
+                if waiver:
+                    status = INFO
+                    note = f"shut-off not tested; waived: {waiver}"
+                else:
+                    status = NOT_EVALUATED
+                    note = (
+                        f"shut-off not tested (no test point below {_nf(frac, '.0%')} of "
+                        "rated flow); the extrapolated value is not judged"
+                    )
             rows.append(
                 CheckRow(
                     "Shutoff Head",
@@ -949,7 +1000,7 @@ def evaluate_performance(
                     _limit(rated_shutoff * (1 + s_plus)),
                     d,
                     s_plus,
-                    PASS if ok else FAIL,
+                    status,
                     extrapolated=extrapolated,
                     note=note,
                 )

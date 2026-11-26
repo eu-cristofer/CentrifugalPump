@@ -25,9 +25,10 @@ Public functions
     test_points, correction, curve_fit, performance_plot, compliance, npsh,
     mechanical_run, mechanical_run_check, report_export, markdown_note.
 
-``evaluate(doc: dict) -> dict``
+``evaluate(doc: dict, sep: str | None = None) -> dict``
     Build a graph from a ``.pumpflow`` document (v1 or v2), evaluate it and
-    return::
+    return (numbers in texts use the decimal separator ``sep``, "." or ","; the
+    point by default)::
 
         {"nodes": {node_id: {"kind": str, "state": str, "status": str,
                              "badge": [text, tone] | None,
@@ -79,7 +80,8 @@ Public functions
 
         {"pump_tag": str, "verdict_text": str, "verdict_label": str,
          "overall_pass": bool, "criteria_label": str, "overridden": bool,
-         "override_reason": str, "unverified": [str], "not_evaluated": [str],
+         "override_reason": str, "shutoff_waiver": str,
+         "unverified": [str], "not_evaluated": [str],
          "parallel_ok": bool | None, "tolerances": dict,
          "default_tolerances": {"head","shutoff","power","efficiency"},
          "rows": [{"name", "actual", "predicted", "min", "max", "deviation",
@@ -216,6 +218,7 @@ import numpy as np
 from pump import Q_
 from pump.quantity_io import to_json
 
+from .numfmt import num as _nf
 from . import settings_codec
 from .engine import Graph
 from .nodes.registry import grouped_node_kinds, make_node
@@ -484,7 +487,9 @@ def _view_curve_fit(graph: Graph, node) -> dict:
 
     s = node.settings
     out = _fit_series(fitted, int(s.get("resolution", 160)), bool(s.get("spline")))
-    out["r2_text"] = "  ·  ".join(f"R²({k})={v:.4f}" for k, v in fitted.r2.items())
+    out["r2_text"] = "  ·  ".join(
+        f"R²({k})={_nf(v, '.4f')}" for k, v in fitted.r2.items()
+    )
     out["coeff_text"] = _coeff_text(fitted)
     return out
 
@@ -527,6 +532,7 @@ def _view_compliance(graph: Graph, node) -> dict:
         "criteria_label": res.criteria_label,
         "overridden": res.overridden,
         "override_reason": res.override_reason,
+        "shutoff_waiver": res.shutoff_waiver,
         "unverified": list(res.unverified),
         "not_evaluated": list(res.not_evaluated),
         "parallel_ok": res.parallel_ok,
@@ -633,6 +639,18 @@ def _view_mrt_check(graph: Graph, node) -> dict:
         }
         for c in res.channels
     ]
+    rules = [
+        {
+            "key": r.key,
+            "name": r.name,
+            "value": r.value,
+            "limit": r.limit,
+            "unit": r.unit,
+            "status": r.status,
+            "note": r.note,
+        }
+        for r in getattr(res, "rules", ()) or ()
+    ]
     return {
         "pump_tag": sig.pump_tag,
         "verdict_label": verdict_label(res),
@@ -646,7 +664,9 @@ def _view_mrt_check(graph: Graph, node) -> dict:
         "duration": res.duration,
         "min_duration": res.min_duration,
         "duration_status": res.duration_status,
+        "lubrication": getattr(res, "lubrication", None),
         "rows": rows,
+        "rules": rules,
     }
 
 
@@ -771,8 +791,14 @@ def _view_report_export(graph: Graph, node) -> dict:
     }
 
 
+def _view_mrt_log(graph: Graph, node) -> dict:
+    """The pump type of the wired rated point (selects the vibration channels)."""
+    return {"pump_type": getattr(node, "_pump_type", None)}
+
+
 _VIEWS = {
     "rated_point": _view_rated_point,
+    "mechanical_run": _view_mrt_log,
     "fluid": _view_fluid,
     "test_points": _view_test_points,
     "correction": _view_correction,
@@ -819,8 +845,19 @@ def catalog() -> list:
     return out
 
 
-def evaluate(doc: dict) -> dict:
-    """Evaluate a project document and return the JSON view of every node."""
+def evaluate(doc: dict, sep: Optional[str] = None) -> dict:
+    """Evaluate a project document and return the JSON view of every node.
+
+    ``sep`` is the viewer's decimal separator ("." or ","): the statuses and
+    the formatted view texts use it.  ``None`` keeps the point.
+    """
+    from pump.utilities.numbers import POINT, decimal
+
+    with decimal(sep if sep in (".", ",") else POINT):
+        return _evaluate(doc)
+
+
+def _evaluate(doc: dict) -> dict:
     graph = Graph.from_dict(doc)
     graph.evaluate()
     nodes: Dict[str, dict] = {}
@@ -1012,6 +1049,17 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     if fmt not in _MIME:
         raise ValueError(f"Unknown report format: {fmt!r}")
 
+    from pump.utilities.numbers import decimal, decimal_for_language
+
+    graph = Graph.from_dict(doc)
+    report = [n for n in graph.nodes if n.kind == "report_export"]
+    language = lang or (report[0].settings.get("language") if report else None) or "en"
+    # the whole export (charts included) uses the report language's separator
+    with decimal(decimal_for_language(language)):
+        return _export_report(graph, fmt, language)
+
+
+def _export_report(graph, fmt: str, language: str) -> dict:
     from .binding import (
         assemble_report_data,
         export_reports,
@@ -1020,7 +1068,6 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     )
     from .export_cli import report_inputs, report_notes
 
-    graph = Graph.from_dict(doc)
     graph.evaluate()
     try:
         rated, branches, s = report_inputs(graph)
@@ -1032,7 +1079,6 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     if not reportable:
         raise ValueError("No branch has a fitted curve to report.")
 
-    language = lang or s.get("language") or "en"
     stem = Path(s.get("filename") or "Report").stem or "Report"
     with tempfile.TemporaryDirectory() as tmp:
         if fmt == "summary_xlsx":
@@ -1080,16 +1126,27 @@ def next_time(rows: list) -> str:
 
 
 def mrt_options() -> dict:
-    """Channel roles, channel dimensions and the dimension of each role's limits."""
-    from pump.mechanical_run import ROLES
+    """Channel roles, channel dimensions, the dimension of each role's limits,
+    the lubrication systems and the optional standard-channel groups."""
+    from pump.mechanical_run import LUBRICATION, LUBRICATION_LABELS, ROLES
 
-    from .nodes.mechanical_run import _DIMENSIONS
+    from .nodes.mechanical_run import _DIMENSIONS, CHANNEL_GROUPS
 
     return {
         "roles": list(ROLES),
         "dimensions": list(_DIMENSIONS),
         "role_dimensions": dict(settings_codec.ROLE_DIMENSIONS),
+        "lubrication": [[k, LUBRICATION_LABELS[k]] for k in LUBRICATION],
+        "channel_groups": [list(g) for g in CHANNEL_GROUPS],
     }
+
+
+def mrt_standard_channels(settings: dict, pump_type: Optional[str] = None) -> list:
+    """MRT Log columns after a change of lubrication system or channel groups
+    (the desktop rule, ``nodes.mechanical_run.apply_standard_channels``)."""
+    from .nodes.mechanical_run import apply_standard_channels
+
+    return _jsonable(apply_standard_channels(dict(settings or {}), pump_type or None))
 
 
 def parse_mrt_paste(text: str, columns: list) -> list:

@@ -87,6 +87,50 @@ const lastOverrides = (d: ReturnType<typeof vi.fn>) =>
   d.mock.calls.at(-1)![0].settings.overrides as Record<string, unknown>;
 
 describe("MrtCheckForm", () => {
+  it("lists the bearing temperature rules with their status and note", async () => {
+    mount(
+      {},
+      result({
+        ...view,
+        lubrication: "pressurized",
+        rules: [
+          {
+            key: "oil_rise_max",
+            name: "Oil temperature rise (outlet − inlet)",
+            value: q(26, "Δ°C"),
+            limit: q(28, "Δ°C"),
+            unit: "Δ°C",
+            status: "pass",
+            note: "",
+          },
+          {
+            key: "bearing_metal_max",
+            name: "Bearing metal temperature",
+            value: null,
+            limit: q(93, "°C"),
+            unit: "°C",
+            status: "not evaluated",
+            note: "needs bearing temperature channels",
+          },
+        ],
+      }),
+    );
+    const table = await screen.findByRole("table", { name: "Bearing temperature rules" });
+    const rise = within(table).getByText(/Oil temperature rise/).closest("tr")!;
+    expect(rise.textContent).toContain("26 Δ°C");
+    expect(rise.textContent).toContain("≤ 28 Δ°C");
+    expect(within(rise).getByText("PASS").className).toContain("v-pass");
+    const metal = within(table).getByText("Bearing metal temperature").closest("tr")!;
+    expect(within(metal).getByText("NOT EVALUATED").className).toContain("v-warn");
+    expect(metal.textContent).toContain("needs bearing temperature channels");
+  });
+
+  it("hides the rules table when the criteria have no temperature rules", async () => {
+    mount();
+    await screen.findByRole("table", { name: "Channel results" });
+    expect(screen.queryByRole("table", { name: "Bearing temperature rules" })).toBeNull();
+  });
+
   it("shows the verdict, the duration and the per-channel rows", async () => {
     mount();
     const banner = await screen.findByText(/FAILED \(unverified limits\)\s+·\s+P-9001B/);

@@ -24,6 +24,9 @@ PROJECT = (
 )
 
 
+WAIVER = "integral-gear pump (training waiver)"
+
+
 @pytest.fixture(scope="module")
 def qapp():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -42,7 +45,13 @@ def scene(qapp):
     from pumpflow.persistence import read_json
 
     sc = GraphScene(make_node)
-    sc.load_dict(read_json(PROJECT))
+    doc = read_json(PROJECT)
+    # The reference test has no point near zero flow, so its shut-off head is
+    # extrapolated: these tests need an approved verdict, so they waive it.
+    for n in doc["nodes"]:
+        if n["kind"] == "compliance":
+            n["settings"]["shutoff_waiver"] = WAIVER
+    sc.load_dict(doc)
     yield sc
     sc.dispose()
 
@@ -73,6 +82,15 @@ def test_judging_nodes_carry_a_badge(scene):
     assert "PROVISIONAL" in mrt.badge_notes  # MRT limits are not verified
     # nodes that judge nothing carry none
     assert _logic(scene, "curve_fit").badge is None
+
+
+def test_unwaived_extrapolated_shutoff_is_not_fully_assessed(scene):
+    node = _logic(scene, "compliance")
+    assert "shut-off not tested" in node.status  # the waiver is named
+    node.settings.pop("shutoff_waiver")
+    scene.evaluate()
+    assert node.badge == ("NOT FULLY ASSESSED", "warn")
+    assert node.status.endswith("NOT FULLY ASSESSED ⚠: Shutoff Head")
 
 
 def test_override_adds_badge_note_and_clears_on_reset(scene):

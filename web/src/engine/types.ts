@@ -50,6 +50,8 @@ export interface ComplianceView {
   criteria_label: string;
   overridden: boolean;
   override_reason: string;
+  /** agreed reason shut-off was not tested; "" unless it was applied */
+  shutoff_waiver?: string;
   unverified: string[];
   not_evaluated: string[];
   parallel_ok: boolean | null;
@@ -262,8 +264,22 @@ export interface MrtCheckRow {
     allowed: Quantity | null;
     window: Quantity | null;
     ok: boolean | null;
+    required?: boolean;
+    relative_to_ambient?: boolean;
   } | null;
   status: string;
+}
+
+/** One bearing temperature rule of an MRT Check (API 610 / client, by lubrication). */
+export interface MrtRuleRow {
+  key: string;
+  name: string;
+  value: Quantity | null;
+  limit: Quantity | null;
+  unit: string;
+  /** "pass" | "fail" | "info" | "not evaluated" */
+  status: string;
+  note: string;
 }
 
 /** `mechanical_run_check` view (after evaluate; `{}` while no log is wired). */
@@ -280,7 +296,9 @@ export interface MrtCheckView {
   duration: Quantity | null;
   min_duration: Quantity | null;
   duration_status: string;
+  lubrication?: string | null;
   rows: MrtCheckRow[];
+  rules?: MrtRuleRow[];
 }
 
 /** One channel of an MRT Log (runtime settings shape). */
@@ -289,6 +307,10 @@ export interface MrtColumn {
   dimension: string;
   unit: string;
   role: string;
+  /** standard channel id (lubrication / group channels); absent for custom ones */
+  key?: string;
+  /** bearing location ("DE", "NDE", ...): pairs an oil outlet with its inlet */
+  location?: string;
 }
 
 /** One reading of an MRT Log. */
@@ -302,6 +324,10 @@ export interface MrtOptions {
   roles: string[];
   dimensions: string[];
   role_dimensions: Record<string, string>;
+  /** [id, label] of each bearing lubrication system */
+  lubrication?: Array<[string, string]>;
+  /** [id, label] of each optional standard-channel group */
+  channel_groups?: Array<[string, string]>;
 }
 
 export interface WaterProperties {
@@ -313,7 +339,7 @@ export interface WaterProperties {
 /** Arguments and result of each function the worker may call. */
 export interface ApiFns {
   catalog: { args: []; result: CatalogEntry[] };
-  evaluate: { args: [doc: PumpflowDoc]; result: EvaluateResult };
+  evaluate: { args: [doc: PumpflowDoc, sep?: "." | ","]; result: EvaluateResult };
   default_settings: { args: [kind: string]; result: Record<string, unknown> };
   export_report: {
     args: [doc: PumpflowDoc, fmt: ExportFormat, lang: string | null];
@@ -348,6 +374,10 @@ export interface ApiFns {
   next_time: { args: [rows: Array<{ time?: string }>]; result: string };
   mrt_options: { args: []; result: MrtOptions };
   parse_mrt_paste: { args: [text: string, columns: MrtColumn[]]; result: MrtRow[] };
+  mrt_standard_channels: {
+    args: [settings: Record<string, unknown>, pumpType: string | null];
+    result: MrtColumn[];
+  };
 }
 export type FnName = keyof ApiFns;
 
