@@ -25,9 +25,10 @@ Public functions
     test_points, correction, curve_fit, performance_plot, compliance, npsh,
     mechanical_run, mechanical_run_check, report_export, markdown_note.
 
-``evaluate(doc: dict) -> dict``
+``evaluate(doc: dict, sep: str | None = None) -> dict``
     Build a graph from a ``.pumpflow`` document (v1 or v2), evaluate it and
-    return::
+    return (numbers in texts use the decimal separator ``sep``, "." or ","; the
+    point by default)::
 
         {"nodes": {node_id: {"kind": str, "state": str, "status": str,
                              "badge": [text, tone] | None,
@@ -217,6 +218,7 @@ import numpy as np
 from pump import Q_
 from pump.quantity_io import to_json
 
+from .numfmt import num as _nf
 from . import settings_codec
 from .engine import Graph
 from .nodes.registry import grouped_node_kinds, make_node
@@ -485,7 +487,9 @@ def _view_curve_fit(graph: Graph, node) -> dict:
 
     s = node.settings
     out = _fit_series(fitted, int(s.get("resolution", 160)), bool(s.get("spline")))
-    out["r2_text"] = "  ·  ".join(f"R²({k})={v:.4f}" for k, v in fitted.r2.items())
+    out["r2_text"] = "  ·  ".join(
+        f"R²({k})={_nf(v, '.4f')}" for k, v in fitted.r2.items()
+    )
     out["coeff_text"] = _coeff_text(fitted)
     return out
 
@@ -841,8 +845,19 @@ def catalog() -> list:
     return out
 
 
-def evaluate(doc: dict) -> dict:
-    """Evaluate a project document and return the JSON view of every node."""
+def evaluate(doc: dict, sep: Optional[str] = None) -> dict:
+    """Evaluate a project document and return the JSON view of every node.
+
+    ``sep`` is the viewer's decimal separator ("." or ","): the statuses and
+    the formatted view texts use it.  ``None`` keeps the point.
+    """
+    from pump.utilities.numbers import POINT, decimal
+
+    with decimal(sep if sep in (".", ",") else POINT):
+        return _evaluate(doc)
+
+
+def _evaluate(doc: dict) -> dict:
     graph = Graph.from_dict(doc)
     graph.evaluate()
     nodes: Dict[str, dict] = {}
@@ -1034,6 +1049,17 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     if fmt not in _MIME:
         raise ValueError(f"Unknown report format: {fmt!r}")
 
+    from pump.utilities.numbers import decimal, decimal_for_language
+
+    graph = Graph.from_dict(doc)
+    report = [n for n in graph.nodes if n.kind == "report_export"]
+    language = lang or (report[0].settings.get("language") if report else None) or "en"
+    # the whole export (charts included) uses the report language's separator
+    with decimal(decimal_for_language(language)):
+        return _export_report(graph, fmt, language)
+
+
+def _export_report(graph, fmt: str, language: str) -> dict:
     from .binding import (
         assemble_report_data,
         export_reports,
@@ -1042,7 +1068,6 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     )
     from .export_cli import report_inputs, report_notes
 
-    graph = Graph.from_dict(doc)
     graph.evaluate()
     try:
         rated, branches, s = report_inputs(graph)
@@ -1054,7 +1079,6 @@ def export_report(doc: dict, fmt: str, lang: Optional[str] = None) -> dict:
     if not reportable:
         raise ValueError("No branch has a fitted curve to report.")
 
-    language = lang or s.get("language") or "en"
     stem = Path(s.get("filename") or "Report").stem or "Report"
     with tempfile.TemporaryDirectory() as tmp:
         if fmt == "summary_xlsx":

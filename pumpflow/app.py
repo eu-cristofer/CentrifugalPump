@@ -125,6 +125,40 @@ class MainWindow(QMainWindow):
             self._unit_actions[key] = act
         self._sync_units_menu()
 
+        # The decimal separator is the user's (app settings), not the project's.
+        m_units.addSeparator()
+        m_dec = m_units.addMenu("Decimal separator")
+        self._dec_group = QActionGroup(self)
+        self._dec_group.setExclusive(True)
+        self._dec_actions: dict[str, QAction] = {}
+        for sep, label in ((".", "Point  (1234.56)"), (",", "Comma  (1234,56)")):
+            act = QAction(label, self, checkable=True)
+            act.triggered.connect(lambda _=False, s=sep: self._set_decimal(s))
+            self._dec_group.addAction(act)
+            m_dec.addAction(act)
+            self._dec_actions[sep] = act
+        self._sync_decimal_menu()
+
+    def _sync_decimal_menu(self) -> None:
+        from .numfmt import separator
+
+        act = getattr(self, "_dec_actions", {}).get(separator())
+        if act is not None:
+            act.setChecked(True)
+
+    def _set_decimal(self, sep: str) -> None:
+        """Switch the decimal separator of the whole workbench (saved per user)."""
+        from .nodes.ui import apply_decimal_preference
+
+        apply_decimal_preference(sep, save=True)
+        self._sync_decimal_menu()
+        self.scene.evaluate()  # node statuses and views are rebuilt in it
+        self.statusBar().showMessage(
+            "Decimal separator: " + ("comma" if sep == "," else "point")
+            + " — open windows update when reopened; reports follow their language",
+            5000,
+        )
+
     def _set_unit_preset(self, key: str) -> None:
         """Switch the project's display-unit preset (File-level preference)."""
         units.PREFS.set_preset(key)
@@ -621,6 +655,9 @@ def run() -> int:
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
+    from .nodes.ui import apply_decimal_preference, decimal_preference
+
+    apply_decimal_preference(decimal_preference())
     init_fonts(app)  # resolve an installed UI font before any widget is built
     app.setStyleSheet(app_qss())
     win = MainWindow()

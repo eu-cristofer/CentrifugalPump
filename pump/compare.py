@@ -228,6 +228,9 @@ def plot_comparison(
 
     if return_io:
         image_stream = io.BytesIO()
+        from pump.utilities.numbers import localize_axes
+
+        localize_axes(fig)
         fig.savefig(image_stream, format="png")
         plt.close(fig)
         image_stream.seek(0)

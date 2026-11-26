@@ -339,7 +339,7 @@ export interface WaterProperties {
 /** Arguments and result of each function the worker may call. */
 export interface ApiFns {
   catalog: { args: []; result: CatalogEntry[] };
-  evaluate: { args: [doc: PumpflowDoc]; result: EvaluateResult };
+  evaluate: { args: [doc: PumpflowDoc, sep?: "." | ","]; result: EvaluateResult };
   default_settings: { args: [kind: string]; result: Record<string, unknown> };
   export_report: {
     args: [doc: PumpflowDoc, fmt: ExportFormat, lang: string | null];

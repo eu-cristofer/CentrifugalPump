@@ -52,6 +52,7 @@ from typing import Any, Mapping, Optional
 from .mechanical_run import MechanicalRunCriteria
 from .npsh import NPSHCriteria
 from .utilities.unit_conversion import Q_
+from .utilities.numbers import num as _nf
 
 __all__ = [
     "AcceptanceCriteria",
@@ -249,11 +250,11 @@ class VibrationCriteria:
             overall = rule.overall(speed, power_per_stage)
             filtered = rule.filtered(speed, power_per_stage)
             p_txt = (
-                f"{power_per_stage.to('kW').magnitude:.0f} kW/stage"
+                f"{_nf(power_per_stage.to('kW').magnitude, '.0f')} kW/stage"
                 if power_per_stage is not None
                 else "power not given (300 kW used)"
             )
-            basis = f"high-speed rule at {speed.to('rpm').magnitude:.0f} r/min, {p_txt}"
+            basis = f"high-speed rule at {_nf(speed.to('rpm').magnitude, '.0f')} r/min, {p_txt}"
         return {"overall": overall, "filtered": filtered, "basis": basis}
 
     @classmethod
@@ -987,7 +988,7 @@ def evaluate_performance(
                 else:
                     status = NOT_EVALUATED
                     note = (
-                        f"shut-off not tested (no test point below {frac:.0%} of "
+                        f"shut-off not tested (no test point below {_nf(frac, '.0%')} of "
                         "rated flow); the extrapolated value is not judged"
                     )
             rows.append(

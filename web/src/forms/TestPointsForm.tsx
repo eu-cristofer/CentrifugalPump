@@ -1,4 +1,5 @@
 import { type ClipboardEvent, type MouseEvent, useRef, useState } from "react";
+import { fixed } from "../decimal";
 import type { TestPointsView, TestRowData } from "../engine/types";
 import { useEngine } from "./engineContext";
 import {
@@ -65,7 +66,7 @@ const blankRow = (): TestRowData => Object.fromEntries(ROW_KEYS.map((k) => [k, n
 
 /** "12.346" style: fixed decimals, "—" for an unknown value. */
 const show = (v: number | null | undefined, decimals: number): string =>
-  v === null || v === undefined ? "—" : v.toFixed(decimals);
+  fixed(v, decimals);
 
 function ColumnUnit({
   dimension,
@@ -282,7 +283,7 @@ export default function TestPointsForm({ nodeId, doc, result, dispatch }: FormPr
   const headTip = (i: number): string | undefined => {
     const c = view.rows?.[i]?.components;
     if (!c) return undefined;
-    const f = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v.toFixed(3));
+    const f = (v: number | null | undefined) => fixed(v, 3);
     return `pressure ${f(c.pressure)} + velocity ${f(c.velocity)} + elevation ${f(c.elevation)} = ${f(c.total)} ${unitOf("head")}`;
   };
 

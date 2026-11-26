@@ -1,3 +1,4 @@
+import { localizeNumber } from "../decimal";
 import {
   type ReactNode,
   createContext,
@@ -35,9 +36,9 @@ export function parseNumber(text: string): Parsed {
   return Number.isFinite(n) ? { ok: true, value: n } : { ok: false, value: null };
 }
 
-/** Display text of a value: "." decimal, no float noise. */
+/** Display text of a value: the viewer's decimal separator, no float noise. */
 export function formatNumber(value: number | null): string {
-  return value === null ? "" : String(Number(value.toPrecision(12)));
+  return value === null ? "" : localizeNumber(String(Number(value.toPrecision(12))));
 }
 
 // ---- layout --------------------------------------------------------------------

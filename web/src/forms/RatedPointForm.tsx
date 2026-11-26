@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { fixed } from "../decimal";
 import type { RatedPointView } from "../engine/types";
 import { useEngine } from "./engineContext";
 import {
@@ -201,10 +202,10 @@ export default function RatedPointForm({ nodeId, doc, result, dispatch }: FormPr
         </>
       )}
       <Row label="Relative density" suffix="SG">
-        <span className="readout">{relShown.toFixed(6)}</span>
+        <span className="readout">{fixed(relShown, 6)}</span>
       </Row>
       <Row label="Density" suffix="kg/m³">
-        <span className="readout">{kgShown.toFixed(3)}</span>
+        <span className="readout">{fixed(kgShown, 3)}</span>
       </Row>
       <Row label="Nominal viscosity">
         {dim("visc", "viscosity", "cSt", { densRel })}
@@ -215,7 +216,7 @@ export default function RatedPointForm({ nodeId, doc, result, dispatch }: FormPr
             ? "From connected Fluid node"
             : waterRef === null
               ? "…"
-              : `Water @ 20 °C = ${waterRef.toFixed(3)} kg/m³`}
+              : `Water @ 20 °C = ${fixed(waterRef, 3)} kg/m³`}
         </span>
       </Row>
       <Row label="">

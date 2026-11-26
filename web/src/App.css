@@ -95,6 +95,18 @@ h1 {
   display: none;
 }
 
+.decimal-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--header-subtitle);
+  font-size: var(--fs-caption);
+}
+
+.decimal-choice select {
+  font: inherit;
+}
+
 .file-name {
   color: var(--header-subtitle);
 }

@@ -865,6 +865,9 @@ def plot_mechanical_run(
     axes[-1].set_xlabel("Elapsed time [min]")
     fig.tight_layout()
     buf = BytesIO()
+    from pump.utilities.numbers import localize_axes
+
+    localize_axes(fig)
     fig.savefig(buf, format="png", dpi=150)
     buf.seek(0)
     return buf

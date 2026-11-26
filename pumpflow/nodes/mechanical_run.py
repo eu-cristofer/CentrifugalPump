@@ -45,6 +45,7 @@ from pump.mechanical_run import (
 )
 from pump.vibration import location_of_key, vibration_keys
 
+from ..numfmt import num as _nf
 from .. import units
 from ..numfmt import parse_decimal
 from ..settings_codec import DURATION_LABELS, ROLE_DIMENSIONS, delta_pint
@@ -403,11 +404,11 @@ def _cell(v) -> str:
     mag = getattr(v, "magnitude", None)
     if mag is not None:
         try:
-            return f"{float(mag):.4g}"
+            return f"{_nf(float(mag), '.4g')}"
         except (TypeError, ValueError):
             return str(v)
     if isinstance(v, float):
-        return f"{v:.4g}"
+        return f"{_nf(v, '.4g')}"
     return str(v)
 
 
@@ -509,7 +510,7 @@ class MechanicalRunNode(BaseNode):
         hours = float(log.duration.to("h").magnitude)
         lube = LUBRICATION_LABELS.get(log.lubrication or "", "lubrication not stated")
         self.status = (
-            f"{run_set.pump_tag} · {len(log.readings)} readings · {hours:.1f} h"
+            f"{run_set.pump_tag} · {len(log.readings)} readings · {_nf(hours, '.1f')} h"
             f" · {lube.lower() if log.lubrication else lube}"
         )
         self.state = "ok"
@@ -611,7 +612,7 @@ class MechanicalRunNode(BaseNode):
                 for j, c in enumerate(cols):
                     v = vals.get(c["name"])
                     grid.setItem(
-                        i, 1 + j, QTableWidgetItem("" if v is None else f"{float(v):g}")
+                        i, 1 + j, QTableWidgetItem("" if v is None else f"{_nf(float(v), 'g')}")
                     )
             grid.blockSignals(False)
 
@@ -626,7 +627,7 @@ class MechanicalRunNode(BaseNode):
                 val = parse_decimal(item.text(), None)
                 r.setdefault("values", {})[cols[col - 1]["name"]] = val
                 grid.blockSignals(True)
-                item.setText("" if val is None else f"{val:g}")
+                item.setText("" if val is None else f"{_nf(val, 'g')}")
                 grid.blockSignals(False)
             recompute()
 

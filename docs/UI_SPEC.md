@@ -392,6 +392,19 @@ comma‑decimal string values, which the importer must parse):
   kgf/cm² ↔ bar. Never show a bare number where a unit is expected.
 - **Localization:** UI labels and the report both support **EN and PT‑BR** (the
   library already ships `locales/en` and `locales/pt` + `template_en/pt.docx`).
+- **Decimal separator:** one rule per output, no thousands grouping anywhere.
+  - *The workbench* (number boxes, tables, node statuses and views, desktop and
+    web) follows the user's **Decimal separator** preference, point (default)
+    or comma. Desktop: *Units ▸ Decimal separator*, saved in the app settings
+    (per user, not in the project). Web: the *Decimal* select in the top bar,
+    saved in the browser. Typing accepts `,` or `.` whatever the preference.
+  - *A report* (docx, tex/pdf, html, the test data summary and its charts)
+    follows its **language**: `en` prints `1234.56`, `pt` prints `1234,56`,
+    whatever the app preference. Free text (notes, equipment fields, criteria
+    sources, clause numbers) is printed as typed.
+  - One formatter does it: `pump.utilities.numbers` (`num`, `qty`, `nformat`,
+    `localize_axes`); the exporters wrap the whole export, the evaluation that
+    draws the charts included, in `decimal(decimal_for_language(lang))`.
 - **Validation & safety:** widgets emit nothing while inputs are invalid; nodes
   surface an amber/red state with a tooltip explaining what's missing
   (mirrors the notebook's `[AVISO] Execute o formulário…` guards).
@@ -399,7 +412,8 @@ comma‑decimal string values, which the importer must parse):
   have the same fluid`, missing `breaking_power`) are caught and shown as
   human‑readable widget errors, not stack traces.
 - **Determinism:** given the same inputs, the verdict and exported files are
-  byte‑reproducible (fixed number formatting, `:0.02f~P` style as the library uses).
+  byte‑reproducible (fixed number formatting, `:0.02f~P` style as the library uses,
+  with the separator of the report language; nothing depends on the OS locale).
 
 ---
 

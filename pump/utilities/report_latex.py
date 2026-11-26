@@ -26,6 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from .numbers import num as _nf
 from .report import (
     API_PARAGRAPH,
     COMPARISON_KEY,
@@ -159,9 +160,9 @@ def _fmt(value) -> str:
     if isinstance(value, str):
         return value
     if hasattr(value, "magnitude"):
-        return f"{value:0.02f~P}"
+        return f"{_nf(value, '0.02f~P')}"
     if isinstance(value, float):
-        return f"{value:0.02f}"
+        return f"{_nf(value, '0.02f')}"
     return str(value)
 
 

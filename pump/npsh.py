@@ -450,6 +450,9 @@ def plot_npsh(
     ax.legend(fontsize=8, loc="best")
     fig.tight_layout()
     buf = BytesIO()
+    from pump.utilities.numbers import localize_axes
+
+    localize_axes(fig)
     fig.savefig(buf, format="png", dpi=150)
     buf.seek(0)
     return buf

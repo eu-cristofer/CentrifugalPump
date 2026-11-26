@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { localizeNumber } from "../decimal";
 import type { MrtCheckRow, MrtCheckView, MrtRuleRow, Quantity } from "../engine/types";
 import { useEngine } from "./engineContext";
 import { Banner, Checkbox, Divider, NumberField, Row, Section, Select, UnitField, loadUnitOptions } from "./fields";
@@ -30,7 +31,7 @@ const DEFAULT_WINDOW_MIN = 60;
 
 /** "0.07874" style: 4 significant digits, "—" for an unknown value. */
 const g4 = (q: Quantity | null | undefined): string =>
-  q === null || q === undefined ? "—" : String(Number(q.value.toPrecision(4)));
+  q === null || q === undefined ? "—" : localizeNumber(String(Number(q.value.toPrecision(4))));
 
 function asOverrides(v: unknown): Overrides {
   const o = (v && typeof v === "object" ? v : {}) as Partial<Overrides>;

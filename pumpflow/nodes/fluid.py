@@ -25,6 +25,7 @@ import numpy as np
 
 from pump import Q_, Water
 
+from ..numfmt import num as _nf
 from ..binding import (
     water_density_kgm3,
     water_dynamic_viscosity_cP,
@@ -69,7 +70,7 @@ class FluidNode(BaseNode):
         s = self.settings
         if s.get("source") == "water":
             temp_c = self._temp_c()
-            name = str(s.get("name") or "").strip() or f"Water @ {temp_c:g} °C"
+            name = str(s.get("name") or "").strip() or f"Water @ {_nf(temp_c, 'g')} °C"
             temperature = Q_(temp_c, "degC")
             water = Water(temperature)
             return FluidSpec(
@@ -105,12 +106,12 @@ class FluidNode(BaseNode):
         viscosity_cst = spec.viscosity.to("cSt").magnitude
         if spec.source == "water":
             self.status = (
-                f"{spec.name} · {density_kgm3:.1f} kg/m³"
-                f" · {viscosity_cst:.3f} cSt"
+                f"{spec.name} · {_nf(density_kgm3, '.1f')} kg/m³"
+                f" · {_nf(viscosity_cst, '.3f')} cSt"
             )
         else:
             self.status = (
-                f"{spec.name} · SG {spec.density_rel:g} · {viscosity_cst:g} cSt"
+                f"{spec.name} · SG {_nf(spec.density_rel, 'g')} · {_nf(viscosity_cst, 'g')} cSt"
             )
         self.state = "ok"
         return {"FluidSpec": spec}
@@ -266,9 +267,9 @@ class FluidNode(BaseNode):
             rho = water_density_kgm3(temp_c)
             nu_cst = water_kinematic_viscosity_cst(temp_c)
             mu_cp = water_dynamic_viscosity_cP(temp_c)
-            density_label.setText(f"{rho:.3f} kg/m³  |  SG {rho / 1000.0:.6f}")
-            viscosity_cst_label.setText(f"{nu_cst:.6f}")
-            viscosity_cp_label.setText(f"{mu_cp:.6f}")
+            density_label.setText(f"{_nf(rho, '.3f')} kg/m³  |  SG {_nf(rho / 1000.0, '.6f')}")
+            viscosity_cst_label.setText(f"{_nf(nu_cst, '.6f')}")
+            viscosity_cp_label.setText(f"{_nf(mu_cp, '.6f')}")
             if plot is None:
                 return
             lo, hi = min(0.0, temp_c), max(100.0, temp_c)
@@ -276,7 +277,7 @@ class FluidNode(BaseNode):
             ds = [water_density_kgm3(float(t)) for t in ts]
             curve.setData(ts, ds)
             marker.setData([temp_c], [rho])
-            plot.setTitle(f"{rho:.1f} kg/m³ @ {temp_c:g} °C")
+            plot.setTitle(f"{_nf(rho, '.1f')} kg/m³ @ {_nf(temp_c, 'g')} °C")
 
         def refresh_mode():
             water = source.currentData() == "water"
@@ -291,7 +292,7 @@ class FluidNode(BaseNode):
             s["temp"], s["temp_unit"] = temp_field.magnitude(), temp_field.unit_label()
             s["dens"], s["dens_unit"] = dens_field.magnitude(), dens_field.unit_label()
             s["visc"], s["visc_unit"] = visc_field.magnitude(), visc_field.unit_label()
-            sg_label.setText(f"{_dens_rel():.3f}")
+            sg_label.setText(f"{_nf(_dens_rel(), '.3f')}")
             refresh_mode()
             ok, msg = self.to_signal().is_valid()
             banner.show_message("" if ok else msg, "info" if ok else "error")

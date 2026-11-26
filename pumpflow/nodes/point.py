@@ -22,6 +22,7 @@ from typing import Dict
 
 from pump import Q_, Pressure
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import head_from_pressures
 from ..signals import PointSample
@@ -140,9 +141,9 @@ class PointNode(BaseNode):
             return self.emit_nothing(
                 "Connect/select a Fluid node to derive head from pressures.", "invalid"
             )
-        bits = [f"Q={q_m3h:g}"]
+        bits = [f"Q={_nf(q_m3h, 'g')}"]
         if pt.head is not None:
-            bits.append(f"H={pt.head.to('m').magnitude:g}")
+            bits.append(f"H={_nf(pt.head.to('m').magnitude, 'g')}")
         fl = f" · {chosen.name}" if chosen is not None else ""
         self.status = f"{pt.label} · " + " · ".join(bits) + fl
         self.state = "ok"

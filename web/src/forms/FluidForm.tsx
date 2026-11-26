@@ -1,4 +1,5 @@
 import { useLoaded } from "./useLoaded";
+import { fixed } from "../decimal";
 import { useEngine } from "./engineContext";
 import { Banner, Divider, Row, Section, Select, TextField, UnitField, useConverted } from "./fields";
 import type { FormProps } from "./forms.types";
@@ -57,14 +58,14 @@ export default function FluidForm({ nodeId, doc, result, dispatch }: FormProps) 
           <Row label="Temperature">{dimension("temp", "temperature", "°C")}</Row>
           <Row label="Density">
             <span className="readout">
-              {water ? `${water.density.toFixed(3)} kg/m³  |  SG ${(water.density / 1000).toFixed(6)}` : "—"}
+              {water ? `${fixed(water.density, 3)} kg/m³  |  SG ${fixed(water.density / 1000, 6)}` : "—"}
             </span>
           </Row>
           <Row label="Viscosity" suffix="cSt">
-            <span className="readout">{water ? water.kinematic_cst.toFixed(6) : "—"}</span>
+            <span className="readout">{fixed(water?.kinematic_cst, 6)}</span>
           </Row>
           <Row label="Dynamic viscosity" suffix="cP">
-            <span className="readout">{water ? water.dynamic_cp.toFixed(6) : "—"}</span>
+            <span className="readout">{fixed(water?.dynamic_cp, 6)}</span>
           </Row>
           <p className="field-hint">
             Density: 4th-order Kell polynomial in temperature. Viscosity: Andrade-type exponential,
@@ -80,7 +81,7 @@ export default function FluidForm({ nodeId, doc, result, dispatch }: FormProps) 
         <>
           <Row label="Density">{dimension("dens", "density", "kg/m³")}</Row>
           <Row label="Relative density" suffix="SG">
-            <span className="readout">{sg === null ? "—" : sg.toFixed(3)}</span>
+            <span className="readout">{fixed(sg, 3)}</span>
           </Row>
           <Row label="Nominal viscosity">{dimension("visc", "viscosity", "cSt", sg)}</Row>
         </>

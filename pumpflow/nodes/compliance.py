@@ -15,6 +15,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from ..binding import check_compliance, default_tolerances
 from ..numfmt import fmt
 from pump.design import color as token_color
@@ -324,8 +325,8 @@ def param_cells(p) -> list:
         fmt(p.predicted) if p.predicted is not None else "—",
         fmt(p.minimum) if p.minimum is not None else "—",
         fmt(p.maximum) if p.maximum is not None else "—",
-        f"{p.deviation * 100:+.2f} %" if p.deviation is not None else "—",
-        f"{p.tolerance * 100:.1f} %" if p.tolerance is not None else "—",
+        f"{_nf(p.deviation * 100, '+.2f')} %" if p.deviation is not None else "—",
+        f"{_nf(p.tolerance * 100, '.1f')} %" if p.tolerance is not None else "—",
         "info" if info else ("n/e ⚠" if not evaluated else ("✅" if p.passed else "❌")),
         " · ".join(notes),
     ]

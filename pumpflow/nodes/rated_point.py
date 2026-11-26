@@ -28,6 +28,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import (
     available_clients,
@@ -254,9 +255,9 @@ class RatedPointInputNode(BaseNode):
         par = (f" · {rated.pump_type}" if rated.pump_type else "") + par
         fl = " · fluid✓" if self._fluid_override is not None else ""
         self.status = (
-            f"{rated.tag} · {float(s['q']):g} {s.get('q_unit', 'm³/h')}"
-            f" · {float(s['head']):g} {s.get('head_unit', 'm')}"
-            f" · {rated.speed.to('rpm').magnitude:g} rpm{par}{fl}"
+            f"{rated.tag} · {_nf(float(s['q']), 'g')} {s.get('q_unit', 'm³/h')}"
+            f" · {_nf(float(s['head']), 'g')} {s.get('head_unit', 'm')}"
+            f" · {_nf(rated.speed.to('rpm').magnitude, 'g')} rpm{par}{fl}"
         )
         self.state = "ok"
         return {"RatedPoint": rated}
@@ -540,18 +541,18 @@ class RatedPointInputNode(BaseNode):
 
         def refresh_density_labels(override) -> None:
             if override is not None:
-                density_rel_display.setText(f"{override.density_rel:.6f}")
+                density_rel_display.setText(f"{_nf(override.density_rel, '.6f')}")
                 density_kgm3_display.setText(
-                    f"{override.density.to('kg/m**3').magnitude:.3f}"
+                    f"{_nf(override.density.to('kg/m**3').magnitude, '.3f')}"
                 )
                 water_equivalent_display.setText("From connected Fluid node")
                 return
             density_kgm3 = float(s["dens_rel"]) * 1000.0
-            density_rel_display.setText(f"{float(s['dens_rel']):.6f}")
-            density_kgm3_display.setText(f"{density_kgm3:.3f}")
+            density_rel_display.setText(f"{_nf(float(s['dens_rel']), '.6f')}")
+            density_kgm3_display.setText(f"{_nf(density_kgm3, '.3f')}")
             water_temp_c = 20.0
             water_equivalent_display.setText(
-                f"Water @ {water_temp_c:g} °C = {water_density_kgm3(water_temp_c):.3f} kg/m³"
+                f"Water @ {_nf(water_temp_c, 'g')} °C = {_nf(water_density_kgm3(water_temp_c), '.3f')} kg/m³"
             )
 
         def apply():

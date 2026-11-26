@@ -18,6 +18,7 @@ from typing import Dict
 
 from pump import Q_
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import BindingError
 from ..binding import make_system_curve
@@ -135,7 +136,7 @@ class SystemCurveNode(BaseNode):
         self._last = spec
         self.status = (
             f"{spec.name} · {_MODE_LABEL.get(self.settings.get('mode'), '')} · "
-            f"static {static_m:.1f} m"
+            f"static {_nf(static_m, '.1f')} m"
         )
         self.state = "ok"
         return {"SystemCurveSpec": spec}

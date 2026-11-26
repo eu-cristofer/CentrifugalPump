@@ -5,6 +5,7 @@ import type { Engine } from "./engine/client";
 import { spawnEngine } from "./engine/spawn";
 import type { CatalogEntry, Progress, PumpflowDoc } from "./engine/types";
 import { readProjectFile, saveProjectText } from "./project/files";
+import { type DecimalSep, decimalSep, setDecimalSep } from "./decimal";
 import { serializeDocument, useProject } from "./project/store";
 import {
   type OfflineHandle,
@@ -35,7 +36,8 @@ export default function App() {
   const [offline, setOffline] = useState<OfflineState>({ kind: "none" });
   const offlineRef = useRef<OfflineHandle | null>(null);
   const canvasRef = useRef<CanvasHandle>(null);
-  const { state, dispatch, result, evalError } = useProject(catalog ? engine : null);
+  const [sep, setSep] = useState<DecimalSep>(decimalSep());
+  const { state, dispatch, result, evalError } = useProject(catalog ? engine : null, sep);
   const { doc, name, dirty, past, future, openId } = state;
 
   useEffect(() => {
@@ -218,6 +220,21 @@ export default function App() {
         >
           Redo
         </button>
+        <label className="decimal-choice" title="Decimal separator of the numbers shown (reports follow their language)">
+          Decimal
+          <select
+            aria-label="Decimal separator"
+            value={sep}
+            onChange={(e) => {
+              const next: DecimalSep = e.target.value === "," ? "," : ".";
+              setDecimalSep(next);
+              setSep(next);
+            }}
+          >
+            <option value=".">Point (1234.56)</option>
+            <option value=",">Comma (1234,56)</option>
+          </select>
+        </label>
         <span className="file-name">
           {name}
           {dirty ? " •" : ""}

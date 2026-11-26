@@ -23,6 +23,7 @@ from pump.utilities.test_summary import (
     write_xlsx,
 )
 
+from ..numfmt import nformat, num as _nf
 from ..signals import RatedPoint
 from .acceptance import criteria_for, criteria_label
 
@@ -75,8 +76,8 @@ def form_title(criteria, translate: Translate) -> str:
 
 def _band(minus: float, plus: float) -> str:
     if abs(minus - plus) < 1e-12:
-        return f"±{plus * 100:g} %"
-    return f"−{minus * 100:g} / +{plus * 100:g} %"
+        return f"±{_nf(plus * 100, 'g')} %"
+    return f"−{_nf(minus * 100, 'g')} / +{_nf(plus * 100, 'g')} %"
 
 
 def _mag(q, unit: str) -> Optional[float]:
@@ -122,7 +123,7 @@ def _performance(rated: RatedPoint, branch, criteria, compliance) -> tuple:
             _mag(rated.power, "kW"),
             getattr(p, "predicted", None),
             getattr(p, "deviation", None),
-            f"+{(tol.get('power', criteria.power_tol_plus)) * 100:g} %",
+            f"+{_nf((tol.get('power', criteria.power_tol_plus)) * 100, 'g')} %",
         )
     )
 
@@ -142,7 +143,7 @@ def _performance(rated: RatedPoint, branch, criteria, compliance) -> tuple:
                 _mag(quoted, "m"),
                 tested,
                 dev,
-                "" if tol_n is None else f"+{tol_n * 100:g} %",
+                "" if tol_n is None else f"+{_nf(tol_n * 100, 'g')} %",
             )
         )
     else:
@@ -171,7 +172,11 @@ def _performance(rated: RatedPoint, branch, criteria, compliance) -> tuple:
             _mag(rated.speed, "rpm"),
             getattr(sp, "predicted", None),
             getattr(sp, "deviation", None),
-            f"±{criteria.test_speed_tol * 100:g} %" if criteria.test_speed_tol else "",
+            (
+                f"±{_nf(criteria.test_speed_tol * 100, 'g')} %"
+                if criteria.test_speed_tol
+                else ""
+            ),
         )
     )
     return tuple(lines)
@@ -210,10 +215,11 @@ def _vibration(rated, branch, criteria, translate: Translate, stages: int = 1):
         )
         if q_bep is not None:
             notes.append(
-                _(
-                    "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow "
-                    "({qlo:.2f}–{qhi:.2f} m³/h)."
-                ).format(
+                nformat(
+                    _(
+                        "Preferred operating region: {lo:g}–{hi:g} % of the BEP flow "
+                        "({qlo:.2f}–{qhi:.2f} m³/h)."
+                    ),
                     lo=sel.por_min * 100,
                     hi=sel.por_max * 100,
                     qlo=sel.por_min * q_bep.to("m**3/h").magnitude,
@@ -269,11 +275,12 @@ def _vibration(rated, branch, criteria, translate: Translate, stages: int = 1):
     if pump_type and limits.get("overall") is not None:
         notes.insert(
             1,
-            _(
-                "Pump type {ptype}: measured at the API 610 locations of that "
-                "type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), "
-                "{basis}."
-            ).format(
+            nformat(
+                _(
+                    "Pump type {ptype}: measured at the API 610 locations of that "
+                    "type; limits {overall:.1f} / {filtered:.1f} mm/s (overall / filtered), "
+                    "{basis}."
+                ),
                 ptype=pump_type,
                 overall=float(limits["overall"].to("mm/s").magnitude),
                 filtered=float(limits["filtered"].to("mm/s").magnitude),
@@ -357,11 +364,11 @@ def _annex_m_charts(
                 "serial": eq.get("Serial No.", ""),
                 "size_type": size_type,
                 "stages": s.get("stages", ""),
-                "speed": f"{_mag(rated.speed, 'rpm'):g}",
+                "speed": f"{_nf(_mag(rated.speed, 'rpm'), 'g')}",
                 "impeller_no": s.get("impeller_pattern", ""),
                 "liquid": rated.fluid_name,
-                "density": f"{rated.density_rel:.3f}",
-                "viscosity": f"{_mag(rated.viscosity, 'mm**2/s'):g}",
+                "density": f"{_nf(rated.density_rel, '.3f')}",
+                "viscosity": f"{_nf(_mag(rated.viscosity, 'mm**2/s'), 'g')}",
                 "curve_no": s.get("curve_number", ""),
             },
             impeller={
@@ -432,12 +439,12 @@ def _bearings(branch, settings: dict, translate: Translate) -> tuple:
         ambient = Q_(float(settings["ambient_temp"]), unit)
 
     def show(q):
-        return "" if q is None else f"{q.magnitude:.1f} {q.units:~P}"
+        return "" if q is None else f"{_nf(q.magnitude, '.1f')} {q.units:~P}"
 
     rise = ""
     if oil is not None and ambient is not None:
         delta = oil.to("K").magnitude - ambient.to("K").magnitude
-        rise = f"{delta:.1f} K"
+        rise = f"{_nf(delta, '.1f')} K"
     return (
         ("Ambient temperature", show(ambient)),
         ("Oil sump / outlet temperature", show(oil)),
@@ -484,7 +491,7 @@ def test_data_summaries(
         construction = (
             (
                 "Impeller diameter (mm)",
-                "" if d_imp is None else f"{_mag(d_imp, 'mm'):.1f}",
+                "" if d_imp is None else f"{_nf(_mag(d_imp, 'mm'), '.1f')}",
                 "",
             ),
             ("Impeller pattern no.", s.get("impeller_pattern", ""), ""),
@@ -553,6 +560,7 @@ def export_test_summary(
     """Write the summaries; ``(paths, errors)`` like :func:`export_reports`."""
     from pathlib import Path
 
+    from pump.utilities.numbers import decimal, decimal_for_language
     from pump.utilities.report import LocalizationHelper
 
     _ = LocalizationHelper(language)._
@@ -569,7 +577,8 @@ def export_test_summary(
             errors[fmt] = f"unknown summary format {fmt!r}"
             continue
         try:
-            paths[fmt] = writers[fmt](folder / f"{stem}.{fmt}")
+            with decimal(decimal_for_language(language)):
+                paths[fmt] = writers[fmt](folder / f"{stem}.{fmt}")
         except Exception as exc:  # collected, reported by the caller
             errors[fmt] = f"{type(exc).__name__}: {exc}"
     return paths, errors

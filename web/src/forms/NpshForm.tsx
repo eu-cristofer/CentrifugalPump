@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { fixed } from "../decimal";
 import { NpshChart } from "../charts/PerformanceChart";
 import type { NpshView } from "../engine/types";
 import { useEngine } from "./engineContext";
@@ -34,8 +35,6 @@ const MODES: Array<[string, string]> = [
 ];
 const DEGREES: Array<[string, string]> = ["1", "2", "3", "4", "5"].map((d) => [d, d]);
 
-const fixed = (v: number | null | undefined, d: number): string =>
-  v === null || v === undefined ? "—" : v.toFixed(d);
 
 /** NPSH — mirrors pumpflow/nodes/npsh.py (NPSHr points, NPSHa, overrides, verdict). */
 export default function NpshForm({ nodeId, doc, result, dispatch }: FormProps) {
@@ -281,7 +280,7 @@ export default function NpshForm({ nodeId, doc, result, dispatch }: FormProps) {
             />
           </Row>
           {view.npsha !== undefined && view.npsha !== null && (
-            <pre className="mono-block">{`Calculated NPSHa: ${view.npsha.toFixed(3)} m`}</pre>
+            <pre className="mono-block">{`Calculated NPSHa: ${fixed(view.npsha, 3)} m`}</pre>
           )}
         </>
       ) : (

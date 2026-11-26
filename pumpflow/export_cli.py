@@ -105,9 +105,22 @@ def main(argv=None) -> int:
     )
     args = ap.parse_args(argv)
 
-    from .binding import REPORT_FORMATS, assemble_report_data, export_reports
+    from pump.utilities.numbers import decimal, decimal_for_language
 
-    graph = build_graph(args.project)
+    from .engine import Graph
+    from .persistence import read_json
+
+    graph = Graph.from_dict(read_json(args.project))
+    report = [n for n in graph.nodes if n.kind == "report_export"]
+    language = args.lang or (report[0].settings.get("language") if report else None)
+    # the whole export (charts included) uses the report language's separator
+    with decimal(decimal_for_language(language)):
+        graph.evaluate()
+        return _export(args, graph)
+
+
+def _export(args, graph) -> int:
+    from .binding import REPORT_FORMATS, assemble_report_data, export_reports
 
     errors_in_graph = False
     print(f"Project: {args.project}")

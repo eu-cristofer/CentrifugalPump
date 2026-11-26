@@ -18,6 +18,7 @@ from typing import Dict, List, Optional
 
 from pump import Q_, Pressure
 
+from ..numfmt import num as _nf
 from .. import explain, units
 from ..binding import row_efficiency, row_head, row_head_components
 from ..numfmt import fmt, parse_decimal
@@ -368,7 +369,7 @@ class TestPointsTableNode(BaseNode):
             return self.emit_nothing(msg, "invalid")
         shutoff = "" if tps.has_shutoff() else " · no shut-off pt"
         fl = (
-            f" · {chosen.name} {self._test_density.to('kg/m**3').magnitude:.0f} kg/m³"
+            f" · {chosen.name} {_nf(self._test_density.to('kg/m**3').magnitude, '.0f')} kg/m³"
             if chosen
             else ""
         )
@@ -468,7 +469,7 @@ class TestPointsTableNode(BaseNode):
             if ok and test_rho is not None:
                 banner.show_message(
                     f"Test fluid overridden by connected Fluid node "
-                    f"({test_rho.to('kg/m**3').magnitude:.0f} kg/m³) — Head/η use it; "
+                    f"({_nf(test_rho.to('kg/m**3').magnitude, '.0f')} kg/m³) — Head/η use it; "
                     f"T_water is informational.",
                     "info",
                 )
@@ -499,8 +500,8 @@ class TestPointsTableNode(BaseNode):
                     hp = _pint_of(cols, "head")
                     v = {k: c.to(hp).magnitude for k, c in comps.items()}
                     tip = (
-                        f"pressure {v['pressure']:.3f} + velocity {v['velocity']:.3f}"
-                        f" + elevation {v['elevation']:.3f} = {v['total']:.3f}"
+                        f"pressure {_nf(v['pressure'], '.3f')} + velocity {_nf(v['velocity'], '.3f')}"
+                        f" + elevation {_nf(v['elevation'], '.3f')} = {_nf(v['total'], '.3f')}"
                         f" {cols['head']}"
                     )
             except Exception:
@@ -515,7 +516,7 @@ class TestPointsTableNode(BaseNode):
                 for c in sorted(editable):
                     key = col_keys_all[c]
                     val = r.get(key)
-                    item = QTableWidgetItem("" if val is None else f"{float(val):g}")
+                    item = QTableWidgetItem("" if val is None else f"{_nf(float(val), 'g')}")
                     table.setItem(i, c, item)
                 refresh_computed(i)
             table.blockSignals(False)
@@ -527,7 +528,7 @@ class TestPointsTableNode(BaseNode):
             val = parse_decimal(item.text(), None)
             s["rows"][row][col_keys_all[col]] = val
             table.blockSignals(True)
-            item.setText("" if val is None else f"{val:g}")
+            item.setText("" if val is None else f"{_nf(val, 'g')}")
             refresh_computed(row)
             table.blockSignals(False)
             recompute_status()

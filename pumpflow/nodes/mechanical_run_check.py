@@ -24,6 +24,7 @@ from typing import Dict
 
 from pump.mechanical_run import ROLES
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import check_mechanical_run
 from ..settings_codec import ROLE_DIMENSIONS
@@ -89,7 +90,7 @@ class MechanicalRunCheckNode(BaseNode):
         hours = float(duration.to("h").magnitude)
         self.status = (
             f"{run_set.pump_tag} · {len(log.readings)} readings · "
-            f"{hours:.1f} h · {verdict_label(sig.result)}"
+            f"{_nf(hours, '.1f')} h · {verdict_label(sig.result)}"
         )
         self.state = "ok" if getattr(sig.result, "passed", False) else "reject"
         res = sig.result
@@ -223,8 +224,8 @@ class MechanicalRunCheckNode(BaseNode):
             for i, rule in enumerate(rules):
                 vals = [
                     rule.name,
-                    "—" if rule.value is None else f"{rule.value:.4g~P}",
-                    "—" if rule.limit is None else f"≤ {rule.limit:.4g~P}",
+                    "—" if rule.value is None else f"{_nf(rule.value, '.4g~P')}",
+                    "—" if rule.limit is None else f"≤ {_nf(rule.limit, '.4g~P')}",
                     rule.status.upper(),
                     rule.note,
                 ]

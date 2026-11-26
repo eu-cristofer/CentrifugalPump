@@ -106,6 +106,8 @@ jobs:
           tests/test_units_gui.py
           tests/test_viscosity.py
           tests/test_verdict_consistency.py
+          pump/utilities/numbers.py
+          tests/test_decimal_separator.py
           tests/test_ui_round2_gui.py
           tests/test_engine.py
           pumpflow/engine.py

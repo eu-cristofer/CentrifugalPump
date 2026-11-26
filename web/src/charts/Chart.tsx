@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { localizeNumber } from "../decimal";
 import uPlot from "uplot";
 import "./chart.css";
 
@@ -50,7 +51,7 @@ export function cssVar(name: string): string {
 const fmt = (v: number | null | undefined): string => {
   if (v === null || v === undefined) return "—";
   const a = Math.abs(v);
-  return a >= 1000 ? v.toFixed(0) : a >= 100 ? v.toFixed(1) : v.toFixed(2);
+  return localizeNumber(a >= 1000 ? v.toFixed(0) : a >= 100 ? v.toFixed(1) : v.toFixed(2));
 };
 
 function seriesOptions(s: ChartSeries): uPlot.Series {

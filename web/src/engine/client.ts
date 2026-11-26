@@ -83,8 +83,9 @@ export class Engine {
     return this.call("catalog");
   }
 
-  evaluate(doc: PumpflowDoc): Promise<EvaluateResult> {
-    return this.call("evaluate", doc);
+  /** `sep`: the viewer's decimal separator for the status and view texts. */
+  evaluate(doc: PumpflowDoc, sep?: "." | ","): Promise<EvaluateResult> {
+    return sep ? this.call("evaluate", doc, sep) : this.call("evaluate", doc);
   }
 
   defaultSettings(kind: string): Promise<Record<string, unknown>> {

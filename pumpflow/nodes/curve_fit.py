@@ -12,6 +12,7 @@ from typing import Dict
 
 import numpy as np
 
+from ..numfmt import num as _nf
 from ..binding import fit_model
 from .base import BaseNode, PortSpec
 
@@ -34,7 +35,7 @@ class CurveFitNode(BaseNode):
         fitted = fit_model(corrected, degree=int(s["degree"]), with_spline=bool(s["spline"]))
         self._last = fitted
         r2h = fitted.r2.get("head")
-        r2txt = f" · R²(H)={r2h:.4f}" if r2h is not None else ""
+        r2txt = f" · R²(H)={_nf(r2h, '.4f')}" if r2h is not None else ""
         self.status = f"{fitted.pump_tag} · deg-{fitted.degree}{' +spline' if s['spline'] else ''}{r2txt}"
         self.state = "ok"
         return {"FittedModel": fitted}
@@ -82,7 +83,7 @@ class CurveFitNode(BaseNode):
                 coeff_lbl.setText("")
                 return
             banner.show_message(
-                "  ·  ".join(f"R²({k})={v:.4f}" for k, v in fitted.r2.items()), "ok"
+                "  ·  ".join(f"R²({k})={_nf(v, '.4f')}" for k, v in fitted.r2.items()), "ok"
             )
             coeff_lbl.setText(_coeff_text(fitted))
             # Only (re)build the heavy chart when the preview pane is shown.
@@ -144,7 +145,7 @@ def _coeff_text(fitted) -> str:
     def fmt_coeffs(name, coeffs):
         if coeffs is None or not len(coeffs):
             return f"{name:>6}:  —"
-        return f"{name:>6}:  " + "  ".join(f"{c:+.4e}" for c in np.asarray(coeffs))
+        return f"{name:>6}:  " + "  ".join(f"{_nf(c, '+.4e')}" for c in np.asarray(coeffs))
     lines = [
         fmt_coeffs("Head", fitted.head_coeffs),
         fmt_coeffs("Power", fitted.power_coeffs),

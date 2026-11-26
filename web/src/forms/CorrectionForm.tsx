@@ -1,4 +1,5 @@
 import type { CorrectionView } from "../engine/types";
+import { fixed } from "../decimal";
 import { useEngine } from "./engineContext";
 import {
   Banner,
@@ -27,8 +28,7 @@ const TABLE_DIMS: Array<{ dim: string; label: string; canonical: string }> = [
   { dim: "power", label: "Power", canonical: "kW" },
 ];
 
-const show = (v: number | null | undefined, decimals = 2): string =>
-  v === null || v === undefined ? "—" : v.toFixed(decimals);
+const show = (v: number | null | undefined, decimals = 2): string => fixed(v, decimals);
 
 function TableUnit({
   dimension,

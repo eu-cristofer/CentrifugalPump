@@ -20,6 +20,7 @@ from pump import (
 )
 from pump.constants import G
 
+from ..numfmt import num as _nf
 from ..mathx import NaturalCubicSpline, r_squared
 from ..signals import (
     RatedPoint,
@@ -105,7 +106,7 @@ def format_geometry(geometry: BenchGeometry) -> str:
     """One-line description of the set geometry parts, in the entered units."""
 
     def part(name: str, q: Optional[Q_]) -> Optional[str]:
-        return None if q is None else f"{name} {q.magnitude:g} {q.units:~P}"
+        return None if q is None else f"{name} {_nf(q.magnitude, 'g')} {q.units:~P}"
 
     parts = [
         part("suction ID", geometry.suction_id),

@@ -1,5 +1,4 @@
 import gettext
-import locale
 import math
 import re
 from typing import Callable, Optional
@@ -10,6 +9,8 @@ import os
 from datetime import datetime
 import io
 from pathlib import Path
+
+from pump.utilities.numbers import num as _nf
 
 
 __all__ = ["ReportGenerator"]
@@ -222,10 +223,10 @@ def viscosity_sentence(translate: Callable[[str], str], viscous: dict) -> str:
     """
     return (
         f"{translate(VISCOSITY_TITLE)}: "
-        f"B = {viscous['B']:0.2f}, "
-        f"C_Q = {viscous['C_Q']:0.3f}, "
-        f"C_H = {viscous['C_H']:0.3f}, "
-        f"C_η = {viscous['C_eta']:0.3f}"
+        f"B = {_nf(viscous['B'], '0.2f')}, "
+        f"C_Q = {_nf(viscous['C_Q'], '0.3f')}, "
+        f"C_H = {_nf(viscous['C_H'], '0.3f')}, "
+        f"C_η = {_nf(viscous['C_eta'], '0.3f')}"
     )
 
 
@@ -296,7 +297,7 @@ def tolerance_override_sentence(
         return ""
 
     def pct(v):
-        return translate("not set") if v is None else f"{v * 100:0.1f} %"
+        return translate("not set") if v is None else f"{_nf(v * 100, '0.1f')} %"
 
     parts = []
     for key, label, sign in _OVERRIDE_NAMES:
@@ -337,9 +338,9 @@ def shutoff_waiver_sentence(translate: Callable[[str], str], reason: str = "") -
 
 def mechanical_run_duration_sentence(translate: Callable[[str], str], result) -> str:
     """``Duration: 4.00 h`` (plus the required minimum when configured)."""
-    text = f"{translate('Duration')}: {result.duration.to('h'):0.2f~P}"
+    text = f"{translate('Duration')}: {_nf(result.duration.to('h'), '0.2f~P')}"
     if getattr(result, "min_duration", None) is not None:
-        text += f" (≥ {result.min_duration.to('h'):0.2f~P})"
+        text += f" (≥ {_nf(result.min_duration.to('h'), '0.2f~P')})"
     return text
 
 
@@ -358,7 +359,7 @@ def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
     }
 
     def num(q):
-        return "-" if q is None else f"{q.magnitude:0.3g}"
+        return "-" if q is None else f"{_nf(q.magnitude, '0.3g')}"
 
     header = [translate(c) for c in MECHANICAL_RUN_COLUMNS]
     rows = []
@@ -367,7 +368,7 @@ def mechanical_run_table(translate: Callable[[str], str], result) -> tuple:
             limit = f"≤ {num(ch.limit)}"
         elif ch.stabilisation:
             st = ch.stabilisation
-            limit = f"Δ ≤ {st['allowed']:0.3g~P} / {st['window']:0.3g~P}"
+            limit = f"Δ ≤ {_nf(st['allowed'], '0.3g~P')} / {_nf(st['window'], '0.3g~P')}"
         else:
             limit = translate("not configured")
         rows.append(
@@ -431,17 +432,17 @@ def npsh_summary_rows(translate: Callable[[str], str], result) -> list:
     """``[(label, value), ...]`` strings: NPSHa, NPSHr, ratio, margin, the
     quoted-NPSHr check (when judged) and the verdict."""
     rows = [
-        (translate("NPSH available"), f"{result.npsha.to('m'):0.2f~P}"),
-        (translate("NPSH required"), f"{result.npshr.to('m'):0.2f~P}"),
-        (translate("Ratio"), f"{result.ratio:0.2f}"),
-        (translate("Margin"), f"{result.margin.to('m'):0.2f~P}"),
+        (translate("NPSH available"), f"{_nf(result.npsha.to('m'), '0.2f~P')}"),
+        (translate("NPSH required"), f"{_nf(result.npshr.to('m'), '0.2f~P')}"),
+        (translate("Ratio"), f"{_nf(result.ratio, '0.2f')}"),
+        (translate("Margin"), f"{_nf(result.margin.to('m'), '0.2f~P')}"),
     ]
     quoted = getattr(result, "npshr_quoted", None)
     quoted_ok = getattr(result, "quoted_ok", None)
     if quoted is not None and quoted_ok is not None:
         mark = translate("PASSED") if quoted_ok else translate("FAILED")
         rows.append(
-            (translate("Quoted NPSH required"), f"{quoted.to('m'):0.2f~P} ({mark})")
+            (translate("Quoted NPSH required"), f"{_nf(quoted.to('m'), '0.2f~P')} ({mark})")
         )
     rows.append((translate("Overall verdict"), npsh_verdict(translate, result)))
     return rows
@@ -450,7 +451,7 @@ def npsh_summary_rows(translate: Callable[[str], str], result) -> list:
 def npsh_points_table(translate: Callable[[str], str], table) -> tuple:
     """``(header, rows)`` of strings for the ``[(q, npshr), ...]`` points table."""
     header = [translate("Capacity"), translate("NPSH required")]
-    rows = [[f"{q:0.2f~P}", f"{r:0.2f~P}"] for q, r in (table or ())]
+    rows = [[f"{_nf(q, '0.2f~P')}", f"{_nf(r, '0.2f~P')}"] for q, r in (table or ())]
     return header, rows
 
 
@@ -470,12 +471,12 @@ def comparison_table(translate: Callable[[str], str], comparison: dict) -> tuple
     def pct(value) -> str:
         if value is None or (isinstance(value, float) and math.isnan(value)):
             return "-"
-        return f"{value * 100.0:+0.2f}"
+        return f"{_nf(value * 100.0, '+0.2f')}"
 
     header = list(COMPARISON_COLUMNS)
     rows = []
     for row in table.rows:
-        q = f"{float(row.q.to('m**3/h').magnitude):0.1f}"
+        q = f"{_nf(float(row.q.to('m**3/h').magnitude), '0.1f')}"
         for tag in table.tags:
             vals = row.values[tag]
             d = row.deltas.get(tag)
@@ -483,9 +484,9 @@ def comparison_table(translate: Callable[[str], str], comparison: dict) -> tuple
                 [
                     q,
                     tag,
-                    f"{vals['head'].magnitude:0.2f}",
-                    f"{vals['power'].magnitude:0.2f}",
-                    f"{vals['efficiency'].magnitude:0.2f}",
+                    f"{_nf(vals['head'].magnitude, '0.2f')}",
+                    f"{_nf(vals['power'].magnitude, '0.2f')}",
+                    f"{_nf(vals['efficiency'].magnitude, '0.2f')}",
                     pct(d["head"]) if d else "-",
                     pct(d["power"]) if d else "-",
                     pct(d["efficiency"]) if d else "-",
@@ -554,10 +555,6 @@ class LocalizationHelper:
         Callable[[str], str]
             A function that translates a given string based on the selected language.
         """
-        try:
-            locale.setlocale(locale.LC_ALL, '')
-        except locale.Error:
-            print("Warning: Unable to set locale, using default.")
 
         locale_dir: Path = (
             Path(self.locale_dir) if self.locale_dir else Path(__file__).parent / "locales"
@@ -866,7 +863,7 @@ class ReportGenerator:
                 cell_left = table.cell(row, 0)
                 cell_rigth = table.cell(row, 1)
                 cell_left.text = self._(key.replace("_", " ").title()) if key != "name" else self._("Service")
-                cell_rigth.text = value if isinstance(value, str) else f"{value:0.02f~P}"
+                cell_rigth.text = value if isinstance(value, str) else f"{_nf(value, '0.02f~P')}"
                 cell_left.width = width
                 cell_rigth.width = width
                 run_left =  cell_left.paragraphs[0].runs[0]
@@ -969,7 +966,7 @@ class ReportGenerator:
 
                 for col, text in enumerate([actual, min_val, max_val], start=1):
                     cell = table.cell(row, col)
-                    cell.text = f"{text:0.02f~P}" if text != "-" else text
+                    cell.text = f"{_nf(text, '0.02f~P')}" if text != "-" else text
                     cell.width = width
                     run = cell.paragraphs[0].runs[0]
                     run.font.size = Pt(8)  # Set font size
@@ -1016,7 +1013,7 @@ class ReportGenerator:
 
                 for row, value in enumerate(test_data[name], start=1):
                     cell = table.cell(row, col)
-                    cell.text = f"{value:0.02f~P}"
+                    cell.text = f"{_nf(value, '0.02f~P')}"
                     cell.width = width
                     run = cell.paragraphs[0].runs[0]
                     run.font.size = Pt(8)  # Set font size

@@ -176,7 +176,10 @@ export interface UseProject {
 }
 
 /** The project store: reducer state plus debounced, order-safe evaluation. */
-export function useProject(engine: Pick<Engine, "evaluate"> | null): UseProject {
+export function useProject(
+  engine: Pick<Engine, "evaluate"> | null,
+  sep: "." | "," = ".",
+): UseProject {
   const [state, dispatch] = useReducer(reduce, INITIAL_STATE);
   const [result, setResult] = useState<EvaluateResult | null>(null);
   const [evalError, setEvalError] = useState("");
@@ -187,7 +190,7 @@ export function useProject(engine: Pick<Engine, "evaluate"> | null): UseProject 
     if (!engine || !doc) return;
     const id = ++counter.current;
     const timer = setTimeout(() => {
-      engine.evaluate(doc).then(
+      (sep === "." ? engine.evaluate(doc) : engine.evaluate(doc, sep)).then(
         (r) => {
           if (id !== counter.current) return;
           setResult(r);
@@ -199,7 +202,7 @@ export function useProject(engine: Pick<Engine, "evaluate"> | null): UseProject 
       );
     }, EVAL_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [engine, doc]);
+  }, [engine, doc, sep]);
 
   return { state, dispatch, result, evalError };
 }

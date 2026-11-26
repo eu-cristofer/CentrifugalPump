@@ -30,6 +30,7 @@ import numpy as np
 
 from pump.design import color as token_color
 
+from ..numfmt import num as _nf
 from .. import units
 from ..binding import row_efficiency, row_head
 from .base import BaseNode, PortSpec
@@ -57,7 +58,7 @@ def _rel_delta(value, ref) -> str:
     """``(value - ref) / ref`` as a signed percent string; ``—`` when undefined."""
     if value is None or ref is None or ref == 0:
         return "—"
-    return f"{(value - ref) / ref * 100.0:+.1f}"
+    return f"{_nf((value - ref) / ref * 100.0, '+.1f')}"
 
 
 def _axis_scale(dimension: str):
@@ -299,7 +300,7 @@ class ExploreChartNode(BaseNode):
         def model_label(m) -> str:
             try:
                 rpm = float(m.curve.points[0].speed_of_rotation.to("rpm").magnitude)
-                return f"{m.pump_tag} @ {rpm:g} rpm"
+                return f"{m.pump_tag} @ {_nf(rpm, 'g')} rpm"
             except Exception:
                 return m.pump_tag
 
@@ -417,7 +418,7 @@ class ExploreChartNode(BaseNode):
             h = [r["head"] for r in rows]
             p = [r["power"] if r["power"] is not None else np.nan for r in rows]
             e = [r["eff"] if r["eff"] is not None else np.nan for r in rows]
-            name = f"{cc.pump_tag} @ {cc.target_speed.to('rpm').magnitude:g} rpm"
+            name = f"{cc.pump_tag} @ {_nf(cc.target_speed.to('rpm').magnitude, 'g')} rpm"
             self._scatter(pg, p_h, q, h, color, "t", name)
             self._scatter(pg, p_p, q, p, color, "t", None)
             self._scatter(pg, p_e, q, e, color, "t", None)
@@ -506,7 +507,7 @@ class ExploreChartNode(BaseNode):
                     mp = ax.vb.mapSceneToView(pos)
                     for vl in vlines:
                         vl.setPos(mp.x())
-                    label.setText(f"Q = {mp.x() * getattr(self, '_q_scale', 1.0):.1f}")
+                    label.setText(f"Q = {_nf(mp.x() * getattr(self, '_q_scale', 1.0), '.1f')}")
                     yr = axes[0].vb.viewRange()[1]
                     label.setPos(mp.x(), yr[1])
                     break
